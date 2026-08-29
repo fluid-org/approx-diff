@@ -101,7 +101,8 @@ private
 ℓk = o ⊔ m ⊔ e ⊔ o₂ ⊔ m₂ ⊔ e₂ ⊔ lsuc os ⊔ lsuc es
 
 module Fibrewise {N : ℕ} (δ : Fin N → F𝒞.Obj) where
-  module T = Srt.Tree (λ i → δ i .idx)
+  open Srt.Tree (λ i → δ i .idx) public
+    using (W; W-≈; W-≈-sym; El; elEq; elEq-refl; sup; shape≈; ⟦_⟧shape)
   module Fibre𝒞 = Fib𝒞.Fibre δ
   module Fibre𝒟 = Fib𝒟.Fibre (λ i → FamF .fobj (δ i))
 
@@ -139,11 +140,11 @@ module Fibrewise {N : ℕ} (δ : Fin N → F𝒞.Obj) where
 
   mutual
     cfwd : ∀ {j} (Q : Fib𝒞.Poly-C (sucℕ j)) (E : RelAssign j) →
-           T.W Fib𝒞.∣ Q ∣ (E .ρ₁) → T.W Fib𝒟.∣ P̂ Q ∣ (E .ρ₂)
-    cfwd Q E (T.sup x) = T.sup (shape-cfwd Q (ext Q E) x)
+           W Fib𝒞.∣ Q ∣ (E .ρ₁) → W Fib𝒟.∣ P̂ Q ∣ (E .ρ₂)
+    cfwd Q E (sup x) = sup (shape-cfwd Q (ext Q E) x)
 
     shape-cfwd : ∀ {j} (Q : Fib𝒞.Poly-C j) (E : RelAssign j) →
-                 T.⟦ Fib𝒞.∣ Q ∣ ⟧shape (E .ρ₁) → T.⟦ Fib𝒟.∣ P̂ Q ∣ ⟧shape (E .ρ₂)
+                 ⟦ Fib𝒞.∣ Q ∣ ⟧shape (E .ρ₁) → ⟦ Fib𝒟.∣ P̂ Q ∣ ⟧shape (E .ρ₂)
     shape-cfwd (Poly.const A) E x = x
     shape-cfwd (Poly.var i)   E x = el-cfwd (E .rel i) x
     shape-cfwd (Q Poly.+ R) E (inj₁ x) = inj₁ (shape-cfwd Q E x)
@@ -151,19 +152,19 @@ module Fibrewise {N : ℕ} (δ : Fin N → F𝒞.Obj) where
     shape-cfwd (Q Poly.× R) E (x , y) = shape-cfwd Q E x , shape-cfwd R E y
     shape-cfwd (Poly.μ Q')  E t = cfwd Q' E t
 
-    el-cfwd : ∀ {r₁ r₂ e₁ e₂} → SRel r₁ r₂ e₁ e₂ → T.El r₁ → T.El r₂
+    el-cfwd : ∀ {r₁ r₂ e₁ e₂} → SRel r₁ r₂ e₁ e₂ → El r₁ → El r₂
     el-cfwd env x = x
     el-cfwd (srt (mk Q E)) x = cfwd Q E x
 
   mutual
     c≈fwd : ∀ {j} (Q : Fib𝒞.Poly-C (sucℕ j)) (E : RelAssign j) →
-            {x y : T.W Fib𝒞.∣ Q ∣ (E .ρ₁)} → T.W-≈ x y →
-            T.W-≈ (cfwd Q E x) (cfwd Q E y)
-    c≈fwd Q E {T.sup x} {T.sup y} p = shape≈-cfwd Q (ext Q E) p
+            {x y : W Fib𝒞.∣ Q ∣ (E .ρ₁)} → W-≈ x y →
+            W-≈ (cfwd Q E x) (cfwd Q E y)
+    c≈fwd Q E {sup x} {sup y} p = shape≈-cfwd Q (ext Q E) p
 
     shape≈-cfwd : ∀ {j} (Q : Fib𝒞.Poly-C j) (E : RelAssign j) →
-                  {x y : T.⟦ Fib𝒞.∣ Q ∣ ⟧shape (E .ρ₁)} → T.shape≈ Fib𝒞.∣ Q ∣ (E .ρ₁) x y →
-                  T.shape≈ Fib𝒟.∣ P̂ Q ∣ (E .ρ₂) (shape-cfwd Q E x) (shape-cfwd Q E y)
+                  {x y : ⟦ Fib𝒞.∣ Q ∣ ⟧shape (E .ρ₁)} → shape≈ Fib𝒞.∣ Q ∣ (E .ρ₁) x y →
+                  shape≈ Fib𝒟.∣ P̂ Q ∣ (E .ρ₂) (shape-cfwd Q E x) (shape-cfwd Q E y)
     shape≈-cfwd (Poly.const A) E p = p
     shape≈-cfwd (Poly.var i)   E p = elEq-cfwd (E .rel i) p
     shape≈-cfwd (Q Poly.+ R) E {inj₁ _} {inj₁ _} p = shape≈-cfwd Q E p
@@ -171,18 +172,18 @@ module Fibrewise {N : ℕ} (δ : Fin N → F𝒞.Obj) where
     shape≈-cfwd (Q Poly.× R) E {_ , _} {_ , _} (p ,ₚ q) = shape≈-cfwd Q E p ,ₚ shape≈-cfwd R E q
     shape≈-cfwd (Poly.μ Q')  E {x} {y} p = c≈fwd Q' E {x} {y} p
 
-    elEq-cfwd : ∀ {r₁ r₂ e₁ e₂} (r : SRel r₁ r₂ e₁ e₂) {x y : T.El r₁} →
-                T.elEq r₁ x y → T.elEq r₂ (el-cfwd r x) (el-cfwd r y)
+    elEq-cfwd : ∀ {r₁ r₂ e₁ e₂} (r : SRel r₁ r₂ e₁ e₂) {x y : El r₁} →
+                elEq r₁ x y → elEq r₂ (el-cfwd r x) (el-cfwd r y)
     elEq-cfwd env p = p
     elEq-cfwd (srt (mk Q E)) {x} {y} p = c≈fwd Q E {x} {y} p
 
   mutual
     cbwd : ∀ {j} (Q : Fib𝒞.Poly-C (sucℕ j)) (E : RelAssign j) →
-           T.W Fib𝒟.∣ P̂ Q ∣ (E .ρ₂) → T.W Fib𝒞.∣ Q ∣ (E .ρ₁)
-    cbwd Q E (T.sup x) = T.sup (shape-cbwd Q (ext Q E) x)
+           W Fib𝒟.∣ P̂ Q ∣ (E .ρ₂) → W Fib𝒞.∣ Q ∣ (E .ρ₁)
+    cbwd Q E (sup x) = sup (shape-cbwd Q (ext Q E) x)
 
     shape-cbwd : ∀ {j} (Q : Fib𝒞.Poly-C j) (E : RelAssign j) →
-                 T.⟦ Fib𝒟.∣ P̂ Q ∣ ⟧shape (E .ρ₂) → T.⟦ Fib𝒞.∣ Q ∣ ⟧shape (E .ρ₁)
+                 ⟦ Fib𝒟.∣ P̂ Q ∣ ⟧shape (E .ρ₂) → ⟦ Fib𝒞.∣ Q ∣ ⟧shape (E .ρ₁)
     shape-cbwd (Poly.const A) E x = x
     shape-cbwd (Poly.var i)   E x = el-cbwd (E .rel i) x
     shape-cbwd (Q Poly.+ R) E (inj₁ x) = inj₁ (shape-cbwd Q E x)
@@ -190,19 +191,19 @@ module Fibrewise {N : ℕ} (δ : Fin N → F𝒞.Obj) where
     shape-cbwd (Q Poly.× R) E (x , y) = shape-cbwd Q E x , shape-cbwd R E y
     shape-cbwd (Poly.μ Q')  E t = cbwd Q' E t
 
-    el-cbwd : ∀ {r₁ r₂ e₁ e₂} → SRel r₁ r₂ e₁ e₂ → T.El r₂ → T.El r₁
+    el-cbwd : ∀ {r₁ r₂ e₁ e₂} → SRel r₁ r₂ e₁ e₂ → El r₂ → El r₁
     el-cbwd env x = x
     el-cbwd (srt (mk Q E)) x = cbwd Q E x
 
   mutual
     c≈bwd : ∀ {j} (Q : Fib𝒞.Poly-C (sucℕ j)) (E : RelAssign j) →
-            {x y : T.W Fib𝒟.∣ P̂ Q ∣ (E .ρ₂)} → T.W-≈ x y →
-            T.W-≈ (cbwd Q E x) (cbwd Q E y)
-    c≈bwd Q E {T.sup x} {T.sup y} p = shape≈-cbwd Q (ext Q E) p
+            {x y : W Fib𝒟.∣ P̂ Q ∣ (E .ρ₂)} → W-≈ x y →
+            W-≈ (cbwd Q E x) (cbwd Q E y)
+    c≈bwd Q E {sup x} {sup y} p = shape≈-cbwd Q (ext Q E) p
 
     shape≈-cbwd : ∀ {j} (Q : Fib𝒞.Poly-C j) (E : RelAssign j) →
-                  {x y : T.⟦ Fib𝒟.∣ P̂ Q ∣ ⟧shape (E .ρ₂)} → T.shape≈ Fib𝒟.∣ P̂ Q ∣ (E .ρ₂) x y →
-                  T.shape≈ Fib𝒞.∣ Q ∣ (E .ρ₁) (shape-cbwd Q E x) (shape-cbwd Q E y)
+                  {x y : ⟦ Fib𝒟.∣ P̂ Q ∣ ⟧shape (E .ρ₂)} → shape≈ Fib𝒟.∣ P̂ Q ∣ (E .ρ₂) x y →
+                  shape≈ Fib𝒞.∣ Q ∣ (E .ρ₁) (shape-cbwd Q E x) (shape-cbwd Q E y)
     shape≈-cbwd (Poly.const A) E p = p
     shape≈-cbwd (Poly.var i)   E p = elEq-cbwd (E .rel i) p
     shape≈-cbwd (Q Poly.+ R) E {inj₁ _} {inj₁ _} p = shape≈-cbwd Q E p
@@ -210,20 +211,20 @@ module Fibrewise {N : ℕ} (δ : Fin N → F𝒞.Obj) where
     shape≈-cbwd (Q Poly.× R) E {_ , _} {_ , _} (p ,ₚ q) = shape≈-cbwd Q E p ,ₚ shape≈-cbwd R E q
     shape≈-cbwd (Poly.μ Q')  E {x} {y} p = c≈bwd Q' E {x} {y} p
 
-    elEq-cbwd : ∀ {r₁ r₂ e₁ e₂} (r : SRel r₁ r₂ e₁ e₂) {x y : T.El r₂} →
-                T.elEq r₂ x y → T.elEq r₁ (el-cbwd r x) (el-cbwd r y)
+    elEq-cbwd : ∀ {r₁ r₂ e₁ e₂} (r : SRel r₁ r₂ e₁ e₂) {x y : El r₂} →
+                elEq r₂ x y → elEq r₁ (el-cbwd r x) (el-cbwd r y)
     elEq-cbwd env p = p
     elEq-cbwd (srt (mk Q E)) {x} {y} p = c≈bwd Q E {x} {y} p
 
   mutual
     c-fb : ∀ {j} (Q : Fib𝒞.Poly-C (sucℕ j)) (E : RelAssign j)
-           (x : T.W Fib𝒞.∣ Q ∣ (E .ρ₁)) →
-           T.W-≈ (cbwd Q E (cfwd Q E x)) x
-    c-fb Q E (T.sup x) = shape-cfb Q (ext Q E) x
+           (x : W Fib𝒞.∣ Q ∣ (E .ρ₁)) →
+           W-≈ (cbwd Q E (cfwd Q E x)) x
+    c-fb Q E (sup x) = shape-cfb Q (ext Q E) x
 
     shape-cfb : ∀ {j} (Q : Fib𝒞.Poly-C j) (E : RelAssign j)
-                (x : T.⟦ Fib𝒞.∣ Q ∣ ⟧shape (E .ρ₁)) →
-                T.shape≈ Fib𝒞.∣ Q ∣ (E .ρ₁) (shape-cbwd Q E (shape-cfwd Q E x)) x
+                (x : ⟦ Fib𝒞.∣ Q ∣ ⟧shape (E .ρ₁)) →
+                shape≈ Fib𝒞.∣ Q ∣ (E .ρ₁) (shape-cbwd Q E (shape-cfwd Q E x)) x
     shape-cfb (Poly.const A) E x = IsEquivalence.refl (Setoid.isEquivalence (A .idx))
     shape-cfb (Poly.var i)   E x = el-cfb (E .rel i) x
     shape-cfb (Q Poly.+ R) E (inj₁ x) = shape-cfb Q E x
@@ -231,19 +232,19 @@ module Fibrewise {N : ℕ} (δ : Fin N → F𝒞.Obj) where
     shape-cfb (Q Poly.× R) E (x , y) = shape-cfb Q E x ,ₚ shape-cfb R E y
     shape-cfb (Poly.μ Q')  E t = c-fb Q' E t
 
-    el-cfb : ∀ {r₁ r₂ e₁ e₂} (r : SRel r₁ r₂ e₁ e₂) (x : T.El r₁) → T.elEq r₁ (el-cbwd r (el-cfwd r x)) x
-    el-cfb (env {p}) x = T.elEq-refl (inj₁ p) x
+    el-cfb : ∀ {r₁ r₂ e₁ e₂} (r : SRel r₁ r₂ e₁ e₂) (x : El r₁) → elEq r₁ (el-cbwd r (el-cfwd r x)) x
+    el-cfb (env {p}) x = elEq-refl (inj₁ p) x
     el-cfb (srt (mk Q E)) x = c-fb Q E x
 
   mutual
     c-bf : ∀ {j} (Q : Fib𝒞.Poly-C (sucℕ j)) (E : RelAssign j)
-           (y : T.W Fib𝒟.∣ P̂ Q ∣ (E .ρ₂)) →
-           T.W-≈ (cfwd Q E (cbwd Q E y)) y
-    c-bf Q E (T.sup y) = shape-cbf Q (ext Q E) y
+           (y : W Fib𝒟.∣ P̂ Q ∣ (E .ρ₂)) →
+           W-≈ (cfwd Q E (cbwd Q E y)) y
+    c-bf Q E (sup y) = shape-cbf Q (ext Q E) y
 
     shape-cbf : ∀ {j} (Q : Fib𝒞.Poly-C j) (E : RelAssign j)
-                (y : T.⟦ Fib𝒟.∣ P̂ Q ∣ ⟧shape (E .ρ₂)) →
-                T.shape≈ Fib𝒟.∣ P̂ Q ∣ (E .ρ₂) (shape-cfwd Q E (shape-cbwd Q E y)) y
+                (y : ⟦ Fib𝒟.∣ P̂ Q ∣ ⟧shape (E .ρ₂)) →
+                shape≈ Fib𝒟.∣ P̂ Q ∣ (E .ρ₂) (shape-cfwd Q E (shape-cbwd Q E y)) y
     shape-cbf (Poly.const A) E y = IsEquivalence.refl (Setoid.isEquivalence (A .idx))
     shape-cbf (Poly.var i)   E y = el-cbf (E .rel i) y
     shape-cbf (Q Poly.+ R) E (inj₁ y) = shape-cbf Q E y
@@ -251,18 +252,18 @@ module Fibrewise {N : ℕ} (δ : Fin N → F𝒞.Obj) where
     shape-cbf (Q Poly.× R) E (x , y) = shape-cbf Q E x ,ₚ shape-cbf R E y
     shape-cbf (Poly.μ Q')  E t = c-bf Q' E t
 
-    el-cbf : ∀ {r₁ r₂ e₁ e₂} (r : SRel r₁ r₂ e₁ e₂) (y : T.El r₂) → T.elEq r₂ (el-cfwd r (el-cbwd r y)) y
-    el-cbf (env {p}) y = T.elEq-refl (inj₁ p) y
+    el-cbf : ∀ {r₁ r₂ e₁ e₂} (r : SRel r₁ r₂ e₁ e₂) (y : El r₂) → elEq r₂ (el-cfwd r (el-cbwd r y)) y
+    el-cbf (env {p}) y = elEq-refl (inj₁ p) y
     el-cbf (srt (mk Q E)) y = c-bf Q E y
 
   mutual
     fib-ciso : ∀ {j} (Q : Fib𝒞.Poly-C (sucℕ j)) (E : RelAssign j)
-               (w : T.W Fib𝒞.∣ Q ∣ (E .ρ₁)) →
+               (w : W Fib𝒞.∣ Q ∣ (E .ρ₁)) →
                𝒟.Iso (F .fobj (Fibre𝒞.fib Q (E .d₁) w)) (Fibre𝒟.fib (P̂ Q) (E .d₂) (cfwd Q E w))
-    fib-ciso Q E (T.sup x) = fib-shape-ciso Q (ext Q E) x
+    fib-ciso Q E (sup x) = fib-shape-ciso Q (ext Q E) x
 
     fib-shape-ciso : ∀ {j} (Q : Fib𝒞.Poly-C j) (E : RelAssign j)
-                     (x : T.⟦ Fib𝒞.∣ Q ∣ ⟧shape (E .ρ₁)) →
+                     (x : ⟦ Fib𝒞.∣ Q ∣ ⟧shape (E .ρ₁)) →
                      𝒟.Iso (F .fobj (Fibre𝒞.fib-shape Q (E .d₁) x))
                             (Fibre𝒟.fib-shape (P̂ Q) (E .d₂) (shape-cfwd Q E x))
     fib-shape-ciso (Poly.const A) E x = Iso-refl
@@ -277,7 +278,7 @@ module Fibrewise {N : ℕ} (δ : Fin N → F𝒞.Obj) where
                    (fib-shape-ciso R E y))))
     fib-shape-ciso (Poly.μ Q')  E t = fib-ciso Q' E t
 
-    fib-el-ciso : ∀ {r₁ r₂ e₁ e₂} (r : SRel r₁ r₂ e₁ e₂) (x : T.El r₁) →
+    fib-el-ciso : ∀ {r₁ r₂ e₁ e₂} (r : SRel r₁ r₂ e₁ e₂) (x : El r₁) →
                   𝒟.Iso (F .fobj (Fibre𝒞.fib-el r₁ e₁ x)) (Fibre𝒟.fib-el r₂ e₂ (el-cfwd r x))
     fib-el-ciso (env {p}) x = Iso-refl
     fib-el-ciso (srt (mk Q E)) x = fib-ciso Q E x
@@ -287,17 +288,17 @@ module Fibrewise {N : ℕ} (δ : Fin N → F𝒞.Obj) where
 
   mutual
     fib-cnat : ∀ {j} (Q : Fib𝒞.Poly-C (sucℕ j)) (E : RelAssign j)
-               {w w' : T.W Fib𝒞.∣ Q ∣ (E .ρ₁)} (p : T.W-≈ w w') →
+               {w w' : W Fib𝒞.∣ Q ∣ (E .ρ₁)} (p : W-≈ w w') →
                ((fib-ciso Q E w' .fwd)
                  ∘ F .fmor (Fibre𝒞.fib-subst Q (E .d₁) {x = w} {y = w'} p))
                ≈ ((Fibre𝒟.fib-subst (P̂ Q) (E .d₂)
                         {x = cfwd Q E w} {y = cfwd Q E w'}
                         (c≈fwd Q E {w} {w'} p))
                      ∘ (fib-ciso Q E w .fwd))
-    fib-cnat Q E {T.sup x} {T.sup x'} p = fib-shape-cnat Q (ext Q E) {x} {x'} p
+    fib-cnat Q E {sup x} {sup x'} p = fib-shape-cnat Q (ext Q E) {x} {x'} p
 
     fib-shape-cnat : ∀ {j} (Q : Fib𝒞.Poly-C j) (E : RelAssign j)
-                     {x x' : T.⟦ Fib𝒞.∣ Q ∣ ⟧shape (E .ρ₁)} (p : T.shape≈ Fib𝒞.∣ Q ∣ (E .ρ₁) x x') →
+                     {x x' : ⟦ Fib𝒞.∣ Q ∣ ⟧shape (E .ρ₁)} (p : shape≈ Fib𝒞.∣ Q ∣ (E .ρ₁) x x') →
                      ((fib-shape-ciso Q E x' .fwd)
                        ∘ F .fmor (Fibre𝒞.fib-shape-subst Q (E .d₁) p))
                      ≈ ((Fibre𝒟.fib-shape-subst (P̂ Q) (E .d₂) (shape≈-cfwd Q E {x} {x'} p))
@@ -336,7 +337,7 @@ module Fibrewise {N : ℕ} (δ : Fin N → F𝒞.Obj) where
                   (fib-shape-ciso R E x₂'))
     fib-shape-cnat (Poly.μ Q')  E {t} {t'} p = fib-cnat Q' E {t} {t'} p
 
-    fib-el-cnat : ∀ {r₁ r₂ e₁ e₂} (r : SRel r₁ r₂ e₁ e₂) {x x' : T.El r₁} (p : T.elEq r₁ x x') →
+    fib-el-cnat : ∀ {r₁ r₂ e₁ e₂} (r : SRel r₁ r₂ e₁ e₂) {x x' : El r₁} (p : elEq r₁ x x') →
                   ((fib-el-ciso r x' .fwd)
                     ∘ F .fmor (Fibre𝒞.fib-el-subst r₁ e₁ p))
                   ≈ ((Fibre𝒟.fib-el-subst r₂ e₂ (elEq-cfwd r {x} {x'} p))
@@ -372,7 +373,7 @@ module FibrewiseMu {n : ℕ} (P : Fib𝒞.Poly-C (sucℕ n)) (δ : Fin n → F�
   bwd-mor .famf .transf s =
     ci (Bw s) .bwd ∘
     Fibre𝒟.fib-subst (P̂ P) (E₀ .d₂) {x = s} {y = Fw (Bw s)}
-      (T.W-≈-sym {x = Fw (Bw s)} {y = s} (c-bf P E₀ s))
+      (W-≈-sym {x = Fw (Bw s)} {y = s} (c-bf P E₀ s))
   bwd-mor .famf .natural {s₁} {s₂} q =
     ≈-trans (tail-cong (≈-sym (Fibre𝒟.fib-trans* (P̂ P) (E₀ .d₂)
                                           {x = s₁} {y = s₂} {z = Fw (Bw s₂)} _ q)))
@@ -397,7 +398,7 @@ module FibrewiseMu {n : ℕ} (P : Fib𝒞.Poly-C (sucℕ n)) (δ : Fin n → F�
   bf-≃ .famf-eq .transf-eq {w} =
     ≈-trans (∘-cong₂ id-left)
       (≈-trans (∘-cong₂ (≈-trans (tail-cong (≈-sym (fib-cnat P E₀ {w} {Bw (Fw w)}
-                                                      (T.W-≈-sym {x = Bw (Fw w)} {y = w} (c-fb P E₀ w)))))
+                                                      (W-≈-sym {x = Bw (Fw w)} {y = w} (c-fb P E₀ w)))))
                                  (head-cancel (ci (Bw (Fw w)) .bwd∘fwd≈id))))
         (≈-trans (≈-sym ((FamF .fobj (Fib𝒞.μ-fam P δ)) .fam .trans*
                                   {x = w} {y = Bw (Fw w)} {z = w} _ _))
