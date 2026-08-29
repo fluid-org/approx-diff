@@ -71,10 +71,10 @@ SPmod =
   indexed-family.hasSetoidProducts 0ℓ 0ℓ SemiMod.cat
     (λ A → cones→limits (SemiMod.limits (setoid→category A)))
 
-module FE = fam-exponentials 0ℓ 0ℓ SemiMod.cat SemiMod.cmon-enriched SemiMod.biproduct SPmod
+module exp = fam-exponentials 0ℓ 0ℓ SemiMod.cat SemiMod.cmon-enriched SemiMod.biproduct SPmod
 
 SemiModExp : HasExponentials Fam⟨𝒟⟩μ.cat Fam⟨𝒟⟩μ.products
-SemiModExp = FE.exponentials
+SemiModExp = exp.exponentials
 
 -- The unit section of a function space is zero: an eliminator returning a function attaches
 -- control dependence to the root the lifting adjoins alone, matching the operational semantics,
@@ -84,14 +84,14 @@ SemiModExp = FE.exponentials
 private
   module SemiMod-cmon = CMonEnriched SemiMod.cmon-enriched
 
-exp-section : ∀ {X Y : Fam⟨𝒟⟩μ.Obj} → Fam⟨𝒟⟩μ.Section (FE._⟶_ X Y)
+exp-section : ∀ {X Y : Fam⟨𝒟⟩μ.Obj} → Fam⟨𝒟⟩μ.Section (exp._⟶_ X Y)
 exp-section {X} {Y} .Fam⟨𝒟⟩μ.at f = SemiMod-cmon.εm
 exp-section {X} {Y} .Fam⟨𝒟⟩μ.at-natural {f₁} {f₂} e =
-  SemiMod-cmon.comp-bilinear-ε₂ {SemiMod.𝕀} (FE._⟶_ X Y .Fam⟨𝒟⟩μ.fam .Fam⟨𝒟⟩μ.subst {f₁} {f₂} e)
+  SemiMod-cmon.comp-bilinear-ε₂ {SemiMod.𝕀} (exp._⟶_ X Y .Fam⟨𝒟⟩μ.fam .Fam⟨𝒟⟩μ.subst {f₁} {f₂} e)
 
 module sig-model (Sig : Signature 0ℓ) (ℐ : Interpretation S Sig) where
 
-  module IP = matrix-primitives.interp-primitives S Sig ℐ
+  module prim = matrix-primitives.interp-primitives S Sig ℐ
   module ℐ = Interpretation ℐ
 
   boolify : Fam⟨𝒞⟩μ.Mor (matrix-primitives.Fam⟨𝒞⟩-bool S) 𝒞Bool
@@ -101,7 +101,7 @@ module sig-model (Sig : Signature 0ℓ) (ℐ : Interpretation S Sig) where
       (Fam⟨𝒞⟩μ.injF {X = 𝒞𝟙ty} Fam⟨𝒞⟩μ.Fam𝒞.∘ Fam⟨𝒞⟩μ.injF {X = 𝟙F})
 
   private
-    open IP.over 𝒞Bool boolify using (model-over; arg-collect)
+    open prim.over 𝒞Bool boolify using (model-over; arg-collect)
     open indexed-family._⇒f_
 
     d' : ∀ {is} (ψ : Signature.rel Sig is)
@@ -217,10 +217,10 @@ module interp (Sig : Signature 0ℓ) (ℐ : Interpretation S Sig) where
     private
       p𝒞 = 𝒟-arg-product is .idxf .func p
       z𝒞 = SemiMod._⇒_.func (𝒟-arg-product is .famf .transf p) z
-      C = IP.collect is .Fam⟨𝒞⟩μ.famf .transf p𝒞
+      C = prim.collect is .Fam⟨𝒞⟩μ.famf .transf p𝒞
       test = Model.⟦rel⟧ 𝒟-Sig-model ω
 
-    args-idx = IP.collect is .Fam⟨𝒞⟩μ.idxf .func p𝒞
+    args-idx = prim.collect is .Fam⟨𝒞⟩μ.idxf .func p𝒞
     args-vec = app C z𝒞
 
     test-elt : ∀ b (e : Setoid._≈_ (𝒟Bool .idx) (test .idxf .func p) b) →

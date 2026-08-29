@@ -68,8 +68,8 @@ open LI public using (⟦_⟧ty; ⟦_⟧ctxt; ⟦_⟧tm; ⟦_⟧tms; ctrl-dep; u
                       preserves-unroll-ctrl-dep)
 open Section public using (at)
 
-module IP = model.sig-model.IP Sig ℐ
-open IP public using (collect)
+module prim = model.sig-model.prim Sig ℐ
+open prim public using (collect)
 open interp public using (𝒟-arg-product)
 module FC = model.Fam⟨𝒞⟩μ
 
@@ -114,7 +114,7 @@ open Setoid A public using () renaming (refl to ≈-refl; sym to ≈-sym; trans 
 open M public using (Σ-cong; Σ-unit; Σ-ε; _∘_; _+ₘ_; εₘ; ≈ₘ-refl; ≈ₘ-sym; ≈ₘ-trans; ⟨_,_⟩) renaming (Σ to Σₛ)
 
 Payload : ∀ σ τ → Ix (σ [→] τ) → Semimodule
-Payload σ τ f = model.FE._⟶_ ⟦ σ ⟧ ⟦ τ ⟧ .fam .fm f
+Payload σ τ f = model.exp._⟶_ ⟦ σ ⟧ ⟦ τ ⟧ .fam .fm f
 
 module Payload σ τ f = Semimodule (Payload σ τ f)
 

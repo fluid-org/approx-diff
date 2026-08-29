@@ -1195,10 +1195,10 @@ args-vec {is = is} Ms gi g =
         (⟦ Ms ⟧tms .famf .transf gi .func g))
 
 private
-  args-width : ∀ is → Setoid.Carrier (IP.args is .FC.idx) → ℕ
-  args-width is p = IP.args is .FC.fam .fm p
+  args-width : ∀ is → Setoid.Carrier (prim.args is .FC.idx) → ℕ
+  args-width is p = prim.args is .FC.fam .fm p
 
-  collect-cons : ∀ i is (a : Setoid.Carrier (sort-index i)) (p : Setoid.Carrier (IP.args is .FC.idx)) →
+  collect-cons : ∀ i is (a : Setoid.Carrier (sort-index i)) (p : Setoid.Carrier (prim.args is .FC.idx)) →
                  collect (i ∷ is) .FC.famf .transf (a , p) M.≈ₘ
                  ((M.in₁ {sort-width i} {bases-width is} ∘ M.p₁ {sort-width i} {args-width is p}) +ₘ
                   (M.in₂ {sort-width i} {bases-width is} ∘
@@ -1580,8 +1580,8 @@ fundamental {Γ = Γ} {τ = σ [→] τ} {γ = γ} (⇓-lam {t = t'}) {gi} rγ s
     Fλ : indexed-family.constantFam (⟦ σ ⟧ .idx) SemiMod.cat (FibC Γ gi)
            indexed-family.⇒f (⟦ τ ⟧ .fam indexed-family.[ f .idxf ])
     Fλ = indexed-family._∘f_ indexed-family.reindex-comp
-           (indexed-family._∘f_ (indexed-family.reindex-f (model.FE.nudge gi) (⟦ t' ⟧tm .famf))
-                                (model.FE.nudge-in₁ gi))
+           (indexed-family._∘f_ (indexed-family.reindex-f (model.exp.nudge gi) (⟦ t' ⟧tm .famf))
+                                (model.exp.nudge-in₁ gi))
     β = ΠP.lambda-eval {A = ⟦ σ ⟧ .idx} {P = ⟦ τ ⟧ .fam indexed-family.[ f .idxf ]} {x = FibC Γ gi} {f = Fλ} j
           .func-eq (FibC.refl Γ gi {g})
 fundamental {Γ = Γ} {τ = τ} {γ = γ}
