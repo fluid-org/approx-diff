@@ -555,9 +555,18 @@ DepRel⊑-ctrl τ {i = i} r s {o} {d} (m , (dm , h)) =
     (Fib.trans τ i (Fib.sym τ i (Fib.+-assoc τ i)) (Fib.+-cong τ i (Fib.trans τ i (Fib.+-comm τ i) dm) (Fib.refl τ i))))
     (ctrl-add τ r s h)
 
+idx-eq : ∀ {X Y : Obj} {f g : Mor X Y} → f ≃ g → ∀ x →
+         IxO._≈_ Y (f .idxf .sfunc x) (g .idxf .sfunc x)
+idx-eq {X} E x = E ._≃_.idxf-eq .prop-setoid._≃m_.func-eq {x} {x} (IxO.refl X {x})
+
+fam-eq : ∀ {X Y : Obj} {f g : Mor X Y} (E : f ≃ g) x (a : ∣ FibO X x ∣) →
+         FibO._≈_ Y (g .idxf .sfunc x)
+           (Y .fam .subst (idx-eq E x) .func (f .famf .transf x .func a)) (g .famf .transf x .func a)
+fam-eq {X} E x a = E ._≃_.famf-eq .indexed-family._≃f_.transf-eq {x} .func-eq (FibO.refl X x {a})
+
 idx-eq-at : ∀ σ τ {f f' : Ix (σ [→] τ)} → Ix._≈_ (σ [→] τ) f f' → ∀ j →
             Ix._≈_ τ (f .idxf .sfunc j) (f' .idxf .sfunc j)
-idx-eq-at σ τ E j = E ._≃_.idxf-eq .prop-setoid._≃m_.func-eq (Ix.refl σ {j})
+idx-eq-at σ τ E j = idx-eq E j
 
 ValRel-resp′ : ∀ {N} τ (p : arr-depth τ ≤ N) {v : Val τ} {i i' : Ix τ} →
                Ix._≈_ τ i i' → ValRel′ N τ p v i → ValRel′ N τ p v i'

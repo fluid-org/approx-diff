@@ -76,15 +76,6 @@ private
       (bool-idx (rel-pred ω .sfunc (args-idx Ms gi))) (rel-pred ω .sfunc-resp-≈ args-eq)
 
 private
-  idx-eq : ∀ {X Y : Obj} {f g : Mor X Y} → f ≃ g → ∀ x →
-           IxO._≈_ Y (f .idxf .sfunc x) (g .idxf .sfunc x)
-  idx-eq {X} E x = E ._≃_.idxf-eq .prop-setoid._≃m_.func-eq {x} {x} (IxO.refl X {x})
-
-  fam-eq : ∀ {X Y : Obj} {f g : Mor X Y} (E : f ≃ g) x (a : ∣ FibO X x ∣) →
-           FibO._≈_ Y (g .idxf .sfunc x)
-             (Y .fam .subst (idx-eq E x) .func (f .famf .transf x .func a)) (g .famf .transf x .func a)
-  fam-eq {X} E x a = E ._≃_.famf-eq .indexed-family._≃f_.transf-eq {x} .func-eq (FibO.refl X x {a})
-
   rec-idx : ∀ {Γ} {τ₀ : type 1} {σr : type 0} (s : Γ ▸ τ₀ [ σr ] ⊢ σr) gi (i : Ix (μ τ₀)) →
             Ix._≈_ σr
               (⟦ s ⟧tm .idxf .sfunc (gi , fold-map τ₀ σr τ₀ ⟦ s ⟧tm .idxf .sfunc (gi , unroll-mor τ₀ .idxf .sfunc i)))
