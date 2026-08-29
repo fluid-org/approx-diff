@@ -81,8 +81,7 @@ SemiModExp = exp.exponentials
 -- where a closure's control positions are its root alone (language-operational.evaluation.ctrl-of).
 -- The tuple of the target's section over every argument would instead attach it to every
 -- possible result, which no position of a closure stands for.
-private
-  open CMonEnriched SemiMod.cmon-enriched using (εm; comp-bilinear-ε₂)
+open CMonEnriched SemiMod.cmon-enriched using (εm; comp-bilinear-ε₂)
 
 exp-section : ∀ {X Y : Fam⟨𝒟⟩μ.Obj} → Fam⟨𝒟⟩μ.Section (exp._⟶_ X Y)
 exp-section {X} {Y} .Fam⟨𝒟⟩μ.at f = εm
@@ -97,8 +96,8 @@ module sig-model (Sig : Signature 0ℓ) (ℐ : Interpretation S Sig) where
   boolify : Fam⟨𝒞⟩μ.Mor (matrix-primitives.Fam⟨𝒞⟩-bool S) 𝒞Bool
   boolify =
     Fam⟨𝒞⟩μ-CP.coprod-m
-      (Fam⟨𝒞⟩μ.injF {X = 𝒞𝟙ty} Fam⟨𝒞⟩μ.Fam𝒞.∘ Fam⟨𝒞⟩μ.injF {X = 𝟙F})
-      (Fam⟨𝒞⟩μ.injF {X = 𝒞𝟙ty} Fam⟨𝒞⟩μ.Fam𝒞.∘ Fam⟨𝒞⟩μ.injF {X = 𝟙F})
+      (Fam⟨𝒞⟩μ.injF {X = 𝒞𝟙ty} Fam⟨𝒞⟩μ.Fam-cat.∘ Fam⟨𝒞⟩μ.injF {X = 𝟙F})
+      (Fam⟨𝒞⟩μ.injF {X = 𝒞𝟙ty} Fam⟨𝒞⟩μ.Fam-cat.∘ Fam⟨𝒞⟩μ.injF {X = 𝟙F})
 
   private
     open prim.over 𝒞Bool boolify using (model-over; arg-collect)
@@ -132,7 +131,7 @@ module sig-model (Sig : Signature 0ℓ) (ℐ : Interpretation S Sig) where
 
   model : Model PFPC[ Fam⟨𝒞⟩μ.cat , Fam⟨𝒞⟩μ.terminal M.terminal , Fam⟨𝒞⟩μ.products , 𝒞Bool ] Sig
   model = record model-over
-    { ⟦rel⟧ = λ {is} ψ → (rel-simple is ψ Fam⟨𝒞⟩μ.Fam𝒞.∘ arg-collect is) }
+    { ⟦rel⟧ = λ {is} ψ → (rel-simple is ψ Fam⟨𝒞⟩μ.Fam-cat.∘ arg-collect is) }
 
 module interp (Sig : Signature 0ℓ) (ℐ : Interpretation S Sig) where
 
