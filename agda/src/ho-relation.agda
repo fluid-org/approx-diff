@@ -113,7 +113,7 @@ FibC Γ i = ⟦ Γ ⟧ctxt .fam .fm i
 
 module FibC Γ i = Semimodule (FibC Γ i)
 
-open model public using (app-+; app-+ₘ; app-∘; app-εₘ; app-I; app-congₘ; app-congᵥ; app-p₁; app-p₂; app-in₁; app-in₂; app-pair; concat-+)
+open model public using (app-+; app-+ₘ; app-∘; app-εₘ; app-I; app-congₘ; app-congᵥ; app-p₁; app-p₂; app-in₁; app-in₂; app-pair; concat-pad)
   renaming (app to ap)
 open CommutativeSemiring S public using (ι; ε; +-cong; ·-cong; +-lunit; +-runit; +-comm; +-assoc; ·-lunit; ·-runit; ·-comm; ε-annihilₗ; ε-annihilᵣ)
   renaming (_≈_ to _≈s_; _+_ to _+ₛ_; _·_ to _·ₛ_)
@@ -689,13 +689,13 @@ EnvDepRel-mono (_·_ {τ = τ} rγ r) s s' (rel , h) = EnvDepRel-mono rγ s s' r
 ap-p₁-++ : ∀ {m n} (x : ∣ 𝔽 m ∣) (z : ∣ 𝔽 n ∣) k →
            ap (M.p₁ {m} {n}) (λ l → ap (M.in₁ {m} {n}) x l +ₛ ap (M.in₂ {m} {n}) z l) k ≈s x k
 ap-p₁-++ {m} {n} x z k =
-  ≈-trans (app-congᵥ (M.p₁ {m} {n}) (λ l → ≈-trans (+-cong (app-in₁ x l) (app-in₂ z l)) (concat-+ x z l)) k)
+  ≈-trans (app-congᵥ (M.p₁ {m} {n}) (λ l → ≈-trans (+-cong (app-in₁ x l) (app-in₂ z l)) (concat-pad x z l)) k)
           (≈-trans (app-p₁ {m} {n} (M.concat x z) k) (M.split₁-concat x z k))
 
 ap-p₂-++ : ∀ {m n} (x : ∣ 𝔽 m ∣) (z : ∣ 𝔽 n ∣) k →
            ap (M.p₂ {m} {n}) (λ l → ap (M.in₁ {m} {n}) x l +ₛ ap (M.in₂ {m} {n}) z l) k ≈s z k
 ap-p₂-++ {m} {n} x z k =
-  ≈-trans (app-congᵥ (M.p₂ {m} {n}) (λ l → ≈-trans (+-cong (app-in₁ x l) (app-in₂ z l)) (concat-+ x z l)) k)
+  ≈-trans (app-congᵥ (M.p₂ {m} {n}) (λ l → ≈-trans (+-cong (app-in₁ x l) (app-in₂ z l)) (concat-pad x z l)) k)
           (≈-trans (app-p₂ {m} {n} (M.concat x z) k) (M.split₂-concat x z k))
 
 ap-++-p : ∀ {m n} (w : ∣ 𝔽 (m + n) ∣) k →
@@ -812,7 +812,7 @@ ap-sub-inputs γ {m} {n} C s x o k =
                              (≈-trans (app-I (ap (M.p₁ {a} {n}) y) l) (ap-p₁-++ (inputs γ s x) o l)))
               (λ l → ≈-trans (app-∘ C (M.p₂ {a} {n}) y l) (app-congᵥ C (ap-p₂-++ (inputs γ s x) o) l)) k)
            (≈-sym (≈-trans (+-cong (app-in₁ (inputs γ s x) k) (app-in₂ (ap C o) k))
-                           (concat-+ (inputs γ s x) (ap C o) k))))
+                           (concat-pad (inputs γ s x) (ap C o) k))))
   where
   a = suc (width-env γ)
   y = map-input γ s x o
@@ -825,7 +825,7 @@ map-built γ {m} {n} G s x o k =
   ≈-trans (app-+ₘ (map-built-out γ m n) (M.in₂ {1} {n} ∘ G) y k)
   (≈-trans (+-cong (≈-trans (app-∘ (M.in₁ {1} {n}) Z y k) (app-in₁ {1} {n} (ap Z y) k))
                    (≈-trans (app-∘ (M.in₂ {1} {n}) G y k) (app-in₂ {1} {n} (ap G y) k)))
-  (≈-trans (concat-+ (ap Z y) (ap G y) k)
+  (≈-trans (concat-pad (ap Z y) (ap G y) k)
            (M.concat-preserves _≈s_ {u₁ = ap Z y} {u₂ = λ _ → (ctrl ·ₛ s) +ₛ o zero} {v₁ = ap G y} {v₂ = ap G y}
               row (λ _ → ≈-refl) k)))
   where
@@ -872,7 +872,7 @@ built {γ = γ} {n} R' s x k =
   ≈-trans (app-+ₘ (built-out γ n) (M.in₂ {1} ∘ R') y k)
   (≈-trans (+-cong (≈-trans (app-∘ (M.in₁ {1} {n}) wctrl y k) (app-in₁ {1} {n} (ap wctrl y) k))
                    (≈-trans (app-∘ (M.in₂ {1} {n}) R' y k) (app-in₂ {1} {n} (ap R' y) k)))
-  (≈-trans (concat-+ (ap wctrl y) (ap R' y) k)
+  (≈-trans (concat-pad (ap wctrl y) (ap R' y) k)
            (M.concat-preserves _≈s_ {u₁ = ap wctrl y} {u₂ = λ _ → ctrl ·ₛ s} {v₁ = ap R' y} {v₂ = ap R' y}
               (ap-wctrl {width-env γ} {1} y) (λ _ → ≈-refl) k)))
   where y = inputs γ s x

@@ -106,11 +106,11 @@ app-in₁ = Σ-in₁
 app-in₂ : ∀ {x y} (w : Vec y) (i : Fin (x +ℕ y)) → app (M.in₂ {x} {y}) w i ≈ concat {x} {y} (λ _ → ε) w i
 app-in₂ = Σ-in₂
 
-concat-+ : ∀ {x y} (u : Vec x) (w : Vec y) (i : Fin (x +ℕ y)) →
+concat-pad : ∀ {x y} (u : Vec x) (w : Vec y) (i : Fin (x +ℕ y)) →
            (concat {x} {y} u (λ _ → ε) i + concat {x} {y} (λ _ → ε) w i) ≈ concat {x} {y} u w i
-concat-+ {Nat.zero}  u w i       = +-lunit
-concat-+ {Nat.suc x} u w zero    = +-runit
-concat-+ {Nat.suc x} u w (suc i) = concat-+ {x} (λ j → u (suc j)) w i
+concat-pad {Nat.zero}  u w i       = +-lunit
+concat-pad {Nat.suc x} u w zero    = +-runit
+concat-pad {Nat.suc x} u w (suc i) = concat-pad {x} (λ j → u (suc j)) w i
 
 app-pair : ∀ {m x y} (f : Matrix x m) (g : Matrix y m) (u : Vec m) (i : Fin (x +ℕ y)) →
            app ⟨ f , g ⟩ u i ≈ concat {x} {y} (app f u) (app g u) i
@@ -118,7 +118,7 @@ app-pair {m} {x} {y} f g u i =
   trans (app-+ₘ (M.in₁ {x} {y} ∘ₘ f) (M.in₂ {x} {y} ∘ₘ g) u i)
   (trans (+-cong (trans (app-∘ (M.in₁ {x} {y}) f u i) (app-in₁ (app f u) i))
                  (trans (app-∘ (M.in₂ {x} {y}) g u i) (app-in₂ (app g u) i)))
-         (concat-+ (app f u) (app g u) i))
+         (concat-pad (app f u) (app g u) i))
 
 app-∥ : ∀ {m n k} (A : Matrix k m) (B : Matrix k n) (w : Vec (m +ℕ n)) (i : Fin k) →
         app (A ∥ B) w i ≈ (app A (split₁ {m} w) i + app B (split₂ {m} w) i)

@@ -24,7 +24,7 @@ import lifting
 open import functor using (Functor; functor-preserve-iso)
 open import finite-product-functor
   using (preserve-chosen-products; module preserve-chosen-products-consequences)
-open import prop-setoid using (Setoid; IsEquivalence; mk-≃m)
+open import prop-setoid using (Setoid; IsEquivalence; pointwise)
 open import indexed-family using (Fam)
 import fam
 import fam-functor
@@ -385,7 +385,7 @@ module FibrewiseMu {n : ℕ} (P : Fib𝒞.Poly-C (sucℕ n)) (δ : Fin n → F�
                                              {x = s₁} {y = Fw (Bw s₁)} {z = Fw (Bw s₂)} _ _)))))
 
   fb-≃ : F𝒟-cat._≈_ (F𝒟-cat._∘_ fwd-mor bwd-mor) (F𝒟-cat.id _)
-  fb-≃ .idxf-eq = mk-≃m (λ s → cmp-bf P E₀ s)
+  fb-≃ .idxf-eq = pointwise (λ s → cmp-bf P E₀ s)
   fb-≃ .famf-eq .transf-eq {s} =
     ≈-trans (∘-cong₂ id-left)
       (≈-trans (∘-cong₂ (head-cancel (ci (Bw s) .fwd∘bwd≈id)))
@@ -394,7 +394,7 @@ module FibrewiseMu {n : ℕ} (P : Fib𝒞.Poly-C (sucℕ n)) (δ : Fin n → F�
           (Fibre𝒟.fib-refl* (P̂ P) (E₀ .d₂) s)))
 
   bf-≃ : F𝒟-cat._≈_ (F𝒟-cat._∘_ bwd-mor fwd-mor) (F𝒟-cat.id _)
-  bf-≃ .idxf-eq = mk-≃m (λ w → cmp-fb P E₀ w)
+  bf-≃ .idxf-eq = pointwise (λ w → cmp-fb P E₀ w)
   bf-≃ .famf-eq .transf-eq {w} =
     ≈-trans (∘-cong₂ id-left)
       (≈-trans (∘-cong₂ (≈-trans (tail-cong (≈-sym (fib-cmp-nat P E₀ {w} {Bw (Fw w)}

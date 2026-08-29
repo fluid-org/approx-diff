@@ -1726,7 +1726,7 @@ fundamental {Γ = Γ} {γ = γ} (⇓-fold {τ = τ₀} {σ = σ} {s = s} {t = t}
          ≈-trans (app-pair M.I R y l)
          (≈-trans (M.concat-preserves _≈s_ {u₁ = ap M.I y} {u₂ = y} {v₁ = ap R y} {v₂ = ap R y}
                      (app-I y) (λ j → ≈-refl) l)
-                  (≈-sym (≈-trans (+-cong (app-in₁ y l) (app-in₂ (ap R y) l)) (concat-+ y (ap R y) l))))) k)
+                  (≈-sym (≈-trans (+-cong (app-in₁ y l) (app-in₂ (ap R y) l)) (concat-pad y (ap R y) l))))) k)
   fib-eq : Fib._≈_ σ J
              (⟦ σ ⟧ .fam .subst {IF} {J} E .func (Fib._+_ σ IF (ctrl-dep-at σ IF w) dF))
              (Fib._+_ σ J (ctrl-dep-at σ J w) (⟦ fold s t ⟧tm .famf .transf gi .func g))
