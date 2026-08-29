@@ -41,10 +41,10 @@ module language-fo-interpretation {ℓ} (Sig : Signature ℓ)
   (F-prod : preserve-chosen-products F (biproducts→products CM𝒞 BP𝒞) (biproducts→products CM𝒟 BP𝒟))
   (let module L𝒞 = lifting CM𝒞 BP𝒞 𝟙𝒞) (let module L𝒟 = lifting CM𝒟 BP𝒟 𝟙𝒟)
   (let module 𝒞 = Category 𝒞) (let module 𝒟 = Category 𝒟)
-  (F-L : ∀ X → 𝒟.Iso (Functor.fobj F (L𝒞.L X)) (L𝒟.L (Functor.fobj F X)))
+  (F-L : ∀ X → 𝒟.Iso (fobj F (L𝒞.L X)) (L𝒟.L (fobj F X)))
   (F-L-natural : ∀ {X Y} (f : X 𝒞.⇒ Y) →
-     (F-L Y .𝒟.Iso.fwd 𝒟.∘ Functor.fmor F (L𝒞.Lmap f))
-       𝒟.≈ (L𝒟.Lmap (Functor.fmor F f) 𝒟.∘ F-L X .𝒟.Iso.fwd))
+     (F-L Y .𝒟.Iso.fwd 𝒟.∘ fmor F (L𝒞.Lmap f))
+       𝒟.≈ (L𝒟.Lmap (fmor F f) 𝒟.∘ F-L X .𝒟.Iso.fwd))
   (let module Fam⟨𝒞⟩μ = fam-mu-lifting os es CM𝒞 BP𝒞 𝟙𝒞)
   (let module Fam⟨𝒟⟩μ = fam-mu-lifting os es CM𝒟 BP𝒟 𝟙𝒟)
   (𝒟E : HasExponentials Fam⟨𝒟⟩μ.cat Fam⟨𝒟⟩μ.products)
@@ -55,16 +55,18 @@ module language-fo-interpretation {ℓ} (Sig : Signature ℓ)
   (ctrl-w : 𝟙𝒟 𝒟.⇒ 𝟙𝒟)
   (𝒟-exp-section : ∀ {X Y : Fam⟨𝒟⟩μ.Obj} →
                  Fam⟨𝒟⟩μ.Section (HasExponentials.exp 𝒟E X Y))
-  (F𝟙 : 𝟙𝒟 𝒟.⇒ Functor.fobj F 𝟙𝒞)
+  (F𝟙 : 𝟙𝒟 𝒟.⇒ fobj F 𝟙𝒞)
   (𝒞𝟙ty-section : Fam⟨𝒞⟩μ.Section 𝒞𝟙ty)
   (𝒞-sort-section : ∀ s → Fam⟨𝒞⟩μ.Section (Model.⟦sort⟧ 𝒞-Sig-model s))
   where
 
 open language-syntax Sig
 
-module HR = fam-change-of-base os es T𝒞 CM𝒞 BP𝒞 𝟙𝒞 T𝒟 CM𝒟 BP𝒟 𝟙𝒟 F F-terminal F-prod F-L F-L-natural
-open HR using (Fam⟨F⟩; Fam⟨F⟩-preserves-terminal; Fam⟨F⟩-preserves-products;
-               Fam⟨F⟩-preserves-coproducts; Fam⟨F⟩-L; Fam⟨F⟩-section)
+module change-of-base = fam-change-of-base os es T𝒞 CM𝒞 BP𝒞 𝟙𝒞 T𝒟 CM𝒟 BP𝒟 𝟙𝒟 F F-terminal F-prod F-L F-L-natural
+open change-of-base using (Fam⟨F⟩; Fam⟨F⟩-preserves-terminal; Fam⟨F⟩-preserves-products;
+                           Fam⟨F⟩-preserves-coproducts; Fam⟨F⟩-L; Fam⟨F⟩-section)
+open change-of-base.bool 𝒞𝟙ty public using (Fam⟨F⟩-preserves-bool)
+open change-of-base.fibrewise using (module FibrewiseMu)
 
 private
   module Fam⟨𝒟⟩μ-cat = Category Fam⟨𝒟⟩μ.cat
@@ -116,7 +118,7 @@ module _ where
 𝒟-Sig-model =
   transport-model Sig Fam⟨F⟩ Fam⟨F⟩-preserves-terminal
     (λ {X} {Y} → Fam⟨F⟩-preserves-products {X} {Y})
-    (HR.bool.Fam⟨F⟩-preserves-bool 𝒞𝟙ty)
+    (Fam⟨F⟩-preserves-bool)
     𝒞-Sig-model
 
 -- The first of the two halves of the transported operation interpretation: an operation's
@@ -135,7 +137,7 @@ private
               (PointedFPCat.list→product PF𝒞 (Model.⟦sort⟧ 𝒞-Sig-model) σs))
 𝒟-arg-product = transport-product {𝒞 = PF𝒞} {𝒟 = PF𝒟} Sig Fam⟨F⟩ Fam⟨F⟩-preserves-terminal
   (λ {X} {Y} → Fam⟨F⟩-preserves-products {X} {Y})
-  (HR.bool.Fam⟨F⟩-preserves-bool 𝒞𝟙ty)
+  (Fam⟨F⟩-preserves-bool)
   (Model.⟦sort⟧ 𝒞-Sig-model)
 
 𝒟𝟙ty-section : Fam⟨𝒟⟩μ.Section 𝒟𝟙ty
@@ -187,7 +189,7 @@ private
       (Fam⟨𝒟⟩μ-cat.Iso-trans (Fam⟨𝒟⟩μ-cat.IsIso→Iso Fam⟨F⟩-preserves-products)
         (product-preserves-iso (⟦ fo₁ ⟧-iso δ𝒞) (⟦ fo₂ ⟧-iso δ𝒞))))
 ⟦ μ fo ⟧-iso        δ𝒞 =
-  Fam⟨𝒟⟩μ-cat.Iso-trans (HR.fibrewise.FibrewiseMu.fibrewise-μ-iso (fo-as-poly fo δ𝒞) ∅𝒞)
+  Fam⟨𝒟⟩μ-cat.Iso-trans (FibrewiseMu.fibrewise-μ-iso (fo-as-poly fo δ𝒞) ∅𝒞)
     (≡-Iso (cong (λ (Q : Poly Fam⟨𝒟⟩μ.cat 1) → Fam⟨𝒟⟩μ.μ-fam Q δ∅𝒟) (fo-poly-map-≡ fo δ𝒞)))
 
 -- At closed types the target environment is the empty one, which agrees with the image environment

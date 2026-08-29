@@ -177,7 +177,7 @@ module interp (Sig : Signature 0ℓ) (ℐ : Interpretation S Sig) where
     Lmap-elt {X} {Y} f a x = S.+-runit , Semimodule.+-lunit Y
 
     module bool-row {n} (D : M.Matrix 1 n) (y : M.Vec n) where
-      Ω = HR.bool.Fam⟨F⟩-preserves-bool 𝒞𝟙ty
+      Ω = Fam⟨F⟩-preserves-bool
 
       private
         u = app (M.in₁ {1} {1} M.∘ D) y

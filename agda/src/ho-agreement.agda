@@ -49,7 +49,7 @@ args-idx {is = is} Ms gi =
 private
   bool-idx : ∀ (b : Ix (unit [+] unit)) →
              Ix._≈_ (unit [+] unit)
-               (interp.HR.bool.Fam⟨F⟩-preserves-bool model.𝒞𝟙ty .idxf .sfunc b) b
+               (interp.Fam⟨F⟩-preserves-bool .idxf .sfunc b) b
   bool-idx (inj₁ _) = prop.tt
   bool-idx (inj₂ _) = prop.tt
 
