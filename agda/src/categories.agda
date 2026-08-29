@@ -89,6 +89,12 @@ record Category o m e : Set (suc (o ⊔ m ⊔ e)) where
                 (f ∘ ≡-to-⇒ e) ≈ (≡-to-⇒ e' ∘ g) → (g ∘ ≡-to-⇒ (≡.sym e)) ≈ (≡-to-⇒ (≡.sym e') ∘ f)
   ≡-to-⇒-conj ≡.refl ≡.refl h = ≈-trans id-right (≈-trans (≈-sym id-left) (≈-trans (≈-sym h) (≈-trans id-right (≈-sym id-left))))
 
+  ≡-to-⇒-irr : ∀ {x y} (e e' : x ≡ y) → ≡-to-⇒ e ≈ ≡-to-⇒ e'
+  ≡-to-⇒-irr ≡.refl ≡.refl = ≈-refl
+
+  ≡-to-⇒-comp : ∀ {x y z} (e₁ : x ≡ y) (e₂ : y ≡ z) → (≡-to-⇒ e₂ ∘ ≡-to-⇒ e₁) ≈ ≡-to-⇒ (≡.trans e₁ e₂)
+  ≡-to-⇒-comp ≡.refl ≡.refl = id-left
+
   inv-conj : ∀ {x y x' y'} {f : x ⇒ y} {g : y ⇒ x} {f' : x' ⇒ y'} {g' : y' ⇒ x'} {u : x ⇒ x'}
              {v : y ⇒ y'} → (f ∘ g) ≈ id y → (g' ∘ f') ≈ id x' → (v ∘ f) ≈ (f' ∘ u) → (u ∘ g) ≈ (g' ∘ v)
   inv-conj fg g'f' sq =

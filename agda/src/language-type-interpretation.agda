@@ -1935,12 +1935,6 @@ mutual
       S   = subst-fwd (sub-lift σ) τ (concat (extend {0} δ∅ X) δ)
       S⁻  = subst-bwd (sub-lift σ) τ (concat (extend {0} δ∅ X) δ)
 
-≡-to-⇒-irr : ∀ {A B : obj} (e e' : A ≡ B) → ≡-to-⇒ e ≈ ≡-to-⇒ e'
-≡-to-⇒-irr refl refl = ≈-refl
-
-≡-to-⇒-comp : ∀ {A B C : obj} (e₁ : A ≡ B) (e₂ : B ≡ C) → (≡-to-⇒ e₂ ∘ ≡-to-⇒ e₁) ≈ ≡-to-⇒ (trans e₁ e₂)
-≡-to-⇒-comp refl refl = id-left
-
 private
   ty-square : ∀ {Δ} (F G : type Δ → obj) (h : ∀ υ → F υ ⇒ G υ) {υ υ' : type Δ} (e : υ ≡ υ') →
               (h υ' ∘ ≡-to-⇒ (cong F e)) ≈ (≡-to-⇒ (cong G e) ∘ h υ)
