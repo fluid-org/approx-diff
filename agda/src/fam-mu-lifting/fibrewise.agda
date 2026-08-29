@@ -51,13 +51,13 @@ private
   module F𝒞 = fam.CategoryOfFamilies os (os ⊔ es) 𝒞
   module F𝒟 = fam.CategoryOfFamilies os (os ⊔ es) 𝒟
   module F𝒟-cat = Category F𝒟.cat
-  module Srt = fam-mu-lifting.sort os es
+  module sort = fam-mu-lifting.sort os es
   module Fib𝒞 = fam-mu-lifting.fibre os es CM𝒞 BP𝒞 𝟙𝒞
   module Fib𝒟 = fam-mu-lifting.fibre os es CM𝒟 BP𝒟 𝟙𝒟
 
 open HasProducts (biproducts→products CM𝒟 BP𝒟)
   using (prod-m-comp; prod-m-cong; product-preserves-iso)
-open Srt using (Sort; mkSort)
+open sort using (Sort; mkSort)
 open polynomial-functor using (Poly; Poly-map; extend)
 open prop-setoid._⇒_
 open Functor
@@ -101,7 +101,7 @@ private
 ℓk = o ⊔ m ⊔ e ⊔ o₂ ⊔ m₂ ⊔ e₂ ⊔ lsuc os ⊔ lsuc es
 
 module Fibrewise {N : ℕ} (δ : Fin N → F𝒞.Obj) where
-  open Srt.Tree (λ i → δ i .idx) public
+  open sort.Tree (λ i → δ i .idx) public
     using (W; W-≈; W-≈-sym; El; elEq; elEq-refl; sup; shape≈; ⟦_⟧shape)
   module Fibre𝒞 = Fib𝒞.Fibre δ
   module Fibre𝒟 = Fib𝒟.Fibre (λ i → FamF .fobj (δ i))
