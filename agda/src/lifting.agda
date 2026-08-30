@@ -53,9 +53,6 @@ in₁ {x} {y} = B.in₁ x y
 in₂ : ∀ {x y} → y ⇒ (x ⊕ y)
 in₂ {x} {y} = B.in₂ x y
 
-+m-cong : ∀ {x y} {f f' g g' : x ⇒ y} → f ≈ f' → g ≈ g' → (f +m g) ≈ (f' +m g')
-+m-cong = homCM _ _ .CommutativeMonoid.+-cong
-
 prod-m : ∀ {a₁ a₂ b₁ b₂} → a₁ ⇒ a₂ → b₁ ⇒ b₂ → (a₁ ⊕ b₁) ⇒ (a₂ ⊕ b₂)
 prod-m g h = pair (g ∘ p₁) (h ∘ p₂)
 

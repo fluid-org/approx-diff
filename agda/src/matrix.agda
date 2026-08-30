@@ -54,20 +54,10 @@ module Mat {o ℓ} {A : Setoid o ℓ} (S : CommutativeSemiring A) where
   open import prop-setoid using (IsEquivalence)
   open import categories using (Category)
 
-  module +-to-Σ
-    {p} (_~_ : Carrier → Carrier → Prop p)
-    (~-refl : ∀ {x} → x ~ x)
-    (+-preserves : ∀ {x₁ x₂ y₁ y₂} → x₁ ~ x₂ → y₁ ~ y₂ → (x₁ + y₁) ~ (x₂ + y₂))
-    where
-
-    Σ-preserves : ∀ {n} {f g : Fin n → Carrier} → (∀ i → f i ~ g i) → Σ {n} f ~ Σ {n} g
-    Σ-preserves {zero} _ = ~-refl
-    Σ-preserves {suc n} h = +-preserves (h zero) (Σ-preserves {n} (λ i → h (suc i)))
-
   Σ-cong : ∀ {n} {f g : Fin n → Carrier} → (∀ i → f i ≈ g i) → Σ {n} f ≈ Σ {n} g
-  Σ-cong = +-to-Σ.Σ-preserves _≈_ refl +-cong
+  Σ-cong {zero} _ = refl
+  Σ-cong {suc n} h = +-cong (h zero) (Σ-cong {n} (λ i → h (suc i)))
 
-  -- Equality version; not an instance of Σ-preserves, which takes Prop-valued relations.
   Σ-cong-≡ : ∀ {n} {f g : Fin n → Carrier} → (∀ i → f i ≡.≡ g i) → Σ {n} f ≡.≡ Σ {n} g
   Σ-cong-≡ {zero}  p = ≡.refl
   Σ-cong-≡ {suc n} p = ≡.cong₂ _+_ (p zero) (Σ-cong-≡ {n} (λ i → p (suc i)))

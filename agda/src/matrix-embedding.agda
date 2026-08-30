@@ -45,12 +45,7 @@ open Biproduct
 private
   module SemiMod-cat = Category SemiMod.cat
   module M-cat = Category M.cat
-  open CMonEnriched SemiMod.cmon-enriched using (_+m_; homCM; εm)
-
-  +m-cong : ∀ {X Y : Semimodule} {f f' g g' : SemiMod._⇒_ X Y} →
-            SemiMod-cat._≈_ f f' → SemiMod-cat._≈_ g g' →
-            SemiMod-cat._≈_ (_+m_ f g) (_+m_ f' g')
-  +m-cong = CommutativeMonoid.+-cong (homCM _ _)
+  open CMonEnriched SemiMod.cmon-enriched using (_+m_; homCM; εm; +m-cong)
 
 ------------------------------------------------------------------------------
 -- The action of a matrix on a vector: composition with the vector as a single column.

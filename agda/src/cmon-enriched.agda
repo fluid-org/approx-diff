@@ -29,6 +29,9 @@ record CMonEnriched {o m e} (𝒞 : Category o m e) : Set (o ⊔ m ⊔ e) where
   +m-runit : ∀ {x y} {f : x ⇒ y} → (f +m εm) ≈ f
   +m-runit = isEquiv .trans (homCM _ _ .+-comm) (homCM _ _ .+-lunit)
 
+  +m-cong : ∀ {x y} {f f' g g' : x ⇒ y} → f ≈ f' → g ≈ g' → (f +m g) ≈ (f' +m g')
+  +m-cong = homCM _ _ .+-cong
+
   field
     comp-bilinear₁ : ∀ {X Y Z} (f₁ f₂ : Y ⇒ Z) (g : X ⇒ Y) →
                      ((f₁ +m f₂) ∘ g) ≈ ((f₁ ∘ g) +m (f₂ ∘ g))
