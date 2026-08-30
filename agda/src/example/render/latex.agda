@@ -86,9 +86,16 @@ private
   tex-in : Run → (ℕ → three.Three) → String
   tex-in r f = tex-env (row→avals (λ {s} c → shw {s} c) f (env r))
 
+  entries : String → ℕ → ℕ → List (ℕ × String)
+  entries l zero    _   = []
+  entries l (suc k) off = (off , l) ∷ entries l k (suc off)
+
+  app : List (ℕ × String) → List (ℕ × String) → List (ℕ × String)
+  app []       ys = ys
+  app (x ∷ xs) ys = x ∷ app xs ys
+
   node-entry : ∀ (t : Tag) → ⊤ → ℕ → ℕ → Vec.Vec (List (ℕ × String)) (arity t) → List (ℕ × String)
-  node-entry t _ zero    off rs = concat (toList rs)
-  node-entry t _ (suc _) off rs = (off , label-of t) ∷ concat (toList rs)
+  node-entry t _ n off rs = app (entries (label-of t) n off) (concat (toList rs))
 
   reps-of : List (AVal ⊤) → List (ℕ × String)
   reps-of ts = concat (fold-all node-entry 0 ts)
@@ -96,23 +103,30 @@ private
   tex-label : String → String
   tex-label l = if l == "∷" then "$\\cons$" else l
 
-  bslice fslice : Run → ℕ × String → String
-  bslice r (q , l) =
-    "\\slice{$\\leftarrow$ " ++ ℕ-Show.show q ++ " (" ++ tex-label l ++ ")}{"
-    ++ tex-out r (δ q) ++ "}{" ++ tex-in r (at (nth q (rows (model-of r)))) ++ "}\n"
-  fslice r (p , l) =
-    "\\slice{$\\rightarrow$ " ++ ℕ-Show.show p ++ " (" ++ tex-label l ++ ")}{"
-    ++ tex-in r (δ p) ++ "}{" ++ tex-out r (at (nth p (rows (model-of r M3.ᵀ)))) ++ "}\n"
+  bpair fpair : Run → ℕ × String → String × String
+  bpair r (q , l) =
+    ("$\\leftarrow$ " ++ ℕ-Show.show q ++ " (" ++ tex-label l ++ ")") ,
+    ("{" ++ tex-out r (δ q) ++ "}{" ++ tex-in r (at (nth q (rows (model-of r)))) ++ "}")
+  fpair r (p , l) =
+    ("$\\rightarrow$ " ++ ℕ-Show.show p ++ " (" ++ tex-label l ++ ")") ,
+    ("{" ++ tex-in r (δ p) ++ "}{" ++ tex-out r (at (nth p (rows (model-of r M3.ᵀ)))) ++ "}")
 
-  cat : List String → String
-  cat []       = ""
-  cat (s ∷ ss) = s ++ cat ss
+  line : String → String → String
+  line l b = "\\slice{" ++ l ++ "}" ++ b ++ "\n"
+
+  collapse : List (String × String) → String
+  collapse []             = ""
+  collapse ((l , b) ∷ xs) = go l b xs
+    where
+    go : String → String → List (String × String) → String
+    go l b []               = line l b
+    go l b ((l' , b') ∷ xs) = if b == b' then go l b xs else line l b ++ go l' b' xs
 
   catalogue : String → Run → String
   catalogue name r =
     "\\run{" ++ name ++ "}\n"
-    ++ cat (map (bslice r) (reps-of (shape-of (λ {s} c → shw {s} c) (model-output r) ∷ [])))
-    ++ cat (map (fslice r) (reps-of (shape-env-of (λ {s} c → shw {s} c) (env r))))
+    ++ collapse (map (bpair r) (reps-of (shape-of (λ {s} c → shw {s} c) (model-output r) ∷ [])))
+    ++ collapse (map (fpair r) (reps-of (shape-env-of (λ {s} c → shw {s} c) (env r))))
 
 contents : String
 contents =
