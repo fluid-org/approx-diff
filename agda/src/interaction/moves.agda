@@ -711,18 +711,21 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
               (AllP.All-swap (All-map AllP.concat⁻ cross))
       ∷ concat-distinct Css aCss
 
+    visible-hidden-split : (K : Config 𝒢) → Summarised K →
+                           AllPairs _≢_ (K .visible) × AllPairs _≢_ (hidden-set K) ×
+                             All (λ p → All (p ≢_) (hidden-set K)) (K .visible)
+    visible-hidden-split K S = AllPairs-++⁻ (K .visible) (hidden-set K) (partition-distinct K (S .partition))
+
     visible-not-hidden : (K : Config 𝒢) → Summarised K → ∀ {p} → p ∈ K .visible → p ∉ hidden-set K
     visible-not-hidden K S {p} pv k =
-      All-lookup (All-lookup (proj₂ (proj₂ (AllPairs-++⁻ (K .visible) (hidden-set K)
-                                              (partition-distinct K (S .partition)))))
+      All-lookup (All-lookup (proj₂ (proj₂ (visible-hidden-split K S)))
                              pv)
                  k ≡-refl
 
   summarised-distinct : (K : Config 𝒢) → Summarised K → AllPairs Distinct (map proj₁ (K .hidden))
   summarised-distinct K S =
     concat-distinct (map proj₁ (K .hidden))
-      (proj₁ (proj₂ (AllPairs-++⁻ (K .visible) (hidden-set K)
-                                  (partition-distinct K (S .partition)))))
+      (proj₁ (proj₂ (visible-hidden-split K S)))
 
   hide-at-partition : (p : Path) (K : Config 𝒢) → Summarised K →
                       p ∈ K .visible →
@@ -731,8 +734,7 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
     ↭-trans (++⁺ ↭-refl (hide-at-hidden-set p K))
     (↭-trans (shift p (hide-at p K .visible) (hidden-set K))
     (↭-trans (++⁺ (filter-out-↭ (_≟_ {shape})
-                    (proj₁ (AllPairs-++⁻ (K .visible) (hidden-set K)
-                                         (partition-distinct K (S .partition))))
+                    (proj₁ (visible-hidden-split K S))
                     pv)
                   ↭-refl)
              (S .partition)))
@@ -812,8 +814,7 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
     ↭-trans (↭-sym (shift p (K .visible) (hidden-set (reveal-at p K))))
     (↭-trans (++⁺ ↭-refl
                 (reveal-set p (K .hidden)
-                   (proj₁ (proj₂ (AllPairs-++⁻ (K .visible) (hidden-set K)
-                                               (partition-distinct K (S .partition)))))
+                   (proj₁ (proj₂ (visible-hidden-split K S)))
                    (hidden-∈ K hp)))
              (S .partition))
 
@@ -870,8 +871,7 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
                         reveal-at p (hide-at p K) .visible ↭ K .visible
   hide-reveal-visible p K S pv =
     filter-out-↭ (_≟_ {shape})
-                 (proj₁ (AllPairs-++⁻ (K .visible) (hidden-set K)
-                                      (partition-distinct K (S .partition))))
+                 (proj₁ (visible-hidden-split K S))
                  pv
 
   hide-reveal-hidden-set : (p : Path) (K : Config 𝒢) → Summarised K →
@@ -891,8 +891,7 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
                          p ∈ hidden-set K →
                          p ∉ K .visible
     hidden-not-visible K S {p} hp k =
-      All-lookup (All-lookup (proj₂ (proj₂ (AllPairs-++⁻ (K .visible) (hidden-set K)
-                                              (partition-distinct K (S .partition)))))
+      All-lookup (All-lookup (proj₂ (proj₂ (visible-hidden-split K S)))
                              k)
                  hp ≡-refl
 
@@ -911,8 +910,7 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
   reveal-hide-hidden-set p K S hp =
     ↭-trans (hide-at-hidden-set p (reveal-at p K))
             (reveal-set p (K .hidden)
-               (proj₁ (proj₂ (AllPairs-++⁻ (K .visible) (hidden-set K)
-                                           (partition-distinct K (S .partition)))))
+               (proj₁ (proj₂ (visible-hidden-split K S)))
                (hidden-∈ K hp))
 
   private
@@ -1200,7 +1198,7 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
     notp = p ≢?_
 
     distinct-hs : AllPairs _≢_ (hidden-set K)
-    distinct-hs = proj₁ (proj₂ (AllPairs-++⁻ (K .visible) (hidden-set K) (partition-distinct K (S .partition))))
+    distinct-hs = proj₁ (proj₂ (visible-hidden-split K S))
 
     hrev : hidden-set (reveal-at p K) ↭ filter notp (hidden-set K)
     hrev = drop-∷
