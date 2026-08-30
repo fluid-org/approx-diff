@@ -1790,6 +1790,11 @@ fundamental-s {γ = γ} (_∷_ {i = i} {is = is} {v = v} {R = R₁} {Rs = Rs} {M
   IH₂ : ∀ l → ap Rs (inputs γ s x) l ≈s ((ctrl ·ₛ s) +ₛ (args-vec Ms gi g) l)
   IH₂ = fundamental-s Ds rγ s x g rel
 
+unroll-roll-idx : ∀ τ (i : Ix (τ [ μ τ ])) →
+                  Ix._≈_ (τ [ μ τ ]) i (unroll-mor τ .idxf .sfunc (roll-mor τ .idxf .sfunc i))
+unroll-roll-idx τ i =
+  Ix.sym (τ [ μ τ ]) {unroll-mor τ .idxf .sfunc (roll-mor τ .idxf .sfunc i)} {i} (idx-eq (unroll-roll τ) i)
+
 val-rel : ∀ {τ} (fo : first-order τ) (v : Val τ) → ValRel τ v (val-idx v)
 val-rel unit          unit       = tt
 val-rel (base s)      (const a)  = ⟪ Setoid.refl (sort-index s) ⟫
@@ -1801,7 +1806,7 @@ val-rel {τ₁ [×] τ₂} (fo₁ [×] fo₂) (pair v u) =
   ValRel-at-bound τ₁ (val-rel fo₁ v) , ValRel-at-bound τ₂ (val-rel fo₂ u)
 val-rel {μ τ} (μ fo) (roll v) =
   ValRel-resp′ (τ [ μ τ ]) (bound-μ τ ≤-refl) {v} {i} {unroll-mor τ .idxf .sfunc (roll-mor τ .idxf .sfunc i)}
-    (Ix.sym (τ [ μ τ ]) {unroll-mor τ .idxf .sfunc (roll-mor τ .idxf .sfunc i)} {i} (idx-eq (unroll-roll τ) i))
+    (unroll-roll-idx τ i)
     (ValRel-at-bound (τ [ μ τ ]) (val-rel (fo-inst fo (μ fo)) v))
   where i = val-idx v
 
@@ -2116,7 +2121,7 @@ val-idx-inj (fo₁ [×] fo₂) {pair v u} {pair v' u'} (e₁ , e₂) = pair (val
 val-idx-inj {μ τ} (μ fo)  {roll v}   {roll v'}    e =
   roll (val-idx-inj fo′ {v} {v'}
     (Ix.trans (τ [ μ τ ]) {i} {unroll-mor τ .idxf .sfunc (roll-mor τ .idxf .sfunc i)} {i'}
-      (Ix.sym (τ [ μ τ ]) {unroll-mor τ .idxf .sfunc (roll-mor τ .idxf .sfunc i)} {i} (idx-eq (unroll-roll τ) i))
+      (unroll-roll-idx τ i)
       (Ix.trans (τ [ μ τ ]) {unroll-mor τ .idxf .sfunc (roll-mor τ .idxf .sfunc i)}
                             {unroll-mor τ .idxf .sfunc (roll-mor τ .idxf .sfunc i')} {i'}
         (unroll-mor τ .idxf .sfunc-resp-≈ {roll-mor τ .idxf .sfunc i} {roll-mor τ .idxf .sfunc i'} e)
