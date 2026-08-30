@@ -143,6 +143,22 @@ private
       e₀ : Ix._≈_ (μ τμ) b i
       e₀ = Ix.trans (μ τμ) {b} {roll-mor τμ .idxf .sfunc iu} {i} Er (idx-eq (roll-unroll τμ) i)
 
+  module PairShape {Γ} (τ₀ : type 1) (σr : type 0) (s : Γ ▸ τ₀ [ σr ] ⊢ σr) (σ₁ σ₂ : type 1) where
+    τ× = (σ₁ [×] σ₂) [ σr ]
+    τμ = (σ₁ [×] σ₂) [ μ τ₀ ]
+    F× = fold-map τ₀ σr (σ₁ [×] σ₂) ⟦ s ⟧tm
+    F₁ = fold-map τ₀ σr σ₁ ⟦ s ⟧tm
+    F₂ = fold-map τ₀ σr σ₂ ⟦ s ⟧tm
+
+    module Idx (gi : IxC Γ) (i : Ix ((σ₁ [×] σ₂) [ μ τ₀ ])) where
+      i₁ = proj₁ i
+      i₂ = proj₂ i
+      I× = F× .idxf .sfunc (gi , i)
+      I₁ = F₁ .idxf .sfunc (gi , i₁)
+      I₂ = F₂ .idxf .sfunc (gi , i₂)
+      E : Ix._≈_ τ× I× (I₁ , I₂)
+      E = pair-idx {τ₀ = τ₀} s σ₁ σ₂ gi i
+
   mu-idx : ∀ {Γ} {τ₀ : type 1} {σr : type 0} (s : Γ ▸ τ₀ [ σr ] ⊢ σr) (τ' : type 2) gi (i : Ix ((μ τ') [ μ τ₀ ])) →
            let τμ = τ' [ μ τ₀ ]₁
                τₛ = τ' [ σr ]₁
@@ -600,18 +616,15 @@ private
     (Fib.trans τ× J (strong-Lmap-elt (SP .famf .transf (gi , i)) g (proj₁ e) (proj₂ e))
       (≈-refl , payload)))
     where
-    τ× = (σ₁ [×] σ₂) [ σr ]
-    τμ = (σ₁ [×] σ₂) [ μ τ₀ ]
-    F× = fold-map τ₀ σr (σ₁ [×] σ₂) ⟦ s ⟧tm
-    F₁ = fold-map τ₀ σr σ₁ ⟦ s ⟧tm
-    F₂ = fold-map τ₀ σr σ₂ ⟦ s ⟧tm
+    open PairShape τ₀ σr s σ₁ σ₂
+    open Idx gi i
     X₁ = ⟦ σ₁ [ μ τ₀ ] ⟧
     X₂ = ⟦ σ₂ [ μ τ₀ ] ⟧
     Y₁ = ⟦ σ₁ [ σr ] ⟧
     Y₂ = ⟦ σ₂ [ σr ] ⟧
     Dom = Fam-P.prod ⟦ Γ ⟧ctxt ⟦ τμ ⟧
     Dom₀ = Fam-P.prod ⟦ Γ ⟧ctxt (Fam-P.prod X₁ X₂)
-    J = (F₁ .idxf .sfunc (gi , proj₁ i) , F₂ .idxf .sfunc (gi , proj₂ i))
+    J = (I₁ , I₂)
     SP = Fam-P.strong-prod-m {⟦ Γ ⟧ctxt} {X₁} {X₂} {Y₁} {Y₂} F₁ F₂
     SP₁ = Fam-P.strong-p₁ {⟦ Γ ⟧ctxt} {X₁} {X₂}
     SP₂ = Fam-P.strong-p₂ {⟦ Γ ⟧ctxt} {X₁} {X₂}
@@ -669,22 +682,12 @@ map-dep-pair {γ = γ} {τ₀} {σr} {s} IHv {σ₁} {σ₂} {v} {v'} {u} {u'} {
      (DepRel-transport⁻ (σ₂ [ σr ]) (proj₂ E) rv₂ ed₂
         (DepRel-resp (σ₂ [ σr ]) rv₂ (λ k → ≈-sym (comp₂ k)) (Fib.refl (σ₂ [ σr ]) I₂) (IHM₂ r₂' o₂ e₂ h₂'))))
   where
-  τ× = (σ₁ [×] σ₂) [ σr ]
-  τμ = (σ₁ [×] σ₂) [ μ τ₀ ]
-  F× = fold-map τ₀ σr (σ₁ [×] σ₂) ⟦ s ⟧tm
-  F₁ = fold-map τ₀ σr σ₁ ⟦ s ⟧tm
-  F₂ = fold-map τ₀ σr σ₂ ⟦ s ⟧tm
-  i₁ = proj₁ i
-  i₂ = proj₂ i
+  open PairShape τ₀ σr s σ₁ σ₂
+  open Idx gi i
   r₁' = ValRel-at-bound (σ₁ [ μ τ₀ ]) r₁
   r₂' = ValRel-at-bound (σ₂ [ μ τ₀ ]) r₂
   rv₁ = map-val IHv M₁ rγ r₁'
   rv₂ = map-val IHv M₂ rγ r₂'
-  I× = F× .idxf .sfunc (gi , i)
-  I₁ = F₁ .idxf .sfunc (gi , i₁)
-  I₂ = F₂ .idxf .sfunc (gi , i₂)
-  E : Ix._≈_ τ× I× (I₁ , I₂)
-  E = pair-idx {τ₀ = τ₀} s σ₁ σ₂ gi i
   E⁻ = Ix.sym τ× {I×} {I₁ , I₂} E
   e₁ = proj₁ (proj₂ e)
   e₂ = proj₂ (proj₂ e)
