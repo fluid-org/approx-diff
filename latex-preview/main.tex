@@ -1,0 +1,15 @@
+\documentclass[border=8pt]{standalone}
+\usepackage{xcolor}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\newcommand{\posD}[1]{\textcolor{black}{#1}}
+\newcommand{\posC}[1]{\textcolor{orange!85!black}{#1}}
+\newcommand{\posO}[1]{\textcolor{gray!45}{#1}}
+\newcommand{\cons}{\mathbin{\boldsymbol{::}}}
+\newcommand{\slice}[3]{%
+  \makebox[15em][l]{\small #1}&$#2$&$\;\longmapsto\;$&$#3$\\[0.6em]}
+\begin{document}
+\begin{tabular}{lrcl}
+\input{slices}
+\end{tabular}
+\end{document}
