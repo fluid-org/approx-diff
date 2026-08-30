@@ -46,8 +46,7 @@ preserve-fp→FPFunctor : preserve-limits-of-shape empty-diagram.cat F →
 preserve-fp→FPFunctor preserve-empty preserve-product .FPFunctor.preserve-terminal = mk-preserve-terminal preserve-empty
 preserve-fp→FPFunctor preserve-empty preserve-product .FPFunctor.preserve-products = mk-preserve-products preserve-product
 
-continuous→FPFunctor : (∀ (𝒮 : Category 0ℓ 0ℓ 0ℓ) → preserve-limits-of-shape 𝒮 F) →
-                       FPFunctor
+continuous→FPFunctor : (∀ (𝒮 : Category 0ℓ 0ℓ 0ℓ) → preserve-limits-of-shape 𝒮 F) → FPFunctor
 continuous→FPFunctor preserve-all = preserve-fp→FPFunctor (preserve-all _) (preserve-all _)
 
 module _ (𝒞T : HasTerminal 𝒞) (𝒟T : HasTerminal 𝒟) where
@@ -137,8 +136,8 @@ module _ (𝒞P : HasProducts 𝒞) (𝒟P : HasProducts 𝒟) where
       ∎
       where open ≈-Reasoning 𝒟.isEquiv
 
-    F-p₁' : ∀ {x y} → F.fmor (𝒞P.p₁ {x} {y}) 𝒟.≈ (𝒟P.p₁ 𝒟.∘ mul⁻¹)
-    F-p₁' {x} {y} = 𝒟.≈-sym (𝒟P.pair-p₁ _ _)
+    F-p₁-inv : ∀ {x y} → F.fmor (𝒞P.p₁ {x} {y}) 𝒟.≈ (𝒟P.p₁ 𝒟.∘ mul⁻¹)
+    F-p₁-inv {x} {y} = 𝒟.≈-sym (𝒟P.pair-p₁ _ _)
 
     F-p₂ : ∀ {x y} → (F.fmor (𝒞P.p₂ {x} {y}) 𝒟.∘ mul) 𝒟.≈ 𝒟P.p₂
     F-p₂ {x} {y} = begin

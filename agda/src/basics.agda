@@ -39,8 +39,7 @@ module _ {a} {A : Set a} where
     ≃-sym (x≤y , y≤x) = y≤x , x≤y
 
     ≃-trans : ∀ {x y z} → x ≃ y → y ≃ z → x ≃ z
-    ≃-trans (x≤y , y≤x) (y≤z , z≤y) =
-      (trans x≤y y≤z) , (trans z≤y y≤x)
+    ≃-trans (x≤y , y≤x) (y≤z , z≤y) = (trans x≤y y≤z) , (trans z≤y y≤x)
 
     isEquivalence : IsEquivalence _≃_
     isEquivalence .IsEquivalence.refl = ≃-refl
@@ -60,28 +59,16 @@ module ≤-Reasoning {o i} {A : Set o} {_≤_ : A → A → Prop i} (isPreorder 
   infixr 2 _≤⟨_⟩_ _≡⟨⟩_
   infix  4 _∎
 
-  begin_ : ∀ {x y : A}
-    → x ≤ y
-      -----
-    → x ≤ y
+  begin_ : ∀ {x y : A} → x ≤ y → x ≤ y
   begin x≤y  =  x≤y
 
-  _≡⟨⟩_ : ∀ (x : A) {y : A}
-    → x ≤ y
-      -----
-    → x ≤ y
+  _≡⟨⟩_ : ∀ (x : A) {y : A} → x ≤ y → x ≤ y
   x ≡⟨⟩ x≤y = x≤y
 
-  _≤⟨_⟩_ : ∀ (x : A) {y z : A}
-    → x ≤ y
-    → y ≤ z
-      -----
-    → x ≤ z
+  _≤⟨_⟩_ : ∀ (x : A) {y z : A} → x ≤ y → y ≤ z → x ≤ z
   x ≤⟨ x≤y ⟩ y≤z  =  isPreorder .trans x≤y y≤z
 
-  _∎ : ∀ (x : A)
-      -----
-    → x ≤ x
+  _∎ : ∀ (x : A) → x ≤ x
   x ∎  =  isPreorder .refl
 
 module _ {a b} {A : Set a} {_≤_ : A → A → Prop b} (≤-isPreorder : IsPreorder _≤_) where
@@ -101,12 +88,9 @@ module _ {a b} {A : Set a} {_≤_ : A → A → Prop b} (≤-isPreorder : IsPreo
       runit : ∀ {x} → x ∙ ε ≃ x
 
     cong : ∀ {x₁ y₁ x₂ y₂} → x₁ ≃ x₂ → y₁ ≃ y₂ → (x₁ ∙ y₁) ≃ (x₂ ∙ y₂)
-    cong eq₁ eq₂ =
-      mono (eq₁ .proj₁) (eq₂ .proj₁) ,
-      mono (eq₁ .proj₂) (eq₂ .proj₂)
+    cong eq₁ eq₂ = mono (eq₁ .proj₁) (eq₂ .proj₁) , mono (eq₁ .proj₂) (eq₂ .proj₂)
 
-    interchange : (∀ {x y} → (x ∙ y) ≤ (y ∙ x)) →
-                  ∀ {w x y z} → ((w ∙ x) ∙ (y ∙ z)) ≃ ((w ∙ y) ∙ (x ∙ z))
+    interchange : (∀ {x y} → (x ∙ y) ≤ (y ∙ x)) → ∀ {w x y z} → ((w ∙ x) ∙ (y ∙ z)) ≃ ((w ∙ y) ∙ (x ∙ z))
     interchange sym {w} {x} {y} {z} =
       begin
         (w ∙ x) ∙ (y ∙ z)
@@ -272,8 +256,7 @@ module _ {a b} {A : Set a} {_≤_ : A → A → Prop b} (≤-isPreorder : IsPreo
     open IsJoin isJoin
 
     ∙-∨-distrib : ∀ {x y z} → (x ∙ (y ∨ z)) ≤ ((x ∙ y) ∨ (x ∙ z))
-    ∙-∨-distrib =
-      trans ∙-sym (lambda⁻¹ [ lambda (trans ∙-sym inl) , lambda (trans ∙-sym inr) ])
+    ∙-∨-distrib = trans ∙-sym (lambda⁻¹ [ lambda (trans ∙-sym inl) , lambda (trans ∙-sym inr) ])
 
   ------------------------------------------------------------------------------
   -- *-autonomous categories and all their structure

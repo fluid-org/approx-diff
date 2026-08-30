@@ -29,8 +29,8 @@ module _ {o₁ m₁ e₁ o₂ m₂ e₂}
     module 𝒟 = Category 𝒟
     module Fam𝒞 = CategoryOfFamilies os es 𝒞
     module Fam𝒟 = CategoryOfFamilies os es 𝒟
-    module Fam𝒞C = Category Fam𝒞.cat
-    module Fam𝒟C = Category Fam𝒟.cat
+    module Fam𝒞-cat = Category Fam𝒞.cat
+    module Fam𝒟-cat = Category Fam𝒟.cat
 
   open Fam
   open _⇒f_
@@ -158,11 +158,26 @@ module _ {o₁ m₁ e₁ o₂ m₂ e₂}
 
   open import finite-coproduct-functor
   open import Data.Sum using (inj₁; inj₂)
-  module SCP = HasCoproducts (Setoid-coproducts os es)
-  module SP = HasProducts (Setoid-products os es)
-  module ST = HasTerminal (Setoid-terminal os es)
+  open HasCoproducts (Setoid-coproducts os es) using (copair-ext0)
+  open HasProducts (Setoid-products os es) using (pair-ext0)
+  open HasTerminal (Setoid-terminal os es) using (to-terminal-unique)
 
   open Category.IsIso
+
+  private
+    fmor-subst-unit₁ : ∀ (Z : Fam𝒞.Obj) {x} {e : prop-setoid.Setoid._≈_ (Z .idx) x x} →
+                       (F .fmor (Z .fam .subst e) 𝒟.∘ (𝒟.id _ 𝒟.∘ (F .fmor (𝒞.id (Z .fam .fm x)) 𝒟.∘ 𝒟.id _)))
+                         𝒟.≈ 𝒟.id _
+    fmor-subst-unit₁ Z =
+      𝒟.≈-trans (𝒟.∘-cong (F .fmor-cong (Z .fam .refl*)) 𝒟.id-left)
+                (𝒟.≈-trans (𝒟.∘-cong (F .fmor-id) (𝒟.∘-cong (F .fmor-id) 𝒟.≈-refl)) (𝒟.≈-trans 𝒟.id-left 𝒟.id-left))
+
+    fmor-subst-unit₂ : ∀ (Z : Fam𝒞.Obj) {x} {e : prop-setoid.Setoid._≈_ (Z .idx) x x} →
+                       (F .fmor (Z .fam .subst e) 𝒟.∘ (𝒟.id _ 𝒟.∘ (𝒟.id _ 𝒟.∘ F .fmor (𝒞.id (Z .fam .fm x)))))
+                         𝒟.≈ 𝒟.id _
+    fmor-subst-unit₂ Z =
+      𝒟.≈-trans (𝒟.∘-cong (F .fmor-cong (Z .fam .refl*)) 𝒟.id-left)
+                (𝒟.≈-trans (𝒟.∘-cong (F .fmor-id) (𝒟.∘-cong 𝒟.≈-refl (F .fmor-id))) (𝒟.≈-trans 𝒟.id-left 𝒟.id-left))
 
   preserve-coproducts : preserve-chosen-coproducts FamF Fam𝒞.coproducts Fam𝒟.coproducts
   preserve-coproducts .inverse .idxf = idS _
@@ -170,56 +185,12 @@ module _ {o₁ m₁ e₁ o₂ m₂ e₂}
   preserve-coproducts .inverse .famf .transf (inj₂ y) = 𝒟.id _
   preserve-coproducts .inverse .famf .natural {inj₁ x} {inj₁ x₁} e = 𝒟.id-swap
   preserve-coproducts .inverse .famf .natural {inj₂ y} {inj₂ y₁} e = 𝒟.id-swap
-  preserve-coproducts .f∘inverse≈id .idxf-eq = ≈s-isEquivalence .trans prop-setoid.id-right SCP.copair-ext0
-  preserve-coproducts {X} {Y} .f∘inverse≈id .famf-eq .transf-eq {inj₁ x} = begin
-      F .fmor (X .fam .subst _) 𝒟.∘ (𝒟.id _ 𝒟.∘ (F .fmor (𝒞.id _) 𝒟.∘ 𝒟.id _))
-    ≈⟨ 𝒟.∘-cong (F .fmor-cong (X .fam .refl*)) 𝒟.id-left ⟩
-      F .fmor (𝒞.id _) 𝒟.∘ (F .fmor (𝒞.id _) 𝒟.∘ 𝒟.id _)
-    ≈⟨ 𝒟.∘-cong (F .fmor-id) (𝒟.∘-cong (F .fmor-id) 𝒟.≈-refl) ⟩
-      𝒟.id _ 𝒟.∘ (𝒟.id _ 𝒟.∘ 𝒟.id _)
-    ≈⟨ 𝒟.id-left ⟩
-      𝒟.id _ 𝒟.∘ 𝒟.id _
-    ≈⟨ 𝒟.id-left ⟩
-      𝒟.id _
-    ∎
-    where open ≈-Reasoning 𝒟.isEquiv
-  preserve-coproducts {X} {Y} .f∘inverse≈id .famf-eq .transf-eq {inj₂ y} = begin
-      F .fmor (Y .fam .subst _) 𝒟.∘ (𝒟.id _ 𝒟.∘ (F .fmor (𝒞.id _) 𝒟.∘ 𝒟.id _))
-    ≈⟨ 𝒟.∘-cong (F .fmor-cong (Y .fam .refl*)) 𝒟.id-left ⟩
-      F .fmor (𝒞.id _) 𝒟.∘ (F .fmor (𝒞.id _) 𝒟.∘ 𝒟.id _)
-    ≈⟨ 𝒟.∘-cong (F .fmor-id) (𝒟.∘-cong (F .fmor-id) 𝒟.≈-refl) ⟩
-      𝒟.id _ 𝒟.∘ (𝒟.id _ 𝒟.∘ 𝒟.id _)
-    ≈⟨ 𝒟.id-left ⟩
-      𝒟.id _ 𝒟.∘ 𝒟.id _
-    ≈⟨ 𝒟.id-left ⟩
-      𝒟.id _
-    ∎
-    where open ≈-Reasoning 𝒟.isEquiv
-  preserve-coproducts {X} {Y} .inverse∘f≈id .idxf-eq = ≈s-isEquivalence .trans prop-setoid.id-left SCP.copair-ext0
-  preserve-coproducts {X} {Y} .inverse∘f≈id .famf-eq .transf-eq {inj₁ x} = begin
-      F .fmor (X .fam .subst _) 𝒟.∘ (𝒟.id _ 𝒟.∘ (𝒟.id _ 𝒟.∘ F .fmor (𝒞.id _)))
-    ≈⟨ 𝒟.∘-cong (F .fmor-cong (X .fam .refl*)) 𝒟.id-left ⟩
-      F .fmor (𝒞.id _) 𝒟.∘ (𝒟.id _ 𝒟.∘ F .fmor (𝒞.id _))
-    ≈⟨ 𝒟.∘-cong (F .fmor-id) (𝒟.∘-cong 𝒟.≈-refl (F .fmor-id)) ⟩
-      𝒟.id _ 𝒟.∘ (𝒟.id _ 𝒟.∘ 𝒟.id _)
-    ≈⟨ 𝒟.id-left ⟩
-      𝒟.id _ 𝒟.∘ 𝒟.id _
-    ≈⟨ 𝒟.id-left ⟩
-      𝒟.id _
-    ∎
-    where open ≈-Reasoning 𝒟.isEquiv
-  preserve-coproducts {X} {Y} .inverse∘f≈id .famf-eq .transf-eq {inj₂ y} = begin
-      F .fmor (Y .fam .subst _) 𝒟.∘ (𝒟.id _ 𝒟.∘ (𝒟.id _ 𝒟.∘ F .fmor (𝒞.id _)))
-    ≈⟨ 𝒟.∘-cong (F .fmor-cong (Y .fam .refl*)) 𝒟.id-left ⟩
-      F .fmor (𝒞.id _) 𝒟.∘ (𝒟.id _ 𝒟.∘ F .fmor (𝒞.id _))
-    ≈⟨ 𝒟.∘-cong (F .fmor-id) (𝒟.∘-cong 𝒟.≈-refl (F .fmor-id)) ⟩
-      𝒟.id _ 𝒟.∘ (𝒟.id _ 𝒟.∘ 𝒟.id _)
-    ≈⟨ 𝒟.id-left ⟩
-      𝒟.id _ 𝒟.∘ 𝒟.id _
-    ≈⟨ 𝒟.id-left ⟩
-      𝒟.id _
-    ∎
-    where open ≈-Reasoning 𝒟.isEquiv
+  preserve-coproducts .f∘inverse≈id .idxf-eq = ≈s-isEquivalence .trans prop-setoid.id-right copair-ext0
+  preserve-coproducts {X} {Y} .f∘inverse≈id .famf-eq .transf-eq {inj₁ x} = fmor-subst-unit₁ X
+  preserve-coproducts {X} {Y} .f∘inverse≈id .famf-eq .transf-eq {inj₂ y} = fmor-subst-unit₁ Y
+  preserve-coproducts {X} {Y} .inverse∘f≈id .idxf-eq = ≈s-isEquivalence .trans prop-setoid.id-left copair-ext0
+  preserve-coproducts {X} {Y} .inverse∘f≈id .famf-eq .transf-eq {inj₁ x} = fmor-subst-unit₂ X
+  preserve-coproducts {X} {Y} .inverse∘f≈id .famf-eq .transf-eq {inj₂ y} = fmor-subst-unit₂ Y
 
   module _ (𝒞T : HasTerminal 𝒞) (𝒟T : HasTerminal 𝒟) (FT : preserve-chosen-terminal F 𝒞T 𝒟T) where
 
@@ -227,26 +198,20 @@ module _ {o₁ m₁ e₁ o₂ m₂ e₂}
       module 𝒟T = HasTerminal 𝒟T
       module 𝒞T = HasTerminal 𝒞T
 
-    Fam𝒞-terminal : HasTerminal Fam𝒞.cat
-    Fam𝒞-terminal = Fam𝒞.terminal 𝒞T
-
-    Fam𝒟-terminal : HasTerminal Fam𝒟.cat
-    Fam𝒟-terminal = Fam𝒟.terminal 𝒟T
-
-    preserve-terminal : preserve-chosen-terminal FamF Fam𝒞-terminal Fam𝒟-terminal
+    preserve-terminal : preserve-chosen-terminal FamF (Fam𝒞.terminal 𝒞T) (Fam𝒟.terminal 𝒟T)
     preserve-terminal .inverse .idxf = idS _
     preserve-terminal .inverse .famf .transf x = inverse FT
     preserve-terminal .inverse .famf .natural {lift tt} {lift tt} _ = begin
         inverse FT 𝒟.∘ 𝒟.id _
-      ≈⟨ 𝒟.id-swap' ⟩
+      ≈⟨ 𝒟.id-swap-sym ⟩
         𝒟.id _ 𝒟.∘ inverse FT
       ≈˘⟨ 𝒟.∘-cong (F .fmor-id) 𝒟.≈-refl ⟩
         F .fmor (𝒞.id _) 𝒟.∘ inverse FT
       ∎
       where open ≈-Reasoning 𝒟.isEquiv
-    preserve-terminal .f∘inverse≈id .idxf-eq = ST.to-terminal-unique _ _
+    preserve-terminal .f∘inverse≈id .idxf-eq = to-terminal-unique _ _
     preserve-terminal .f∘inverse≈id .famf-eq .transf-eq = 𝒟T.to-terminal-unique _ _
-    preserve-terminal .inverse∘f≈id .idxf-eq = ST.to-terminal-unique _ _
+    preserve-terminal .inverse∘f≈id .idxf-eq = to-terminal-unique _ _
     preserve-terminal .inverse∘f≈id .famf-eq .transf-eq = begin
         F .fmor (𝒞.id _) 𝒟.∘ (𝒟.id _ 𝒟.∘ (inverse FT 𝒟.∘ 𝒟T.to-terminal))
       ≈⟨ 𝒟.∘-cong (F .fmor-id) (𝒟.∘-cong 𝒟.≈-refl (inverse∘f≈id FT)) ⟩
@@ -262,20 +227,14 @@ module _ {o₁ m₁ e₁ o₂ m₂ e₂}
       module 𝒟P = HasProducts 𝒟P
       module 𝒞P = HasProducts 𝒞P
 
-    Fam𝒞-products : HasProducts Fam𝒞.cat
-    Fam𝒞-products = Fam𝒞.products.products 𝒞P
-
-    Fam𝒟-products : HasProducts Fam𝒟.cat
-    Fam𝒟-products = Fam𝒟.products.products 𝒟P
-
     open preserve-chosen-products-consequences F 𝒞P 𝒟P FP
 
-    preserve-products : preserve-chosen-products FamF Fam𝒞-products Fam𝒟-products
+    preserve-products : preserve-chosen-products FamF (Fam𝒞.products.products 𝒞P) (Fam𝒟.products.products 𝒟P)
     preserve-products .inverse .idxf = idS _
     preserve-products .inverse .famf .transf (x , y) = mul
     preserve-products .inverse .famf .natural {x₁ , y₁} {x₂ , y₂} (eq₁ , eq₂) = 𝒟.≈-sym mul-natural
     preserve-products {X} {Y} .f∘inverse≈id .idxf-eq =
-      ≈s-isEquivalence .trans prop-setoid.id-right SP.pair-ext0
+      ≈s-isEquivalence .trans prop-setoid.id-right pair-ext0
     preserve-products {X} {Y} .f∘inverse≈id .famf-eq .transf-eq = begin
         𝒟P.prod-m (F .fmor (X .fam .subst _)) (F .fmor (Y .fam .subst _)) 𝒟.∘ (𝒟.id _ 𝒟.∘ (mul⁻¹ 𝒟.∘ mul))
       ≈⟨ 𝒟.∘-cong (𝒟P.prod-m-cong (F .fmor-cong (X .fam .refl*)) (F .fmor-cong (Y .fam .refl*))) (𝒟.∘-cong 𝒟.≈-refl (f∘inverse≈id FP)) ⟩
@@ -289,7 +248,7 @@ module _ {o₁ m₁ e₁ o₂ m₂ e₂}
       ∎
       where open ≈-Reasoning 𝒟.isEquiv
     preserve-products {X} {Y} .inverse∘f≈id .idxf-eq =
-      ≈s-isEquivalence .trans prop-setoid.id-left SP.pair-ext0
+      ≈s-isEquivalence .trans prop-setoid.id-left pair-ext0
     preserve-products {X} {Y} .inverse∘f≈id .famf-eq .transf-eq = begin
         F .fmor (𝒞P.prod-m (X .fam .subst _) (Y .fam .subst _)) 𝒟.∘ (𝒟.id _ 𝒟.∘ (mul 𝒟.∘ mul⁻¹))
       ≈⟨ 𝒟.∘-cong (F .fmor-cong (𝒞P.prod-m-cong (X .fam .refl*) (Y .fam .refl*))) (𝒟.∘-cong 𝒟.≈-refl (inverse∘f≈id FP)) ⟩
@@ -306,9 +265,9 @@ module _ {o₁ m₁ e₁ o₂ m₂ e₂}
   FamF-def : (∀ {a b} (h : F .fobj a 𝒟.⇒ F .fobj b) →
                 Prf (∃ (a 𝒞.⇒ b) λ g → F .fmor g 𝒟.≈ h) → ∃ₛ (a 𝒞.⇒ b) λ g → F .fmor g 𝒟.≈ h) →
              (∀ {a b} {g₁ g₂ : a 𝒞.⇒ b} → F .fmor g₁ 𝒟.≈ F .fmor g₂ → g₁ 𝒞.≈ g₂) →
-             ∀ {X Y} (H : Fam𝒟C._⇒_ (FamF .fobj X) (FamF .fobj Y)) →
-             Prf (∃ (Fam𝒞C._⇒_ X Y) λ Φ → Fam𝒟C._≈_ (FamF .fmor Φ) H) →
-             ∃ₛ (Fam𝒞C._⇒_ X Y) λ Φ → Fam𝒟C._≈_ (FamF .fmor Φ) H
+             ∀ {X Y} (H : Fam𝒟-cat._⇒_ (FamF .fobj X) (FamF .fobj Y)) →
+             Prf (∃ (Fam𝒞-cat._⇒_ X Y) λ Φ → Fam𝒟-cat._≈_ (FamF .fmor Φ) H) →
+             ∃ₛ (Fam𝒞-cat._⇒_ X Y) λ Φ → Fam𝒟-cat._≈_ (FamF .fmor Φ) H
   FamF-def def₀ faith {X} {Y} H pr = Φ , eqΦ
     where
       open _⇒s_
@@ -316,13 +275,13 @@ module _ {o₁ m₁ e₁ o₂ m₂ e₂}
       wit : ∀ x → ∃ₛ (X .fam .fm x 𝒞.⇒ Y .fam .fm (H .idxf .func x)) λ g → F .fmor g 𝒟.≈ H .famf .transf x
       wit x = def₀ (H .famf .transf x) ⟪ mapPrf (Prf.prf pr) ⟫
         where
-          mapPrf : (∃ (Fam𝒞C._⇒_ X Y) λ Φ → Fam𝒟C._≈_ (FamF .fmor Φ) H) →
+          mapPrf : (∃ (Fam𝒞-cat._⇒_ X Y) λ Φ → Fam𝒟-cat._≈_ (FamF .fmor Φ) H) →
                    ∃ (X .fam .fm x 𝒞.⇒ Y .fam .fm (H .idxf .func x)) λ g → F .fmor g 𝒟.≈ H .famf .transf x
           mapPrf (Φ , eq) =
             (Y .fam .subst (eq .idxf-eq .prop-setoid._≃m_.func-eq (prop-setoid.Setoid.isEquivalence (X .idx) .IsEquivalence.refl)) 𝒞.∘ Φ .famf .transf x)
             , 𝒟.≈-trans (F .fmor-comp _ _) (eq .famf-eq .transf-eq {x})
 
-      Φ : Fam𝒞C._⇒_ X Y
+      Φ : Fam𝒞-cat._⇒_ X Y
       Φ .idxf = H .idxf
       Φ .famf .transf x = ∃ₛ.fst (wit x)
       Φ .famf .natural {x₁} {x₂} e =
@@ -332,18 +291,18 @@ module _ {o₁ m₁ e₁ o₂ m₂ e₂}
               (𝒟.≈-trans (𝒟.∘-cong 𝒟.≈-refl (𝒟.≈-sym (∃ₛ.snd (wit x₁))))
                          (𝒟.≈-sym (F .fmor-comp _ _))))))
 
-      eqΦ : Fam𝒟C._≈_ (FamF .fmor Φ) H
+      eqΦ : Fam𝒟-cat._≈_ (FamF .fmor Φ) H
       eqΦ .idxf-eq = ≈s-isEquivalence .IsEquivalence.refl
       eqΦ .famf-eq .transf-eq {x} =
         𝒟.≈-trans (𝒟.∘-cong (FamF .fobj Y .fam .refl*) 𝒟.≈-refl)
           (𝒟.≈-trans 𝒟.id-left (∃ₛ.snd (wit x)))
 
   FamF-preserve-bigCopro : ∀ (S : Setoid os es) (D : Functor (setoid→category S) Fam𝒞.cat) →
-    ∃ₛ (Fam𝒟C.Iso
+    ∃ₛ (Fam𝒟-cat.Iso
           (Colimit.apex (Fam𝒟.bigCoproducts S (FamF ∘F D)))
           (FamF .fobj (Colimit.apex (Fam𝒞.bigCoproducts S D))))
-       (λ i → ∀ s → Fam𝒟C._≈_
-                     (Fam𝒟C._∘_ (Fam𝒟C.Iso.fwd i)
+       (λ i → ∀ s → Fam𝒟-cat._≈_
+                     (Fam𝒟-cat._∘_ (Fam𝒟-cat.Iso.fwd i)
                         (Colimit.cocone (Fam𝒟.bigCoproducts S (FamF ∘F D)) .NatTrans.transf s))
                      (FamF .fmor (Colimit.cocone (Fam𝒞.bigCoproducts S D) .NatTrans.transf s)))
   FamF-preserve-bigCopro S D = theIso , compat
@@ -351,32 +310,33 @@ module _ {o₁ m₁ e₁ o₂ m₂ e₂}
       Lo = Colimit.apex (Fam𝒟.bigCoproducts S (FamF ∘F D))
       Ro = FamF .fobj (Colimit.apex (Fam𝒞.bigCoproducts S D))
 
-      fwd : Fam𝒟C._⇒_ Lo Ro
+      fwd : Fam𝒟-cat._⇒_ Lo Ro
       fwd .idxf .prop-setoid._⇒_.func p = p
       fwd .idxf .prop-setoid._⇒_.func-resp-≈ e = e
       fwd .famf .transf p = 𝒟.id _
       fwd .famf .natural {s₁ , x₁} {s₂ , x₂} (s₁≈s₂ , x₁≈x₂) =
         𝒟.≈-trans 𝒟.id-left (𝒟.≈-trans (𝒟.≈-sym (F .fmor-comp _ _)) (𝒟.≈-sym 𝒟.id-right))
 
-      bwd : Fam𝒟C._⇒_ Ro Lo
+      bwd : Fam𝒟-cat._⇒_ Ro Lo
       bwd .idxf .prop-setoid._⇒_.func p = p
       bwd .idxf .prop-setoid._⇒_.func-resp-≈ e = e
       bwd .famf .transf p = 𝒟.id _
       bwd .famf .natural {s₁ , x₁} {s₂ , x₂} (s₁≈s₂ , x₁≈x₂) =
         𝒟.≈-trans 𝒟.id-left (𝒟.≈-trans (F .fmor-comp _ _) (𝒟.≈-sym 𝒟.id-right))
 
-      theIso : Fam𝒟C.Iso Lo Ro
-      theIso .Fam𝒟C.Iso.fwd = fwd
-      theIso .Fam𝒟C.Iso.bwd = bwd
-      theIso .Fam𝒟C.Iso.fwd∘bwd≈id .idxf-eq .prop-setoid._≃m_.func-eq e = e
-      theIso .Fam𝒟C.Iso.fwd∘bwd≈id .famf-eq .transf-eq {p} =
+      theIso : Fam𝒟-cat.Iso Lo Ro
+      theIso .Fam𝒟-cat.Iso.fwd = fwd
+      theIso .Fam𝒟-cat.Iso.bwd = bwd
+      theIso .Fam𝒟-cat.Iso.fwd∘bwd≈id .idxf-eq .prop-setoid._≃m_.func-eq e = e
+      theIso .Fam𝒟-cat.Iso.fwd∘bwd≈id .famf-eq .transf-eq {p} =
         𝒟.≈-trans (𝒟.∘-cong (Ro .fam .refl*) (𝒟.≈-trans 𝒟.id-left 𝒟.id-left)) 𝒟.id-left
-      theIso .Fam𝒟C.Iso.bwd∘fwd≈id .idxf-eq .prop-setoid._≃m_.func-eq e = e
-      theIso .Fam𝒟C.Iso.bwd∘fwd≈id .famf-eq .transf-eq {p} =
+      theIso .Fam𝒟-cat.Iso.bwd∘fwd≈id .idxf-eq .prop-setoid._≃m_.func-eq e = e
+      theIso .Fam𝒟-cat.Iso.bwd∘fwd≈id .famf-eq .transf-eq {p} =
         𝒟.≈-trans (𝒟.∘-cong (Lo .fam .refl*) (𝒟.≈-trans 𝒟.id-left 𝒟.id-left)) 𝒟.id-left
 
-      compat : ∀ s → Fam𝒟C._≈_
-                      (Fam𝒟C._∘_ fwd (Colimit.cocone (Fam𝒟.bigCoproducts S (FamF ∘F D)) .NatTrans.transf s))
+      compat : ∀ s → Fam𝒟-cat._≈_
+                      (Fam𝒟-cat._∘_ fwd
+                        (Colimit.cocone (Fam𝒟.bigCoproducts S (FamF ∘F D)) .NatTrans.transf s))
                       (FamF .fmor (Colimit.cocone (Fam𝒞.bigCoproducts S D) .NatTrans.transf s))
       compat s .idxf-eq .prop-setoid._≃m_.func-eq e =
         Colimit.cocone (Fam𝒞.bigCoproducts S D) .NatTrans.transf s .idxf .prop-setoid._⇒_.func-resp-≈ e
@@ -405,7 +365,7 @@ module _ {o₁ m₁ e₁ o₂ m₂ e₂} {𝒞 : Category o₁ m₁ e₁} {𝒟 
   FamNat α .transf X .idxf = prop-setoid.idS _
   FamNat α .transf X .famf .transf x = α .transf (X .fam .fm x)
   FamNat α .transf X .famf .natural h = 𝒟.≈-sym (α .natural (X .fam .subst h))
-  FamNat α .natural f .idxf-eq = Category.id-swap' (SetoidCat _ _)
+  FamNat α .natural f .idxf-eq = Category.id-swap-sym (SetoidCat _ _)
   FamNat α .natural {X} {Y} f .famf-eq .transf-eq {x} =
     begin
       G .fmor (Y .fam .subst _ ) 𝒟.∘ (𝒟.id _ 𝒟.∘ (G .fmor (f .famf .transf x) 𝒟.∘ α .transf (X .fam .fm x)))
@@ -422,9 +382,9 @@ module _ {o m e} {𝒞 : Category o m e} os es
   private
     module 𝒞 = Category 𝒞
     module Fam𝒞 = CategoryOfFamilies os es 𝒞
-    module L = StrongFunctor 𝕃
-    module FP = HasProducts 𝒞P
+    module 𝕃 = StrongFunctor 𝕃
 
+  open HasProducts 𝒞P using (pair-cong; prod-m-cong; prod-m-id; prod-m-comp)
   open Fam
   open _⇒f_
   open _≃f_
@@ -435,42 +395,41 @@ module _ {o m e} {𝒞 : Category o m e} os es
   open Functor
 
   FamF-strong : StrongFunctor (Fam𝒞.products.products 𝒞P)
-  FamF-strong .StrongFunctor.F = FamF os es (L.F)
+  FamF-strong .StrongFunctor.F = FamF os es (𝕃.F)
   FamF-strong .StrongFunctor.strengthᵣ .idxf = idS _
-  FamF-strong .StrongFunctor.strengthᵣ .famf .transf (x , y) = L.strengthᵣ
+  FamF-strong .StrongFunctor.strengthᵣ .famf .transf (x , y) = 𝕃.strengthᵣ
   FamF-strong .StrongFunctor.strengthᵣ {X} {Y} .famf .natural (e₁ , e₂) =
-    𝒞.≈-sym (L.strengthᵣ-natural (X .fam .subst e₁) (Y .fam .subst e₂))
+    𝒞.≈-sym (𝕃.strengthᵣ-natural (X .fam .subst e₁) (Y .fam .subst e₂))
   FamF-strong .StrongFunctor.strengthᵣ-natural f g .idxf-eq .prop-setoid._≃m_.func-eq (e₁ , e₂) =
     f .idxf ._⇒s_.func-resp-≈ e₁ , g .idxf ._⇒s_.func-resp-≈ e₂
   FamF-strong .StrongFunctor.strengthᵣ-natural {x₂ = X₂} {y₂ = Y₂} f g .famf-eq .transf-eq {x , y} =
     𝒞.≈-trans (𝒞.∘-cong₂ 𝒞.id-left)
       (𝒞.≈-trans (𝒞.≈-sym (𝒞.assoc _ _ _))
         (𝒞.≈-trans
-          (𝒞.∘-cong₁ (𝒞.≈-trans (𝒞.≈-sym (L.fmor-comp _ _))
-            (L.fmor-cong
-              (𝒞.≈-trans (𝒞.∘-cong₂ (FP.pair-cong 𝒞.id-left 𝒞.id-left))
-                (𝒞.≈-trans (𝒞.≈-sym (FP.prod-m-comp _ _ _ _))
-                  (FP.prod-m-cong
+          (𝒞.∘-cong₁ (𝒞.≈-trans (𝒞.≈-sym (𝕃.fmor-comp _ _))
+            (𝕃.fmor-cong
+              (𝒞.≈-trans (𝒞.∘-cong₂ (pair-cong 𝒞.id-left 𝒞.id-left))
+                (𝒞.≈-trans (𝒞.≈-sym (prod-m-comp _ _ _ _))
+                  (prod-m-cong
                     (𝒞.≈-trans (𝒞.∘-cong₁ (X₂ .fam .refl*)) 𝒞.id-left)
                     (𝒞.≈-trans (𝒞.∘-cong₁ (Y₂ .fam .refl*)) 𝒞.id-left)))))))
-          (𝒞.≈-trans (L.strengthᵣ-natural (f .famf .transf x) (g .famf .transf y))
+          (𝒞.≈-trans (𝕃.strengthᵣ-natural (f .famf .transf x) (g .famf .transf y))
             (𝒞.≈-sym (𝒞.≈-trans 𝒞.id-left
-              (𝒞.∘-cong₂ (FP.pair-cong 𝒞.id-left 𝒞.id-left)))))))
+              (𝒞.∘-cong₂ (pair-cong 𝒞.id-left 𝒞.id-left)))))))
   FamF-strong .StrongFunctor.strengthᵣ-p₂ .idxf-eq .prop-setoid._≃m_.func-eq (e₁ , e₂) = e₂
   FamF-strong .StrongFunctor.strengthᵣ-p₂ {y = Y} .famf-eq .transf-eq =
     𝒞.≈-trans (𝒞.∘-cong₂ 𝒞.id-left)
       (𝒞.≈-trans (𝒞.≈-sym (𝒞.assoc _ _ _))
-        (𝒞.≈-trans (𝒞.∘-cong₁ (𝒞.≈-trans (𝒞.≈-sym (L.fmor-comp _ _))
-                                (L.fmor-cong (𝒞.≈-trans (𝒞.∘-cong₁ (Y .fam .refl*)) 𝒞.id-left))))
-          L.strengthᵣ-p₂))
-  FamF-strong .StrongFunctor.strengthᵣ-assoc .idxf-eq .prop-setoid._≃m_.func-eq (e₁ , e₂) =
-    e₁ , (e₁ , e₂)
+        (𝒞.≈-trans (𝒞.∘-cong₁ (𝒞.≈-trans (𝒞.≈-sym (𝕃.fmor-comp _ _))
+                                (𝕃.fmor-cong (𝒞.≈-trans (𝒞.∘-cong₁ (Y .fam .refl*)) 𝒞.id-left))))
+          𝕃.strengthᵣ-p₂))
+  FamF-strong .StrongFunctor.strengthᵣ-assoc .idxf-eq .prop-setoid._≃m_.func-eq (e₁ , e₂) = e₁ , (e₁ , e₂)
   FamF-strong .StrongFunctor.strengthᵣ-assoc {x = X} {y = Y} .famf-eq .transf-eq =
     𝒞.≈-trans
       (𝒞.∘-cong₁ (𝒞.≈-trans
-        (L.fmor-cong (𝒞.≈-trans (FP.prod-m-cong (X .fam .refl*) (FP.prod-m-cong (X .fam .refl*) (Y .fam .refl*)))
-                       (𝒞.≈-trans (FP.prod-m-cong 𝒞.≈-refl FP.prod-m-id) FP.prod-m-id)))
-        L.fmor-id))
+        (𝕃.fmor-cong (𝒞.≈-trans (prod-m-cong (X .fam .refl*) (prod-m-cong (X .fam .refl*) (Y .fam .refl*)))
+                       (𝒞.≈-trans (prod-m-cong 𝒞.≈-refl prod-m-id) prod-m-id)))
+        𝕃.fmor-id))
       (𝒞.≈-trans 𝒞.id-left
         (𝒞.≈-trans 𝒞.id-left
-          (𝒞.≈-trans L.strengthᵣ-assoc (𝒞.≈-sym 𝒞.id-left))))
+          (𝒞.≈-trans 𝕃.strengthᵣ-assoc (𝒞.≈-sym 𝒞.id-left))))

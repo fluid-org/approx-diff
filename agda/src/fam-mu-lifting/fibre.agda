@@ -31,34 +31,34 @@ import fam-mu-lifting.sort
 
 module fam-mu-lifting.fibre {o m e} (os es : Level) {𝒞 : Category o m e}
     (CM : CMonEnriched 𝒞) (BP : ∀ x y → Biproduct CM x y)
-    (𝟙c : Category.obj 𝒞) where
+    (𝟙𝒞 : Category.obj 𝒞) where
 
 open Category 𝒞
 open Functor
 open HasProducts (biproducts→products CM BP)
-open lifting CM BP 𝟙c using (L; Lmap; Lmap-cong; Lmap-id; Lmap-comp)
+open lifting CM BP 𝟙𝒞 using (L; Lmap; Lmap-cong; Lmap-id; Lmap-comp)
 open fam.CategoryOfFamilies os (os ⊔ es) 𝒞
 open Obj
 open Mor
 open Fam
 open _≃_
-module Srt = fam-mu-lifting.sort os es
-open Srt using (Sort; mkSort)
+module sort = fam-mu-lifting.sort os es
+open sort using (Sort; mkSort)
 
 Poly-C = polynomial-functor.Poly cat
 open polynomial-functor.Poly
 open polynomial-functor using (extend; Poly-map)
 
-private module SC = Category (setoid-cat.SetoidCat os (os ⊔ es))
+private module SetoidCat = Category (setoid-cat.SetoidCat os (os ⊔ es))
 
 Idx : Functor cat (setoid-cat.SetoidCat os (os ⊔ es))
 Idx .fobj X = X .idx
 Idx .fmor f = f .idxf
 Idx .fmor-cong e = e .idxf-eq
-Idx .fmor-id = SC.≈-refl
-Idx .fmor-comp f g = SC.≈-refl
+Idx .fmor-id = SetoidCat.≈-refl
+Idx .fmor-comp f g = SetoidCat.≈-refl
 
-∣_∣ : ∀ {n} → Poly-C n → Srt.Poly n
+∣_∣ : ∀ {n} → Poly-C n → sort.Poly n
 ∣_∣ = Poly-map Idx
 
 private
@@ -66,7 +66,7 @@ private
   ℓD = o ⊔ m ⊔ e ⊔ lsuc os ⊔ lsuc es
 
 module Fibre {n} (δ : Fin n → Obj) where
-  open Srt.Tree (λ i → δ i .idx)
+  open sort.Tree (λ i → δ i .idx)
 
   data Deco : Sort n → Set ℓD
 
@@ -135,10 +135,8 @@ module Fibre {n} (δ : Fin n → Obj) where
                       fib-shape-subst Q d (shape≈-refl ∣ Q ∣ η̄ x) ≈ id (fib-shape Q d x)
     fib-shape-refl* (const A) d x = A .fam .refl*
     fib-shape-refl* (var i)   d x = fib-el-refl* _ (d i) x
-    fib-shape-refl* (P + Q) d (inj₁ x) =
-      ≈-trans (Lmap-cong (fib-shape-refl* P d x)) Lmap-id
-    fib-shape-refl* (P + Q) d (inj₂ y) =
-      ≈-trans (Lmap-cong (fib-shape-refl* Q d y)) Lmap-id
+    fib-shape-refl* (P + Q) d (inj₁ x) = ≈-trans (Lmap-cong (fib-shape-refl* P d x)) Lmap-id
+    fib-shape-refl* (P + Q) d (inj₂ y) = ≈-trans (Lmap-cong (fib-shape-refl* Q d y)) Lmap-id
     fib-shape-refl* (P × Q) d (x , y) =
       ≈-trans (Lmap-cong (≈-trans (prod-m-cong (fib-shape-refl* P d x) (fib-shape-refl* Q d y))
                                   prod-m-id))
@@ -183,22 +181,6 @@ module Fibre {n} (δ : Fin n → Obj) where
     fib-el-trans* (inj₁ i) _ q p = δ i .fam .trans* q p
     fib-el-trans* (inj₂ _) (mkDeco Q ρd) {x} {y} {z} q p = fib-trans* Q ρd {x = x} {y = y} {z = z} q p
 
-  fib-shape-iso₁ : ∀ {j} (Q : Poly-C j) {η̄ : Fin j → Fin n ⊎ Sort n}
-                   (d : ∀ i → DecoAssign (η̄ i)) {x y : ⟦ ∣ Q ∣ ⟧shape η̄}
-                   (p : shape≈ ∣ Q ∣ η̄ x y) →
-                   (fib-shape-subst Q d p ∘ fib-shape-subst Q d (shape≈-sym ∣ Q ∣ η̄ p))
-                     ≈ id (fib-shape Q d y)
-  fib-shape-iso₁ Q d {x} {y} p =
-    ≈-trans (≈-sym (fib-shape-trans* Q d p (shape≈-sym ∣ Q ∣ _ p))) (fib-shape-refl* Q d y)
-
-  fib-shape-iso₂ : ∀ {j} (Q : Poly-C j) {η̄ : Fin j → Fin n ⊎ Sort n}
-                   (d : ∀ i → DecoAssign (η̄ i)) {x y : ⟦ ∣ Q ∣ ⟧shape η̄}
-                   (p : shape≈ ∣ Q ∣ η̄ x y) →
-                   (fib-shape-subst Q d (shape≈-sym ∣ Q ∣ η̄ p) ∘ fib-shape-subst Q d p)
-                     ≈ id (fib-shape Q d x)
-  fib-shape-iso₂ Q d {x} {y} p =
-    ≈-trans (≈-sym (fib-shape-trans* Q d (shape≈-sym ∣ Q ∣ _ p) p)) (fib-shape-refl* Q d x)
-
   WFam : ∀ {k} (Q : Poly-C (suc k)) {ρ̄ : Fin k → Fin n ⊎ Sort n}
          (d : ∀ i → DecoAssign (ρ̄ i)) → Fam (WSetoid ∣ Q ∣ ρ̄) 𝒞
   WFam Q d .fm = fib Q d
@@ -207,5 +189,5 @@ module Fibre {n} (δ : Fin n → Obj) where
   WFam Q d .trans* {x} {y} {z} e₁ e₂ = fib-trans* Q d {x = x} {y = y} {z = z} e₁ e₂
 
 μ-fam : ∀ {n} → Poly-C (suc n) → (Fin n → Obj) → Obj
-μ-fam P δ .idx = Srt.Tree.WSetoid (λ i → δ i .idx) ∣ P ∣ (λ i → inj₁ i)
+μ-fam P δ .idx = sort.Tree.WSetoid (λ i → δ i .idx) ∣ P ∣ (λ i → inj₁ i)
 μ-fam P δ .fam = Fibre.WFam δ P {ρ̄ = λ i → inj₁ i} (λ i → lift tt)

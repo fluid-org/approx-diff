@@ -15,7 +15,7 @@ record CommutativeSemiring {o e} (A : Setoid o e) : Set (o ⊔ e) where
 
   open CommutativeMonoid additive public
   open CommutativeMonoid multiplicative public
-    renaming (ε to ι; _+_ to _·_; +-cong to ·-cong; +-lunit to ·-lunit; +-assoc to ·-assoc; +-comm to ·-comm; +-interchange to ·-interchange)
+    renaming (ε to ι; _+_ to _·_; +-cong to ·-cong; +-lunit to ·-lunit; +-runit to ·-runit; +-assoc to ·-assoc; +-comm to ·-comm; +-interchange to ·-interchange)
 
   field
     ·-+-distribₗ : ∀ {x y z} → x · (y + z) ≈ (x · y) + (x · z)

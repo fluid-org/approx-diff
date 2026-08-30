@@ -33,11 +33,11 @@ module fam-change-of-base {o m e o₂ m₂ e₂} (os es : Level)
     (F-terminal : preserve-chosen-terminal F T𝒞 T𝒟)
     (F-prod : preserve-chosen-products F (biproducts→products CM𝒞 BP𝒞) (biproducts→products CM𝒟 BP𝒟))
     (let module L𝒞 = lifting CM𝒞 BP𝒞 𝟙𝒞) (let module L𝒟 = lifting CM𝒟 BP𝒟 𝟙𝒟)
-    (let module 𝒞 = Category 𝒞) (let module 𝒟 = Category 𝒟)
-    (F-L : ∀ X → 𝒟.Iso (Functor.fobj F (L𝒞.L X)) (L𝒟.L (Functor.fobj F X)))
+    (let module 𝒞 = Category 𝒞) (let module 𝒟 = Category 𝒟) (let open Functor)
+    (F-L : ∀ X → 𝒟.Iso (fobj F (L𝒞.L X)) (L𝒟.L (fobj F X)))
     (F-L-natural : ∀ {X Y} (f : X 𝒞.⇒ Y) →
-       (F-L Y .𝒟.Iso.fwd 𝒟.∘ Functor.fmor F (L𝒞.Lmap f))
-         𝒟.≈ (L𝒟.Lmap (Functor.fmor F f) 𝒟.∘ F-L X .𝒟.Iso.fwd))
+       (F-L Y .𝒟.Iso.fwd 𝒟.∘ fmor F (L𝒞.Lmap f))
+         𝒟.≈ (L𝒟.Lmap (fmor F f) 𝒟.∘ F-L X .𝒟.Iso.fwd))
     where
 
 module Fam⟨𝒞⟩μ = fam-mu-lifting os es CM𝒞 BP𝒞 𝟙𝒞
@@ -70,8 +70,7 @@ Fam⟨F⟩-preserves-products =
     (biproducts→products CM𝒞 BP𝒞) (biproducts→products CM𝒟 BP𝒟)
     (λ {X} {Y} → F-prod {X} {Y})
 
-Fam⟨F⟩-L : ∀ (X : Fam⟨𝒞⟩μ.Obj) →
-           Fam𝒟.Iso (Fam⟨F⟩ .fobj (Fam⟨𝒞⟩μ.Lf X)) (Fam⟨𝒟⟩μ.Lf (Fam⟨F⟩ .fobj X))
+Fam⟨F⟩-L : ∀ (X : Fam⟨𝒞⟩μ.Obj) → Fam𝒟.Iso (Fam⟨F⟩ .fobj (Fam⟨𝒞⟩μ.Lf X)) (Fam⟨𝒟⟩μ.Lf (Fam⟨F⟩ .fobj X))
 Fam⟨F⟩-L X .fwd .idxf = prop-setoid.idS _
 Fam⟨F⟩-L X .fwd .famf .transf x = F-L (X .fam .fm x) .fwd
 Fam⟨F⟩-L X .fwd .famf .natural e = F-L-natural (X .fam .subst e)
@@ -130,17 +129,17 @@ Fam⟨F⟩-section u {X} c .Fam⟨𝒟⟩μ.at-natural e =
 module bool (𝟙ty : Fam⟨𝒞⟩μ.Obj) where
 
   private
-    module CPc = HasCoproducts Fam⟨𝒞⟩μ.coproducts
-    module CPd = HasCoproducts Fam⟨𝒟⟩μ.coproducts
+    module CP𝒞 = HasCoproducts Fam⟨𝒞⟩μ.coproducts
+    module CP𝒟 = HasCoproducts Fam⟨𝒟⟩μ.coproducts
 
-  Bool𝒞 = CPc.coprod (Fam⟨𝒞⟩μ.Lf 𝟙ty) (Fam⟨𝒞⟩μ.Lf 𝟙ty)
-  Bool𝒟 = CPd.coprod (Fam⟨𝒟⟩μ.Lf (Fam⟨F⟩ .fobj 𝟙ty)) (Fam⟨𝒟⟩μ.Lf (Fam⟨F⟩ .fobj 𝟙ty))
+  Bool𝒞 = CP𝒞.coprod (Fam⟨𝒞⟩μ.Lf 𝟙ty) (Fam⟨𝒞⟩μ.Lf 𝟙ty)
+  Bool𝒟 = CP𝒟.coprod (Fam⟨𝒟⟩μ.Lf (Fam⟨F⟩ .fobj 𝟙ty)) (Fam⟨𝒟⟩μ.Lf (Fam⟨F⟩ .fobj 𝟙ty))
 
   Fam⟨F⟩-preserves-bool : Fam⟨𝒟⟩μ.Mor (Fam⟨F⟩ .fobj Bool𝒞) Bool𝒟
   Fam⟨F⟩-preserves-bool =
-    Fam𝒟._∘_ (CPd.coprod-m (Fam⟨F⟩-L 𝟙ty .fwd) (Fam⟨F⟩-L 𝟙ty .fwd))
+    Fam𝒟._∘_ (CP𝒟.coprod-m (Fam⟨F⟩-L 𝟙ty .fwd) (Fam⟨F⟩-L 𝟙ty .fwd))
              (Fam⟨F⟩-preserves-coproducts .inverse)
 
-module FW =
+module fibrewise =
   fam-mu-lifting.fibrewise os es CM𝒞 BP𝒞 𝟙𝒞 CM𝒟 BP𝒟 𝟙𝒟
     F (λ {X} {Y} → F-prod {X} {Y}) F-L (λ {X} {Y} f → F-L-natural {X} {Y} f)

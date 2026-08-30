@@ -7,11 +7,11 @@
 open import Data.Fin using (Fin; zero; suc)
 open import Data.List using (List; []; _∷_)
 open import Data.Nat using (ℕ; zero; suc; _+_; _⊔_; _≤_; z≤n)
-open import Data.Nat.Properties using (≤-refl; ⊔-lub; m⊔n≤o⇒m≤o; m⊔n≤o⇒n≤o)
+open import Data.Nat.Properties using (≤-refl; ≤-trans; ⊔-lub; m⊔n≤o⇒m≤o; m⊔n≤o⇒n≤o)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂; sym; subst)
 open import Relation.Nullary using (Dec; yes; no)
 
-open import every using (Every; []; _∷_)
+open import Data.List.Relation.Unary.All using ([]; _∷_) renaming (All to Every)
 open import signature using (Signature)
 
 module language-syntax {ℓ} (Sig : Signature ℓ) where
@@ -105,7 +105,10 @@ push τ (suc i) = var i
 _[_] : ∀ {Δ} → type (suc Δ) → type Δ → type Δ
 τ [ τ' ] = sub (push τ') τ
 
-infix 50 _[_]
+_[_]₁ : ∀ {Δ} → type (suc (suc Δ)) → type Δ → type (suc Δ)
+τ [ τ' ]₁ = sub (sub-lift (push τ')) τ
+
+infix 50 _[_] _[_]₁
 
 fo-ren : ∀ {Δ₁ Δ₂} {ρ : TyRen Δ₁ Δ₂} {τ : type Δ₁} → first-order τ → first-order (ρ *ᵗ τ)
 fo-ren {ρ = ρ} (var i) = var (ρ i)
@@ -132,8 +135,7 @@ fo-push : ∀ {Δ} {ρ : type Δ} → first-order ρ → ∀ i → first-order (
 fo-push fρ zero    = fρ
 fo-push fρ (suc i) = var i
 
-fo-inst : ∀ {Δ} {τ : type (suc Δ)} {ρ : type Δ} → first-order τ → first-order ρ →
-          first-order (τ [ ρ ])
+fo-inst : ∀ {Δ} {τ : type (suc Δ)} {ρ : type Δ} → first-order τ → first-order ρ → first-order (τ [ ρ ])
 fo-inst fo fρ = fo-sub (fo-push fρ) fo
 
 sub-cong : ∀ {Δ Δ'} {σ σ' : TySub Δ Δ'} (τ : type Δ) → (∀ i → σ i ≡ σ' i) → sub σ τ ≡ sub σ' τ
@@ -204,6 +206,15 @@ arr-depth-unfold τ = arr-depth-sub (push (μ τ)) τ pushed ≤-refl
     pushed zero    = ≤-refl
     pushed (suc i) = z≤n
 
+bound₁ : ∀ {m n o} → m ⊔ n ≤ o → m ≤ o
+bound₁ = m⊔n≤o⇒m≤o _ _
+
+bound₂ : ∀ {m n o} → m ⊔ n ≤ o → n ≤ o
+bound₂ = m⊔n≤o⇒n≤o _ _
+
+bound-μ : ∀ {Δ} (τ : type (suc Δ)) {N} → arr-depth (μ τ) ≤ N → arr-depth (τ [ μ τ ]) ≤ N
+bound-μ τ = ≤-trans (arr-depth-unfold τ)
+
 data ctxt : Set ℓ where
   emp : ctxt
   _,_ : ctxt → type 0 → ctxt
@@ -220,12 +231,6 @@ data _∋_ : ctxt → type 0 → Set ℓ where
 
 Ren : ctxt → ctxt → Set ℓ
 Ren Γ Γ' = ∀ {τ} → Γ ∋ τ → Γ' ∋ τ
-
-id-ren : ∀ Γ → Ren Γ Γ
-id-ren Γ x = x
-
-_∘ren_ : ∀ {Γ₁ Γ₂ Γ₃} → Ren Γ₂ Γ₃ → Ren Γ₁ Γ₂ → Ren Γ₁ Γ₃
-ρ₁ ∘ren ρ₂ = λ z → ρ₁ (ρ₂ z)
 
 ext : ∀ {Γ Γ' τ} → Ren Γ Γ' → Ren (Γ , τ) (Γ' , τ)
 ext ρ zero     = zero
@@ -308,9 +313,6 @@ return x = cons x nil
 
 from_collect_ : ∀ {Γ τ₁ τ₂} → Γ ⊢ list τ₁ → Γ , τ₁ ⊢ list τ₂ → Γ ⊢ list τ₂
 from M collect N = foldr nil (append (weaken * N) (var zero)) M
-
-append-f : ∀ {Γ τ} → Γ ⊢ list τ [→] list τ [→] list τ
-append-f = lam (lam (foldr (var zero) (cons (var (succ zero)) (var zero)) (var (succ zero))))
 
 bool : type 0
 bool = unit [+] unit

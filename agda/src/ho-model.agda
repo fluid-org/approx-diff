@@ -23,8 +23,7 @@ open import Data.Sum using (inj₁; inj₂)
 open import cmon-enriched using (CMonEnriched)
 open import functor using (cones→limits)
 import indexed-family
-open import indexed-family
-  using (HasSetoidProducts; Fam; _⇒f_; _[_])
+open import indexed-family using (HasSetoidProducts; Fam; _⇒f_; _[_])
 import matrix
 import fam
 import fam-mu-lifting
@@ -40,6 +39,7 @@ module ho-model
   where
 
 open matrix-embedding S public
+open lifting-SemiMod using (L; Lmap)
 private
   module S = CommutativeSemiring S
 
@@ -52,7 +52,7 @@ module Fam⟨𝒞⟩μ = fam-mu-lifting 0ℓ 0ℓ M.cmon M.biproduct 1
 module Fam⟨𝒟⟩μ = fam-mu-lifting 0ℓ 0ℓ SemiMod.cmon-enriched SemiMod.biproduct SemiMod.𝕀
 
 private
-  module FCC = HasCoproducts Fam⟨𝒞⟩μ.coproducts
+  module Fam⟨𝒞⟩μ-CP = HasCoproducts Fam⟨𝒞⟩μ.coproducts
 
 ctrl-weight-endo : SemiMod._⇒_ SemiMod.𝕀 SemiMod.𝕀
 ctrl-weight-endo = ι1-fwd SemiMod.∘ (mat (matrix.Mat.block S ctrl-weight) SemiMod.∘ ι1-bwd)
@@ -62,10 +62,7 @@ ctrl-weight-endo = ι1-fwd SemiMod.∘ (mat (matrix.Mat.block S ctrl-weight) Sem
 𝒞𝟙ty : Fam⟨𝒞⟩μ.Obj
 𝒞𝟙ty = Fam⟨𝒞⟩μ.Lf 𝟙F
 
-𝒞Bool = FCC.coprod (Fam⟨𝒞⟩μ.Lf 𝒞𝟙ty) (Fam⟨𝒞⟩μ.Lf 𝒞𝟙ty)
-
-ι-row : ∀ n → M.Matrix n 1
-ι-row n _ _ = S.ι
+𝒞Bool = Fam⟨𝒞⟩μ-CP.coprod (Fam⟨𝒞⟩μ.Lf 𝒞𝟙ty) (Fam⟨𝒞⟩μ.Lf 𝒞𝟙ty)
 
 𝒞Bool-root : Fam⟨𝒞⟩μ.Section 𝒞Bool
 𝒞Bool-root = Fam⟨𝒞⟩μ.coprod-section (Fam⟨𝒞⟩μ.Lf-root {𝒞𝟙ty}) (Fam⟨𝒞⟩μ.Lf-root {𝒞𝟙ty})
@@ -75,49 +72,43 @@ SPmod =
   indexed-family.hasSetoidProducts 0ℓ 0ℓ SemiMod.cat
     (λ A → cones→limits (SemiMod.limits (setoid→category A)))
 
-module FE = fam-exponentials 0ℓ 0ℓ SemiMod.cat SemiMod.cmon-enriched SemiMod.biproduct SPmod
+module exp = fam-exponentials 0ℓ 0ℓ SemiMod.cat SemiMod.cmon-enriched SemiMod.biproduct SPmod
 
 SemiModExp : HasExponentials Fam⟨𝒟⟩μ.cat Fam⟨𝒟⟩μ.products
-SemiModExp = FE.exponentials
+SemiModExp = exp.exponentials
 
 -- The unit section of a function space is zero: an eliminator returning a function attaches
 -- control dependence to the root the lifting adjoins alone, matching the operational semantics,
 -- where a closure's control positions are its root alone (language-operational.evaluation.ctrl-of).
 -- The tuple of the target's section over every argument would instead attach it to every
 -- possible result, which no position of a closure stands for.
-private
-  module SMCM = CMonEnriched SemiMod.cmon-enriched
+open CMonEnriched SemiMod.cmon-enriched using (εm; comp-bilinear-ε₂)
 
-exp-section : ∀ {X Y : Fam⟨𝒟⟩μ.Obj} → Fam⟨𝒟⟩μ.Section (FE._⟶_ X Y)
-exp-section {X} {Y} .Fam⟨𝒟⟩μ.at f = SMCM.εm
+exp-section : ∀ {X Y : Fam⟨𝒟⟩μ.Obj} → Fam⟨𝒟⟩μ.Section (exp._⟶_ X Y)
+exp-section {X} {Y} .Fam⟨𝒟⟩μ.at f = εm
 exp-section {X} {Y} .Fam⟨𝒟⟩μ.at-natural {f₁} {f₂} e =
-  SMCM.comp-bilinear-ε₂ {SemiMod.𝕀} (FE._⟶_ X Y .Fam⟨𝒟⟩μ.fam .Fam⟨𝒟⟩μ.subst {f₁} {f₂} e)
+  comp-bilinear-ε₂ {SemiMod.𝕀} (exp._⟶_ X Y .Fam⟨𝒟⟩μ.fam .Fam⟨𝒟⟩μ.subst {f₁} {f₂} e)
 
 module sig-model (Sig : Signature 0ℓ) (ℐ : Interpretation S Sig) where
 
-  module IP = matrix-primitives.interp-primitives S Sig ℐ
   module ℐ = Interpretation ℐ
 
   boolify : Fam⟨𝒞⟩μ.Mor (matrix-primitives.Fam⟨𝒞⟩-bool S) 𝒞Bool
   boolify =
-    FCC.coprod-m
-      (Fam⟨𝒞⟩μ.injF {X = 𝒞𝟙ty} Fam⟨𝒞⟩μ.Fam𝒞.∘ Fam⟨𝒞⟩μ.injF {X = 𝟙F})
-      (Fam⟨𝒞⟩μ.injF {X = 𝒞𝟙ty} Fam⟨𝒞⟩μ.Fam𝒞.∘ Fam⟨𝒞⟩μ.injF {X = 𝟙F})
+    Fam⟨𝒞⟩μ-CP.coprod-m
+      (Fam⟨𝒞⟩μ.injF {X = 𝒞𝟙ty} Fam⟨𝒞⟩μ.Fam-cat.∘ Fam⟨𝒞⟩μ.injF {X = 𝟙F})
+      (Fam⟨𝒞⟩μ.injF {X = 𝒞𝟙ty} Fam⟨𝒞⟩μ.Fam-cat.∘ Fam⟨𝒞⟩μ.injF {X = 𝟙F})
+
+  module prim = matrix-primitives.interp-primitives S Sig ℐ 𝒞Bool boolify
 
   private
-    module IPO = IP.over 𝒞Bool boolify
+    open prim using (model-over; arg-collect)
     open indexed-family._⇒f_
 
     d' : ∀ {is} (ψ : Signature.rel Sig is)
          (c : Setoid.Carrier (sort-vals-setoid ℐ.sort-index is)) →
          M.Matrix 1 (ℐ.bases-width is)
     d' ψ c = ℐ.rel-deps ψ .func c
-
-    deps-resp : ∀ {is} (ψ : Signature.rel Sig is)
-                {c c' : Setoid.Carrier (sort-vals-setoid ℐ.sort-index is)} →
-                Setoid._≈_ (sort-vals-setoid ℐ.sort-index is) c c' →
-                d' ψ c' M.≈ₘ d' ψ c
-    deps-resp ψ e = M.≈ₘ-sym (ℐ.rel-deps ψ .func-resp-≈ e)
 
   -- Tests write their dependence into the outcome's root: which branch runs reads the scalars the
   -- test read.
@@ -126,31 +117,29 @@ module sig-model (Sig : Signature 0ℓ) (ℐ : Interpretation S Sig) where
                  Fam⟨𝒞⟩μ.simple[ sort-vals-setoid ℐ.sort-index is , ℐ.bases-width is ]
                  𝒞Bool
   rel-simple is ψ .Fam⟨𝒞⟩μ.idxf = ℐ.rel-pred ψ
-  rel-simple is ψ .Fam⟨𝒞⟩μ.famf .transf c =
-    𝒞Bool-root .Fam⟨𝒞⟩μ.at (ℐ.rel-pred ψ .func c) M.∘ d' ψ c
+  rel-simple is ψ .Fam⟨𝒞⟩μ.famf .transf c = 𝒞Bool-root .Fam⟨𝒞⟩μ.at (ℐ.rel-pred ψ .func c) M.∘ d' ψ c
   rel-simple is ψ .Fam⟨𝒞⟩μ.famf .natural {c} {c'} e =
     M.≈ₘ-trans (M.id-right {M = P' M.∘ d' ψ c'})
-    (M.≈ₘ-trans (M.∘-cong (M.≈ₘ-refl {M = P'}) (deps-resp ψ e))
+    (M.≈ₘ-trans (M.∘-cong (M.≈ₘ-refl {f = P'}) (M.≈ₘ-sym (ℐ.rel-deps ψ .func-resp-≈ e)))
     (M.≈ₘ-trans (M.∘-cong (M.≈ₘ-sym (𝒞Bool-root .Fam⟨𝒞⟩μ.at-natural {x₁ = o} {x₂ = o'} (ℐ.rel-pred ψ .func-resp-≈ e)))
-                          (M.≈ₘ-refl {M = d' ψ c}))
-                (M.assoc sub P (d' ψ c))))
+                          (M.≈ₘ-refl {f = d' ψ c}))
+                (M.assoc sub (𝒞Bool-root .Fam⟨𝒞⟩μ.at o) (d' ψ c))))
     where
     o  = ℐ.rel-pred ψ .func c
     o' = ℐ.rel-pred ψ .func c'
-    P  = 𝒞Bool-root .Fam⟨𝒞⟩μ.at o
     P' = 𝒞Bool-root .Fam⟨𝒞⟩μ.at o'
     sub = 𝒞Bool .Fam⟨𝒞⟩μ.fam .Fam⟨𝒞⟩μ.subst {o} {o'} (ℐ.rel-pred ψ .func-resp-≈ e)
 
   model : Model PFPC[ Fam⟨𝒞⟩μ.cat , Fam⟨𝒞⟩μ.terminal M.terminal , Fam⟨𝒞⟩μ.products , 𝒞Bool ] Sig
-  model = record IPO.model-over
-    { ⟦rel⟧ = λ {is} ψ → (rel-simple is ψ Fam⟨𝒞⟩μ.Fam𝒞.∘ IPO.arg-collect is) }
+  model = record model-over
+    { ⟦rel⟧ = λ {is} ψ → (rel-simple is ψ Fam⟨𝒞⟩μ.Fam-cat.∘ arg-collect is) }
 
 module interp (Sig : Signature 0ℓ) (ℐ : Interpretation S Sig) where
 
   open sig-model Sig ℐ
 
   𝒞-sort-section : ∀ s → Fam⟨𝒞⟩μ.Section (model .Model.⟦sort⟧ s)
-  𝒞-sort-section s = Fam⟨𝒞⟩μ.simple-section (ι-row (Interpretation.sort-width ℐ s))
+  𝒞-sort-section s = Fam⟨𝒞⟩μ.simple-section (λ _ _ → S.ι)
 
   open language-fo-interpretation Sig 0ℓ 0ℓ
     M.terminal M.cmon M.biproduct 1
@@ -185,38 +174,29 @@ module interp (Sig : Signature 0ℓ) (ℐ : Interpretation S Sig) where
   private
     Lmap-elt : ∀ {X Y : Semimodule} (f : SemiMod._⇒_ X Y) (a : Setoid.Carrier A)
                (x : Semimodule.Carrier X) →
-               Semimodule._≈_ (Ls.L Y) (SemiMod._⇒_.func (Ls.Lmap f) (a , x)) (a , SemiMod._⇒_.func f x)
-    Lmap-elt {X} {Y} f a x = S.trans S.+-comm S.+-lunit , Semimodule.+-lunit Y
-
-    in₁-zero : ∀ (w : M.Vec 1) → S._≈_ (app (M.in₁ {1} {1}) w Fin.zero) (w Fin.zero)
-    in₁-zero w = S.trans (S.trans S.+-comm S.+-lunit) S.·-lunit
-
-    in₁-suc : ∀ (w : M.Vec 1) k → S._≈_ (app (M.in₁ {1} {1}) w (Fin.suc k)) S.ε
-    in₁-suc w k = S.trans (S.trans S.+-comm S.+-lunit) S.ε-annihilₗ
+               Semimodule._≈_ (L Y) (SemiMod._⇒_.func (Lmap f) (a , x)) (a , SemiMod._⇒_.func f x)
+    Lmap-elt {X} {Y} f a x = S.+-runit , Semimodule.+-lunit Y
 
     module bool-row {n} (D : M.Matrix 1 n) (y : M.Vec n) where
-      Ω = HR.bool.Fam⟨F⟩-preserves-bool 𝒞𝟙ty
+      Ω = Fam⟨F⟩-preserves-bool
 
       private
         u = app (M.in₁ {1} {1} M.∘ D) y
 
         branch : ∀ {x₁ x} (e : Setoid._≈_ (𝒟𝟙ty .idx) x₁ x) →
-                 Semimodule._≈_ (Ls.L (𝔽 1))
-                   (SemiMod._⇒_.func (Ls.Lmap (𝒟𝟙ty .fam .subst {x₁} {x} e))
+                 Semimodule._≈_ (L (𝔽 1))
+                   (SemiMod._⇒_.func (Lmap (𝒟𝟙ty .fam .subst {x₁} {x} e))
                       (SemiMod._⇒_.func (𝔽-L-iso 1 .fwd) u))
                    (app D y Fin.zero , λ _ → S.ε)
         branch {x₁} {x} e =
-          Semimodule.trans (Ls.L (𝔽 1))
-            (SemiMod._⇒_.func-resp-≈ (Ls.Lmap g) (𝔽-L-fwd-elt 1 u))
-            (Semimodule.trans (Ls.L (𝔽 1))
-              (Lmap-elt g (u Fin.zero) (λ k → u (Fin.suc k)))
-              (S.trans (app-∘ (M.in₁ {1} {1}) D y Fin.zero) (in₁-zero (app D y)) ,
-               λ k → S.trans (app-congᵥ G (λ j → S.trans (app-∘ (M.in₁ {1} {1}) D y (Fin.suc j))
-                                                              (in₁-suc (app D y) j)) k)
-                              (app-ε G k)))
+          Semimodule.trans (L (𝔽 1))
+            (Lmap-elt (𝒟𝟙ty .fam .subst {x₁} {x} e) (u Fin.zero) (λ k → u (Fin.suc k)))
+            (S.trans (app-∘ (M.in₁ {1} {1}) D y Fin.zero) (app-in₁ {1} {1} (app D y) Fin.zero) ,
+             λ k → S.trans (app-congᵥ G (λ j → S.trans (app-∘ (M.in₁ {1} {1}) D y (Fin.suc j))
+                                                       (app-in₁ {1} {1} (app D y) (Fin.suc j))) k)
+                            (app-ε G k))
           where
           G = 𝒞𝟙ty .Fam⟨𝒞⟩μ.fam .Fam⟨𝒞⟩μ.subst {x₁} {x} e
-          g = 𝒟𝟙ty .fam .subst {x₁} {x} e
 
       core : ∀ i₀ b (e : Setoid._≈_ (𝒟Bool .idx) (Ω .idxf .func i₀) b) →
              Semimodule._≈_ (𝒟Bool .fam .fm b)
@@ -236,10 +216,10 @@ module interp (Sig : Signature 0ℓ) (ℐ : Interpretation S Sig) where
     private
       p𝒞 = 𝒟-arg-product is .idxf .func p
       z𝒞 = SemiMod._⇒_.func (𝒟-arg-product is .famf .transf p) z
-      C = IP.collect is .Fam⟨𝒞⟩μ.famf .transf p𝒞
+      C = prim.collect is .Fam⟨𝒞⟩μ.famf .transf p𝒞
       test = Model.⟦rel⟧ 𝒟-Sig-model ω
 
-    args-idx = IP.collect is .Fam⟨𝒞⟩μ.idxf .func p𝒞
+    args-idx = prim.collect is .Fam⟨𝒞⟩μ.idxf .func p𝒞
     args-vec = app C z𝒞
 
     test-elt : ∀ b (e : Setoid._≈_ (𝒟Bool .idx) (test .idxf .func p) b) →

@@ -185,6 +185,4 @@ module _ {o₁ m₁ e₁} {𝒮 : Category o₁ m₁ e₁} (B : obj) (D : Functo
 
       eq : ≃-NatTrans (swapN x (constFmor f ∘N B×-cocone)) (constFmor (f ∘ P.swap) ∘N ×B-cocone D B C)
       eq .transf-eq s =
-        ≈-trans (assoc _ _ _)
-          (≈-trans (∘-cong ≈-refl (≈-sym (P.swap-natural (C .cocone .transf s) (id B))))
-            (≈-sym (assoc _ _ _)))
+        tail-cong-assoc (≈-sym (P.swap-natural (C .cocone .transf s) (id B)))

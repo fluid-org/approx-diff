@@ -7,7 +7,7 @@ open import Data.Nat using (suc)
 open import Data.Rational using (ℚ; 0ℚ; 1ℚ)
 open import Data.Sum using (inj₁; inj₂)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl)
-open import every using ([]; _∷_)
+open import Data.List.Relation.Unary.All using ([]; _∷_)
 import two
 
 open import signature.example ℚ using (Sig; number; add; mult)
@@ -15,8 +15,7 @@ open import semiring-Q using (nonzero)
 import signature.example.interpretation
 module Dep = signature.example.interpretation (nonzero two.semiring) two.semiring
 
-open import language-syntax Sig using (_⊢_; zero; succ; base; var; inl; case; bop; emp)
-  renaming (_,_ to _▸_)
+open import language-syntax Sig using (_⊢_; zero; succ; base; var; inl; case; bop; emp) renaming (_,_ to _▸_)
 open import language-operational.evaluation Sig two.semiring Dep.interpretation two.I
 open import interaction.graph two.semiring (λ x → two.∨-idem {x})
 open import interaction.dependence-graph Sig two.semiring Dep.interpretation two.I (λ x → two.∨-idem {x})

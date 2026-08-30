@@ -2,13 +2,13 @@
 
 -- The example signature over rational data, weighted in any commutative semiring: a number is a
 -- rational carrying one scalar position, a label carries none, and the dependency relation of an
--- operation at given arguments is the collapse of the rational Jacobian there.
+-- operation at given arguments is its rational Jacobian there, read as weights.
 open import Level using (0ℓ)
 open import prop-setoid using (Setoid; IsEquivalence; +-setoid; 𝟙)
 open import commutative-semiring using (CommutativeSemiring)
 
 open import Data.Rational using (ℚ)
-module signature.example.interpretation {A : Setoid 0ℓ 0ℓ} (collapse : ℚ → Setoid.Carrier A)
+module signature.example.interpretation {A : Setoid 0ℓ 0ℓ} (as-weight : ℚ → Setoid.Carrier A)
                                         (S : CommutativeSemiring A) where
 
 import prop
@@ -30,21 +30,21 @@ open import signature.example ℚ
   public
 
 private
-  module Sc = CommutativeSemiring S
   module Scalars = CommutativeSemiring semiring-Q.semiring
   open matrix.Mat S using (_∥_; block)
   module MS = matrix.Mat S
+  open Category MS.cat using (_⇒_; _≈_; ≈-refl)
   open prop-setoid._⇒_
 
 private
-  -- The collapse of the Jacobian of multiplication: [ ∂/∂x , ∂/∂y ] = [ y , x ].
-  mult-rel : ℚ → ℚ → Category._⇒_ MS.cat 2 1
-  mult-rel x y = block (collapse y) ∥ block (collapse x)
+  -- The Jacobian of multiplication: [ ∂/∂x , ∂/∂y ] = [ y , x ].
+  mult-rel : ℚ → ℚ → 2 ⇒ 1
+  mult-rel x y = block (as-weight y) ∥ block (as-weight x)
 
   mult-rel-resp : ∀ {x x' y y'} →
                   Setoid._≈_ semiring-Q.setoid x x' → Setoid._≈_ semiring-Q.setoid y y' →
-                  Category._≈_ MS.cat (mult-rel x y) (mult-rel x' y')
-  mult-rel-resp {x} {_} {y} (liftS refl) (liftS refl) = Category.≈-refl MS.cat {f = mult-rel x y}
+                  mult-rel x y ≈ mult-rel x' y'
+  mult-rel-resp {x} {_} {y} (liftS refl) (liftS refl) = ≈-refl {f = mult-rel x y}
 
   eq-out : ℚ → ℚ → Setoid.Carrier (+-setoid (𝟙 {0ℓ} {0ℓ}) 𝟙)
   eq-out x y with x ≟ℚ y
@@ -68,11 +68,10 @@ interpretation .op-deps (lit n) .func _ = MS.εₘ
 interpretation .op-deps add .func _ = MS.I ∥ MS.I
 interpretation .op-deps mult .func (x , y , _) = mult-rel x y
 interpretation .op-deps (lbl l) .func _ = MS.εₘ
-interpretation .op-deps (lit n) .func-resp-≈ _ = Category.≈-refl MS.cat {f = MS.εₘ}
-interpretation .op-deps add .func-resp-≈ _ = Category.≈-refl MS.cat {f = MS.I ∥ MS.I}
-interpretation .op-deps mult .func-resp-≈ e =
-  mult-rel-resp (prop.proj₁ e) (prop.proj₁ (prop.proj₂ e))
-interpretation .op-deps (lbl l) .func-resp-≈ _ = Category.≈-refl MS.cat {f = MS.εₘ}
+interpretation .op-deps (lit n) .func-resp-≈ _ = ≈-refl {f = MS.εₘ}
+interpretation .op-deps add .func-resp-≈ _ = ≈-refl {f = MS.I ∥ MS.I}
+interpretation .op-deps mult .func-resp-≈ e = mult-rel-resp (prop.proj₁ e) (prop.proj₁ (prop.proj₂ e))
+interpretation .op-deps (lbl l) .func-resp-≈ _ = ≈-refl {f = MS.εₘ}
 interpretation .rel-pred equal-label .func (l₁ , l₂ , _) = label.equal-label .func (l₁ , l₂)
 interpretation .rel-pred equal-label .func-resp-≈ e =
   label.equal-label .func-resp-≈ (prop.proj₁ e prop., prop.proj₁ (prop.proj₂ e))
@@ -81,9 +80,9 @@ interpretation .rel-pred equal-number .func-resp-≈ {x , y , _} {x' , y' , _}
   (liftS refl prop., (liftS refl prop., _)) =
   Setoid.isEquivalence (+-setoid (𝟙 {0ℓ} {0ℓ}) 𝟙) .IsEquivalence.refl {eq-out x y}
 interpretation .rel-deps equal-label .func _ = MS.εₘ
-interpretation .rel-deps equal-label .func-resp-≈ _ = Category.≈-refl MS.cat {f = MS.εₘ}
+interpretation .rel-deps equal-label .func-resp-≈ _ = ≈-refl {f = MS.εₘ}
 interpretation .rel-deps equal-number .func _ = MS.I ∥ MS.I
-interpretation .rel-deps equal-number .func-resp-≈ _ = Category.≈-refl MS.cat {f = MS.I ∥ MS.I}
+interpretation .rel-deps equal-number .func-resp-≈ _ = ≈-refl {f = MS.I ∥ MS.I}
 
 sort-val : sort → Set
 sort-val = Interpretation.sort-val interpretation

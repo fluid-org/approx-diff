@@ -38,16 +38,17 @@ Fam⟨𝒞⟩-bool =
     (Fam⟨𝒞⟩-terminal .HasTerminal.witness)
     (Fam⟨𝒞⟩-terminal .HasTerminal.witness)
 
-module interp-primitives (Sig : Signature 0ℓ) (ℐ : Interpretation S Sig) where
+module interp-primitives (Sig : Signature 0ℓ) (ℐ : Interpretation S Sig)
+                         (Ω : Fam⟨𝒞⟩.Obj) (into-Ω : Fam⟨𝒞⟩.Mor Fam⟨𝒞⟩-bool Ω) where
 
   open Signature Sig
   open Interpretation ℐ
   open prop-setoid._⇒_ using (func; func-resp-≈)
 
   private
-    module MC = Category M.cat
-    module FC = Category Fam⟨𝒞⟩.cat
-    module FP = HasProducts Fam⟨𝒞⟩-products
+    module M-cat = Category M.cat
+    module Fam⟨𝒞⟩-cat = Category Fam⟨𝒞⟩.cat
+    module Fam⟨𝒞⟩-P = HasProducts Fam⟨𝒞⟩-products
 
   open Fam⟨𝒞⟩ using (simple[_,_]; simplef[_,_]; Obj; Mor)
   open Fam⟨𝒞⟩.products M-products using (simple-monoidal)
@@ -72,34 +73,25 @@ module interp-primitives (Sig : Signature 0ℓ) (ℐ : Interpretation S Sig) whe
   untuple (i ∷ is) .func-resp-≈ e = prop.proj₁ e prop., untuple is .func-resp-≈ (prop.proj₂ e)
 
   collect : ∀ is → Mor (args is) simple[ sort-vals-setoid sort-index is , bases-width is ]
-  collect []       = simplef[ untuple [] , MC.id 0 ]
-  collect (i ∷ is) =
-    simple-monoidal FC.∘ FP.prod-m (FC.id (⟦sort⟧′ i)) (collect is)
+  collect []       = simplef[ untuple [] , M-cat.id 0 ]
+  collect (i ∷ is) = simple-monoidal Fam⟨𝒞⟩-cat.∘ Fam⟨𝒞⟩-P.prod-m (Fam⟨𝒞⟩-cat.id (⟦sort⟧′ i)) (collect is)
 
-  op-mor : ∀ {is o} (ω : op is o) →
-           Mor simple[ sort-vals-setoid sort-index is , bases-width is ] (⟦sort⟧′ o)
+  op-mor : ∀ {is o} (ω : op is o) → Mor simple[ sort-vals-setoid sort-index is , bases-width is ] (⟦sort⟧′ o)
   op-mor ω .idxf = op-fun ω
   op-mor ω .famf .transf c = op-deps ω .func c
   op-mor ω .famf .natural {c} {c'} e =
-    MC.≈-trans (MC.id-right {f = op-deps ω .func c'})
-      (MC.≈-trans (MC.≈-sym (op-deps ω .func-resp-≈ e))
-                  (MC.≈-sym (MC.id-left {f = op-deps ω .func c})))
+    M-cat.≈-trans (M-cat.id-right {f = op-deps ω .func c'})
+      (M-cat.≈-trans (M-cat.≈-sym (op-deps ω .func-resp-≈ e))
+                  (M-cat.≈-sym (M-cat.id-left {f = op-deps ω .func c})))
 
-  model : Model PF Sig
-  model .Model.⟦sort⟧ = ⟦sort⟧′
-  model .Model.⟦op⟧ {is} {o} ω = op-mor ω FC.∘ collect is
-  model .Model.⟦rel⟧ {is} ψ = predicate (rel-pred ψ ∘S untuple is)
 
-  module over (Ω : Obj) (into-Ω : Mor Fam⟨𝒞⟩-bool Ω) where
+  private
+    PF′ : PointedFPCat _ _ _
+    PF′ = PFPC[ Fam⟨𝒞⟩.cat , Fam⟨𝒞⟩-terminal , Fam⟨𝒞⟩-products , Ω ]
 
-    private
-      PF′ : PointedFPCat _ _ _
-      PF′ = PFPC[ Fam⟨𝒞⟩.cat , Fam⟨𝒞⟩-terminal , Fam⟨𝒞⟩-products , Ω ]
+  model-over : Model PF′ Sig
+  model-over .Model.⟦sort⟧ = ⟦sort⟧′
+  model-over .Model.⟦op⟧ {is} {o} ω = op-mor ω Fam⟨𝒞⟩-cat.∘ collect is
+  model-over .Model.⟦rel⟧ {is} ψ = into-Ω Fam⟨𝒞⟩-cat.∘ predicate (rel-pred ψ ∘S untuple is)
 
-    model-over : Model PF′ Sig
-    model-over .Model.⟦sort⟧ = ⟦sort⟧′
-    model-over .Model.⟦op⟧ {is} {o} ω = op-mor ω FC.∘ collect is
-    model-over .Model.⟦rel⟧ {is} ψ = into-Ω FC.∘ predicate (rel-pred ψ ∘S untuple is)
-
-    arg-untuple = untuple
-    arg-collect = collect
+  arg-collect = collect

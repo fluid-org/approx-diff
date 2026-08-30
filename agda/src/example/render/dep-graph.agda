@@ -70,8 +70,7 @@ private
 
   owner-all : ℕ → List (AVal ⊤) → ℕ → ℕ
   owner-all off []       i = i
-  owner-all off (t ∷ ts) i =
-    if lt i (off + covers t) then owner off t i else owner-all (off + covers t) ts i
+  owner-all off (t ∷ ts) i = if lt i (off + covers t) then owner off t i else owner-all (off + covers t) ts i
 
   nodes-of : List (AVal ⊤) → List (ℕ × String)
   nodes-of ts = drawn-all 0 ts
@@ -186,5 +185,4 @@ contents-filter =
         (merged-dep-edges-for filter-in-tree filter-out-tree filter-rows)
 
 main : Main
-main = run (writeFile "dot/map-three.dot" contents-map
-            >> writeFile "dot/filter-three.dot" contents-filter)
+main = run (writeFile "dot/map-three.dot" contents-map >> writeFile "dot/filter-three.dot" contents-filter)

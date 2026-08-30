@@ -58,8 +58,7 @@ module _ {o₁ m₁ e₁ o₂ m₂ e₂} {𝒞 : Category o₁ m₁ e₁} {𝒟 
     module 𝒞 = Category 𝒞
     module 𝒟 = Category 𝒟
 
-  pairF : ∀ {o₃ m₃ e₃} {ℰ : Category o₃ m₃ e₃} →
-          Functor ℰ 𝒞 → Functor ℰ 𝒟 → Functor ℰ (product 𝒞 𝒟)
+  pairF : ∀ {o₃ m₃ e₃} {ℰ : Category o₃ m₃ e₃} → Functor ℰ 𝒞 → Functor ℰ 𝒟 → Functor ℰ (product 𝒞 𝒟)
   pairF F G .fobj e = (F .fobj e) , (G .fobj e)
   pairF F G .fmor f = (F .fmor f) , (G .fmor f)
   pairF F G .fmor-cong f₁≈f₂ = (F .fmor-cong f₁≈f₂) , (G .fmor-cong f₁≈f₂)
@@ -89,8 +88,7 @@ module _ {o₁ m₁ e₁ o₂ m₂ e₂} {𝒞 : Category o₁ m₁ e₁} {𝒟 
     open NatTrans
     open ≃-NatTrans
 
-    product-limit : (D : Functor 𝒮 (product 𝒞 𝒟)) →
-                    Limit (project₁ ∘F D) → Limit (project₂ ∘F D) → Limit D
+    product-limit : (D : Functor 𝒮 (product 𝒞 𝒟)) → Limit (project₁ ∘F D) → Limit (project₂ ∘F D) → Limit D
     product-limit D limit𝒞 limit𝒟 .apex = limit𝒞 .apex , limit𝒟 .apex
     product-limit D limit𝒞 limit𝒟 .cone .transf s = limit𝒞 .cone .transf s , limit𝒟 .cone .transf s
     product-limit D limit𝒞 limit𝒟 .cone .natural f = limit𝒞 .cone .natural f , limit𝒟 .cone .natural f

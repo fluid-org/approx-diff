@@ -27,6 +27,9 @@ record CommutativeMonoid {o e} (A : Setoid o e) : Set (o ⊔ e) where
     +-assoc : ∀ {x y z} → ((x + y) + z) ≈ (x + (y + z))
     +-comm  : ∀ {x y} → (x + y) ≈ (y + x)
 
+  +-runit : ∀ {x} → (x + ε) ≈ x
+  +-runit = trans +-comm +-lunit
+
   +-interchange : ∀ {w x y z} → (w + x) + (y + z) ≈ (w + y) + (x + z)
   +-interchange {w}{x}{y}{z} = begin
       (w + x) + (y + z)     ≈⟨ +-assoc ⟩
@@ -73,8 +76,7 @@ module AdditivePreorder {o e} {A : Setoid o e} (M : CommutativeMonoid A)
 
   ∨-isJoin : IsJoin ⊑-isPreorder _+_
   ∨-isJoin .IsJoin.inl = trans (sym +-assoc) (+-cong +-idem refl)
-  ∨-isJoin .IsJoin.inr =
-    trans (+-cong refl +-comm) (trans (sym +-assoc) (trans (+-cong +-idem refl) +-comm))
+  ∨-isJoin .IsJoin.inr = trans (+-cong refl +-comm) (trans (sym +-assoc) (trans (+-cong +-idem refl) +-comm))
   ∨-isJoin .IsJoin.[_,_] x⊑z y⊑z = trans +-assoc (trans (+-cong refl y⊑z) x⊑z)
 
   ⊥-isBottom : IsBottom ⊑-isPreorder ε
@@ -110,8 +112,7 @@ module _ where
         CommutativeMonoid (⊗-setoid A B)
   (X ⊗ Y) .ε = X .ε , Y .ε
   (X ⊗ Y) ._+_ (x₁ , y₁) (x₂ , y₂) = X ._+_ x₁ x₂ , Y ._+_ y₁ y₂
-  (X ⊗ Y) .+-cong (x₁≈x₂ , y₁≈y₂) (x'₁≈x'₂ , y'₁≈y'₂) =
-     X .+-cong x₁≈x₂ x'₁≈x'₂ , Y .+-cong y₁≈y₂ y'₁≈y'₂
+  (X ⊗ Y) .+-cong (x₁≈x₂ , y₁≈y₂) (x'₁≈x'₂ , y'₁≈y'₂) = X .+-cong x₁≈x₂ x'₁≈x'₂ , Y .+-cong y₁≈y₂ y'₁≈y'₂
   (X ⊗ Y) .+-lunit = X .+-lunit , Y .+-lunit
   (X ⊗ Y) .+-assoc = X .+-assoc , Y .+-assoc
   (X ⊗ Y) .+-comm = X .+-comm , Y .+-comm

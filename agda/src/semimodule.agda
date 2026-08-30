@@ -103,8 +103,7 @@ open import cmon-enriched using (CMonEnriched; Biproduct)
                                               (_⇒s_.func-resp-≈ (g .*→*) x₁≈x₂)
 +-map M N f g .preserve-ze = trans N (+-cong N (f .preserve-ze) (g .preserve-ze)) (+-lunit N)
 +-map M N f g .preserve-+ = N .trans (N .+-cong (f .preserve-+) (g .preserve-+)) (+-interchange N)
-+-map M N f g .preserve-· = trans N (+-cong N (f .preserve-·) (g .preserve-·))
-                             (sym N (+-distribˡ N))
++-map M N f g .preserve-· = trans N (+-cong N (f .preserve-·) (g .preserve-·)) (sym N (+-distribˡ N))
 
 cmon-enriched : CMonEnriched cat
 cmon-enriched .CMonEnriched.homCM M N .CommutativeMonoid.ε = ε-map M N
@@ -230,28 +229,27 @@ module _ (𝒮 : Category 0ℓ 0ℓ 0ℓ) where
   Π D .setoid .Setoid.Carrier = Π-Carrier D
   Π D .setoid .Setoid._≈_ α β = ∀ x → D .fobj x ._≈_ (α .Π-func x) (β .Π-func x)
   Π D .setoid .Setoid.isEquivalence .IsEquivalence.refl x = refl (fobj D x)
-  Π D .setoid .Setoid.isEquivalence .IsEquivalence.sym x x₁ = sym (fobj D x₁) (x x₁)
-  Π D .setoid .Setoid.isEquivalence .IsEquivalence.trans z₁ z₂ x₁ = trans (fobj D x₁) (z₁ x₁) (z₂ x₁)
+  Π D .setoid .Setoid.isEquivalence .IsEquivalence.sym e x = sym (fobj D x) (e x)
+  Π D .setoid .Setoid.isEquivalence .IsEquivalence.trans e₁ e₂ x = trans (fobj D x) (e₁ x) (e₂ x)
   Π D .additive .CommutativeMonoid.ε .Π-func x = D .fobj x .ε
   Π D .additive .CommutativeMonoid.ε .Π-natural f = D .fmor f .preserve-ze
   Π D .additive .CommutativeMonoid._+_ α₁ α₂ .Π-func x = D .fobj x ._+_ (α₁ .Π-func x) (α₂ .Π-func x)
-  Π D .additive .CommutativeMonoid._+_ α₁ α₂ .Π-natural = λ f →
-                                                             trans (fobj D _) (D .fmor f .preserve-+)
-                                                             (+-cong (fobj D _) (α₁ .Π-natural f) (α₂ .Π-natural f))
-  Π D .additive .CommutativeMonoid.+-cong = λ z z₁ x → +-cong (fobj D x) (z x) (z₁ x)
-  Π D .additive .CommutativeMonoid.+-lunit = λ x₁ → +-lunit (fobj D x₁)
-  Π D .additive .CommutativeMonoid.+-assoc = λ x₁ → +-assoc (fobj D x₁)
-  Π D .additive .CommutativeMonoid.+-comm = λ x₁ → +-comm (fobj D x₁)
+  Π D .additive .CommutativeMonoid._+_ α₁ α₂ .Π-natural f =
+    trans (fobj D _) (D .fmor f .preserve-+) (+-cong (fobj D _) (α₁ .Π-natural f) (α₂ .Π-natural f))
+  Π D .additive .CommutativeMonoid.+-cong e₁ e₂ x = +-cong (fobj D x) (e₁ x) (e₂ x)
+  Π D .additive .CommutativeMonoid.+-lunit x = +-lunit (fobj D x)
+  Π D .additive .CommutativeMonoid.+-assoc x = +-assoc (fobj D x)
+  Π D .additive .CommutativeMonoid.+-comm x = +-comm (fobj D x)
   Π D ._·_ s α .Π-func x = D .fobj x ._·_ s (α .Π-func x)
   Π D ._·_ s α .Π-natural f =
     D .fobj _ .trans (D .fmor f .preserve-·) (D .fobj _ .·-cong S.refl (α .Π-natural f))
-  Π D .·-cong = λ z z₁ x → ·-cong (D .fobj x) z (z₁ x)
-  Π D .·-mul = λ x₁ → ·-mul (D .fobj x₁)
-  Π D .·-unit = λ x₁ → ·-unit (D .fobj x₁)
-  Π D .+-distribʳ = λ x₁ → +-distribʳ (D .fobj x₁)
-  Π D .+-distribˡ = λ x → +-distribˡ (D .fobj x)
-  Π D .zero-distribʳ = λ x₁ → zero-distribʳ (D .fobj x₁)
-  Π D .zero-distribˡ = λ x → zero-distribˡ (D .fobj x)
+  Π D .·-cong e e' x = ·-cong (D .fobj x) e (e' x)
+  Π D .·-mul x = ·-mul (D .fobj x)
+  Π D .·-unit x = ·-unit (D .fobj x)
+  Π D .+-distribʳ x = +-distribʳ (D .fobj x)
+  Π D .+-distribˡ x = +-distribˡ (D .fobj x)
+  Π D .zero-distribʳ x = zero-distribʳ (D .fobj x)
+  Π D .zero-distribˡ x = zero-distribˡ (D .fobj x)
 
   limits : HasLimitCones 𝒮 cat
   limits D .functor.Limit.apex = Π D

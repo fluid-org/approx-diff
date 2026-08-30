@@ -42,6 +42,14 @@ module _ {o m e} {os es} {𝒞 : Category o m e} {A : Setoid os es} where
   open IsEquivalence
   open Fam
 
+  fam-subst-iso₁ : ∀ (F : Fam A 𝒞) {x y : A .Setoid.Carrier} (e : x ≈ y) →
+                   (F .subst e ∘ F .subst (A .Setoid.isEquivalence .sym e)) ≈C id _
+  fam-subst-iso₁ F e = ≈-trans (≈-sym (F .trans* e (A .Setoid.isEquivalence .sym e))) (F .refl*)
+
+  fam-subst-iso₂ : ∀ (F : Fam A 𝒞) {x y : A .Setoid.Carrier} (e : x ≈ y) →
+                   (F .subst (A .Setoid.isEquivalence .sym e) ∘ F .subst e) ≈C id _
+  fam-subst-iso₂ F e = ≈-trans (≈-sym (F .trans* (A .Setoid.isEquivalence .sym e) e)) (F .refl*)
+
   record _⇒f_ (P Q : Fam A 𝒞) : Set (m ⊔ e ⊔ os ⊔ es) where
     no-eta-equality
     field
@@ -91,8 +99,7 @@ module _ {o m e} {os es} {𝒞 : Category o m e} {A : Setoid os es} where
   ≃f-isEquivalence .sym {f} {g} f≈g .transf-eq = ≈-sym (f≈g .transf-eq)
   ≃f-isEquivalence .trans {f} {g} {h} f≈g g≈h .transf-eq = isEquiv .trans (f≈g .transf-eq) (g≈h .transf-eq)
 
-  ∘f-cong : ∀ {P Q R} {f₁ f₂ : Q ⇒f R} {g₁ g₂ : P ⇒f Q} →
-      f₁ ≃f f₂ → g₁ ≃f g₂ → (f₁ ∘f g₁) ≃f (f₂ ∘f g₂)
+  ∘f-cong : ∀ {P Q R} {f₁ f₂ : Q ⇒f R} {g₁ g₂ : P ⇒f Q} → f₁ ≃f f₂ → g₁ ≃f g₂ → (f₁ ∘f g₁) ≃f (f₂ ∘f g₂)
   ∘f-cong f₁≈f₂ g₁≈g₂ .transf-eq = ∘-cong (f₁≈f₂ .transf-eq) (g₁≈g₂ .transf-eq)
 
   ≃f-id-left : ∀ {P Q} {f : P ⇒f Q} → (idf Q ∘f f) ≃f f
@@ -101,8 +108,7 @@ module _ {o m e} {os es} {𝒞 : Category o m e} {A : Setoid os es} where
   ≃f-id-right : ∀ {P Q} {f : P ⇒f Q} → (f ∘f idf P) ≃f f
   ≃f-id-right .transf-eq = id-right
 
-  ≃f-assoc : ∀ {P Q R S} (f : R ⇒f S) (g : Q ⇒f R) (h : P ⇒f Q) →
-      ((f ∘f g) ∘f h) ≃f (f ∘f (g ∘f h))
+  ≃f-assoc : ∀ {P Q R S} (f : R ⇒f S) (g : Q ⇒f R) (h : P ⇒f Q) → ((f ∘f g) ∘f h) ≃f (f ∘f (g ∘f h))
   ≃f-assoc f g h .transf-eq = assoc _ _ _
 
 
@@ -113,8 +119,7 @@ module _ {o m e} {os es} {𝒞 : Category o m e} {A : Setoid os es} where
   constF-id : ∀ {x} → constF (id x) ≃f idf _
   constF-id .transf-eq = ≈-refl
 
-  constF-comp : ∀ {x y z} (f : y ⇒ z) (g : x ⇒ y) →
-                constF (f ∘ g) ≃f (constF f ∘f constF g)
+  constF-comp : ∀ {x y z} (f : y ⇒ z) (g : x ⇒ y) → constF (f ∘ g) ≃f (constF f ∘f constF g)
   constF-comp f g .transf-eq = ≈-refl
 
 ------------------------------------------------------------------------------
@@ -138,10 +143,8 @@ module _ {o m e o' m' e' os es}
   changeCat : Fam A 𝒞 → Fam A 𝒟
   changeCat P .fm a = F .fobj (P .fm a)
   changeCat P .subst a₁≈a₂ = F .fmor (P .subst a₁≈a₂)
-  changeCat P .refl* =
-    𝒟 .isEquiv .trans (F .fmor-cong (P .refl*)) (F .fmor-id)
-  changeCat P .trans* e₁ e₂ =
-    𝒟 .isEquiv .trans (F .fmor-cong (P .trans* e₁ e₂)) (F .fmor-comp _ _)
+  changeCat P .refl* = 𝒟 .isEquiv .trans (F .fmor-cong (P .refl*)) (F .fmor-id)
+  changeCat P .trans* e₁ e₂ = 𝒟 .isEquiv .trans (F .fmor-cong (P .trans* e₁ e₂)) (F .fmor-comp _ _)
 
   open _⇒f_
   open _≃f_
@@ -199,8 +202,7 @@ module _ {o m e os es} {𝒞 : Category o m e} where
   reindex-id .transf x = id _
   reindex-id .natural x₁≈x₂ = id-swap
 
-  reindex-comp : ∀ {X Y Z} {f : Y ⇒s Z} {g : X ⇒s Y} {P : Fam Z 𝒞} →
-                 ((P [ f ]) [ g ]) ⇒f (P [ f ∘S g ])
+  reindex-comp : ∀ {X Y Z} {f : Y ⇒s Z} {g : X ⇒s Y} {P : Fam Z 𝒞} → ((P [ f ]) [ g ]) ⇒f (P [ f ∘S g ])
   reindex-comp .transf x = id _
   reindex-comp .natural _ = id-swap
 
@@ -210,8 +212,7 @@ module _ {o m e os es} {𝒞 : Category o m e} where
 
   reindex-≈ : ∀ {X Y} {P : Fam X 𝒞} (f g : Y ⇒s X) → f ≈s g → (P [ f ]) ⇒f (P [ g ])
   reindex-≈ {Y = Y} {P = P} f g f≈g .transf x = P .subst (f≈g .func-eq (Y .Setoid.refl))
-  reindex-≈ {Y = Y} {P = P} f g f≈g .natural y₁≈y₂ =
-    isEquiv .trans (≈-sym (P .trans* _ _)) (P .trans* _ _)
+  reindex-≈ {Y = Y} {P = P} f g f≈g .natural y₁≈y₂ = isEquiv .trans (≈-sym (P .trans* _ _)) (P .trans* _ _)
 
   open _≃f_
 
@@ -222,8 +223,7 @@ module _ {o m e os es} {𝒞 : Category o m e} where
     (reindex-f f g₁ ∘f reindex-f f g₂) ≃f reindex-f f (g₁ ∘f g₂)
   reindex-f-comp g₁ g₂ .transf-eq = isEquiv .refl
 
-  reindex-f-id : ∀ {X Y} (P : Fam X 𝒞) (f : Y ⇒s X) →
-    reindex-f f (idf P) ≃f idf (P [ f ])
+  reindex-f-id : ∀ {X Y} (P : Fam X 𝒞) (f : Y ⇒s X) → reindex-f f (idf P) ≃f idf (P [ f ])
   reindex-f-id P f .transf-eq = isEquiv .refl
 
   reindex-sq :
@@ -283,7 +283,7 @@ module _ {o m e os es} {𝒞 : Category o m e} where
 
   reindex-id-natural : ∀ {X} {P Q : Fam X 𝒞} (f : P ⇒f Q) →
       (reindex-f (idS X) f ∘f reindex-id) ≃f (reindex-id ∘f f)
-  reindex-id-natural {X} {P} {Q} f .transf-eq {x} = id-swap'
+  reindex-id-natural {X} {P} {Q} f .transf-eq {x} = id-swap-sym
 
   reindex-comp-natural : ∀ {X Y Z} {P Q : Fam Z 𝒞}
    (g : Y ⇒s Z) (h : X ⇒s Y) (f : P ⇒f Q) →
@@ -334,8 +334,7 @@ record HasSetoidProducts {o m e} os es (𝒞 : Category o m e) : Set (o ⊔ suc 
   Π-map : ∀ {A} {P Q : Fam A 𝒞} → P ⇒f Q → Π A P ⇒ Π A Q
   Π-map {A} {P} {Q} f = lambdaΠ (Π A P) Q (f ∘f evalΠf P)
 
-  Π-map-cong : ∀ {A} {P Q : Fam A 𝒞}
-               {f₁ f₂ : P ⇒f Q} → f₁ ≃f f₂ → Π-map f₁ ≈ Π-map f₂
+  Π-map-cong : ∀ {A} {P Q : Fam A 𝒞} {f₁ f₂ : P ⇒f Q} → f₁ ≃f f₂ → Π-map f₁ ≈ Π-map f₂
   Π-map-cong f₁≃f₂ = lambdaΠ-cong (∘f-cong f₁≃f₂ (≃f-isEquivalence .refl))
 
   Π-map-id : ∀ {A} {P : Fam A 𝒞} → Π-map (idf _) ≈ id (Π A P)
@@ -371,8 +370,7 @@ record HasSetoidProducts {o m e} os es (𝒞 : Category o m e) : Set (o ⊔ suc 
     ∎
     where open ≈-Reasoning isEquiv
 
-  Π-map-comp : ∀ {A} {P Q R : Fam A 𝒞} (f : Q ⇒f R) (g : P ⇒f Q) →
-               Π-map (f ∘f g) ≈ (Π-map f ∘ Π-map g)
+  Π-map-comp : ∀ {A} {P Q R : Fam A 𝒞} (f : Q ⇒f R) (g : P ⇒f Q) → Π-map (f ∘f g) ≈ (Π-map f ∘ Π-map g)
   Π-map-comp {A} {P} {Q} {R} f g =
     begin
       lambdaΠ (Π A P) R ((f ∘f g) ∘f evalΠf P)
@@ -430,8 +428,7 @@ record HasWeakSetoidProducts {o m e} os es (𝒞 : Category o m e) : Set (o ⊔ 
   Π-map : ∀ {A} {P Q : Fam A 𝒞} → P ⇒f Q → Π A P ⇒ Π A Q
   Π-map {A} {P} {Q} f = lambdaΠ (Π A P) Q (f ∘f evalΠf P)
 
-  Π-map-cong : ∀ {A} {P Q : Fam A 𝒞}
-               {f₁ f₂ : P ⇒f Q} → f₁ ≃f f₂ → Π-map f₁ ≈ Π-map f₂
+  Π-map-cong : ∀ {A} {P Q : Fam A 𝒞} {f₁ f₂ : P ⇒f Q} → f₁ ≃f f₂ → Π-map f₁ ≈ Π-map f₂
   Π-map-cong f₁≃f₂ = lambdaΠ-cong (∘f-cong f₁≃f₂ (≃f-isEquivalence .refl))
 
   -- With extensionality gone, these are laws of the chosen structure.
@@ -456,7 +453,7 @@ open import functor
 module _ {o m e os es} {𝒞 : Category o m e} where
 
   private
-    module 𝒞C = Category 𝒞
+    module 𝒞 = Category 𝒞
 
   open Functor
   open Fam
@@ -464,7 +461,7 @@ module _ {o m e os es} {𝒞 : Category o m e} where
   fam→functor : ∀ {A : Setoid os es} → Fam A 𝒞 → Functor (setoid→category A) 𝒞
   fam→functor F .fobj = F .fm
   fam→functor F .fmor ⟪ eq ⟫ = F .subst eq
-  fam→functor F .fmor-cong _ = 𝒞C.≈-refl
+  fam→functor F .fmor-cong _ = 𝒞.≈-refl
   fam→functor F .fmor-id = F .refl*
   fam→functor F .fmor-comp f g = F .trans* _ _
 
@@ -476,12 +473,11 @@ module _ {o m e os es} {𝒞 : Category o m e} where
 
   fam→functor-eta : ∀ {A : Setoid os es} (D : Functor (setoid→category A) 𝒞) →
                     NatIso D (fam→functor (functor→fam D))
-  fam→functor-eta D .NatIso.transform .NatTrans.transf x = 𝒞C.id _
-  fam→functor-eta D .NatIso.transform .NatTrans.natural ⟪ p ⟫ =
-    𝒞C.≈-trans 𝒞C.id-right (𝒞C.≈-sym 𝒞C.id-left)
-  fam→functor-eta D .NatIso.transf-iso x .Category.IsIso.inverse = 𝒞C.id _
-  fam→functor-eta D .NatIso.transf-iso x .Category.IsIso.f∘inverse≈id = 𝒞C.id-left
-  fam→functor-eta D .NatIso.transf-iso x .Category.IsIso.inverse∘f≈id = 𝒞C.id-left
+  fam→functor-eta D .NatIso.transform .NatTrans.transf x = 𝒞.id _
+  fam→functor-eta D .NatIso.transform .NatTrans.natural ⟪ p ⟫ = 𝒞.≈-trans 𝒞.id-right (𝒞.≈-sym 𝒞.id-left)
+  fam→functor-eta D .NatIso.transf-iso x .Category.IsIso.inverse = 𝒞.id _
+  fam→functor-eta D .NatIso.transf-iso x .Category.IsIso.f∘inverse≈id = 𝒞.id-left
+  fam→functor-eta D .NatIso.transf-iso x .Category.IsIso.inverse∘f≈id = 𝒞.id-left
 
 module _ {o m e} os es (𝒞 : Category o m e)
          (hasDiscreteLimits : ∀ (A : Setoid os es) → HasLimits (setoid→category A) 𝒞)

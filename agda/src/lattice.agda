@@ -63,8 +63,7 @@ record BooleanAlgebra (X : DistributiveLattice) : Set where
       (≤-trans (∧-mono ≤-refl compl-∨)
         (≤-trans (∧-∨-distrib x y (¬ y))
           [ ≤-trans x#y ≤-bottom ∨ π₂ ]))
-  #-↔-≤¬ .proj₂ x≤¬y =
-    ≤-trans (∧-mono x≤¬y ≤-refl) (≤-trans ∧-comm compl-∧)
+  #-↔-≤¬ .proj₂ x≤¬y = ≤-trans (∧-mono x≤¬y ≤-refl) (≤-trans ∧-comm compl-∧)
 
   ≤-#-¬ : ∀ {a b} → (a ≤ b) ⇔ (a # ¬ b)
   ≤-#-¬ .proj₁ a≤b = ≤-trans (∧-mono a≤b ≤-refl) compl-∧
@@ -75,8 +74,7 @@ record BooleanAlgebra (X : DistributiveLattice) : Set where
           (≤-trans (∨-mono ≤-refl a#¬b) [ π₂ ∨ ≤-bottom ])))
 
   ¬-antitone : ∀ {x y} → x ≤ y → ¬ y ≤ ¬ x
-  ¬-antitone x≤y =
-    #-↔-≤¬ .proj₁ (#-sym (#-mono x≤y _ (#-sym (#-↔-≤¬ .proj₂ ≤-refl))))
+  ¬-antitone x≤y = #-↔-≤¬ .proj₁ (#-sym (#-mono x≤y _ (#-sym (#-↔-≤¬ .proj₂ ≤-refl))))
 
   ¬¬-intro : ∀ {x} → x ≤ ¬ (¬ x)
   ¬¬-intro = #-↔-≤¬ .proj₁ (≤-#-¬ .proj₁ ≤-refl)
@@ -89,8 +87,7 @@ record BooleanAlgebra (X : DistributiveLattice) : Set where
           [ π₂ ∨ ≤-trans (≤-trans ∧-comm compl-∧) ≤-bottom ]))
 
   #-reflect : ∀ {x y} → (∀ z → y # z → x # z) → x ≤ y
-  #-reflect {x} {y} h =
-    ≤-trans (#-↔-≤¬ .proj₁ (h (¬ y) (#-sym (#-↔-≤¬ .proj₂ ≤-refl)))) ¬-involutive
+  #-reflect {x} {y} h = ≤-trans (#-↔-≤¬ .proj₁ (h (¬ y) (#-sym (#-↔-≤¬ .proj₂ ≤-refl)))) ¬-involutive
 
 ------------------------------------------------------------------------------
 -- Every distributive lattice is a commutative semiring (+ = ∨, · = ∧), and a Boolean algebra on the
@@ -126,8 +123,7 @@ module _ (X : DistributiveLattice) where
   asSemiring .CS.CommutativeSemiring.·-+-distribₗ {x} {y} {z} =
     ∧-∨-distrib x y z ,
     J.[ M.⟨ M.π₁ , ≤-trans M.π₂ J.inl ⟩ , M.⟨ M.π₁ , ≤-trans M.π₂ J.inr ⟩ ]
-  asSemiring .CS.CommutativeSemiring.ε-annihilₗ {x} =
-    M.π₁ , M.⟨ ≤-refl , Bt.≤-bottom ⟩
+  asSemiring .CS.CommutativeSemiring.ε-annihilₗ {x} = M.π₁ , M.⟨ ≤-refl , Bt.≤-bottom ⟩
 
   asBoolean : BooleanAlgebra X → CS.BooleanAlgebra asSemiring
   asBoolean ba .CS.BooleanAlgebra.∧-idem = ∧-idem

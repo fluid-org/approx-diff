@@ -3,7 +3,7 @@
 open import Level using (0ℓ)
 open import Data.Nat using (suc; _+_)
 open import Data.Product using (Σ; _,_)
-open import every using (Every; []; _∷_)
+open import Data.List.Relation.Unary.All using ([]; _∷_) renaming (All to Every)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; subst)
 open import prop-setoid using (Setoid)
 open import commutative-semiring using (CommutativeSemiring)
@@ -27,18 +27,6 @@ open import language-operational.evaluation Sig S ℐ ctrl-weight
 private
   module M = matrix.Mat S
 open Category M.cat using (_⇒_)
-
-Derivation : ∀ {Γ τ} (γ : Env Γ) (t : Γ ⊢ τ) → Set ℓ
-Derivation {τ = τ} γ t = Σ (Val τ) λ v → Σ (suc (width-env γ) ⇒ width v) λ R → γ , t ⇓ v [ R ]
-
-Derivations : ∀ {Γ is} (γ : Env Γ) (Ms : Every (λ s → Γ ⊢ base s) is) → Set ℓ
-Derivations {is = is} γ Ms =
-  Σ (sort-vals is) λ vs → Σ (suc (width-env γ) ⇒ bases-width is) λ Rs → γ , Ms ⇓s vs [ Rs ]
-
-MapDerivation : ∀ {Γ} (γ : Env Γ) (τ₀ : type 1) (σr : type 0) (s : Γ ▸ τ₀ [ σr ] ⊢ σr) (σ' : type 1) → Set ℓ
-MapDerivation γ τ₀ σr s σ' =
-  Σ (Val (σ' [ μ τ₀ ])) λ v → Σ (Val (σ' [ σr ])) λ v' →
-  Σ ((suc (width-env γ) + width v) ⇒ width v') λ F → Map γ {τ₀} {σr} s σ' v v' F
 
 private
   roll-inj : ∀ {τ : type 1} {v v' : Val (τ [ μ τ ])} → roll {τ} v ≡ roll v' → v ≡ v'
@@ -89,30 +77,27 @@ unique (⇓-brel D) (⇓-brel D') with unique-s D D'
 unique (⇓-roll D) (⇓-roll D') with unique D D'
 ... | refl = refl
 unique (⇓-fold {τ = τ₀} {σ = σr} {s = s} D M) (⇓-fold D' M') with unique D D'
-... | refl with unique-map {τ₀ = τ₀} {σr = σr} {s = s} M M' refl
+... | refl with unique-map M M' refl
 ...   | refl = refl
 
 unique-s [] [] = refl
 unique-s (D ∷ Ds) (D' ∷ Ds') with unique D D' | unique-s Ds Ds'
 ... | refl | refl = refl
 
-unique-map {τ₀ = τ₀} {σr = σr} {s = s} (m-rec M D) (m-rec M' D') refl
-  with unique-map {τ₀ = τ₀} {σr = σr} {s = s} M M' refl
+unique-map {τ₀ = τ₀} {σr = σr} {s = s} (m-rec M D) (m-rec M' D') refl with unique-map M M' refl
 ... | refl with unique D D'
 ...   | refl = refl
 unique-map m-unit m-unit refl = refl
 unique-map m-base m-base refl = refl
 unique-map m-arrow m-arrow refl = refl
-unique-map {τ₀ = τ₀} {σr = σr} {s = s} (m-inl M) (m-inl M') refl
-  with unique-map {τ₀ = τ₀} {σr = σr} {s = s} M M' refl
+unique-map {τ₀ = τ₀} {σr = σr} {s = s} (m-inl M) (m-inl M') refl with unique-map M M' refl
 ... | refl = refl
-unique-map {τ₀ = τ₀} {σr = σr} {s = s} (m-inr M) (m-inr M') refl
-  with unique-map {τ₀ = τ₀} {σr = σr} {s = s} M M' refl
+unique-map {τ₀ = τ₀} {σr = σr} {s = s} (m-inr M) (m-inr M') refl with unique-map M M' refl
 ... | refl = refl
 unique-map {τ₀ = τ₀} {σr = σr} {s = s} (m-pair M₁ M₂) (m-pair M₁' M₂') refl
-  with unique-map {τ₀ = τ₀} {σr = σr} {s = s} M₁ M₁' refl | unique-map {τ₀ = τ₀} {σr = σr} {s = s} M₂ M₂' refl
+  with unique-map M₁ M₁' refl | unique-map M₂ M₂' refl
 ... | refl | refl = refl
 unique-map {τ₀ = τ₀} {σr = σr} {s = s} (m-mu {τ' = τ'} M) (m-mu M') e
   with subst-inj (unfold₁-inst τ' (μ τ₀)) (roll-inj e)
-... | refl with unique-map {τ₀ = τ₀} {σr = σr} {s = s} M M' refl
+... | refl with unique-map M M' refl
 ...   | refl = refl

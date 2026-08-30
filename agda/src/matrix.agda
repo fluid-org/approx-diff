@@ -54,20 +54,10 @@ module Mat {o ℓ} {A : Setoid o ℓ} (S : CommutativeSemiring A) where
   open import prop-setoid using (IsEquivalence)
   open import categories using (Category)
 
-  module +-to-Σ
-    {p} (_~_ : Carrier → Carrier → Prop p)
-    (~-refl : ∀ {x} → x ~ x)
-    (+-preserves : ∀ {x₁ x₂ y₁ y₂} → x₁ ~ x₂ → y₁ ~ y₂ → (x₁ + y₁) ~ (x₂ + y₂))
-    where
-
-    Σ-preserves : ∀ {n} {f g : Fin n → Carrier} → (∀ i → f i ~ g i) → Σ {n} f ~ Σ {n} g
-    Σ-preserves {zero} _ = ~-refl
-    Σ-preserves {suc n} h = +-preserves (h zero) (Σ-preserves {n} (λ i → h (suc i)))
-
   Σ-cong : ∀ {n} {f g : Fin n → Carrier} → (∀ i → f i ≈ g i) → Σ {n} f ≈ Σ {n} g
-  Σ-cong = +-to-Σ.Σ-preserves _≈_ refl +-cong
+  Σ-cong {zero} _ = refl
+  Σ-cong {suc n} h = +-cong (h zero) (Σ-cong {n} (λ i → h (suc i)))
 
-  -- Equality version; not an instance of Σ-preserves, which takes Prop-valued relations.
   Σ-cong-≡ : ∀ {n} {f g : Fin n → Carrier} → (∀ i → f i ≡.≡ g i) → Σ {n} f ≡.≡ Σ {n} g
   Σ-cong-≡ {zero}  p = ≡.refl
   Σ-cong-≡ {suc n} p = ≡.cong₂ _+_ (p zero) (Σ-cong-≡ {n} (λ i → p (suc i)))
@@ -82,27 +72,30 @@ module Mat {o ℓ} {A : Setoid o ℓ} (S : CommutativeSemiring A) where
   Σ-ε {zero} = refl
   Σ-ε {suc n} = trans +-lunit (Σ-ε {n})
 
+  private
+    Σ-ε· : ∀ {n} (f : Fin n → Carrier) → Σ {n} (λ j → ε · f j) ≈ ε
+    Σ-ε· {n} f = trans (Σ-cong {n} (λ j → ε-annihilₗ)) (Σ-ε {n})
+
+    ·ε-Σ : ∀ {n} (f : Fin n → Carrier) → Σ {n} (λ j → f j · ε) ≈ ε
+    ·ε-Σ {n} f = trans (Σ-cong {n} (λ j → ε-annihilᵣ)) (Σ-ε {n})
+
+    ε·+ : ∀ {x y} → ((ε · x) + y) ≈ y
+    ε·+ = trans (+-cong ε-annihilₗ refl) +-lunit
+
   Σ-unit : ∀ {n} (i : Fin n) (f : Fin n → Carrier) → Σ {n} (λ j → e i j · f j) ≈ f i
-  Σ-unit {suc n} zero f =
-    trans (+-cong ·-lunit (trans (Σ-cong {n} (λ j → ε-annihilₗ)) (Σ-ε {n})))
-          (trans +-comm +-lunit)
-  Σ-unit {suc n} (suc i) f =
-    trans (+-cong ε-annihilₗ refl)
-          (trans +-lunit (Σ-unit i (λ j → f (suc j))))
+  Σ-unit {suc n} zero f = trans (+-cong ·-lunit (Σ-ε· {n} _)) +-runit
+  Σ-unit {suc n} (suc i) f = trans ε·+ (Σ-unit i (λ j → f (suc j)))
 
   Σ-·-distribᵣ : ∀ {n} (f : Fin n → Carrier) (x : Carrier) → Σ {n} f · x ≈ Σ {n} (λ j → f j · x)
   Σ-·-distribᵣ {zero} f x = ε-annihilₗ
-  Σ-·-distribᵣ {suc n} f x =
-    trans ·-+-distribᵣ (+-cong refl (Σ-·-distribᵣ {n} (λ j → f (suc j)) x))
+  Σ-·-distribᵣ {suc n} f x = trans ·-+-distribᵣ (+-cong refl (Σ-·-distribᵣ {n} (λ j → f (suc j)) x))
 
   Σ-·-distribₗ : ∀ {n} (x : Carrier) (f : Fin n → Carrier) → x · Σ {n} f ≈ Σ {n} (λ j → x · f j)
-  Σ-·-distribₗ {n} x f =
-    trans ·-comm (trans (Σ-·-distribᵣ f x) (Σ-cong {n} (λ j → ·-comm)))
+  Σ-·-distribₗ {n} x f = trans ·-comm (trans (Σ-·-distribᵣ f x) (Σ-cong {n} (λ j → ·-comm)))
 
   Σ-+ : ∀ {n} (g h : Fin n → Carrier) → Σ {n} g + Σ {n} h ≈ Σ {n} (λ j → g j + h j)
   Σ-+ {zero} g h = +-lunit
-  Σ-+ {suc n} g h =
-    trans +-interchange (+-cong refl (Σ-+ {n} (λ j → g (suc j)) (λ j → h (suc j))))
+  Σ-+ {suc n} g h = trans +-interchange (+-cong refl (Σ-+ {n} (λ j → g (suc j)) (λ j → h (suc j))))
 
   Σ-interchange : ∀ {m n} (f : Fin m → Fin n → Carrier) → Σ {m} (λ i → Σ {n} (f i)) ≈ Σ {n} (λ j → Σ {m} (λ i → f i j))
   Σ-interchange {zero} {n} f = sym (Σ-ε {n})
@@ -117,6 +110,9 @@ module Mat {o ℓ} {A : Setoid o ℓ} (S : CommutativeSemiring A) where
 
   ∘-cong : ∀ {m n k} {M₁ M₂ : Matrix m n} {N₁ N₂ : Matrix n k} → M₁ ≈ₘ M₂ → N₁ ≈ₘ N₂ → M₁ ∘ N₁ ≈ₘ M₂ ∘ N₂
   ∘-cong {m} {n} p q i k = Σ-cong {n} (λ j → ·-cong (p i j) (q j k))
+
+  ᵀ-∘ : ∀ {m n k} (M : Matrix m n) (N : Matrix n k) → ((M ∘ N) ᵀ) ≈ₘ ((N ᵀ) ∘ (M ᵀ))
+  ᵀ-∘ {n = n} M N k i = Σ-cong {n} (λ j → ·-comm)
 
   id-left : ∀ {m n} {M : Matrix m n} → I ∘ M ≈ₘ M
   id-left {M = M} i k = Σ-unit i (λ j → M j k)
@@ -177,12 +173,10 @@ module Mat {o ℓ} {A : Setoid o ℓ} (S : CommutativeSemiring A) where
           (sym (Σ-+ {n} (λ j → M i j · N₁ j k) (λ j → M i j · N₂ j k)))
 
   comp-bilinear-ε₁ : ∀ {m n k} (N : Matrix n k) → εₘ ∘ N ≈ₘ εₘ {m} {k}
-  comp-bilinear-ε₁ {n = n} N i k =
-    trans (Σ-cong {n} (λ j → ε-annihilₗ)) (Σ-ε {n})
+  comp-bilinear-ε₁ {n = n} N i k = Σ-ε· {n} _
 
   comp-bilinear-ε₂ : ∀ {m n k} (M : Matrix m n) → M ∘ εₘ ≈ₘ εₘ {m} {k}
-  comp-bilinear-ε₂ {n = n} M i k =
-    trans (Σ-cong {n} (λ j → ε-annihilᵣ)) (Σ-ε {n})
+  comp-bilinear-ε₂ {n = n} M i k = ·ε-Σ {n} _
 
   cmon : CMonEnriched cat
   cmon .CMonEnriched.homCM m n .CommutativeMonoid.ε = εₘ
@@ -213,45 +207,36 @@ module Mat {o ℓ} {A : Setoid o ℓ} (S : CommutativeSemiring A) where
   in₂ : ∀ {m n} → Matrix (m +ℕ n) n
   in₂ = p₂ ᵀ
 
-  private
-    Σ-ε· : ∀ {n} (f : Fin n → Carrier) → Σ {n} (λ j → ε · f j) ≈ ε
-    Σ-ε· {n} f = trans (Σ-cong {n} (λ j → ε-annihilₗ)) (Σ-ε {n})
-
-    ·ε-Σ : ∀ {n} (f : Fin n → Carrier) → Σ {n} (λ j → f j · ε) ≈ ε
-    ·ε-Σ {n} f = trans (Σ-cong {n} (λ j → ε-annihilᵣ)) (Σ-ε {n})
-
   id-1 : ∀ m n → p₁ {m} {n} ∘ in₁ {m} {n} ≈ₘ I
-  id-1 (suc m) n zero zero = trans (+-cong ·-lunit (Σ-ε· {m +ℕ n} _)) (trans +-comm +-lunit)
+  id-1 (suc m) n zero zero = trans (+-cong ·-lunit (Σ-ε· {m +ℕ n} _)) +-runit
   id-1 (suc m) n zero (suc k) = trans (+-cong ε-annihilᵣ (Σ-ε· {m +ℕ n} _)) +-lunit
   id-1 (suc m) n (suc i) zero = trans (+-cong ε-annihilₗ (·ε-Σ {m +ℕ n} _)) +-lunit
-  id-1 (suc m) n (suc i) (suc k) = trans (+-cong ε-annihilₗ refl) (trans +-lunit (id-1 m n i k))
+  id-1 (suc m) n (suc i) (suc k) = trans ε·+ (id-1 m n i k)
 
   id-2 : ∀ m n → p₂ {m} {n} ∘ in₂ {m} {n} ≈ₘ I
   id-2 zero n i j = trans (Σ-unit i (λ k → e j k)) (e-sym j i)
-  id-2 (suc m) n i j = trans (+-cong ε-annihilₗ refl) (trans +-lunit (id-2 m n i j))
+  id-2 (suc m) n i j = trans ε·+ (id-2 m n i j)
 
   zero-1 : ∀ m n → p₁ {m} {n} ∘ in₂ {m} {n} ≈ₘ εₘ
   zero-1 zero n ()
   zero-1 (suc m) n zero j = trans (+-cong ε-annihilᵣ (Σ-ε· {m +ℕ n} _)) +-lunit
-  zero-1 (suc m) n (suc i) j = trans (+-cong ε-annihilₗ refl) (trans +-lunit (zero-1 m n i j))
+  zero-1 (suc m) n (suc i) j = trans ε·+ (zero-1 m n i j)
 
   zero-2 : ∀ m n → p₂ {m} {n} ∘ in₁ {m} {n} ≈ₘ εₘ
   zero-2 zero n _ ()
   zero-2 (suc m) n i zero = trans (+-cong ε-annihilₗ (·ε-Σ {m +ℕ n} _)) +-lunit
-  zero-2 (suc m) n i (suc j) = trans (+-cong ε-annihilₗ refl) (trans +-lunit (zero-2 m n i j))
+  zero-2 (suc m) n i (suc j) = trans ε·+ (zero-2 m n i j)
 
   id-+ : ∀ m n → (in₁ {m} {n} ∘ p₁ {m} {n}) +ₘ (in₂ {m} {n} ∘ p₂ {m} {n}) ≈ₘ I {m +ℕ n}
   id-+ zero n i j =
     trans +-lunit (trans (Σ-cong {n} (λ k → ·-cong (e-sym k i) refl)) (Σ-unit i (λ k → e k j)))
   id-+ (suc m) n zero zero =
-    trans (+-cong (+-cong ·-lunit (Σ-ε· {m} _)) (Σ-ε· {n} _))
-          (trans (+-cong (trans +-comm +-lunit) refl) (trans +-comm +-lunit))
+    trans (+-cong (+-cong ·-lunit (Σ-ε· {m} _)) (Σ-ε· {n} _)) (trans (+-cong +-runit refl) +-runit)
   id-+ (suc m) n zero (suc j) =
     trans (+-cong (+-cong ε-annihilᵣ (Σ-ε· {m} _)) (Σ-ε· {n} _)) (trans (+-cong +-lunit refl) +-lunit)
   id-+ (suc m) n (suc i) zero =
     trans (+-cong (+-cong ε-annihilₗ (·ε-Σ {m} _)) (·ε-Σ {n} _)) (trans (+-cong +-lunit refl) +-lunit)
-  id-+ (suc m) n (suc i) (suc j) =
-    trans (+-cong (+-cong ε-annihilₗ refl) refl) (trans (+-cong +-lunit refl) (id-+ m n i j))
+  id-+ (suc m) n (suc i) (suc j) = trans (+-cong ε·+ refl) (id-+ m n i j)
 
   biproduct : ∀ m n → Biproduct cmon m n
   biproduct m n .Biproduct.prod = m +ℕ n
@@ -322,46 +307,27 @@ module Mat {o ℓ} {A : Setoid o ℓ} (S : CommutativeSemiring A) where
   concat-split {suc x} w (suc i) = concat-split {x} (λ j → w (suc j)) i
 
   Σ-p₁ : ∀ {x y} (w : Vec (x +ℕ y)) (i : Fin x) → Σ {x +ℕ y} (λ j → p₁ {x} {y} i j · w j) ≈ split₁ {x} w i
-  Σ-p₁ {suc x} w zero =
-    trans (+-cong ·-lunit (trans (Σ-cong {x +ℕ _} (λ j → ε-annihilₗ)) (Σ-ε {x +ℕ _})))
-          (trans +-comm +-lunit)
-  Σ-p₁ {suc x} w (suc i) =
-    trans (+-cong ε-annihilₗ refl) (trans +-lunit (Σ-p₁ {x} (λ j → w (suc j)) i))
+  Σ-p₁ {suc x} w zero = trans (+-cong ·-lunit (Σ-ε· {x +ℕ _} _)) +-runit
+  Σ-p₁ {suc x} w (suc i) = trans ε·+ (Σ-p₁ {x} (λ j → w (suc j)) i)
 
   Σ-p₂ : ∀ {x y} (w : Vec (x +ℕ y)) (i : Fin y) → Σ {x +ℕ y} (λ j → p₂ {x} {y} i j · w j) ≈ split₂ {x} w i
   Σ-p₂ {zero} w i = Σ-unit i w
-  Σ-p₂ {suc x} w i =
-    trans (+-cong ε-annihilₗ refl) (trans +-lunit (Σ-p₂ {x} (λ j → w (suc j)) i))
+  Σ-p₂ {suc x} w i = trans ε·+ (Σ-p₂ {x} (λ j → w (suc j)) i)
 
   Σ-in₁ : ∀ {x y} (u : Vec x) (i : Fin (x +ℕ y)) →
           Σ {x} (λ j → in₁ {x} {y} i j · u j) ≈ concat {x} {y} u (λ _ → ε) i
   Σ-in₁ {zero} u i = refl
-  Σ-in₁ {suc x} u zero =
-    trans (+-cong ·-lunit (trans (Σ-cong {x} (λ j → ε-annihilₗ)) (Σ-ε {x})))
-          (trans +-comm +-lunit)
-  Σ-in₁ {suc x} u (suc i) =
-    trans (+-cong ε-annihilₗ refl) (trans +-lunit (Σ-in₁ {x} (λ j → u (suc j)) i))
+  Σ-in₁ {suc x} u zero = trans (+-cong ·-lunit (Σ-ε· {x} _)) +-runit
+  Σ-in₁ {suc x} u (suc i) = trans ε·+ (Σ-in₁ {x} (λ j → u (suc j)) i)
 
   Σ-in₂ : ∀ {x y} (w : Vec y) (i : Fin (x +ℕ y)) →
           Σ {y} (λ j → in₂ {x} {y} i j · w j) ≈ concat {x} {y} (λ _ → ε) w i
   Σ-in₂ {zero} {y} w i = trans (Σ-cong {y} (λ j → ·-cong (e-sym j i) refl)) (Σ-unit i w)
-  Σ-in₂ {suc x} {y} w zero = trans (Σ-cong {y} (λ j → ε-annihilₗ)) (Σ-ε {y})
+  Σ-in₂ {suc x} {y} w zero = Σ-ε· {y} _
   Σ-in₂ {suc x} w (suc i) = Σ-in₂ {x} w i
 
-  ≈ₘ-refl : ∀ {m n} {M : Matrix m n} → M ≈ₘ M
-  ≈ₘ-refl = ≈ₘ-isEquiv .IsEquivalence.refl
-
-  ≈ₘ-trans : ∀ {m n} {M N P : Matrix m n} → M ≈ₘ N → N ≈ₘ P → M ≈ₘ P
-  ≈ₘ-trans = ≈ₘ-isEquiv .IsEquivalence.trans
-
-  ≈ₘ-sym : ∀ {m n} {M N : Matrix m n} → M ≈ₘ N → N ≈ₘ M
-  ≈ₘ-sym = ≈ₘ-isEquiv .IsEquivalence.sym
-
-  ∘-cong₁ : ∀ {m n k} {M₁ M₂ : Matrix m n} {N : Matrix n k} → M₁ ≈ₘ M₂ → M₁ ∘ N ≈ₘ M₂ ∘ N
-  ∘-cong₁ p = ∘-cong p ≈ₘ-refl
-
-  ∘-cong₂ : ∀ {m n k} {M : Matrix m n} {N₁ N₂ : Matrix n k} → N₁ ≈ₘ N₂ → M ∘ N₁ ≈ₘ M ∘ N₂
-  ∘-cong₂ = ∘-cong ≈ₘ-refl
+  open Category cat public using (∘-cong₁; ∘-cong₂)
+    renaming (≈-refl to ≈ₘ-refl; ≈-sym to ≈ₘ-sym; ≈-trans to ≈ₘ-trans)
 
   +ₘ-cong : ∀ {m n} {M₁ M₂ N₁ N₂ : Matrix m n} → M₁ ≈ₘ M₂ → N₁ ≈ₘ N₂ → (M₁ +ₘ N₁) ≈ₘ (M₂ +ₘ N₂)
   +ₘ-cong p q i j = +-cong (p i j) (q i j)
@@ -377,10 +343,6 @@ module Mat {o ℓ} {A : Setoid o ℓ} (S : CommutativeSemiring A) where
 
   +ₘ-assoc : ∀ {m n} (M N P : Matrix m n) → ((M +ₘ N) +ₘ P) ≈ₘ (M +ₘ (N +ₘ P))
   +ₘ-assoc M N P i j = +-assoc {x = M i j} {y = N i j} {z = P i j}
-
-  +ₘ-interchange : ∀ {m n} (M N P Q : Matrix m n) →
-                   ((M +ₘ N) +ₘ (P +ₘ Q)) ≈ₘ ((M +ₘ P) +ₘ (N +ₘ Q))
-  +ₘ-interchange M N P Q i j = +-interchange {w = M i j} {x = N i j} {y = P i j} {z = Q i j}
 
   +ₘ-swap-mid : ∀ {m n} (M N P : Matrix m n) → (M +ₘ (N +ₘ P)) ≈ₘ (N +ₘ (M +ₘ P))
   +ₘ-swap-mid M N P =

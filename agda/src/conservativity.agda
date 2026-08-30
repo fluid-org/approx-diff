@@ -112,7 +112,7 @@ private
 module _ where
   open prop-setoid._⇒_
   open prop-setoid._≃m_
-  open prop-setoid renaming (mk-≃m to mk-≈s) using (_∘S_; 𝟙; pair; to-𝟙; idS)
+  open prop-setoid renaming (pointwise to mk-≈s) using (_∘S_; 𝟙; pair; to-𝟙; idS)
 
   G-prod : ∀ {x y} → PSh⟨𝒞⟩P.prod (G .fobj x) (G .fobj y) PSh⟨𝒞⟩.⇒ G .fobj (𝒟P.prod x y)
   G-prod {X} {Y} .transf x .func (lift f , lift g) = lift (𝒟P.pair f g)
@@ -990,7 +990,7 @@ GF-preserve-monad .iso .NatIso.transform .transf x .presv = begin
   ≤⟨ (𝐂-isClosure .IsClosureOp.mono ((𝐂-isClosure .IsClosureOp.mono (MP .liftF-⊑ (𝐂-isClosure .IsClosureOp.unit))) PSh⟨𝒞⟩-system.⟨ _ ⟩m)) PSh⟨𝒞⟩-system.[ _ ]m ⟩
     𝐂 (𝐂 (MP .liftF (𝐂 (Definable x))) ⟨ G-monad .transf (F .fobj x) ⟩) [ 𝒟よ .fmor (FM.transform .transf x) ∘H id (opF F) ]
   ∎
-  where open prop-setoid renaming (mk-≃m to mk-≈s)
+  where open prop-setoid renaming (pointwise to mk-≈s)
 
         help : (𝒟よ .fmor (FM.transform .transf x) ∘H id (opF F)) PSh⟨𝒞⟩.∘ (𝒟よ .fmor (FM.transform⁻¹ .transf x) ∘H id (opF F)) PSh⟨𝒞⟩.≈ PSh⟨𝒞⟩.id _
         help .transf-eq x = mk-≈s λ (lift f) → lift (begin

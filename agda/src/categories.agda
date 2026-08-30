@@ -36,8 +36,7 @@ record Category o m e : Set (suc (o ⊔ m ⊔ e)) where
 
     id-left  : ∀ {x y} {f : x ⇒ y} → (id y ∘ f) ≈ f
     id-right : ∀ {x y} {f : x ⇒ y} → (f ∘ id x) ≈ f
-    assoc    : ∀ {w x y z} (f : y ⇒ z) (g : x ⇒ y) (h : w ⇒ x) →
-      ((f ∘ g) ∘ h) ≈ (f ∘ (g ∘ h))
+    assoc    : ∀ {w x y z} (f : y ⇒ z) (g : x ⇒ y) (h : w ⇒ x) → ((f ∘ g) ∘ h) ≈ (f ∘ (g ∘ h))
 
   ≈-refl : ∀ {x y} {f : x ⇒ y} → f ≈ f
   ≈-refl = isEquiv .refl
@@ -53,6 +52,26 @@ record Category o m e : Set (suc (o ⊔ m ⊔ e)) where
 
   ∘-cong₂ : ∀ {x y z} {f : y ⇒ z} {g₁ g₂ : x ⇒ y} → g₁ ≈ g₂ → (f ∘ g₁) ≈ (f ∘ g₂)
   ∘-cong₂ e = ∘-cong (isEquiv .refl) e
+
+  head-cong : ∀ {w x y z} {f : y ⇒ z} {g : x ⇒ y} {h : x ⇒ z} {k : w ⇒ x} → (f ∘ g) ≈ h → (f ∘ (g ∘ k)) ≈ (h ∘ k)
+  head-cong e = isEquiv .trans (isEquiv .sym (assoc _ _ _)) (∘-cong e (isEquiv .refl))
+
+  head-cong-assoc : ∀ {w x y y' z} {f : y ⇒ z} {g : x ⇒ y} {h₁ : y' ⇒ z} {h₂ : x ⇒ y'} {k : w ⇒ x} →
+                    (f ∘ g) ≈ (h₁ ∘ h₂) → (f ∘ (g ∘ k)) ≈ (h₁ ∘ (h₂ ∘ k))
+  head-cong-assoc e = isEquiv .trans (head-cong e) (assoc _ _ _)
+
+  head-cancel : ∀ {w x y} {f : x ⇒ y} {g : y ⇒ x} {k : w ⇒ y} → (f ∘ g) ≈ id y → (f ∘ (g ∘ k)) ≈ k
+  head-cancel e = isEquiv .trans (head-cong e) id-left
+
+  tail-cong : ∀ {w x y z} {f : y ⇒ z} {g : x ⇒ y} {h : w ⇒ x} {k : w ⇒ y} → (g ∘ h) ≈ k → ((f ∘ g) ∘ h) ≈ (f ∘ k)
+  tail-cong e = isEquiv .trans (assoc _ _ _) (∘-cong (isEquiv .refl) e)
+
+  tail-cong-assoc : ∀ {w x x' y z} {f : y ⇒ z} {g : x ⇒ y} {h : w ⇒ x} {k₁ : x' ⇒ y} {k₂ : w ⇒ x'} →
+                    (g ∘ h) ≈ (k₁ ∘ k₂) → ((f ∘ g) ∘ h) ≈ ((f ∘ k₁) ∘ k₂)
+  tail-cong-assoc e = isEquiv .trans (tail-cong e) (isEquiv .sym (assoc _ _ _))
+
+  tail-cancel : ∀ {w x y} {f : x ⇒ y} {g : w ⇒ x} {h : x ⇒ w} → (g ∘ h) ≈ id x → ((f ∘ g) ∘ h) ≈ f
+  tail-cancel e = isEquiv .trans (tail-cong e) id-right
 
   ≡-to-≈ : ∀ {x y} {f g : x ⇒ y} → f ≡ g → f ≈ g
   ≡-to-≈ ≡.refl = ≈-refl
@@ -70,19 +89,23 @@ record Category o m e : Set (suc (o ⊔ m ⊔ e)) where
                 (f ∘ ≡-to-⇒ e) ≈ (≡-to-⇒ e' ∘ g) → (g ∘ ≡-to-⇒ (≡.sym e)) ≈ (≡-to-⇒ (≡.sym e') ∘ f)
   ≡-to-⇒-conj ≡.refl ≡.refl h = ≈-trans id-right (≈-trans (≈-sym id-left) (≈-trans (≈-sym h) (≈-trans id-right (≈-sym id-left))))
 
+  ≡-to-⇒-irr : ∀ {x y} (e e' : x ≡ y) → ≡-to-⇒ e ≈ ≡-to-⇒ e'
+  ≡-to-⇒-irr ≡.refl ≡.refl = ≈-refl
+
+  ≡-to-⇒-comp : ∀ {x y z} (e₁ : x ≡ y) (e₂ : y ≡ z) → (≡-to-⇒ e₂ ∘ ≡-to-⇒ e₁) ≈ ≡-to-⇒ (≡.trans e₁ e₂)
+  ≡-to-⇒-comp ≡.refl ≡.refl = id-left
+
   inv-conj : ∀ {x y x' y'} {f : x ⇒ y} {g : y ⇒ x} {f' : x' ⇒ y'} {g' : y' ⇒ x'} {u : x ⇒ x'}
              {v : y ⇒ y'} → (f ∘ g) ≈ id y → (g' ∘ f') ≈ id x' → (v ∘ f) ≈ (f' ∘ u) → (u ∘ g) ≈ (g' ∘ v)
   inv-conj fg g'f' sq =
-    ≈-trans (≈-sym id-left) (≈-trans (∘-cong (≈-sym g'f') ≈-refl) (≈-trans (assoc _ _ _)
-      (≈-trans (∘-cong ≈-refl (≈-sym (assoc _ _ _))) (≈-trans (∘-cong ≈-refl (∘-cong (≈-sym sq) ≈-refl))
-        (≈-trans (∘-cong ≈-refl (assoc _ _ _))
-          (≈-trans (∘-cong ≈-refl (∘-cong ≈-refl fg)) (∘-cong ≈-refl id-right)))))))
+    ≈-trans (≈-sym id-left) (≈-trans (∘-cong (≈-sym g'f') ≈-refl) (tail-cong (≈-trans (head-cong (≈-sym sq))
+                                                                              (tail-cancel fg))))
 
   id-swap : ∀ {x y}{f : x ⇒ y} → (id y ∘ f) ≈ (f ∘ id x)
   id-swap = isEquiv .trans id-left (≈-sym id-right)
 
-  id-swap' : ∀ {x y}{f : x ⇒ y} → (f ∘ id x) ≈ (id y ∘ f)
-  id-swap' = isEquiv .trans id-right (≈-sym id-left)
+  id-swap-sym : ∀ {x y}{f : x ⇒ y} → (f ∘ id x) ≈ (id y ∘ f)
+  id-swap-sym = isEquiv .trans id-right (≈-sym id-left)
 
   open Setoid renaming (_≈_ to _≃_)
 
@@ -126,12 +149,10 @@ record Category o m e : Set (suc (o ⊔ m ⊔ e)) where
   open Iso
 
   IsIso→Iso : ∀ {x y} {f : x ⇒ y} → IsIso f → Iso x y
-  IsIso→Iso {x} {y} {f} isIso = record
-                                 { fwd = f
-                                 ; bwd = inverse isIso
-                                 ; fwd∘bwd≈id = f∘inverse≈id isIso
-                                 ; bwd∘fwd≈id = inverse∘f≈id isIso
-                                 }
+  IsIso→Iso {f = f} isIso .fwd = f
+  IsIso→Iso isIso .bwd = inverse isIso
+  IsIso→Iso isIso .fwd∘bwd≈id = f∘inverse≈id isIso
+  IsIso→Iso isIso .bwd∘fwd≈id = inverse∘f≈id isIso
 
   Iso-refl : ∀ {x} → Iso x x
   Iso-refl .Iso.fwd = id _
@@ -139,43 +160,24 @@ record Category o m e : Set (suc (o ⊔ m ⊔ e)) where
   Iso-refl .Iso.fwd∘bwd≈id = id-left
   Iso-refl .Iso.bwd∘fwd≈id = id-left
 
+  ≡-Iso : ∀ {x y} → x ≡ y → Iso x y
+  ≡-Iso ≡.refl = Iso-refl
+
   Iso-sym : ∀ {x y} → Iso x y → Iso y x
   Iso-sym iso .fwd = iso .bwd
   Iso-sym iso .bwd = iso .fwd
   Iso-sym iso .fwd∘bwd≈id = bwd∘fwd≈id iso
   Iso-sym iso .bwd∘fwd≈id = fwd∘bwd≈id iso
 
+  ∘-inv : ∀ {x y z} {f : y ⇒ z} {f' : z ⇒ y} {g : x ⇒ y} {g' : y ⇒ x} →
+          (f ∘ f') ≈ id z → (g ∘ g') ≈ id y → ((f ∘ g) ∘ (g' ∘ f')) ≈ id z
+  ∘-inv ff' gg' = ≈-trans (tail-cong (head-cancel gg')) ff'
+
   Iso-trans : ∀ {x y z} → Iso x y → Iso y z → Iso x z
   Iso-trans iso₁ iso₂ .fwd = (iso₂ .fwd) ∘ (iso₁ .fwd)
   Iso-trans iso₁ iso₂ .bwd = (iso₁ .bwd) ∘ (iso₂ .bwd)
-  Iso-trans iso₁ iso₂ .fwd∘bwd≈id = begin
-      (iso₂ .fwd ∘ iso₁ .fwd) ∘ (iso₁ .bwd ∘ iso₂ .bwd)
-    ≈⟨ assoc _ _ _ ⟩
-      iso₂ .fwd ∘ (iso₁ .fwd ∘ (iso₁ .bwd ∘ iso₂ .bwd))
-    ≈˘⟨ ∘-cong ≈-refl (assoc _ _ _) ⟩
-      iso₂ .fwd ∘ ((iso₁ .fwd ∘ iso₁ .bwd) ∘ iso₂ .bwd)
-    ≈⟨ ∘-cong ≈-refl (∘-cong (fwd∘bwd≈id iso₁) ≈-refl) ⟩
-      iso₂ .fwd ∘ (id _ ∘ iso₂ .bwd)
-    ≈⟨ ∘-cong ≈-refl id-left ⟩
-      iso₂ .fwd ∘ iso₂ .bwd
-    ≈⟨ fwd∘bwd≈id iso₂ ⟩
-      id _
-    ∎
-    where open ≈-Reasoning isEquiv
-  Iso-trans iso₁ iso₂ .bwd∘fwd≈id = begin
-      (iso₁ .bwd ∘ iso₂ .bwd) ∘ (iso₂ .fwd ∘ iso₁ .fwd)
-    ≈⟨ assoc _ _ _ ⟩
-      iso₁ .bwd ∘ (iso₂ .bwd ∘ (iso₂ .fwd ∘ iso₁ .fwd))
-    ≈˘⟨ ∘-cong ≈-refl (assoc _ _ _) ⟩
-      iso₁ .bwd ∘ ((iso₂ .bwd ∘ iso₂ .fwd) ∘ iso₁ .fwd)
-    ≈⟨ ∘-cong ≈-refl (∘-cong (bwd∘fwd≈id iso₂) ≈-refl) ⟩
-      iso₁ .bwd ∘ (id _ ∘ iso₁ .fwd)
-    ≈⟨ ∘-cong ≈-refl id-left ⟩
-      iso₁ .bwd ∘ iso₁ .fwd
-    ≈⟨ bwd∘fwd≈id iso₁ ⟩
-      id _
-    ∎
-    where open ≈-Reasoning isEquiv
+  Iso-trans iso₁ iso₂ .fwd∘bwd≈id = ∘-inv (fwd∘bwd≈id iso₂) (fwd∘bwd≈id iso₁)
+  Iso-trans iso₁ iso₂ .bwd∘fwd≈id = ∘-inv (bwd∘fwd≈id iso₁) (bwd∘fwd≈id iso₂)
 
   opposite : Category o m e
   opposite .obj = obj
@@ -294,8 +296,7 @@ record HasCoproducts {o m e} (𝒞 : Category o m e) : Set (o ⊔ m ⊔ e) where
 
   coprod-m-cong : ∀ {x₁ y₁ x₂ y₂} {f₁ f₂ : x₁ ⇒ x₂} {g₁ g₂ : y₁ ⇒ y₂} →
                   f₁ ≈ f₂ → g₁ ≈ g₂ → coprod-m f₁ g₁ ≈ coprod-m f₂ g₂
-  coprod-m-cong f₁≈f₂ g₁≈g₂ =
-    copair-cong (∘-cong ≈-refl f₁≈f₂) (∘-cong ≈-refl g₁≈g₂)
+  coprod-m-cong f₁≈f₂ g₁≈g₂ = copair-cong (∘-cong ≈-refl f₁≈f₂) (∘-cong ≈-refl g₁≈g₂)
 
   coprod-m-comp : ∀ {x₁ x₂ y₁ y₂ z₁ z₂} (f₁ : y₁ ⇒ z₁) (f₂ : y₂ ⇒ z₂) (g₁ : x₁ ⇒ y₁) (g₂ : x₂ ⇒ y₂) →
     coprod-m (f₁ ∘ g₁) (f₂ ∘ g₂) ≈ (coprod-m f₁ f₂ ∘ coprod-m g₁ g₂)
@@ -313,14 +314,7 @@ record HasCoproducts {o m e} (𝒞 : Category o m e) : Set (o ⊔ m ⊔ e) where
     where open ≈-Reasoning isEquiv
 
   coprod-m-id : ∀ {x y} → coprod-m (id x) (id y) ≈ id (coprod x y)
-  coprod-m-id {x} {y} = begin
-      coprod-m (id x) (id y)
-    ≈⟨ copair-cong id-swap' id-swap' ⟩
-      copair (id _ ∘ in₁) (id _ ∘ in₂)
-    ≈⟨ copair-ext (id _) ⟩
-      id (coprod x y)
-    ∎
-    where open ≈-Reasoning isEquiv
+  coprod-m-id {x} {y} = ≈-trans (copair-cong id-swap-sym id-swap-sym) (copair-ext (id _))
 
   copair-coprod : ∀ {x₁ x₂ y₁ y₂ z} (f₁ : y₁ ⇒ z) (f₂ : y₂ ⇒ z) (g₁ : x₁ ⇒ y₁) (g₂ : x₂ ⇒ y₂) →
     copair (f₁ ∘ g₁) (f₂ ∘ g₂) ≈ (copair f₁ f₂ ∘ coprod-m g₁ g₂)
@@ -336,38 +330,16 @@ record HasCoproducts {o m e} (𝒞 : Category o m e) : Set (o ⊔ m ⊔ e) where
     where open ≈-Reasoning isEquiv
 
   copair-ext0 : ∀ {x y} → copair in₁ in₂ ≈ id (coprod x y)
-  copair-ext0 = begin
-      copair in₁ in₂
-    ≈˘⟨ copair-cong id-left id-left ⟩
-      copair (id _ ∘ in₁) (id _ ∘ in₂)
-    ≈⟨ copair-ext (id _) ⟩
-      id _
-    ∎
-    where open ≈-Reasoning isEquiv
+  copair-ext0 = ≈-trans (≈-sym (copair-cong id-left id-left)) (copair-ext (id _))
+  coprod-m-inv : ∀ {x₁ x₂ y₁ y₂} {f : x₁ ⇒ x₂} {f' : x₂ ⇒ x₁} {g : y₁ ⇒ y₂} {g' : y₂ ⇒ y₁} →
+                 (f ∘ f') ≈ id _ → (g ∘ g') ≈ id _ → (coprod-m f g ∘ coprod-m f' g') ≈ id _
+  coprod-m-inv ff' gg' = ≈-trans (≈-sym (coprod-m-comp _ _ _ _)) (≈-trans (coprod-m-cong ff' gg') coprod-m-id)
 
   coproduct-preserve-iso : ∀ {x₁ x₂ y₁ y₂} → Iso x₁ x₂ → Iso y₁ y₂ → Iso (coprod x₁ y₁) (coprod x₂ y₂)
   coproduct-preserve-iso x₁≅x₂ y₁≅y₂ .Iso.fwd = coprod-m (x₁≅x₂ .Iso.fwd) (y₁≅y₂ .Iso.fwd)
   coproduct-preserve-iso x₁≅x₂ y₁≅y₂ .Iso.bwd = coprod-m (x₁≅x₂ .Iso.bwd) (y₁≅y₂ .Iso.bwd)
-  coproduct-preserve-iso x₁≅x₂ y₁≅y₂ .Iso.fwd∘bwd≈id =
-    begin
-      coprod-m (x₁≅x₂ .Iso.fwd) (y₁≅y₂ .Iso.fwd) ∘ coprod-m (x₁≅x₂ .Iso.bwd) (y₁≅y₂ .Iso.bwd)
-    ≈˘⟨ coprod-m-comp _ _ _ _ ⟩
-      coprod-m (x₁≅x₂ .Iso.fwd ∘ x₁≅x₂ .Iso.bwd) (y₁≅y₂ .Iso.fwd ∘ y₁≅y₂ .Iso.bwd)
-    ≈⟨ coprod-m-cong (x₁≅x₂ .Iso.fwd∘bwd≈id) (y₁≅y₂ .Iso.fwd∘bwd≈id) ⟩
-      coprod-m (id _) (id _)
-    ≈⟨ coprod-m-id ⟩
-      id _
-    ∎ where open ≈-Reasoning isEquiv
-  coproduct-preserve-iso x₁≅x₂ y₁≅y₂ .Iso.bwd∘fwd≈id =
-    begin
-      coprod-m (x₁≅x₂ .Iso.bwd) (y₁≅y₂ .Iso.bwd) ∘ coprod-m (x₁≅x₂ .Iso.fwd) (y₁≅y₂ .Iso.fwd)
-    ≈˘⟨ coprod-m-comp _ _ _ _ ⟩
-      coprod-m (x₁≅x₂ .Iso.bwd ∘ x₁≅x₂ .Iso.fwd) (y₁≅y₂ .Iso.bwd ∘ y₁≅y₂ .Iso.fwd)
-    ≈⟨ coprod-m-cong (x₁≅x₂ .Iso.bwd∘fwd≈id) (y₁≅y₂ .Iso.bwd∘fwd≈id) ⟩
-      coprod-m (id _) (id _)
-    ≈⟨ coprod-m-id ⟩
-      id _
-    ∎ where open ≈-Reasoning isEquiv
+  coproduct-preserve-iso x₁≅x₂ y₁≅y₂ .Iso.fwd∘bwd≈id = coprod-m-inv (x₁≅x₂ .Iso.fwd∘bwd≈id) (y₁≅y₂ .Iso.fwd∘bwd≈id)
+  coproduct-preserve-iso x₁≅x₂ y₁≅y₂ .Iso.bwd∘fwd≈id = coprod-m-inv (x₁≅x₂ .Iso.bwd∘fwd≈id) (y₁≅y₂ .Iso.bwd∘fwd≈id)
 
 coproducts-canonical-iso : ∀ {o m e} {𝒞 : Category o m e}
   (CP₁ CP₂ : HasCoproducts 𝒞) →
@@ -525,8 +497,7 @@ record HasProducts {o m e} (𝒞 : Category o m e) : Set (o ⊔ m ⊔ e) where
       id _
     ∎ where open ≈-Reasoning isEquiv
 
-  swap-natural : ∀ {x₁ x₂ y₁ y₂} (f : x₁ ⇒ y₁) (g : x₂ ⇒ y₂) →
-                 (swap ∘ prod-m f g) ≈ (prod-m g f ∘ swap)
+  swap-natural : ∀ {x₁ x₂ y₁ y₂} (f : x₁ ⇒ y₁) (g : x₂ ⇒ y₂) → (swap ∘ prod-m f g) ≈ (prod-m g f ∘ swap)
   swap-natural f g = begin
       swap ∘ prod-m f g
     ≈⟨ pair-natural _ _ _ ⟩
@@ -567,17 +538,10 @@ record HasProducts {o m e} (𝒞 : Category o m e) : Set (o ⊔ m ⊔ e) where
 
   prod-m-cong : ∀ {x₁ x₂ y₁ y₂} {f₁ f₂ : x₁ ⇒ y₁} {g₁ g₂ : x₂ ⇒ y₂} →
                 f₁ ≈ f₂ → g₁ ≈ g₂ → prod-m f₁ g₁ ≈ prod-m f₂ g₂
-  prod-m-cong f₁≈f₂ g₁≈g₂ =
-    pair-cong (∘-cong f₁≈f₂ ≈-refl) (∘-cong g₁≈g₂ ≈-refl)
+  prod-m-cong f₁≈f₂ g₁≈g₂ = pair-cong (∘-cong f₁≈f₂ ≈-refl) (∘-cong g₁≈g₂ ≈-refl)
 
   pair-ext0 : ∀ {x y} → pair p₁ p₂ ≈ id (prod x y)
-  pair-ext0 = begin pair p₁ p₂
-                      ≈⟨ ≈-sym (pair-cong id-right id-right) ⟩
-                    pair (p₁ ∘ id _) (p₂ ∘ id _)
-                      ≈⟨ pair-ext (id _) ⟩
-                    id _ ∎
-    where open ≈-Reasoning isEquiv
-
+  pair-ext0 = ≈-trans (≈-sym (pair-cong id-right id-right)) (pair-ext (id _))
   prodm-pair-interchange : ∀ {w w' x y} (u : w ⇒ w') (v : x ⇒ y) →
                            (prod-m u (id _) ∘ pair p₁ (v ∘ p₂)) ≈ (pair p₁ (v ∘ p₂) ∘ prod-m u (id _))
   prodm-pair-interchange u v = begin
@@ -586,23 +550,24 @@ record HasProducts {o m e} (𝒞 : Category o m e) : Set (o ⊔ m ⊔ e) where
       pair (u ∘ p₁) (id _ ∘ (v ∘ p₂))
     ≈⟨ pair-cong ≈-refl id-left ⟩
       pair (u ∘ p₁) (v ∘ p₂)
-    ≈˘⟨ pair-cong (pair-p₁ _ _) (≈-trans (assoc _ _ _) (∘-cong ≈-refl (≈-trans (pair-p₂ _ _) id-left))) ⟩
+    ≈˘⟨ pair-cong (pair-p₁ _ _) (tail-cong (≈-trans (pair-p₂ _ _) id-left)) ⟩
       pair (p₁ ∘ prod-m u (id _)) ((v ∘ p₂) ∘ prod-m u (id _))
     ≈˘⟨ pair-natural _ _ _ ⟩
       pair p₁ (v ∘ p₂) ∘ prod-m u (id _)
     ∎ where open ≈-Reasoning isEquiv
 
   prod-m-id : ∀ {x y} → prod-m (id x) (id y) ≈ id (prod x y)
-  prod-m-id =
-    begin
-      pair (id _ ∘ p₁) (id _ ∘ p₂)
-    ≈⟨ pair-cong id-left id-left ⟩
-      pair p₁ p₂
-    ≈⟨ pair-ext0 ⟩
-      id _
-    ∎
+  prod-m-id = ≈-trans (pair-cong id-left id-left) pair-ext0
 
-    where open ≈-Reasoning isEquiv
+  strong-pair : ∀ {w x y z} (q : y ⇒ z) (h : w ⇒ x) (g : w ⇒ y) → (pair p₁ (q ∘ p₂) ∘ pair h g) ≈ pair h (q ∘ g)
+  strong-pair q h g = ≈-trans (pair-natural _ _ _) (pair-cong (pair-p₁ _ _) (tail-cong (pair-p₂ _ _)))
+
+  strong-square : ∀ {w w' x x' y y'} {u : w ⇒ w'} {m : x ⇒ x'} {q' : x ⇒ y} {q : x' ⇒ y'} {v : y ⇒ y'} →
+                  (q ∘ m) ≈ (v ∘ q') → (pair p₁ (q ∘ p₂) ∘ prod-m u m) ≈ (prod-m u v ∘ pair p₁ (q' ∘ p₂))
+  strong-square sq =
+    ≈-trans (strong-pair _ _ _)
+            (≈-trans (pair-cong₂ (head-cong-assoc sq))
+                     (≈-sym (pair-compose _ _ _ _)))
 
   -- Strong (w-threading) projections and product action: the counterparts of
   -- p₁/p₂/prod-m in the co-Kleisli category for the (prod w ⋅) comonad.
@@ -623,99 +588,23 @@ record HasProducts {o m e} (𝒞 : Category o m e) : Set (o ⊔ m ⊔ e) where
                        (h : z ⇒ w) (c₁ : z ⇒ x₁) (c₂ : z ⇒ x₂) →
                        (strong-prod-m f g ∘ pair h (pair c₁ c₂)) ≈ pair (f ∘ pair h c₁) (g ∘ pair h c₂)
   strong-prod-m-pair f g h c₁ c₂ =
-    begin
-      strong-prod-m f g ∘ pair h (pair c₁ c₂)
-    ≈⟨ pair-natural _ _ _ ⟩
-      pair ((f ∘ strong-p₁) ∘ pair h (pair c₁ c₂)) ((g ∘ strong-p₂) ∘ pair h (pair c₁ c₂))
-    ≈⟨ pair-cong (assoc _ _ _) (assoc _ _ _) ⟩
-      pair (f ∘ (strong-p₁ ∘ pair h (pair c₁ c₂))) (g ∘ (strong-p₂ ∘ pair h (pair c₁ c₂)))
-    ≈⟨ pair-cong (∘-cong ≈-refl strong-p₁-pair) (∘-cong ≈-refl strong-p₂-pair) ⟩
-      pair (f ∘ pair h c₁) (g ∘ pair h c₂)
-    ∎
-    where
-    open ≈-Reasoning isEquiv
-
-    strong-p₁-pair : (strong-p₁ ∘ pair h (pair c₁ c₂)) ≈ pair h c₁
-    strong-p₁-pair =
-      ≈-trans (pair-natural _ _ _)
-      (≈-trans (pair-cong (pair-p₁ _ _) (≈-trans (assoc _ _ _) (∘-cong ≈-refl (pair-p₂ _ _))))
-               (pair-cong ≈-refl (pair-p₁ _ _)))
-
-    strong-p₂-pair : (strong-p₂ ∘ pair h (pair c₁ c₂)) ≈ pair h c₂
-    strong-p₂-pair =
-      ≈-trans (pair-natural _ _ _)
-      (≈-trans (pair-cong (pair-p₁ _ _) (≈-trans (assoc _ _ _) (∘-cong ≈-refl (pair-p₂ _ _))))
-               (pair-cong ≈-refl (pair-p₂ _ _)))
-
-  strong-p₁-natural : ∀ {w w' x₁ x₂ y₁ y₂} (u : w ⇒ w') (v₁ : x₁ ⇒ y₁) (v₂ : x₂ ⇒ y₂) →
-                      (strong-p₁ ∘ prod-m u (prod-m v₁ v₂)) ≈ (prod-m u v₁ ∘ strong-p₁)
-  strong-p₁-natural u v₁ v₂ =
-    begin
-      strong-p₁ ∘ prod-m u (prod-m v₁ v₂)
-    ≈⟨ pair-natural _ _ _ ⟩
-      pair (p₁ ∘ prod-m u (prod-m v₁ v₂)) ((p₁ ∘ p₂) ∘ prod-m u (prod-m v₁ v₂))
-    ≈⟨ pair-cong (pair-p₁ _ _) (assoc _ _ _) ⟩
-      pair (u ∘ p₁) (p₁ ∘ (p₂ ∘ prod-m u (prod-m v₁ v₂)))
-    ≈⟨ pair-cong₂ (∘-cong ≈-refl (pair-p₂ _ _)) ⟩
-      pair (u ∘ p₁) (p₁ ∘ (prod-m v₁ v₂ ∘ p₂))
-    ≈˘⟨ pair-cong₂ (assoc _ _ _) ⟩
-      pair (u ∘ p₁) ((p₁ ∘ prod-m v₁ v₂) ∘ p₂)
-    ≈⟨ pair-cong₂ (∘-cong (pair-p₁ _ _) ≈-refl) ⟩
-      pair (u ∘ p₁) ((v₁ ∘ p₁) ∘ p₂)
-    ≈⟨ pair-cong₂ (assoc _ _ _) ⟩
-      pair (u ∘ p₁) (v₁ ∘ (p₁ ∘ p₂))
-    ≈˘⟨ pair-compose _ _ _ _ ⟩
-      prod-m u v₁ ∘ strong-p₁
-    ∎ where open ≈-Reasoning isEquiv
-
-  strong-p₂-natural : ∀ {w w' x₁ x₂ y₁ y₂} (u : w ⇒ w') (v₁ : x₁ ⇒ y₁) (v₂ : x₂ ⇒ y₂) →
-                      (strong-p₂ ∘ prod-m u (prod-m v₁ v₂)) ≈ (prod-m u v₂ ∘ strong-p₂)
-  strong-p₂-natural u v₁ v₂ =
-    begin
-      strong-p₂ ∘ prod-m u (prod-m v₁ v₂)
-    ≈⟨ pair-natural _ _ _ ⟩
-      pair (p₁ ∘ prod-m u (prod-m v₁ v₂)) ((p₂ ∘ p₂) ∘ prod-m u (prod-m v₁ v₂))
-    ≈⟨ pair-cong (pair-p₁ _ _) (assoc _ _ _) ⟩
-      pair (u ∘ p₁) (p₂ ∘ (p₂ ∘ prod-m u (prod-m v₁ v₂)))
-    ≈⟨ pair-cong₂ (∘-cong ≈-refl (pair-p₂ _ _)) ⟩
-      pair (u ∘ p₁) (p₂ ∘ (prod-m v₁ v₂ ∘ p₂))
-    ≈˘⟨ pair-cong₂ (assoc _ _ _) ⟩
-      pair (u ∘ p₁) ((p₂ ∘ prod-m v₁ v₂) ∘ p₂)
-    ≈⟨ pair-cong₂ (∘-cong (pair-p₂ _ _) ≈-refl) ⟩
-      pair (u ∘ p₁) ((v₂ ∘ p₂) ∘ p₂)
-    ≈⟨ pair-cong₂ (assoc _ _ _) ⟩
-      pair (u ∘ p₁) (v₂ ∘ (p₂ ∘ p₂))
-    ≈˘⟨ pair-compose _ _ _ _ ⟩
-      prod-m u v₂ ∘ strong-p₂
-    ∎ where open ≈-Reasoning isEquiv
+    ≈-trans (pair-natural _ _ _)
+      (pair-cong (tail-cong (≈-trans (strong-pair _ _ _) (pair-cong₂ (pair-p₁ _ _))))
+                 (tail-cong (≈-trans (strong-pair _ _ _) (pair-cong₂ (pair-p₂ _ _)))))
 
   strong-prod-m-post : ∀ {w x₁ x₂ y₁ y₂ z₁ z₂} (s₁ : y₁ ⇒ z₁) (s₂ : y₂ ⇒ z₂)
                        (f : prod w x₁ ⇒ y₁) (g : prod w x₂ ⇒ y₂) →
                        (prod-m s₁ s₂ ∘ strong-prod-m f g) ≈ strong-prod-m (s₁ ∘ f) (s₂ ∘ g)
-  strong-prod-m-post s₁ s₂ f g =
-    begin
-      prod-m s₁ s₂ ∘ strong-prod-m f g
-    ≈⟨ pair-compose _ _ _ _ ⟩
-      pair (s₁ ∘ (f ∘ strong-p₁)) (s₂ ∘ (g ∘ strong-p₂))
-    ≈˘⟨ pair-cong (assoc _ _ _) (assoc _ _ _) ⟩
-      strong-prod-m (s₁ ∘ f) (s₂ ∘ g)
-    ∎ where open ≈-Reasoning isEquiv
+  strong-prod-m-post s₁ s₂ f g = ≈-trans (pair-compose _ _ _ _) (≈-sym (pair-cong (assoc _ _ _) (assoc _ _ _)))
 
   strong-prod-m-pre : ∀ {w w' x₁ x₂ y₁ y₂ z₁ z₂} (f : prod w' x₁ ⇒ y₁) (g : prod w' x₂ ⇒ y₂)
                       (u : w ⇒ w') (v₁ : z₁ ⇒ x₁) (v₂ : z₂ ⇒ x₂) →
                       (strong-prod-m f g ∘ prod-m u (prod-m v₁ v₂)) ≈ strong-prod-m (f ∘ prod-m u v₁) (g ∘ prod-m u v₂)
   strong-prod-m-pre f g u v₁ v₂ =
-    begin
-      strong-prod-m f g ∘ prod-m u (prod-m v₁ v₂)
-    ≈⟨ pair-natural _ _ _ ⟩
-      pair ((f ∘ strong-p₁) ∘ prod-m u (prod-m v₁ v₂)) ((g ∘ strong-p₂) ∘ prod-m u (prod-m v₁ v₂))
-    ≈⟨ pair-cong (assoc _ _ _) (assoc _ _ _) ⟩
-      pair (f ∘ (strong-p₁ ∘ prod-m u (prod-m v₁ v₂))) (g ∘ (strong-p₂ ∘ prod-m u (prod-m v₁ v₂)))
-    ≈⟨ pair-cong (∘-cong ≈-refl (strong-p₁-natural _ _ _)) (∘-cong ≈-refl (strong-p₂-natural _ _ _)) ⟩
-      pair (f ∘ (prod-m u v₁ ∘ strong-p₁)) (g ∘ (prod-m u v₂ ∘ strong-p₂))
-    ≈˘⟨ pair-cong (assoc _ _ _) (assoc _ _ _) ⟩
-      strong-prod-m (f ∘ prod-m u v₁) (g ∘ prod-m u v₂)
-    ∎ where open ≈-Reasoning isEquiv
+    ≈-trans (pair-natural _ _ _)
+      (pair-cong
+        (tail-cong-assoc (strong-square (pair-p₁ _ _)))
+        (tail-cong-assoc (strong-square (pair-p₂ _ _))))
 
   strong-prod-m-natural : ∀ {w w' x₁ x₂ y₁ y₂ x₁' x₂' y₁' y₂'}
                           {f : prod w x₁ ⇒ y₁} {g : prod w x₂ ⇒ y₂}
@@ -727,84 +616,27 @@ record HasProducts {o m e} (𝒞 : Category o m e) : Set (o ⊔ m ⊔ e) where
     ≈-trans (strong-prod-m-pre _ _ _ _ _)
       (≈-trans (strong-prod-m-cong sq₁ sq₂) (≈-sym (strong-prod-m-post _ _ _ _)))
 
-  strong-p₁-absorb : ∀ {w x₁ x₂ y₁ y₂} (h : prod w x₁ ⇒ y₁) (k : prod w x₂ ⇒ y₂) →
-                     (strong-p₁ ∘ pair p₁ (strong-prod-m h k)) ≈ pair p₁ (h ∘ strong-p₁)
-  strong-p₁-absorb h k =
-    begin
-      strong-p₁ ∘ pair p₁ (strong-prod-m h k)
-    ≈⟨ pair-natural _ _ _ ⟩
-      pair (p₁ ∘ pair p₁ (strong-prod-m h k)) ((p₁ ∘ p₂) ∘ pair p₁ (strong-prod-m h k))
-    ≈⟨ pair-cong (pair-p₁ _ _) (assoc _ _ _) ⟩
-      pair p₁ (p₁ ∘ (p₂ ∘ pair p₁ (strong-prod-m h k)))
-    ≈⟨ pair-cong₂ (∘-cong ≈-refl (pair-p₂ _ _)) ⟩
-      pair p₁ (p₁ ∘ strong-prod-m h k)
-    ≈⟨ pair-cong₂ (pair-p₁ _ _) ⟩
-      pair p₁ (h ∘ strong-p₁)
-    ∎ where open ≈-Reasoning isEquiv
-
-  strong-p₂-absorb : ∀ {w x₁ x₂ y₁ y₂} (h : prod w x₁ ⇒ y₁) (k : prod w x₂ ⇒ y₂) →
-                     (strong-p₂ ∘ pair p₁ (strong-prod-m h k)) ≈ pair p₁ (k ∘ strong-p₂)
-  strong-p₂-absorb h k =
-    begin
-      strong-p₂ ∘ pair p₁ (strong-prod-m h k)
-    ≈⟨ pair-natural _ _ _ ⟩
-      pair (p₁ ∘ pair p₁ (strong-prod-m h k)) ((p₂ ∘ p₂) ∘ pair p₁ (strong-prod-m h k))
-    ≈⟨ pair-cong (pair-p₁ _ _) (assoc _ _ _) ⟩
-      pair p₁ (p₂ ∘ (p₂ ∘ pair p₁ (strong-prod-m h k)))
-    ≈⟨ pair-cong₂ (∘-cong ≈-refl (pair-p₂ _ _)) ⟩
-      pair p₁ (p₂ ∘ strong-prod-m h k)
-    ≈⟨ pair-cong₂ (pair-p₂ _ _) ⟩
-      pair p₁ (k ∘ strong-p₂)
-    ∎ where open ≈-Reasoning isEquiv
-
   strong-prod-m-comp : ∀ {w x₁ x₂ y₁ y₂ z₁ z₂} (f : prod w y₁ ⇒ z₁) (g : prod w y₂ ⇒ z₂)
                           (h : prod w x₁ ⇒ y₁) (k : prod w x₂ ⇒ y₂) →
                           (strong-prod-m f g ∘ pair p₁ (strong-prod-m h k))
                             ≈ strong-prod-m (f ∘ pair p₁ h) (g ∘ pair p₁ k)
   strong-prod-m-comp f g h k =
-    begin
-      strong-prod-m f g ∘ pair p₁ (strong-prod-m h k)
-    ≈⟨ pair-natural _ _ _ ⟩
-      pair ((f ∘ strong-p₁) ∘ pair p₁ (strong-prod-m h k)) ((g ∘ strong-p₂) ∘ pair p₁ (strong-prod-m h k))
-    ≈⟨ pair-cong (assoc _ _ _) (assoc _ _ _) ⟩
-      pair (f ∘ (strong-p₁ ∘ pair p₁ (strong-prod-m h k))) (g ∘ (strong-p₂ ∘ pair p₁ (strong-prod-m h k)))
-    ≈⟨ pair-cong (∘-cong ≈-refl (strong-p₁-absorb _ _)) (∘-cong ≈-refl (strong-p₂-absorb _ _)) ⟩
-      pair (f ∘ pair p₁ (h ∘ strong-p₁)) (g ∘ pair p₁ (k ∘ strong-p₂))
-    ≈˘⟨ pair-cong (∘-cong ≈-refl (pair-cong₁ (pair-p₁ _ _))) (∘-cong ≈-refl (pair-cong₁ (pair-p₁ _ _))) ⟩
-      pair (f ∘ pair (p₁ ∘ strong-p₁) (h ∘ strong-p₁)) (g ∘ pair (p₁ ∘ strong-p₂) (k ∘ strong-p₂))
-    ≈˘⟨ pair-cong (∘-cong ≈-refl (pair-natural _ _ _)) (∘-cong ≈-refl (pair-natural _ _ _)) ⟩
-      pair (f ∘ (pair p₁ h ∘ strong-p₁)) (g ∘ (pair p₁ k ∘ strong-p₂))
-    ≈˘⟨ pair-cong (assoc _ _ _) (assoc _ _ _) ⟩
-      strong-prod-m (f ∘ pair p₁ h) (g ∘ pair p₁ k)
-    ∎ where open ≈-Reasoning isEquiv
+    ≈-trans (strong-prod-m-pair f g p₁ _ _)
+      (≈-sym (pair-cong
+        (tail-cong (≈-trans (pair-natural _ _ _) (pair-cong₁ (pair-p₁ _ _))))
+        (tail-cong (≈-trans (pair-natural _ _ _) (pair-cong₁ (pair-p₁ _ _))))))
+
+  prod-m-inv : ∀ {x₁ x₂ y₁ y₂} {f : x₁ ⇒ x₂} {f' : x₂ ⇒ x₁} {g : y₁ ⇒ y₂} {g' : y₂ ⇒ y₁} →
+               (f ∘ f') ≈ id _ → (g ∘ g') ≈ id _ → (prod-m f g ∘ prod-m f' g') ≈ id _
+  prod-m-inv ff' gg' =
+    ≈-trans (pair-compose _ _ _ _)
+            (≈-trans (pair-cong (≈-sym (assoc _ _ _)) (≈-sym (assoc _ _ _))) (≈-trans (prod-m-cong ff' gg') prod-m-id))
 
   product-preserves-iso : ∀ {x₁ x₂ y₁ y₂} → Iso x₁ x₂ → Iso y₁ y₂ → Iso (prod x₁ y₁) (prod x₂ y₂)
   product-preserves-iso x₁≅x₂ y₁≅y₂ .Iso.fwd = prod-m (x₁≅x₂ .Iso.fwd) (y₁≅y₂ .Iso.fwd)
   product-preserves-iso x₁≅x₂ y₁≅y₂ .Iso.bwd = prod-m (x₁≅x₂ .Iso.bwd) (y₁≅y₂ .Iso.bwd)
-  product-preserves-iso x₁≅x₂ y₁≅y₂ .Iso.fwd∘bwd≈id =
-    begin
-      prod-m (x₁≅x₂ .Iso.fwd) (y₁≅y₂ .Iso.fwd) ∘ prod-m (x₁≅x₂ .Iso.bwd) (y₁≅y₂ .Iso.bwd)
-    ≈⟨ pair-compose _ _ _ _ ⟩
-      pair (x₁≅x₂ .Iso.fwd ∘ (x₁≅x₂ .Iso.bwd ∘ p₁)) (y₁≅y₂ .Iso.fwd ∘ (y₁≅y₂ .Iso.bwd ∘ p₂))
-    ≈⟨ pair-cong (isEquiv .IsEquivalence.sym (assoc _ _ _)) (isEquiv .IsEquivalence.sym (assoc _ _ _)) ⟩
-      prod-m (x₁≅x₂ .Iso.fwd ∘ x₁≅x₂ .Iso.bwd) (y₁≅y₂ .Iso.fwd ∘ y₁≅y₂ .Iso.bwd)
-    ≈⟨ prod-m-cong (x₁≅x₂ .Iso.fwd∘bwd≈id) (y₁≅y₂ .Iso.fwd∘bwd≈id) ⟩
-      prod-m (id _) (id _)
-    ≈⟨ prod-m-id ⟩
-      id _
-    ∎ where open ≈-Reasoning isEquiv
-  product-preserves-iso x₁≅x₂ y₁≅y₂ .Iso.bwd∘fwd≈id =
-    begin
-      prod-m (x₁≅x₂ .Iso.bwd) (y₁≅y₂ .Iso.bwd) ∘ prod-m (x₁≅x₂ .Iso.fwd) (y₁≅y₂ .Iso.fwd)
-    ≈⟨ pair-compose _ _ _ _ ⟩
-      pair (x₁≅x₂ .Iso.bwd ∘ (x₁≅x₂ .Iso.fwd ∘ p₁)) (y₁≅y₂ .Iso.bwd ∘ (y₁≅y₂ .Iso.fwd ∘ p₂))
-    ≈⟨ pair-cong (isEquiv .IsEquivalence.sym (assoc _ _ _)) (isEquiv .IsEquivalence.sym (assoc _ _ _)) ⟩
-      prod-m (x₁≅x₂ .Iso.bwd ∘ x₁≅x₂ .Iso.fwd) (y₁≅y₂ .Iso.bwd ∘ y₁≅y₂ .Iso.fwd)
-    ≈⟨ prod-m-cong (x₁≅x₂ .Iso.bwd∘fwd≈id) (y₁≅y₂ .Iso.bwd∘fwd≈id) ⟩
-      prod-m (id _) (id _)
-    ≈⟨ prod-m-id ⟩
-      id _
-    ∎ where open ≈-Reasoning isEquiv
+  product-preserves-iso x₁≅x₂ y₁≅y₂ .Iso.fwd∘bwd≈id = prod-m-inv (x₁≅x₂ .Iso.fwd∘bwd≈id) (y₁≅y₂ .Iso.fwd∘bwd≈id)
+  product-preserves-iso x₁≅x₂ y₁≅y₂ .Iso.bwd∘fwd≈id = prod-m-inv (x₁≅x₂ .Iso.bwd∘fwd≈id) (y₁≅y₂ .Iso.bwd∘fwd≈id)
 
   getProduct : ∀ (x y : obj) → Product 𝒞 x y
   getProduct x y .Product.prod = prod x y
@@ -884,48 +716,23 @@ record HasStrongCoproducts {o m e} (𝒞 : Category o m e) (P : HasProducts 𝒞
     copair-ext  : ∀ {w x y z} (h : prod w (coprod x y) ⇒ z) →
                   copair (h ∘ pair p₁ (in₁ ∘ p₂)) (h ∘ pair p₁ (in₂ ∘ p₂)) ≈ h
 
-  copair-cong₁ : ∀ {w x y z} {f₁ f₂ : prod w x ⇒ z} {g : prod w y ⇒ z} →
-                 f₁ ≈ f₂ → copair f₁ g ≈ copair f₂ g
+  copair-cong₁ : ∀ {w x y z} {f₁ f₂ : prod w x ⇒ z} {g : prod w y ⇒ z} → f₁ ≈ f₂ → copair f₁ g ≈ copair f₂ g
   copair-cong₁ f≈ = copair-cong f≈ ≈-refl
 
-  copair-cong₂ : ∀ {w x y z} {f : prod w x ⇒ z} {g₁ g₂ : prod w y ⇒ z} →
-                 g₁ ≈ g₂ → copair f g₁ ≈ copair f g₂
+  copair-cong₂ : ∀ {w x y z} {f : prod w x ⇒ z} {g₁ g₂ : prod w y ⇒ z} → g₁ ≈ g₂ → copair f g₁ ≈ copair f g₂
   copair-cong₂ g≈ = copair-cong ≈-refl g≈
 
   copair-ext0 : ∀ {w x y} → copair (in₁ ∘ p₂ {w} {x}) (in₂ ∘ p₂ {w} {y}) ≈ p₂
-  copair-ext0 = ≈-trans (copair-cong (≈-sym (pair-p₂ _ _)) (≈-sym (pair-p₂ _ _)))
-                        (copair-ext p₂)
+  copair-ext0 = ≈-trans (copair-cong (≈-sym (pair-p₂ _ _)) (≈-sym (pair-p₂ _ _))) (copair-ext p₂)
 
   copair-reindex : ∀ {w w' x y z} (u : w ⇒ w') (f : prod w' x ⇒ z) (g : prod w' y ⇒ z) →
                    (copair f g ∘ prod-m u (id _)) ≈ copair (f ∘ prod-m u (id _)) (g ∘ prod-m u (id _))
-  copair-reindex u f g =
-    ≈-trans (≈-sym (copair-ext _)) (copair-cong c₁ c₂)
+  copair-reindex {w' = w'} {x} {y} {z} u f g =
+    ≈-trans (≈-sym (copair-ext _)) (copair-cong (c in₁ (copair-in₁ f g)) (c in₂ (copair-in₂ f g)))
     where
-      c₁ : ((copair f g ∘ prod-m u (id _)) ∘ pair p₁ (in₁ ∘ p₂)) ≈ (f ∘ prod-m u (id _))
-      c₁ = begin
-          (copair f g ∘ prod-m u (id _)) ∘ pair p₁ (in₁ ∘ p₂)
-        ≈⟨ assoc _ _ _ ⟩
-          copair f g ∘ (prod-m u (id _) ∘ pair p₁ (in₁ ∘ p₂))
-        ≈⟨ ∘-cong ≈-refl (prodm-pair-interchange u in₁) ⟩
-          copair f g ∘ (pair p₁ (in₁ ∘ p₂) ∘ prod-m u (id _))
-        ≈˘⟨ assoc _ _ _ ⟩
-          (copair f g ∘ pair p₁ (in₁ ∘ p₂)) ∘ prod-m u (id _)
-        ≈⟨ ∘-cong (copair-in₁ f g) ≈-refl ⟩
-          f ∘ prod-m u (id _)
-        ∎ where open ≈-Reasoning isEquiv
-
-      c₂ : ((copair f g ∘ prod-m u (id _)) ∘ pair p₁ (in₂ ∘ p₂)) ≈ (g ∘ prod-m u (id _))
-      c₂ = begin
-          (copair f g ∘ prod-m u (id _)) ∘ pair p₁ (in₂ ∘ p₂)
-        ≈⟨ assoc _ _ _ ⟩
-          copair f g ∘ (prod-m u (id _) ∘ pair p₁ (in₂ ∘ p₂))
-        ≈⟨ ∘-cong ≈-refl (prodm-pair-interchange u in₂) ⟩
-          copair f g ∘ (pair p₁ (in₂ ∘ p₂) ∘ prod-m u (id _))
-        ≈˘⟨ assoc _ _ _ ⟩
-          (copair f g ∘ pair p₁ (in₂ ∘ p₂)) ∘ prod-m u (id _)
-        ≈⟨ ∘-cong (copair-in₂ f g) ≈-refl ⟩
-          g ∘ prod-m u (id _)
-        ∎ where open ≈-Reasoning isEquiv
+      c : ∀ {v} (ι : v ⇒ coprod x y) {h : prod w' v ⇒ z} → (copair f g ∘ pair p₁ (ι ∘ p₂)) ≈ h →
+          ((copair f g ∘ prod-m u (id _)) ∘ pair p₁ (ι ∘ p₂)) ≈ (h ∘ prod-m u (id _))
+      c ι e = ≈-trans (tail-cong (prodm-pair-interchange u ι)) (head-cong e)
 
   copair-natural : ∀ {w x y z z'} (h : z ⇒ z') (f : prod w x ⇒ z) (g : prod w y ⇒ z) →
                    (h ∘ copair f g) ≈ copair (h ∘ f) (h ∘ g)
@@ -953,17 +760,7 @@ module Unitor {o m e} {𝒞 : Category o m e} (T : HasTerminal 𝒞) (P : HasPro
   sect-pre f = ≈-trans (pair-natural _ _ _) (pair-cong (≈-sym (to-terminal-ext _)) id-left)
 
   sect-post : ∀ {X Y} (g : X ⇒ Y) → (pair p₁ (g ∘ p₂) ∘ sect) ≈ pair to-terminal g
-  sect-post g = begin
-      pair p₁ (g ∘ p₂) ∘ sect
-    ≈⟨ pair-natural _ _ _ ⟩
-      pair (p₁ ∘ sect) ((g ∘ p₂) ∘ sect)
-    ≈⟨ pair-cong (pair-p₁ _ _) (assoc _ _ _) ⟩
-      pair to-terminal (g ∘ (p₂ ∘ sect))
-    ≈⟨ pair-cong ≈-refl (∘-cong₂ (pair-p₂ _ _)) ⟩
-      pair to-terminal (g ∘ id _)
-    ≈⟨ pair-cong ≈-refl id-right ⟩
-      pair to-terminal g
-    ∎ where open ≈-Reasoning isEquiv
+  sect-post g = ≈-trans (strong-pair _ _ _) (pair-cong₂ id-right)
 
   sect-natural : ∀ {X Y} (f : X ⇒ Y) → (sect ∘ f) ≈ (pair p₁ (f ∘ p₂) ∘ sect)
   sect-natural f = ≈-trans (sect-pre f) (≈-sym (sect-post f))
@@ -1000,6 +797,10 @@ strong-coproducts→coproducts {𝒞 = 𝒞} {P = P} T SCP = result
 
     open Unitor T P
 
+    cin : ∀ {x y z} (f : x ⇒ z) (g : y ⇒ z) {v} (ι : v ⇒ scoprod x y) {h : v ⇒ z} →
+          (scopair (f ∘ p₂) (g ∘ p₂) ∘ pair p₁ (ι ∘ p₂)) ≈ (h ∘ p₂) → ((scopair (f ∘ p₂) (g ∘ p₂) ∘ sect) ∘ ι) ≈ h
+    cin f g ι e = ≈-trans (tail-cong (sect-natural ι)) (≈-trans (head-cong e) (tail-cancel (pair-p₂ _ _)))
+
     result : HasCoproducts 𝒞
     result .HasCoproducts.coprod = scoprod
     result .HasCoproducts.in₁ = in₁
@@ -1007,40 +808,8 @@ strong-coproducts→coproducts {𝒞 = 𝒞} {P = P} T SCP = result
     result .HasCoproducts.copair f g = scopair (f ∘ p₂) (g ∘ p₂) ∘ sect
     result .HasCoproducts.copair-cong f₁≈f₂ g₁≈g₂ =
       ∘-cong (scopair-cong (∘-cong f₁≈f₂ ≈-refl) (∘-cong g₁≈g₂ ≈-refl)) ≈-refl
-    result .HasCoproducts.copair-in₁ f g = begin
-        (scopair (f ∘ p₂) (g ∘ p₂) ∘ sect) ∘ in₁
-      ≈⟨ assoc _ _ _ ⟩
-        scopair (f ∘ p₂) (g ∘ p₂) ∘ (sect ∘ in₁)
-      ≈⟨ ∘-cong ≈-refl (sect-natural in₁) ⟩
-        scopair (f ∘ p₂) (g ∘ p₂) ∘ (pair p₁ (in₁ ∘ p₂) ∘ sect)
-      ≈˘⟨ assoc _ _ _ ⟩
-        (scopair (f ∘ p₂) (g ∘ p₂) ∘ pair p₁ (in₁ ∘ p₂)) ∘ sect
-      ≈⟨ ∘-cong (scopair-in₁ _ _) ≈-refl ⟩
-        (f ∘ p₂) ∘ sect
-      ≈⟨ assoc _ _ _ ⟩
-        f ∘ (p₂ ∘ sect)
-      ≈⟨ ∘-cong ≈-refl (pair-p₂ _ _) ⟩
-        f ∘ id _
-      ≈⟨ id-right ⟩
-        f
-      ∎ where open ≈-Reasoning isEquiv
-    result .HasCoproducts.copair-in₂ f g = begin
-        (scopair (f ∘ p₂) (g ∘ p₂) ∘ sect) ∘ in₂
-      ≈⟨ assoc _ _ _ ⟩
-        scopair (f ∘ p₂) (g ∘ p₂) ∘ (sect ∘ in₂)
-      ≈⟨ ∘-cong ≈-refl (sect-natural in₂) ⟩
-        scopair (f ∘ p₂) (g ∘ p₂) ∘ (pair p₁ (in₂ ∘ p₂) ∘ sect)
-      ≈˘⟨ assoc _ _ _ ⟩
-        (scopair (f ∘ p₂) (g ∘ p₂) ∘ pair p₁ (in₂ ∘ p₂)) ∘ sect
-      ≈⟨ ∘-cong (scopair-in₂ _ _) ≈-refl ⟩
-        (g ∘ p₂) ∘ sect
-      ≈⟨ assoc _ _ _ ⟩
-        g ∘ (p₂ ∘ sect)
-      ≈⟨ ∘-cong ≈-refl (pair-p₂ _ _) ⟩
-        g ∘ id _
-      ≈⟨ id-right ⟩
-        g
-      ∎ where open ≈-Reasoning isEquiv
+    result .HasCoproducts.copair-in₁ f g = cin f g in₁ (scopair-in₁ _ _)
+    result .HasCoproducts.copair-in₂ f g = cin f g in₂ (scopair-in₂ _ _)
     result .HasCoproducts.copair-ext {x} {y} {z} h = begin
         scopair ((h ∘ in₁) ∘ p₂) ((h ∘ in₂) ∘ p₂) ∘ sect
       ≈⟨ ∘-cong (scopair-cong (assoc _ _ _) (assoc _ _ _)) ≈-refl ⟩
@@ -1068,10 +837,8 @@ record HasExponentials {o m e} (𝒞 : Category o m e) (P : HasProducts 𝒞) : 
     lambda : ∀ {x y z} → prod x y ⇒ z → x ⇒ exp y z
 
     lambda-cong : ∀ {x y z} {f₁ f₂ : prod x y ⇒ z} → f₁ ≈ f₂ → lambda f₁ ≈ lambda f₂
-    eval-lambda : ∀ {x y z} (f : prod x y ⇒ z) →
-                  (eval ∘ prod-m (lambda f) (id _)) ≈ f
-    lambda-ext  : ∀ {x y z} (f : x ⇒ exp y z) →
-                  lambda (eval ∘ prod-m f (id _)) ≈ f
+    eval-lambda : ∀ {x y z} (f : prod x y ⇒ z) → (eval ∘ prod-m (lambda f) (id _)) ≈ f
+    lambda-ext  : ∀ {x y z} (f : x ⇒ exp y z) → lambda (eval ∘ prod-m f (id _)) ≈ f
 
   lambda-natural : ∀ {x₁ x₂ y z} (f : x₁ ⇒ x₂) (g : prod x₂ y ⇒ z) →
                    (lambda g ∘ f) ≈ lambda (g ∘ prod-m f (id _))
@@ -1129,7 +896,7 @@ record HasExponentials {o m e} (𝒞 : Category o m e) (P : HasProducts 𝒞) : 
       lambda (g₁ ∘ (eval ∘ (prod-m (lambda (g₂ ∘ (eval ∘ prod-m (id _) f₁))) (id _) ∘ prod-m (id _) f₂)))
     ≈˘⟨ lambda-cong (∘-cong ≈-refl (∘-cong ≈-refl (prod-m-comp _ _ _ _))) ⟩
       lambda (g₁ ∘ (eval ∘ (prod-m (lambda (g₂ ∘ (eval ∘ prod-m (id _) f₁)) ∘ id _) (id _ ∘ f₂))))
-    ≈⟨ lambda-cong (∘-cong ≈-refl (∘-cong ≈-refl (prod-m-cong id-swap' id-swap))) ⟩
+    ≈⟨ lambda-cong (∘-cong ≈-refl (∘-cong ≈-refl (prod-m-cong id-swap-sym id-swap))) ⟩
       lambda (g₁ ∘ (eval ∘ (prod-m (id _ ∘ lambda (g₂ ∘ (eval ∘ prod-m (id _) f₁))) (f₂ ∘ id _))))
     ≈⟨ lambda-cong (∘-cong ≈-refl (∘-cong ≈-refl (prod-m-comp _ _ _ _))) ⟩
       lambda (g₁ ∘ (eval ∘ (prod-m (id _) f₂ ∘ prod-m (lambda (g₂ ∘ (eval ∘ prod-m (id _) f₁))) (id _))))

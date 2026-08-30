@@ -73,23 +73,6 @@ module Interp
   strong-Lmap-p₂ : ∀ {Γ X} → strong-Lmap (p₂ {Γ} {X}) ≈ p₂
   strong-Lmap-p₂ = strengthᵣ-p₂
 
-  strong-Lmap-reindex : ∀ {Γ Γ' X Y} (u : Γ ⇒ Γ') (f : prod Γ' X ⇒ Y) →
-                        (strong-Lmap f ∘ prod-m u (id _)) ≈ strong-Lmap (f ∘ prod-m u (id _))
-  strong-Lmap-reindex u f =
-    begin
-      (Lmap f ∘ strengthᵣ) ∘ prod-m u (id _)
-    ≈⟨ assoc _ _ _ ⟩
-      Lmap f ∘ (strengthᵣ ∘ prod-m u (id _))
-    ≈˘⟨ ∘-cong ≈-refl (∘-cong ≈-refl (prod-m-cong ≈-refl Lmap-id)) ⟩
-      Lmap f ∘ (strengthᵣ ∘ prod-m u (Lmap (id _)))
-    ≈˘⟨ ∘-cong ≈-refl (strengthᵣ-natural u (id _)) ⟩
-      Lmap f ∘ (Lmap (prod-m u (id _)) ∘ strengthᵣ)
-    ≈˘⟨ assoc _ _ _ ⟩
-      (Lmap f ∘ Lmap (prod-m u (id _))) ∘ strengthᵣ
-    ≈˘⟨ ∘-cong (Lmap-comp _ _) ≈-refl ⟩
-      Lmap (f ∘ prod-m u (id _)) ∘ strengthᵣ
-    ∎ where open ≈-Reasoning isEquiv
-
   strong-Lmap-pre : ∀ {Γ Γ' X X' Y} (u : Γ ⇒ Γ') (f : prod Γ' X' ⇒ Y) (c : X ⇒ X') →
                     (strong-Lmap f ∘ prod-m u (Lmap c)) ≈ strong-Lmap (f ∘ prod-m u c)
   strong-Lmap-pre u f c =
@@ -105,9 +88,14 @@ module Interp
       Lmap (f ∘ prod-m u c) ∘ strengthᵣ
     ∎ where open ≈-Reasoning isEquiv
 
+  strong-Lmap-reindex : ∀ {Γ Γ' X Y} (u : Γ ⇒ Γ') (f : prod Γ' X ⇒ Y) →
+                        (strong-Lmap f ∘ prod-m u (id _)) ≈ strong-Lmap (f ∘ prod-m u (id _))
+  strong-Lmap-reindex u f =
+    ≈-trans (∘-cong ≈-refl (prod-m-cong ≈-refl (≈-sym Lmap-id))) (strong-Lmap-pre u f (id _))
+
   strong-Lmap-post : ∀ {Γ X Y Z} (h : Y ⇒ Z) (f : prod Γ X ⇒ Y) →
                      (Lmap h ∘ strong-Lmap f) ≈ strong-Lmap (h ∘ f)
-  strong-Lmap-post h f = ≈-trans (≈-sym (assoc _ _ _)) (∘-cong (≈-sym (Lmap-comp _ _)) ≈-refl)
+  strong-Lmap-post h f = head-cong (≈-sym (Lmap-comp _ _))
 
   fobj : (μ-obj : ∀ {k} → Poly 𝒞 (suc k) → (Fin k → obj) → obj) → ∀ {n} → Poly 𝒞 n → (Fin n → obj) → obj
   fobj μ-obj (const A) δ = A
@@ -172,7 +160,7 @@ module Interp
              (alg : prod Γ (fobj μ-obj P (extend δ A)) ⇒ A) (h : prod Γ (μ-obj P δ) ⇒ A) →
              (h ∘co (inMap P δ ∘ p₂)) ≈ (alg ∘co strong-fmor P (strong-extend-mor (λ i → p₂) h)) → h ≈ ⦅ alg ⦆
 
-    private module CoK {Γ : obj} = Category (coKleisli-prod 𝒞P Γ)
+    private module coKl {Γ : obj} = Category (coKleisli-prod 𝒞P Γ)
 
     ⦅⦆-cong : ∀ {k} {Γ A : obj} (P : Poly 𝒞 (suc k)) (δ : Fin k → obj)
               {alg alg' : prod Γ (fobj μ-obj P (extend δ A)) ⇒ A} →
@@ -186,9 +174,9 @@ module Interp
     ∘co-push x a y =
       begin
         (x ∘ pair p₁ (a ∘ p₂)) ∘ pair p₁ y
-      ≈⟨ CoK.assoc _ _ _ ⟩
+      ≈⟨ coKl.assoc _ _ _ ⟩
         x ∘ pair p₁ ((a ∘ p₂) ∘ pair p₁ y)
-      ≈⟨ ∘-cong ≈-refl (pair-cong ≈-refl (≈-trans (assoc _ _ _) (∘-cong ≈-refl (pair-p₂ _ _)))) ⟩
+      ≈⟨ ∘-cong ≈-refl (pair-cong ≈-refl (tail-cong (pair-p₂ _ _))) ⟩
         x ∘ pair p₁ (a ∘ y)
       ∎ where open ≈-Reasoning isEquiv
 
@@ -197,42 +185,18 @@ module Interp
       (copair (in₁ ∘ f₂) (in₂ ∘ g₂) ∘co copair (in₁ ∘ f₁) (in₂ ∘ g₁))
         ≈ copair (in₁ ∘ (f₂ ∘co f₁)) (in₂ ∘ (g₂ ∘co g₁))
     copair-comp f₂ g₂ f₁ g₁ =
-      ≈-trans (≈-sym (copair-ext _)) (copair-cong branch₁ branch₂)
+      ≈-trans (≈-sym (copair-ext _)) (copair-cong (branch (copair-in₁ _ _) (copair-in₁ _ _)) (branch (copair-in₂ _ _) (copair-in₂ _ _)))
       where
         G = copair (in₁ ∘ f₂) (in₂ ∘ g₂)
         F = copair (in₁ ∘ f₁) (in₂ ∘ g₁)
 
-        branch₁ : ((G ∘co F) ∘co (in₁ ∘ p₂)) ≈ (in₁ ∘ (f₂ ∘co f₁))
-        branch₁ =
-          begin
-            (G ∘co F) ∘co (in₁ ∘ p₂)
-          ≈⟨ CoK.assoc _ _ _ ⟩
-            G ∘co (F ∘co (in₁ ∘ p₂))
-          ≈⟨ CoK.∘-cong ≈-refl (copair-in₁ _ _) ⟩
-            G ∘co (in₁ ∘ f₁)
-          ≈˘⟨ ∘co-push G in₁ f₁ ⟩
-            (G ∘co (in₁ ∘ p₂)) ∘co f₁
-          ≈⟨ CoK.∘-cong (copair-in₁ _ _) ≈-refl ⟩
-            (in₁ ∘ f₂) ∘co f₁
-          ≈⟨ assoc _ _ _ ⟩
-            in₁ ∘ (f₂ ∘co f₁)
-          ∎ where open ≈-Reasoning isEquiv
-
-        branch₂ : ((G ∘co F) ∘co (in₂ ∘ p₂)) ≈ (in₂ ∘ (g₂ ∘co g₁))
-        branch₂ =
-          begin
-            (G ∘co F) ∘co (in₂ ∘ p₂)
-          ≈⟨ CoK.assoc _ _ _ ⟩
-            G ∘co (F ∘co (in₂ ∘ p₂))
-          ≈⟨ CoK.∘-cong ≈-refl (copair-in₂ _ _) ⟩
-            G ∘co (in₂ ∘ g₁)
-          ≈˘⟨ ∘co-push G in₂ g₁ ⟩
-            (G ∘co (in₂ ∘ p₂)) ∘co g₁
-          ≈⟨ CoK.∘-cong (copair-in₂ _ _) ≈-refl ⟩
-            (in₂ ∘ g₂) ∘co g₁
-          ≈⟨ assoc _ _ _ ⟩
-            in₂ ∘ (g₂ ∘co g₁)
-          ∎ where open ≈-Reasoning isEquiv
+        branch : ∀ {A C E} {ι : A ⇒ _} {ι' : C ⇒ _} {ι'' : E ⇒ _} {h₁ : prod _ A ⇒ C} {h₂ : prod _ C ⇒ E} →
+                 (F ∘co (ι ∘ p₂)) ≈ (ι' ∘ h₁) → (G ∘co (ι' ∘ p₂)) ≈ (ι'' ∘ h₂) →
+                 ((G ∘co F) ∘co (ι ∘ p₂)) ≈ (ι'' ∘ (h₂ ∘co h₁))
+        branch {ι' = ι'} {h₁ = h₁} e₁ e₂ =
+          ≈-trans (coKl.assoc _ _ _)
+          (≈-trans (coKl.∘-cong ≈-refl e₁)
+          (≈-trans (≈-sym (∘co-push G ι' h₁)) (≈-trans (coKl.∘-cong e₂ ≈-refl) (assoc _ _ _))))
 
     mutual
       strong-fmor-cong : ∀ {k} {Γ : obj} (P : Poly 𝒞 k) {δ δ' : Fin k → obj}
@@ -269,7 +233,7 @@ module Interp
       strong-fmor-comp : ∀ {k} {Γ : obj} (P : Poly 𝒞 k) {δ δ' δ'' : Fin k → obj}
                          (gs : ∀ i → prod Γ (δ' i) ⇒ δ'' i) (fs : ∀ i → prod Γ (δ i) ⇒ δ' i) →
                          (strong-fmor P gs ∘co strong-fmor P fs) ≈ strong-fmor P (λ i → gs i ∘co fs i)
-      strong-fmor-comp (const A) gs fs = CoK.id-left
+      strong-fmor-comp (const A) gs fs = coKl.id-left
       strong-fmor-comp (var i)   gs fs = ≈-refl
       strong-fmor-comp (P + Q)   gs fs =
         ≈-trans (copair-comp _ _ _ _)
@@ -291,18 +255,18 @@ module Interp
         ⦅⦆-η b (h ∘co ⦅ a ⦆)
           (begin
             (h ∘co ⦅ a ⦆) ∘co (inMap P δ ∘ p₂)
-          ≈⟨ CoK.assoc _ _ _ ⟩
+          ≈⟨ coKl.assoc _ _ _ ⟩
             h ∘co (⦅ a ⦆ ∘co (inMap P δ ∘ p₂))
-          ≈⟨ CoK.∘-cong ≈-refl (⦅⦆-β {P = P} {δ = δ} a) ⟩
+          ≈⟨ coKl.∘-cong ≈-refl (⦅⦆-β {P = P} {δ = δ} a) ⟩
             h ∘co (a ∘co strong-fmor P (strong-extend-mor (λ _ → p₂) ⦅ a ⦆))
-          ≈˘⟨ CoK.assoc _ _ _ ⟩
+          ≈˘⟨ coKl.assoc _ _ _ ⟩
             (h ∘co a) ∘co strong-fmor P (strong-extend-mor (λ _ → p₂) ⦅ a ⦆)
-          ≈⟨ CoK.∘-cong hyp ≈-refl ⟩
+          ≈⟨ coKl.∘-cong hyp ≈-refl ⟩
             (b ∘co strong-fmor P (strong-extend-mor (λ _ → p₂) h)) ∘co strong-fmor P (strong-extend-mor (λ _ → p₂) ⦅ a ⦆)
-          ≈⟨ CoK.assoc _ _ _ ⟩
+          ≈⟨ coKl.assoc _ _ _ ⟩
             b ∘co (strong-fmor P (strong-extend-mor (λ _ → p₂) h) ∘co strong-fmor P (strong-extend-mor (λ _ → p₂) ⦅ a ⦆))
-          ≈⟨ CoK.∘-cong ≈-refl (≈-trans (strong-fmor-comp P _ _)
-                                        (strong-fmor-cong P (strong-extend-mor-comp (λ _ → CoK.id-left) ≈-refl))) ⟩
+          ≈⟨ coKl.∘-cong ≈-refl (≈-trans (strong-fmor-comp P _ _)
+                                        (strong-fmor-cong P (strong-extend-mor-comp (λ _ → coKl.id-left) ≈-refl))) ⟩
             b ∘co strong-fmor P (strong-extend-mor (λ _ → p₂) (h ∘co ⦅ a ⦆))
           ∎)
         where open ≈-Reasoning isEquiv
@@ -324,12 +288,12 @@ module Interp
               μ-gs ∘co (inMap P δ' ∘ strong-fmor P (strong-extend-mor fs p₂))
             ≈˘⟨ ∘co-push μ-gs (inMap P δ') _ ⟩
               (μ-gs ∘co (inMap P δ' ∘ p₂)) ∘co strong-fmor P (strong-extend-mor fs p₂)
-            ≈⟨ CoK.∘-cong (⦅⦆-β {P = P} {δ = δ'} alg-g) ≈-refl ⟩
+            ≈⟨ coKl.∘-cong (⦅⦆-β {P = P} {δ = δ'} alg-g) ≈-refl ⟩
               (alg-g ∘co strong-fmor P (strong-extend-mor (λ _ → p₂) μ-gs)) ∘co strong-fmor P (strong-extend-mor fs p₂)
-            ≈⟨ CoK.assoc _ _ _ ⟩
+            ≈⟨ coKl.assoc _ _ _ ⟩
               alg-g ∘co (strong-fmor P (strong-extend-mor (λ _ → p₂) μ-gs) ∘co strong-fmor P (strong-extend-mor fs p₂))
-            ≈⟨ CoK.∘-cong ≈-refl (≈-trans (strong-fmor-comp P _ _)
-                                          (strong-fmor-cong P (strong-extend-mor-comp (λ _ → CoK.id-left) CoK.id-right))) ⟩
+            ≈⟨ coKl.∘-cong ≈-refl (≈-trans (strong-fmor-comp P _ _)
+                                          (strong-fmor-cong P (strong-extend-mor-comp (λ _ → coKl.id-left) coKl.id-right))) ⟩
               alg-g ∘co strong-fmor P (strong-extend-mor fs μ-gs)
             ∎ where open ≈-Reasoning isEquiv
 
@@ -342,14 +306,28 @@ module Interp
             ≈⟨ assoc _ _ _ ⟩
               inMap P δ'' ∘ (strong-fmor P (strong-extend-mor gs p₂) ∘co strong-fmor P (strong-extend-mor fs μ-gs))
             ≈⟨ ∘-cong ≈-refl (≈-trans (strong-fmor-comp P _ _)
-                                      (strong-fmor-cong P (strong-extend-mor-comp (λ _ → ≈-refl) CoK.id-left))) ⟩
+                                      (strong-fmor-cong P (strong-extend-mor-comp (λ _ → ≈-refl) coKl.id-left))) ⟩
               inMap P δ'' ∘ strong-fmor P (strong-extend-mor (λ j → gs j ∘co fs j) μ-gs)
             ≈˘⟨ ∘-cong ≈-refl (≈-trans (strong-fmor-comp P _ _)
-                                       (strong-fmor-cong P (strong-extend-mor-comp (λ _ → CoK.id-right) CoK.id-left))) ⟩
+                                       (strong-fmor-cong P (strong-extend-mor-comp (λ _ → coKl.id-right) coKl.id-left))) ⟩
               inMap P δ'' ∘ (strong-fmor P (strong-extend-mor (λ j → gs j ∘co fs j) p₂) ∘co strong-fmor P (strong-extend-mor (λ _ → p₂) μ-gs))
             ≈˘⟨ assoc _ _ _ ⟩
               alg ∘co strong-fmor P (strong-extend-mor (λ _ → p₂) μ-gs)
             ∎ where open ≈-Reasoning isEquiv
+
+    fusion-inMap : ∀ {j k} {Γ A : obj} (P : Poly 𝒞 (suc j)) (δ : Fin j → obj) (Q : Poly 𝒞 (suc k)) (δ' : Fin k → obj)
+                   (alg : prod Γ (fobj μ-obj Q (extend δ' A)) ⇒ A)
+                   (b : prod Γ (fobj μ-obj P (extend δ (μ-obj Q δ'))) ⇒ fobj μ-obj Q (extend δ' (μ-obj Q δ')))
+                   (b' : prod Γ (fobj μ-obj P (extend δ A)) ⇒ fobj μ-obj Q (extend δ' A)) →
+                   ((strong-fmor Q (strong-extend-mor (λ i → p₂) (⦅_⦆ {P = Q} {δ = δ'} alg)) ∘co b)
+                      ≈ (b' ∘co strong-fmor P (strong-extend-mor (λ i → p₂) (⦅_⦆ {P = Q} {δ = δ'} alg)))) →
+                   (⦅_⦆ {P = Q} {δ = δ'} alg ∘co ⦅_⦆ {P = P} {δ = δ} (inMap Q δ' ∘ b)) ≈ ⦅_⦆ {P = P} {δ = δ} (alg ∘co b')
+    fusion-inMap P δ Q δ' alg b b' sq =
+      fusion {P = P} {δ = δ} (inMap Q δ' ∘ b) (alg ∘co b') (⦅_⦆ {P = Q} {δ = δ'} alg)
+        (≈-trans (≈-sym (∘co-push _ (inMap Q δ') b))
+        (≈-trans (coKl.∘-cong (⦅⦆-β {P = Q} {δ = δ'} alg) ≈-refl)
+        (≈-trans (coKl.assoc _ _ _)
+        (≈-trans (coKl.∘-cong ≈-refl sq) (≈-sym (coKl.assoc _ _ _))))))
 
     mutual
       strong-fmor-p₂ : ∀ {k} {Γ : obj} (P : Poly 𝒞 k) {δ : Fin k → obj} →
@@ -366,48 +344,25 @@ module Interp
                 strong-Lmap-p₂
       strong-fmor-p₂ (μ P)     = strong-μ-fmor-p₂ P
 
+      strong-fmor-ext-p₂ : ∀ {k} {Γ X : obj} (P : Poly 𝒞 (suc k)) {δ : Fin k → obj} →
+                           strong-fmor {Γ = Γ} P (strong-extend-mor {δ = δ} {δ' = δ} {X = X} {Y = X} (λ i → p₂) p₂) ≈ p₂
+      strong-fmor-ext-p₂ {X = X} P = ≈-trans (strong-fmor-cong P es) (strong-fmor-p₂ P)
+        where
+          es : ∀ i → strong-extend-mor {X = X} {Y = X} (λ _ → p₂) p₂ i ≈ p₂
+          es Fin.zero    = ≈-refl
+          es (Fin.suc i) = ≈-refl
+
       strong-μ-fmor-p₂ : ∀ {k} {Γ : obj} (P : Poly 𝒞 (suc k)) {δ : Fin k → obj} →
                          strong-μ-fmor {Γ = Γ} P {δ} {δ} (λ i → p₂) ≈ p₂
-      strong-μ-fmor-p₂ P {δ} =
-        ≈-sym (⦅⦆-η {P = P} {δ = δ} alg₀ p₂ premise)
-        where
-          alg₀ : prod _ (fobj μ-obj P (extend δ (μ-obj P δ))) ⇒ μ-obj P δ
-          alg₀ = inMap P δ ∘ strong-fmor P (strong-extend-mor {X = μ-obj P δ} {Y = μ-obj P δ} (λ _ → p₂) p₂)
+      strong-μ-fmor-p₂ P {δ} = ≈-trans (⦅⦆-cong P δ (∘-cong ≈-refl (strong-fmor-ext-p₂ P))) (⦅⦆-reflect P δ)
 
-          es₀ : ∀ i → strong-extend-mor {X = μ-obj P δ} {Y = μ-obj P δ} (λ _ → p₂) p₂ i ≈ p₂
-          es₀ Fin.zero    = ≈-refl
-          es₀ (Fin.suc i) = ≈-refl
-
-          rhs : (alg₀ ∘co strong-fmor P (strong-extend-mor (λ _ → p₂) p₂)) ≈ (inMap P δ ∘ p₂)
-          rhs =
-            begin
-              alg₀ ∘co strong-fmor P (strong-extend-mor (λ _ → p₂) p₂)
-            ≈⟨ assoc _ _ _ ⟩
-              inMap P δ ∘ (strong-fmor P (strong-extend-mor (λ _ → p₂) p₂) ∘co strong-fmor P (strong-extend-mor (λ _ → p₂) p₂))
-            ≈⟨ ∘-cong ≈-refl (≈-trans (strong-fmor-comp P _ _)
-                                      (strong-fmor-cong P (strong-extend-mor-comp (λ _ → CoK.id-left) CoK.id-left))) ⟩
-              inMap P δ ∘ strong-fmor P (strong-extend-mor (λ _ → p₂) p₂)
-            ≈⟨ ∘-cong ≈-refl (strong-fmor-cong P es₀) ⟩
-              inMap P δ ∘ strong-fmor P (λ i → p₂)
-            ≈⟨ ∘-cong ≈-refl (strong-fmor-p₂ P) ⟩
-              inMap P δ ∘ p₂
-            ∎ where open ≈-Reasoning isEquiv
-
-          premise : (p₂ ∘co (inMap P δ ∘ p₂)) ≈ (alg₀ ∘co strong-fmor P (strong-extend-mor (λ _ → p₂) p₂))
-          premise = ≈-trans CoK.id-left (≈-sym rhs)
-
-    ⦅⦆-reflect : ∀ {k} {Γ : obj} (P : Poly 𝒞 (suc k)) (δ : Fin k → obj) →
-                 ⦅_⦆ {Γ = Γ} {P = P} {δ = δ} (inMap P δ ∘ p₂) ≈ p₂
-    ⦅⦆-reflect P δ =
-      ≈-sym (⦅⦆-η {P = P} {δ = δ} (inMap P δ ∘ p₂) p₂
-        (≈-trans CoK.id-left
-          (≈-sym (≈-trans (assoc _ _ _)
-                          (∘-cong ≈-refl (≈-trans (pair-p₂ _ _)
-                                                  (≈-trans (strong-fmor-cong P es₀) (strong-fmor-p₂ P))))))))
-      where
-        es₀ : ∀ i → strong-extend-mor {X = μ-obj P δ} {Y = μ-obj P δ} (λ _ → p₂) p₂ i ≈ p₂
-        es₀ Fin.zero    = ≈-refl
-        es₀ (Fin.suc i) = ≈-refl
+      ⦅⦆-reflect : ∀ {k} {Γ : obj} (P : Poly 𝒞 (suc k)) (δ : Fin k → obj) →
+                   ⦅_⦆ {Γ = Γ} {P = P} {δ = δ} (inMap P δ ∘ p₂) ≈ p₂
+      ⦅⦆-reflect P δ =
+        ≈-sym (⦅⦆-η {P = P} {δ = δ} (inMap P δ ∘ p₂) p₂
+          (≈-trans coKl.id-left
+            (≈-sym (tail-cong (≈-trans (pair-p₂ _ _)
+                                       (strong-fmor-ext-p₂ P))))))
 
     mutual
       strong-fmor-reindex : ∀ {k} {Γ Γ' : obj} (P : Poly 𝒞 k) {δ δ' : Fin k → obj}
@@ -418,12 +373,10 @@ module Interp
       strong-fmor-reindex (P + Q)   u fs =
         ≈-trans (copair-reindex u _ _)
                 (copair-cong
-                  (≈-trans (assoc _ _ _)
-                     (∘-cong ≈-refl (≈-trans (strong-Lmap-reindex u _)
-                                             (strong-Lmap-cong (strong-fmor-reindex P u fs)))))
-                  (≈-trans (assoc _ _ _)
-                     (∘-cong ≈-refl (≈-trans (strong-Lmap-reindex u _)
-                                             (strong-Lmap-cong (strong-fmor-reindex Q u fs))))))
+                  (tail-cong (≈-trans (strong-Lmap-reindex u _)
+                                      (strong-Lmap-cong (strong-fmor-reindex P u fs))))
+                  (tail-cong (≈-trans (strong-Lmap-reindex u _)
+                                      (strong-Lmap-cong (strong-fmor-reindex Q u fs)))))
       strong-fmor-reindex (P × Q)   u fs =
         ≈-trans (strong-Lmap-reindex u _)
                 (strong-Lmap-cong
@@ -438,9 +391,8 @@ module Interp
       strong-μ-fmor-reindex P {δ} {δ'} u fs =
         ≈-trans (⦅⦆-reindex u (inMap P δ' ∘ strong-fmor P (strong-extend-mor fs p₂)))
                 (⦅⦆-cong P δ
-                  (≈-trans (assoc _ _ _)
-                    (∘-cong ≈-refl (≈-trans (strong-fmor-reindex P u (strong-extend-mor fs p₂))
-                                            (strong-fmor-cong P es)))))
+                  (tail-cong (≈-trans (strong-fmor-reindex P u (strong-extend-mor fs p₂))
+                                      (strong-fmor-cong P es))))
         where
         es : ∀ i → (strong-extend-mor fs p₂ i ∘ prod-m u (id _))
                      ≈ strong-extend-mor (λ j → fs j ∘ prod-m u (id _)) p₂ i
@@ -472,8 +424,7 @@ module Interp
                               (strong-fmor-cong P es)))
             (≈-sym (≈-trans (pair-compose _ _ _ _) (pair-cong ≈-refl id-left))))
 
-        premise : ((⦅ alg ⦆ ∘ prod-m u (id _)) ∘co (inMap P δ ∘ p₂))
-                    ≈ ((alg ∘ prod-m u (id _)) ∘co SF')
+        premise : ((⦅ alg ⦆ ∘ prod-m u (id _)) ∘co (inMap P δ ∘ p₂)) ≈ ((alg ∘ prod-m u (id _)) ∘co SF')
         premise = begin
             (⦅ alg ⦆ ∘ prod-m u (id _)) ∘ pair p₁ (inMap P δ ∘ p₂)
           ≈⟨ assoc _ _ _ ⟩
@@ -512,17 +463,18 @@ module Interp
       fmor-comp P gs fs =
         ≈-trans (unitor-comp _ _)
                 (∘-cong (≈-trans (strong-fmor-comp P _ _)
-                                 (strong-fmor-cong P (λ i → ≈-trans (assoc _ _ _)
-                                                             (≈-trans (∘-cong ≈-refl (pair-p₂ _ _)) (≈-sym (assoc _ _ _))))))
+                                 (strong-fmor-cong P (λ i → tail-cong-assoc (pair-p₂ _ _))))
                         ≈-refl)
 
       private
-        sect-p₂ : ∀ {X Y} (h : prod _ X ⇒ Y) → ((h ∘ sect) ∘ p₂) ≈ h
-        sect-p₂ h =
-          ≈-trans (assoc _ _ _)
-                  (≈-trans (∘-cong ≈-refl (≈-trans (sect-pre _)
-                                                   (≈-trans (pair-cong (to-terminal-unique _ _) ≈-refl) pair-ext0)))
-                           id-right)
+        𝟙 = HasTerminal.witness 𝒞T
+
+        sect-p₂-id : ∀ {X} → (sect ∘ p₂ {𝟙} {X}) ≈ id _
+        sect-p₂-id = ≈-trans (sect-pre _) (≈-trans (pair-cong (to-terminal-unique _ _) ≈-refl) pair-ext0)
+
+        sect-p₂ : ∀ {X Y} (h : prod 𝟙 X ⇒ Y) → ((h ∘ sect) ∘ p₂) ≈ h
+        sect-p₂ h = tail-cancel sect-p₂-id
+
 
         fmor-μ-map : ∀ {j k} (P : Poly 𝒞 (suc j)) (δ : Fin j → obj) (Q : Poly 𝒞 (suc k)) (δ' : Fin k → obj)
                      (u : fobj μ-obj P (extend δ (μ-obj Q δ')) ⇒ fobj μ-obj Q (extend δ' (μ-obj Q δ'))) →
@@ -549,19 +501,11 @@ module Interp
       μ-map-in P δ Q δ' u =
         begin
           (fold-u ∘ sect) ∘ inMap P δ
-        ≈⟨ assoc _ _ _ ⟩
-          fold-u ∘ (sect ∘ inMap P δ)
-        ≈⟨ ∘-cong ≈-refl (sect-natural _) ⟩
-          fold-u ∘ (pair p₁ (inMap P δ ∘ p₂) ∘ sect)
-        ≈˘⟨ assoc _ _ _ ⟩
+        ≈⟨ tail-cong-assoc (sect-natural _) ⟩
           (fold-u ∘co (inMap P δ ∘ p₂)) ∘ sect
-        ≈⟨ ∘-cong (⦅⦆-β {P = P} {δ = δ} alg) ≈-refl ⟩
-          (alg ∘co strong-fmor P (strong-extend-mor (λ i → p₂) fold-u)) ∘ sect
-        ≈⟨ ∘-cong (≈-trans (assoc _ _ _) (∘-cong ≈-refl (pair-p₂ _ _))) ≈-refl ⟩
+        ≈⟨ ∘-cong (≈-trans (⦅⦆-β {P = P} {δ = δ} alg) (tail-cong (pair-p₂ _ _))) ≈-refl ⟩
           ((inMap Q δ' ∘ u) ∘ strong-fmor P (strong-extend-mor (λ i → p₂) fold-u)) ∘ sect
-        ≈⟨ assoc _ _ _ ⟩
-          (inMap Q δ' ∘ u) ∘ (strong-fmor P (strong-extend-mor (λ i → p₂) fold-u) ∘ sect)
-        ≈⟨ ∘-cong ≈-refl (fmor-μ-map P δ Q δ' u {R = P}) ⟩
+        ≈⟨ tail-cong (fmor-μ-map P δ Q δ' u {R = P}) ⟩
           (inMap Q δ' ∘ u) ∘ fmor P (extend-mor (λ i → id (δ i)) (μ-map P δ Q δ' u))
         ≈⟨ assoc _ _ _ ⟩
           inMap Q δ' ∘ (u ∘ fmor P (extend-mor (λ i → id (δ i)) (μ-map P δ Q δ' u)))
@@ -584,7 +528,6 @@ module Interp
       μ-map-comp P δ Q δ' R δ'' u v u' sq =
         ≈-trans (unitor-comp _ _) (∘-cong (fusion {P = P} {δ = δ} alg-u alg-vu' fold-v hyp) ≈-refl)
         where
-          𝟙 = HasTerminal.witness 𝒞T
           alg-u : prod 𝟙 (fobj μ-obj P (extend δ (μ-obj Q δ'))) ⇒ μ-obj Q δ'
           alg-u   = (inMap Q δ' ∘ u) ∘ p₂
           alg-v : prod 𝟙 (fobj μ-obj Q (extend δ' (μ-obj R δ''))) ⇒ μ-obj R δ''
@@ -608,7 +551,7 @@ module Interp
               (u' ∘ fmor P (extend-mor (λ i → id (δ i)) k)) ∘ p₂
             ≈˘⟨ ∘-cong (∘-cong ≈-refl (fmor-μ-map Q δ' R δ'' v {R = P})) ≈-refl ⟩
               (u' ∘ (SP ∘ sect)) ∘ p₂
-            ≈⟨ ≈-trans (assoc _ _ _) (∘-cong ≈-refl (sect-p₂ SP)) ⟩
+            ≈⟨ tail-cong (sect-p₂ SP) ⟩
               u' ∘ SP
             ∎
             where
@@ -624,19 +567,17 @@ module Interp
               fold-v ∘co (inMap Q δ' ∘ (u ∘ p₂))
             ≈˘⟨ ∘co-push fold-v (inMap Q δ') _ ⟩
               (fold-v ∘co (inMap Q δ' ∘ p₂)) ∘co (u ∘ p₂)
-            ≈⟨ CoK.∘-cong (⦅⦆-β {P = Q} {δ = δ'} alg-v) ≈-refl ⟩
+            ≈⟨ coKl.∘-cong (⦅⦆-β {P = Q} {δ = δ'} alg-v) ≈-refl ⟩
               (alg-v ∘co strong-fmor Q (strong-extend-mor (λ i → p₂) fold-v)) ∘co (u ∘ p₂)
-            ≈⟨ CoK.assoc _ _ _ ⟩
+            ≈⟨ coKl.assoc _ _ _ ⟩
               alg-v ∘co (strong-fmor Q (strong-extend-mor (λ i → p₂) fold-v) ∘co (u ∘ p₂))
             ≈⟨ ∘-cong ≈-refl (pair-cong ≈-refl step) ⟩
               alg-v ∘co (u' ∘ strong-fmor P (strong-extend-mor (λ i → p₂) fold-v))
-            ≈⟨ ≈-trans (assoc _ _ _) (∘-cong ≈-refl (pair-p₂ _ _)) ⟩
+            ≈⟨ tail-cong (pair-p₂ _ _) ⟩
               (inMap R δ'' ∘ v) ∘ (u' ∘ SP)
-            ≈⟨ ≈-trans (assoc _ _ _) (∘-cong ≈-refl (≈-sym (assoc _ _ _))) ⟩
-              inMap R δ'' ∘ ((v ∘ u') ∘ SP)
-            ≈˘⟨ assoc _ _ _ ⟩
+            ≈⟨ tail-cong-assoc (≈-sym (assoc _ _ _)) ⟩
               (inMap R δ'' ∘ (v ∘ u')) ∘ SP
-            ≈˘⟨ ≈-trans (assoc _ _ _) (∘-cong ≈-refl (pair-p₂ _ _)) ⟩
+            ≈˘⟨ tail-cong (pair-p₂ _ _) ⟩
               alg-vu' ∘co SP
             ∎
             where
@@ -644,11 +585,6 @@ module Interp
               SP = strong-fmor P (strong-extend-mor (λ i → p₂) fold-v)
 
       private
-        𝟙 = HasTerminal.witness 𝒞T
-
-        sect-p₂-id : ∀ {X} → (sect ∘ p₂ {𝟙} {X}) ≈ id _
-        sect-p₂-id = ≈-trans (sect-pre _) (≈-trans (pair-cong (to-terminal-unique _ _) ≈-refl) pair-ext0)
-
         strengthᵣ-sect : ∀ {X} → (strengthᵣ {𝟙} {X} ∘ sect) ≈ Lmap sect
         strengthᵣ-sect = begin
             strengthᵣ ∘ sect
@@ -656,7 +592,7 @@ module Interp
             id _ ∘ (strengthᵣ ∘ sect)
           ≈˘⟨ ∘-cong (≈-trans (≈-sym (Lmap-comp _ _)) (≈-trans (Lmap-cong sect-p₂-id) Lmap-id)) ≈-refl ⟩
             (Lmap sect ∘ Lmap p₂) ∘ (strengthᵣ ∘ sect)
-          ≈⟨ ≈-trans (assoc _ _ _) (∘-cong ≈-refl (≈-sym (assoc _ _ _))) ⟩
+          ≈⟨ tail-cong (≈-sym (assoc _ _ _)) ⟩
             Lmap sect ∘ ((Lmap p₂ ∘ strengthᵣ) ∘ sect)
           ≈⟨ ∘-cong ≈-refl (≈-trans (∘-cong strengthᵣ-p₂ ≈-refl) (pair-p₂ _ _)) ⟩
             Lmap sect ∘ id _
@@ -668,18 +604,17 @@ module Interp
         strengthᵣ-unit =
           ≈-trans (≈-sym id-right)
                   (≈-trans (∘-cong ≈-refl (≈-sym sect-p₂-id))
-                           (≈-trans (≈-sym (assoc _ _ _)) (∘-cong strengthᵣ-sect ≈-refl)))
+                           (head-cong strengthᵣ-sect))
 
         strong-Lmap-unit : ∀ {X Y} (h : prod 𝟙 X ⇒ Y) → strong-Lmap h ≈ (Lmap (h ∘ sect) ∘ p₂)
-        strong-Lmap-unit h =
-          ≈-trans (∘-cong ≈-refl strengthᵣ-unit) (≈-trans (≈-sym (assoc _ _ _)) (∘-cong (≈-sym (Lmap-comp _ _)) ≈-refl))
+        strong-Lmap-unit h = ≈-trans (∘-cong ≈-refl strengthᵣ-unit) (head-cong (≈-sym (Lmap-comp _ _)))
 
         strong-prod-m-sect : ∀ {X₁ X₂ Y₁ Y₂} (f : prod 𝟙 X₁ ⇒ Y₁) (g : prod 𝟙 X₂ ⇒ Y₂) →
                              (strong-prod-m f g ∘ sect) ≈ prod-m (f ∘ sect) (g ∘ sect)
         strong-prod-m-sect f g =
           ≈-trans (pair-natural _ _ _)
-                  (pair-cong (≈-trans (assoc _ _ _) (≈-trans (∘-cong ≈-refl (≈-sym (sect-natural p₁))) (≈-sym (assoc _ _ _))))
-                             (≈-trans (assoc _ _ _) (≈-trans (∘-cong ≈-refl (≈-sym (sect-natural p₂))) (≈-sym (assoc _ _ _)))))
+                  (pair-cong (tail-cong-assoc (≈-sym (sect-natural p₁)))
+                             (tail-cong-assoc (≈-sym (sect-natural p₂))))
 
         module CP = HasCoproducts (strong-coproducts→coproducts 𝒞T 𝒞SC)
 
@@ -687,7 +622,7 @@ module Interp
       fmor-const fs = pair-p₂ _ _
 
       fmor-var : ∀ {k} (i : Fin k) {δ δ' : Fin k → obj} (fs : ∀ i → δ i ⇒ δ' i) → fmor (var i) fs ≈ fs i
-      fmor-var i fs = ≈-trans (assoc _ _ _) (≈-trans (∘-cong ≈-refl (pair-p₂ _ _)) id-right)
+      fmor-var i fs = tail-cancel (pair-p₂ _ _)
 
       fmor-+ : ∀ {k} (P Q : Poly 𝒞 k) {δ δ' : Fin k → obj} (fs : ∀ i → δ i ⇒ δ' i) →
                fmor (P + Q) fs ≈ CP.coprod-m (Lmap (fmor P fs)) (Lmap (fmor Q fs))
@@ -700,15 +635,14 @@ module Interp
                fmor (P × Q) fs ≈ Lmap (prod-m (fmor P fs) (fmor Q fs))
       fmor-× P Q fs =
         ≈-trans (∘-cong (strong-Lmap-unit _) ≈-refl)
-                (≈-trans (assoc _ _ _)
-                         (≈-trans (∘-cong ≈-refl (pair-p₂ _ _)) (≈-trans id-right (Lmap-cong (strong-prod-m-sect _ _)))))
+                (≈-trans (tail-cancel (pair-p₂ _ _)) (Lmap-cong (strong-prod-m-sect _ _)))
 
       fmor-μ : ∀ {k} (P : Poly 𝒞 (suc k)) {δ δ' : Fin k → obj} (fs : ∀ i → δ i ⇒ δ' i) →
                fmor (μ P) fs ≈ μ-map P δ P δ' (fmor P (extend-mor fs (id _)))
       fmor-μ P {δ} {δ'} fs =
-        ∘-cong (⦅⦆-cong P δ (≈-sym (≈-trans (assoc _ _ _)
-                                             (∘-cong ≈-refl (≈-trans (sect-p₂ _)
-                                                                     (strong-fmor-cong P (λ { Fin.zero → id-left ; (Fin.suc i) → ≈-refl })))))))
+        ∘-cong (⦅⦆-cong P δ (≈-sym (tail-cong
+                  (≈-trans (sect-p₂ _)
+                           (strong-fmor-cong P (λ { Fin.zero → id-left ; (Fin.suc i) → ≈-refl }))))))
                ≈-refl
 
       private
@@ -726,8 +660,7 @@ module Interp
             strong-fmor P (λ i → gs i ∘ p₂) ∘ prod-m to-terminal (id _)
           ≈⟨ strong-fmor-reindex P to-terminal (λ i → gs i ∘ p₂) ⟩
             strong-fmor P (λ i → (gs i ∘ p₂) ∘ prod-m to-terminal (id _))
-          ≈⟨ strong-fmor-cong P (λ i → ≈-trans (assoc _ _ _)
-                                         (∘-cong ≈-refl (≈-trans (pair-p₂ _ _) id-left))) ⟩
+          ≈⟨ strong-fmor-cong P (λ i → tail-cong (≈-trans (pair-p₂ _ _) id-left)) ⟩
             strong-fmor P (λ i → gs i ∘ p₂)
           ∎)
         where open ≈-Reasoning isEquiv
@@ -744,7 +677,7 @@ module Interp
             ⦅_⦆ {P = P} {δ = δ} ((inMap Q δ' ∘ u) ∘ p₂) ∘ prod-m to-terminal (id _)
           ≈⟨ ⦅⦆-reindex to-terminal _ ⟩
             ⦅ ((inMap Q δ' ∘ u) ∘ p₂) ∘ prod-m to-terminal (id _) ⦆
-          ≈⟨ ⦅⦆-cong P δ (≈-trans (assoc _ _ _) (∘-cong ≈-refl (≈-trans (pair-p₂ _ _) id-left))) ⟩
+          ≈⟨ ⦅⦆-cong P δ (tail-cong (≈-trans (pair-p₂ _ _) id-left)) ⟩
             ⦅ (inMap Q δ' ∘ u) ∘ p₂ ⦆
           ∎)
         where open ≈-Reasoning isEquiv

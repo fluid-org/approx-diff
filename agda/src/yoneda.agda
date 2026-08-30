@@ -5,7 +5,7 @@ open import Data.Product using (_,_; Σ-syntax) renaming (_×_ to _×S_)
 open import prop using (lift; lower; _,_; LiftS; liftS)
 open import prop-setoid
   using (Setoid; IsEquivalence; module ≈-Reasoning; _∘S_; idS)
-  renaming (_⇒_ to _⇒s_; _≃m_ to _≈s_; mk-≃m to mk-≈s; ⊗-setoid to _×s_)
+  renaming (_⇒_ to _⇒s_; _≃m_ to _≈s_; pointwise to mk-≈s; ⊗-setoid to _×s_)
 open import categories using (Category; HasProducts; HasExponentials; HasTerminal)
 open import functor using ([_⇒_]; Functor; NatTrans; ≃-NatTrans;
   HasLimits;

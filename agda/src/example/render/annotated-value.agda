@@ -55,10 +55,8 @@ covers-all []       = 0
 covers-all (t ∷ ts) = covers t + covers-all ts
 
 fold : ∀ {X B : Set} → (∀ (t : Tag) → X → ℕ → ℕ → Vec B (arity t) → B) → ℕ → AVal X → B
-fold-vec : ∀ {X B : Set} {k} → (∀ (t : Tag) → X → ℕ → ℕ → Vec B (arity t) → B) →
-           ℕ → Vec (AVal X) k → Vec B k
-fold-all : ∀ {X B : Set} → (∀ (t : Tag) → X → ℕ → ℕ → Vec B (arity t) → B) →
-           ℕ → List (AVal X) → List B
+fold-vec : ∀ {X B : Set} {k} → (∀ (t : Tag) → X → ℕ → ℕ → Vec B (arity t) → B) → ℕ → Vec (AVal X) k → Vec B k
+fold-all : ∀ {X B : Set} → (∀ (t : Tag) → X → ℕ → ℕ → Vec B (arity t) → B) → ℕ → List (AVal X) → List B
 
 fold f off (node sh x n cs) = f sh x n off (fold-vec f (off + n) cs)
 fold-vec f off []ᵥ       = []ᵥ
@@ -81,8 +79,7 @@ module _ (show-const : ∀ {s} → sort-val s → String) where
 
     cell-of : ∀ {σ} → Val (μ (unit [+] (σ [×] var zero))) → AVal ⊤
     cell-of (Val.roll (Val.inl Val.unit))         = node Tag.nil tt 2 []ᵥ
-    cell-of (Val.roll (Val.inr (Val.pair hd tl))) =
-      node Tag.cons tt 2 (shape-of hd ∷ᵥ shape-of tl ∷ᵥ []ᵥ)
+    cell-of (Val.roll (Val.inr (Val.pair hd tl))) = node Tag.cons tt 2 (shape-of hd ∷ᵥ shape-of tl ∷ᵥ []ᵥ)
 
     shape-env-of : ∀ {Γ} → Env Γ → List (AVal ⊤)
     shape-env-of emp     = []
@@ -118,11 +115,9 @@ module annotate {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) where
   fill-all row off []       = []
   fill-all row off (t ∷ ts) = fill row off t ∷ fill-all row (off + covers t) ts
 
-  row→aval : ∀ {τ} (show-const : ∀ {s} → sort-val s → String) →
-             (ℕ → Scalar) → Val τ → AVal Scalar
+  row→aval : ∀ {τ} (show-const : ∀ {s} → sort-val s → String) → (ℕ → Scalar) → Val τ → AVal Scalar
   row→aval sc row v = fill row 0 (shape-of sc v)
 
-  row→avals : ∀ {Γ} (show-const : ∀ {s} → sort-val s → String) →
-              (ℕ → Scalar) → Env Γ → List (AVal Scalar)
+  row→avals : ∀ {Γ} (show-const : ∀ {s} → sort-val s → String) → (ℕ → Scalar) → Env Γ → List (AVal Scalar)
   row→avals sc row γ = fill-all row 0 (shape-env-of sc γ)
 

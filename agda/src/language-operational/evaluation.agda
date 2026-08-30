@@ -3,13 +3,13 @@
 open import Level using (0ℓ)
 open import Data.Fin using (Fin; zero; suc)
 open import Data.Nat using (ℕ; zero; suc; _+_)
-open import Data.Product using (_,_)
+open import Data.Product using (Σ; _,_)
 open import Data.Sum using (_⊎_; inj₁; inj₂)
 open import Data.Unit.Polymorphic using (⊤; tt)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; subst)
 open import prop-setoid using (Setoid)
 open import commutative-semiring using (CommutativeSemiring)
-open import every using (Every; []; _∷_)
+open import Data.List.Relation.Unary.All using ([]; _∷_) renaming (All to Every)
 open import signature using (Signature)
 open import signature.interpretation using (Interpretation)
 import matrix
@@ -136,9 +136,6 @@ open HasProducts M.products using () renaming (prod-m to _⊕_) public
 ctrl-col : ∀ {m} → suc m ⇒ 1
 ctrl-col {m} = p₁ {1} {m}
 
-env-cols : ∀ {m} → suc m ⇒ m
-env-cols {m} = p₂ {1} {m}
-
 wctrl : ∀ {m n} → suc m ⇒ n
 wctrl = ctrl-row ∘ ctrl-col
 
@@ -172,8 +169,7 @@ rcast refl R = R
 ccast : ∀ {m n n'} → n ≡ n' → M.Matrix m n → M.Matrix m n'
 ccast refl R = R
 
-sub-inputs : ∀ {Γ} (γ : Env Γ) {m n} → M.Matrix m n →
-              (suc (width-env γ) + n) ⇒ (suc (width-env γ) + m)
+sub-inputs : ∀ {Γ} (γ : Env Γ) {m n} → M.Matrix m n → (suc (width-env γ) + n) ⇒ (suc (width-env γ) + m)
 sub-inputs γ C = M.I ⊕ C
 
 rec-inputs : ∀ {Γ τ} (γ : Env Γ) (w' : Val τ) {m} →
@@ -276,3 +272,15 @@ mutual
                    (F ∘ sub-inputs γ (ccast (sym (width-subst (unfold₁-inst τ' (μ τ₀)) w)) M.I)))
 
 infix 25 _,_⇓_[_] _,_⇓s_[_]
+
+Derivation : ∀ {Γ τ} (γ : Env Γ) (t : Γ ⊢ τ) → Set ℓ
+Derivation {τ = τ} γ t = Σ (Val τ) λ v → Σ (suc (width-env γ) ⇒ width v) λ R → γ , t ⇓ v [ R ]
+
+Derivations : ∀ {Γ is} (γ : Env Γ) (Ms : Every (λ s → Γ ⊢ base s) is) → Set ℓ
+Derivations {is = is} γ Ms =
+  Σ (sort-vals is) λ vs → Σ (suc (width-env γ) ⇒ bases-width is) λ Rs → γ , Ms ⇓s vs [ Rs ]
+
+MapDerivation : ∀ {Γ} (γ : Env Γ) (τ₀ : type 1) (σr : type 0) (s : Γ ▸ τ₀ [ σr ] ⊢ σr) (σ' : type 1) → Set ℓ
+MapDerivation γ τ₀ σr s σ' =
+  Σ (Val (σ' [ μ τ₀ ])) λ v → Σ (Val (σ' [ σr ])) λ v' →
+  Σ ((suc (width-env γ) + width v) ⇒ width v') λ F → Map γ {τ₀} {σr} s σ' v v' F

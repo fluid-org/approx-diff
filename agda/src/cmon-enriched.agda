@@ -29,6 +29,9 @@ record CMonEnriched {o m e} (𝒞 : Category o m e) : Set (o ⊔ m ⊔ e) where
   +m-runit : ∀ {x y} {f : x ⇒ y} → (f +m εm) ≈ f
   +m-runit = isEquiv .trans (homCM _ _ .+-comm) (homCM _ _ .+-lunit)
 
+  +m-cong : ∀ {x y} {f f' g g' : x ⇒ y} → f ≈ f' → g ≈ g' → (f +m g) ≈ (f' +m g')
+  +m-cong = homCM _ _ .+-cong
+
   field
     comp-bilinear₁ : ∀ {X Y Z} (f₁ f₂ : Y ⇒ Z) (g : X ⇒ Y) →
                      ((f₁ +m f₂) ∘ g) ≈ ((f₁ ∘ g) +m (f₂ ∘ g))
@@ -108,8 +111,7 @@ module _ {o m e} {𝒞 : Category o m e} (CM : CMonEnriched 𝒞) where
     pair : ∀ {x} → x ⇒ A → x ⇒ B → x ⇒ prod
     pair f g = (in₁ ∘ f) +m (in₂ ∘ g)
 
-    pair-cong : ∀ {x} {f₁ f₂ : x ⇒ A} {g₁ g₂ : x ⇒ B} →
-                f₁ ≈ f₂ → g₁ ≈ g₂ → pair f₁ g₁ ≈ pair f₂ g₂
+    pair-cong : ∀ {x} {f₁ f₂ : x ⇒ A} {g₁ g₂ : x ⇒ B} → f₁ ≈ f₂ → g₁ ≈ g₂ → pair f₁ g₁ ≈ pair f₂ g₂
     pair-cong f₁≈f₂ g₁≈g₂ = homCM _ _ .+-cong (∘-cong ≈-refl f₁≈f₂) (∘-cong ≈-refl g₁≈g₂)
 
     pair-p₁ : ∀ {x} (f : x ⇒ A) (g : x ⇒ B) → (p₁ ∘ pair f g) ≈ f
@@ -164,8 +166,7 @@ module _ {o m e} {𝒞 : Category o m e} (CM : CMonEnriched 𝒞) where
     copair : ∀ {x} → A ⇒ x → B ⇒ x → prod ⇒ x
     copair f g = (f ∘ p₁) +m (g ∘ p₂)
 
-    copair-cong : ∀ {x} {f₁ f₂ : A ⇒ x} {g₁ g₂ : B ⇒ x} →
-                    f₁ ≈ f₂ → g₁ ≈ g₂ → copair f₁ g₁ ≈ copair f₂ g₂
+    copair-cong : ∀ {x} {f₁ f₂ : A ⇒ x} {g₁ g₂ : B ⇒ x} → f₁ ≈ f₂ → g₁ ≈ g₂ → copair f₁ g₁ ≈ copair f₂ g₂
     copair-cong f₁≈f₂ g₁≈g₂ = homCM _ _ .+-cong (∘-cong f₁≈f₂ ≈-refl) (∘-cong g₁≈g₂ ≈-refl)
 
     copair-in₁ : ∀ {x} (f : A ⇒ x) (g : B ⇒ x) → (copair f g ∘ in₁) ≈ f
@@ -253,8 +254,7 @@ module _ {o m e} {𝒞 : Category o m e} (CM : CMonEnriched 𝒞) where
     open HasProducts (biproducts→products BP)
     open HasCoproducts (biproducts→coproducts BP)
 
-    in₁-natural : ∀ {x₁ y₁ x₂ y₂} {f : x₁ ⇒ y₁} {g : x₂ ⇒ y₂} →
-                  (prod-m f g ∘ in₁) ≈ (in₁ ∘ f)
+    in₁-natural : ∀ {x₁ y₁ x₂ y₂} {f : x₁ ⇒ y₁} {g : x₂ ⇒ y₂} → (prod-m f g ∘ in₁) ≈ (in₁ ∘ f)
     in₁-natural {f = f} {g = g} =
       begin
         ((in₁ ∘ (f ∘ p₁)) +m (in₂ ∘ (g ∘ p₂))) ∘ in₁
@@ -274,8 +274,7 @@ module _ {o m e} {𝒞 : Category o m e} (CM : CMonEnriched 𝒞) where
         in₁ ∘ f
       ∎ where open ≈-Reasoning isEquiv
 
-    in₂-natural : ∀ {x₁ y₁ x₂ y₂} {f : x₁ ⇒ y₁} {g : x₂ ⇒ y₂} →
-                  (prod-m f g ∘ in₂) ≈ (in₂ ∘ g)
+    in₂-natural : ∀ {x₁ y₁ x₂ y₂} {f : x₁ ⇒ y₁} {g : x₂ ⇒ y₂} → (prod-m f g ∘ in₂) ≈ (in₂ ∘ g)
     in₂-natural {f = f} {g = g} =
       begin
         ((in₁ ∘ (f ∘ p₁)) +m (in₂ ∘ (g ∘ p₂))) ∘ in₂
@@ -411,8 +410,7 @@ module cmon+product→biproduct {o m e}
       εm                      ∎
     where open ≈-Reasoning isEquiv
 
-  pair-+ : ∀ {z} (f₁ f₂ : z ⇒ x) (g₁ g₂ : z ⇒ y) →
-     (pair f₁ g₁ +m pair f₂ g₂) ≈ pair (f₁ +m f₂) (g₁ +m g₂)
+  pair-+ : ∀ {z} (f₁ f₂ : z ⇒ x) (g₁ g₂ : z ⇒ y) → (pair f₁ g₁ +m pair f₂ g₂) ≈ pair (f₁ +m f₂) (g₁ +m g₂)
   pair-+ f₁ f₂ g₁ g₂ =
     begin
       pair f₁ g₁ +m pair f₂ g₂
@@ -480,8 +478,7 @@ module _ {o₁ m₁ e₁ o₂ m₂ e₂}
 
   homCM-F : ∀ F G → CommutativeMonoid (Category.hom-setoid [ 𝒞 ⇒ 𝒟 ] F G)
   homCM-F F G .ε .transf x = CM.εm
-  homCM-F F G .ε .natural f =
-    𝒟.isEquiv .trans (CM.comp-bilinear-ε₂ _) (𝒟.≈-sym (CM.comp-bilinear-ε₁ _))
+  homCM-F F G .ε .natural f = 𝒟.isEquiv .trans (CM.comp-bilinear-ε₂ _) (𝒟.≈-sym (CM.comp-bilinear-ε₁ _))
   homCM-F F G ._+_ f₁ f₂ .transf x = CM.homCM _ _ ._+_ (f₁ .transf x) (f₂ .transf x)
   homCM-F F G ._+_ f₁ f₂ .natural {x} {y} f =
     begin

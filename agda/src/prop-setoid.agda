@@ -39,35 +39,19 @@ module ≈-Reasoning {o e} {A : Set o} {_≈_ : A → A → Prop e} (equiv : IsE
   infixr 2 _≈⟨_⟩_ _≈˘⟨_⟩_ _≡⟨⟩_
   infix  3 _∎
 
-  begin_ : ∀ {x y : A}
-    → x ≈ y
-      -----
-    → x ≈ y
+  begin_ : ∀ {x y : A} → x ≈ y → x ≈ y
   begin x≈y  =  x≈y
 
-  _≡⟨⟩_ : ∀ (x : A) {y : A}
-    → x ≈ y
-      -----
-    → x ≈ y
+  _≡⟨⟩_ : ∀ (x : A) {y : A} → x ≈ y → x ≈ y
   x ≡⟨⟩ x≈y = x≈y
 
-  _≈⟨_⟩_ : ∀ (x : A) {y z : A}
-    → x ≈ y
-    → y ≈ z
-      -----
-    → x ≈ z
+  _≈⟨_⟩_ : ∀ (x : A) {y z : A} → x ≈ y → y ≈ z → x ≈ z
   x ≈⟨ x≈y ⟩ y≈z  =  equiv .trans x≈y y≈z
 
-  _≈˘⟨_⟩_ : ∀ (x : A) {y z : A}
-    → y ≈ x
-    → y ≈ z
-      -----
-    → x ≈ z
+  _≈˘⟨_⟩_ : ∀ (x : A) {y z : A} → y ≈ x → y ≈ z → x ≈ z
   x ≈˘⟨ y≈x ⟩ y≈z  =  equiv .trans (equiv .sym y≈x) y≈z
 
-  _∎ : ∀ (x : A)
-      -----
-    → x ≈ x
+  _∎ : ∀ (x : A) → x ≈ x
   x ∎  =  equiv .refl
 
 record Setoid o e : Set (suc (o ⊔ e)) where
@@ -100,13 +84,12 @@ module _ {o e} where
       func-eq : ∀ {x₁ x₂} → x₁ X.≈ x₂ → f .func x₁ Y.≈ g .func x₂
   open _≃m_
 
-  mk-≃m : ∀ {X Y : Setoid o e} {f g : X ⇒ Y} → (∀ x → Y ._≈_ (f .func x) (g .func x)) → f ≃m g
-  mk-≃m {X} {Y} {f} {g} eq .func-eq x₁≈x₂ = Y .trans (f .func-resp-≈ x₁≈x₂) (eq _)
+  pointwise : ∀ {X Y : Setoid o e} {f g : X ⇒ Y} → (∀ x → Y ._≈_ (f .func x) (g .func x)) → f ≃m g
+  pointwise {X} {Y} {f} {g} eq .func-eq x₁≈x₂ = Y .trans (f .func-resp-≈ x₁≈x₂) (eq _)
 
   ≃m-isEquivalence : ∀ {X Y : Setoid o e} → IsEquivalence (_≃m_ {X} {Y})
   ≃m-isEquivalence {X} {Y} .refl {f} .func-eq = f .func-resp-≈
-  ≃m-isEquivalence {X} {Y} .sym {f} {g} f≈g .func-eq x₁≈x₂ =
-    Setoid.sym Y (f≈g .func-eq (Setoid.sym X x₁≈x₂))
+  ≃m-isEquivalence {X} {Y} .sym {f} {g} f≈g .func-eq x₁≈x₂ = Setoid.sym Y (f≈g .func-eq (Setoid.sym X x₁≈x₂))
   ≃m-isEquivalence {X} {Y} .trans {f} {g} {h} f≈g g≈h .func-eq x₁≈x₂ =
     Setoid.trans Y (f≈g .func-eq x₁≈x₂) (g≈h .func-eq (Setoid.refl X))
 
@@ -120,8 +103,7 @@ module _ {o e} where
 
   ∘S-cong : ∀ {X Y Z : Setoid o e} {f₁ f₂ : Y ⇒ Z} {g₁ g₂ : X ⇒ Y} →
     f₁ ≃m f₂  → g₁ ≃m g₂ → (f₁ ∘S g₁) ≃m (f₂ ∘S g₂)
-  ∘S-cong f₁≈f₂ g₁≈g₂ .func-eq x₁≈x₂ =
-    f₁≈f₂ .func-eq (g₁≈g₂ .func-eq x₁≈x₂)
+  ∘S-cong f₁≈f₂ g₁≈g₂ .func-eq x₁≈x₂ = f₁≈f₂ .func-eq (g₁≈g₂ .func-eq x₁≈x₂)
 
   id-left : ∀ {X Y : Setoid o e} {f : X ⇒ Y} → (idS Y ∘S f) ≃m f
   id-left {X} {Y} {f} .func-eq = f .func-resp-≈
@@ -129,8 +111,7 @@ module _ {o e} where
   id-right : ∀ {X Y : Setoid o e} {f : X ⇒ Y} → (f ∘S idS X) ≃m f
   id-right {X} {Y} {f} .func-eq = f .func-resp-≈
 
-  assoc : ∀ {W X Y Z : Setoid o e} (f : Y ⇒ Z) (g : X ⇒ Y) (h : W ⇒ X) →
-      ((f ∘S g) ∘S h) ≃m (f ∘S (g ∘S h))
+  assoc : ∀ {W X Y Z : Setoid o e} (f : Y ⇒ Z) (g : X ⇒ Y) (h : W ⇒ X) → ((f ∘S g) ∘S h) ≃m (f ∘S (g ∘S h))
   assoc f g h .func-eq w₁≈w₂ = f .func-resp-≈ (g .func-resp-≈ (h .func-resp-≈ w₁≈w₂))
 
 module _ {o e} where
@@ -195,19 +176,13 @@ copair-cong : ∀ {o e} {X Y Z : Setoid o e}
 copair-cong f₁≈f₂ g₁≈g₂ .func-eq {inj₁ x} {inj₁ x₁} = f₁≈f₂ .func-eq
 copair-cong f₁≈f₂ g₁≈g₂ .func-eq {inj₂ y} {inj₂ y₁} = g₁≈g₂ .func-eq
 
-copair-in₁ : ∀ {o e} {X Y Z : Setoid o e}
-               (f : X ⇒ Z) (g : Y ⇒ Z) →
-               (copair f g ∘S inject₁) ≃m f
+copair-in₁ : ∀ {o e} {X Y Z : Setoid o e} (f : X ⇒ Z) (g : Y ⇒ Z) → (copair f g ∘S inject₁) ≃m f
 copair-in₁ f g .func-eq = f .func-resp-≈
 
-copair-in₂ : ∀ {o e} {X Y Z : Setoid o e}
-               (f : X ⇒ Z) (g : Y ⇒ Z) →
-               (copair f g ∘S inject₂) ≃m g
+copair-in₂ : ∀ {o e} {X Y Z : Setoid o e} (f : X ⇒ Z) (g : Y ⇒ Z) → (copair f g ∘S inject₂) ≃m g
 copair-in₂ f g .func-eq = g .func-resp-≈
 
-copair-ext : ∀ {o e} {X Y Z : Setoid o e}
-             (f : +-setoid X Y ⇒ Z) →
-             copair (f ∘S inject₁) (f ∘S inject₂) ≃m f
+copair-ext : ∀ {o e} {X Y Z : Setoid o e} (f : +-setoid X Y ⇒ Z) → copair (f ∘S inject₁) (f ∘S inject₂) ≃m f
 copair-ext f .func-eq {inj₁ x} {inj₁ x₁} = f .func-resp-≈
 copair-ext f .func-eq {inj₂ y} {inj₂ y₁} = f .func-resp-≈
 

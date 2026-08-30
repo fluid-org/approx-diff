@@ -33,10 +33,8 @@ module _ {o m e} (𝒞 : Category o m e) where
   initial-functor-unique .transform .transf ()
   initial-functor-unique .transf-iso ()
 
-  IsLimit→IsTerminal : ∀ {F : Functor cat 𝒞} {t} {cone} →
-                       IsLimit F t cone → IsTerminal 𝒞 t
-  IsLimit→IsTerminal is-limit .to-terminal =
-    is-limit .lambda _ (initial-functor-unique .transform)
+  IsLimit→IsTerminal : ∀ {F : Functor cat 𝒞} {t} {cone} → IsLimit F t cone → IsTerminal 𝒞 t
+  IsLimit→IsTerminal is-limit .to-terminal = is-limit .lambda _ (initial-functor-unique .transform)
   IsLimit→IsTerminal {F} {t} {cone} is-limit .to-terminal-ext {x} f = begin
       is-limit .lambda x (initial-functor-unique .transform)
     ≈⟨ is-limit .lambda-cong (record { transf-eq = λ () }) ⟩
@@ -53,9 +51,7 @@ module _ {o m e} (𝒞 : Category o m e) where
   limits→terminal : HasLimitCones cat 𝒞 → HasTerminal 𝒞
   limits→terminal limits = limit→terminal initial-functor (limits initial-functor)
 
-  terminal→limit : ∀ {t} →
-                   IsTerminal 𝒞 t →
-                   IsLimit initial-functor t (initial-functor-unique .transform)
+  terminal→limit : ∀ {t} → IsTerminal 𝒞 t → IsLimit initial-functor t (initial-functor-unique .transform)
   terminal→limit is-terminal .lambda x _ = is-terminal .to-terminal
   terminal→limit is-terminal .lambda-cong α≈β = 𝒞.≈-refl
   terminal→limit is-terminal .lambda-eval α .transf-eq ()

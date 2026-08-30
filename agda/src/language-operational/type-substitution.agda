@@ -1,10 +1,8 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
 open import Data.Fin using (Fin; zero; suc)
-open import Data.Nat using (ℕ; suc; _+_; _<_; _≤_; s≤s)
-open import Data.Nat.Properties using (≤-refl; ≤-trans; m≤m+n; m≤n+m; n≤1+n)
-open import Data.Product using (_×_; _,_)
-open import Data.Unit using (⊤; tt)
+open import Data.Nat using (suc)
+open import Data.Product using (_,_)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; trans; cong; cong₂)
 open import signature using (Signature)
 open import polynomial-functor using (extend)
@@ -96,7 +94,7 @@ unfold-sub : ∀ {n} (σ : TySub n 0) (τ : type (suc n)) →
              sub (sub-lift σ) τ [ μ (sub (sub-lift σ) τ) ] ≡ sub (extend σ (μ (sub (sub-lift σ) τ))) τ
 unfold-sub σ τ =
   trans (sub-sub (push (μ B)) (sub-lift σ) τ)
-        (sub-cong τ λ { zero → refl ; (suc i) → trans (sub-ren (push (μ B)) suc (σ i)) (sub-id (σ i)) })
+        (sub-cong τ λ { zero → refl ; (suc i) → sub-ren-id (σ i) (λ ()) })
   where B = sub (sub-lift σ) τ
 
 unfold₁-sub : type 2 → TySub 2 1
@@ -106,84 +104,16 @@ unfold₁-sub τ (suc i) = var i
 unfold₁ : type 2 → type 1
 unfold₁ τ = sub (unfold₁-sub τ) τ
 
-unfold₁-inst : ∀ (τ : type 2) (ρ : type 0) →
-               sub (push ρ) (unfold₁ τ) ≡
-               sub (sub-lift (push ρ)) τ [ μ (sub (sub-lift (push ρ)) τ) ]
+unfold₁-inst : ∀ (τ : type 2) (ρ : type 0) → sub (push ρ) (unfold₁ τ) ≡ τ [ ρ ]₁ [ μ (τ [ ρ ]₁) ]
 unfold₁-inst τ ρ =
   trans (sub-sub (push ρ) (unfold₁-sub τ) τ)
         (trans (sub-cong τ pw)
                (sym (sub-sub (push (μ A)) (sub-lift (push ρ)) τ)))
   where
     A : type 1
-    A = sub (sub-lift (push ρ)) τ
+    A = τ [ ρ ]₁
 
-    pw : ∀ i → sub (push ρ) (unfold₁-sub τ i) ≡
-               sub (push (μ A)) (sub-lift (push ρ) i)
+    pw : ∀ i → sub (push ρ) (unfold₁-sub τ i) ≡ sub (push (μ A)) (sub-lift (push ρ) i)
     pw zero          = refl
-    pw (suc zero)    =
-      sym (trans (sub-ren (push (μ A)) suc ρ)
-                 (trans (sub-cong ρ λ ()) (sub-id ρ)))
+    pw (suc zero)    = sym (sub-ren-id ρ (λ ()))
     pw (suc (suc ()))
-
-size : ∀ {Δ} → type Δ → ℕ
-size (var i)   = 1
-size unit      = 1
-size (base s)  = 1
-size (σ [+] τ) = suc (size σ + size τ)
-size (σ [×] τ) = suc (size σ + size τ)
-size (σ [→] τ) = suc (size σ + size τ)
-size (μ τ)     = suc (size τ)
-
--- All arrow leaves have size below the bound. Substitution preserves arrow leaves verbatim, so the bound
--- survives renaming, substitution and unfolding.
-arr-bound : ∀ {Δ} → ℕ → type Δ → Set
-arr-bound n (var i)     = ⊤
-arr-bound n unit        = ⊤
-arr-bound n (base s)    = ⊤
-arr-bound n (τ₁ [+] τ₂) = arr-bound n τ₁ × arr-bound n τ₂
-arr-bound n (τ₁ [×] τ₂) = arr-bound n τ₁ × arr-bound n τ₂
-arr-bound n (τ₁ [→] τ₂) = suc (size τ₁ + size τ₂) < n
-arr-bound n (μ τ)       = arr-bound n τ
-
-arr-mono : ∀ {Δ m n} (τ : type Δ) → m ≤ n → arr-bound m τ → arr-bound n τ
-arr-mono (var i)     e b        = tt
-arr-mono unit        e b        = tt
-arr-mono (base s)    e b        = tt
-arr-mono (τ₁ [+] τ₂) e (b , b') = arr-mono τ₁ e b , arr-mono τ₂ e b'
-arr-mono (τ₁ [×] τ₂) e (b , b') = arr-mono τ₁ e b , arr-mono τ₂ e b'
-arr-mono (τ₁ [→] τ₂) e b        = ≤-trans b e
-arr-mono (μ τ)       e b        = arr-mono τ e b
-
-arr-self : ∀ {Δ} (τ : type Δ) → arr-bound (suc (size τ)) τ
-arr-self (var i)     = tt
-arr-self unit        = tt
-arr-self (base s)    = tt
-arr-self (τ₁ [+] τ₂) = arr-mono τ₁ (s≤s (≤-trans (m≤m+n (size τ₁) (size τ₂)) (n≤1+n _))) (arr-self τ₁) ,
-                       arr-mono τ₂ (s≤s (≤-trans (m≤n+m (size τ₂) (size τ₁)) (n≤1+n _))) (arr-self τ₂)
-arr-self (τ₁ [×] τ₂) = arr-mono τ₁ (s≤s (≤-trans (m≤m+n (size τ₁) (size τ₂)) (n≤1+n _))) (arr-self τ₁) ,
-                       arr-mono τ₂ (s≤s (≤-trans (m≤n+m (size τ₂) (size τ₁)) (n≤1+n _))) (arr-self τ₂)
-arr-self (τ₁ [→] τ₂) = ≤-refl
-arr-self (μ τ)       = arr-mono τ (s≤s (n≤1+n _)) (arr-self τ)
-
-ren-arr : ∀ {Δ Δ' n} (ρ : TyRen Δ Δ') (τ : type Δ) → arr-bound n τ → arr-bound n (ρ *ᵗ τ)
-ren-arr ρ (var i)     b        = tt
-ren-arr ρ unit        b        = tt
-ren-arr ρ (base s)    b        = tt
-ren-arr ρ (τ₁ [+] τ₂) (b , b') = ren-arr ρ τ₁ b , ren-arr ρ τ₂ b'
-ren-arr ρ (τ₁ [×] τ₂) (b , b') = ren-arr ρ τ₁ b , ren-arr ρ τ₂ b'
-ren-arr ρ (τ₁ [→] τ₂) b        = b
-ren-arr ρ (μ τ)       b        = ren-arr (extᵗ ρ) τ b
-
-sub-arr : ∀ {Δ Δ' n} (σ : TySub Δ Δ') (τ : type Δ) →
-          (∀ i → arr-bound n (σ i)) → arr-bound n τ → arr-bound n (sub σ τ)
-sub-arr σ (var i)     bσ b        = bσ i
-sub-arr σ unit        bσ b        = tt
-sub-arr σ (base s)    bσ b        = tt
-sub-arr σ (τ₁ [+] τ₂) bσ (b , b') = sub-arr σ τ₁ bσ b , sub-arr σ τ₂ bσ b'
-sub-arr σ (τ₁ [×] τ₂) bσ (b , b') = sub-arr σ τ₁ bσ b , sub-arr σ τ₂ bσ b'
-sub-arr σ (τ₁ [→] τ₂) bσ b        = b
-sub-arr σ (μ τ)       bσ b        =
-  sub-arr (sub-lift σ) τ (λ { zero → tt ; (suc i) → ren-arr suc (σ i) (bσ i) }) b
-
-unfold₁-arr : ∀ {n} (τ : type 2) → arr-bound n τ → arr-bound n (unfold₁ τ)
-unfold₁-arr τ b = sub-arr (unfold₁-sub τ) τ (λ { zero → b ; (suc i) → tt }) b

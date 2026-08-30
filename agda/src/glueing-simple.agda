@@ -238,7 +238,7 @@ module products-and-exponentials
   eval .morph = E.eval
   eval {X} {Y} .presv = begin
       (⋀ (((X .pred [ F .fmor P.p₂ ]) ==> (Y .pred [ F .fmor E.eval ])) [ mul ]) [ F .fmor P.p₁ ]) && (X .pred [ F .fmor P.p₂ ])
-    ≤⟨ mono &&-isMeet ([]-cong F-p₁') ⊑-refl ⟩
+    ≤⟨ mono &&-isMeet ([]-cong F-p₁-inv) ⊑-refl ⟩
       (⋀ (((X .pred [ F .fmor P.p₂ ]) ==> (Y .pred [ F .fmor E.eval ])) [ mul ]) [ 𝒟P.p₁ 𝒟.∘ mul⁻¹ ]) && (X .pred [ F .fmor P.p₂ ])
     ≤⟨ mono &&-isMeet ([]-comp⁻¹ _ _) ⊑-refl ⟩
       ((⋀ (((X .pred [ F .fmor P.p₂ ]) ==> (Y .pred [ F .fmor E.eval ])) [ mul ]) [ 𝒟P.p₁ ]) [ mul⁻¹ ]) && (X .pred [ F .fmor P.p₂ ])
