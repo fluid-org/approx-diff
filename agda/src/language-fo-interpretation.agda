@@ -169,10 +169,6 @@ fo-poly-map-≡ (fo₁ [+] fo₂) δ𝒞 = cong₂ Poly._+_ (fo-poly-map-≡ fo�
 fo-poly-map-≡ (fo₁ [×] fo₂) δ𝒞 = cong₂ Poly._×_ (fo-poly-map-≡ fo₁ δ𝒞) (fo-poly-map-≡ fo₂ δ𝒞)
 fo-poly-map-≡ (μ fo)        δ𝒞 = cong Poly.μ (fo-poly-map-≡ fo δ𝒞)
 
-private
-  ≡-Iso : ∀ {x y} → x ≡ y → Fam⟨𝒟⟩μ-cat.Iso x y
-  ≡-Iso refl = Fam⟨𝒟⟩μ-cat.Iso-refl
-
 ⟦_⟧-iso : ∀ {Δ} {τ : type Δ} (fo : first-order τ) (δ𝒞 : Fin Δ → Fam⟨𝒞⟩μ.Obj) →
           Fam⟨𝒟⟩μ-cat.Iso (Fam⟨F⟩ .fobj (𝒞⟦ fo ⟧ty δ𝒞)) (𝒟⟦ τ ⟧ty (λ i → Fam⟨F⟩ .fobj (δ𝒞 i)))
 ⟦ var i ⟧-iso       δ𝒞 = Fam⟨𝒟⟩μ-cat.Iso-refl
@@ -190,7 +186,7 @@ private
         (product-preserves-iso (⟦ fo₁ ⟧-iso δ𝒞) (⟦ fo₂ ⟧-iso δ𝒞))))
 ⟦ μ fo ⟧-iso        δ𝒞 =
   Fam⟨𝒟⟩μ-cat.Iso-trans (FibrewiseMu.fibrewise-μ-iso (fo-as-poly fo δ𝒞) ∅𝒞)
-    (≡-Iso (cong (λ (Q : Poly Fam⟨𝒟⟩μ.cat 1) → Fam⟨𝒟⟩μ.μ-fam Q δ∅𝒟) (fo-poly-map-≡ fo δ𝒞)))
+    (Fam⟨𝒟⟩μ-cat.≡-Iso (cong (λ (Q : Poly Fam⟨𝒟⟩μ.cat 1) → Fam⟨𝒟⟩μ.μ-fam Q δ∅𝒟) (fo-poly-map-≡ fo δ𝒞)))
 
 -- At closed types the target environment is the empty one, which agrees with the image environment
 -- only up to pointwise equality. The comparison recurses on the type, so that its index map computes
@@ -209,7 +205,7 @@ closed-iso (fo₁ [×] fo₂) =
     (Fam⟨𝒟⟩μ.Lf-iso
       (Fam⟨𝒟⟩μ-cat.Iso-trans (Fam⟨𝒟⟩μ-cat.IsIso→Iso Fam⟨F⟩-preserves-products)
         (product-preserves-iso (closed-iso fo₁) (closed-iso fo₂))))
-closed-iso (μ {τ = τ} fo) = Fam⟨𝒟⟩μ-cat.Iso-trans (⟦ μ fo ⟧-iso ∅𝒞) (≡-Iso (𝒟-ty-cong (μ τ) (λ ())))
+closed-iso (μ {τ = τ} fo) = Fam⟨𝒟⟩μ-cat.Iso-trans (⟦ μ fo ⟧-iso ∅𝒞) (Fam⟨𝒟⟩μ-cat.≡-Iso (𝒟-ty-cong (μ τ) (λ ())))
 
 ⟦_⟧ctxt-iso : ∀ {Γ} (Γ-fo : first-order-ctxt Γ) → Fam⟨𝒟⟩μ-cat.Iso (Fam⟨F⟩ .fobj 𝒞⟦ Γ-fo ⟧ctxt) (𝒟⟦ Γ ⟧ctxt)
 ⟦ emp ⟧ctxt-iso    = Fam⟨𝒟⟩μ-cat.IsIso→Iso Fam⟨F⟩-preserves-terminal

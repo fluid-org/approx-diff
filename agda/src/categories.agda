@@ -160,6 +160,9 @@ record Category o m e : Set (suc (o ⊔ m ⊔ e)) where
   Iso-refl .Iso.fwd∘bwd≈id = id-left
   Iso-refl .Iso.bwd∘fwd≈id = id-left
 
+  ≡-Iso : ∀ {x y} → x ≡ y → Iso x y
+  ≡-Iso ≡.refl = Iso-refl
+
   Iso-sym : ∀ {x y} → Iso x y → Iso y x
   Iso-sym iso .fwd = iso .bwd
   Iso-sym iso .bwd = iso .fwd
