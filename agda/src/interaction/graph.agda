@@ -521,56 +521,72 @@ private
 -- Hiding one premise's vertices, one at a time, inside the conclusion's graph. The state records
 -- the premise's own relations as they accumulate; Φ carries the premise's input columns to the
 -- conclusion's, which for a premise evaluated in a substituted environment is not the identity.
+module _ {m n : ℕ} (B : Graph m n) where
+
+  root-row : ∀ y → gr B (inj₂ (inj₂ root)) y ≈ M.εₘ
+  root-row (inj₁ _) = ≈-refl {f = M.εₘ}
+  root-row (inj₂ _) = ≈-refl {f = M.εₘ}
+
+  hide-paths⁺ : hide-all (vertex-width B) (gr B) (map inj₂ (paths⁺ B)) (inj₁ input) (inj₂ (inj₂ root))
+                ≈ collapse B
+  hide-paths⁺ =
+    ≈-trans (≡-to-≈ (≡-cong (λ l → hide-all (vertex-width B) (gr B) l (inj₁ input) (inj₂ (inj₂ root)))
+                            (≡-cong (inj₂ (inj₂ root) ∷_) (≡-sym (map-∘ {g = inj₂} {f = inj₁} (vertices (Graph.shape B)))))))
+            (hide-all-cong (vertex-width B) (map (λ q → inj₂ (inj₁ q)) (vertices (Graph.shape B)))
+                           (hide-sink (vertex-width B) (gr B) (inj₂ (inj₂ root)) root-row)
+                           (inj₁ input) (inj₂ (inj₂ root)))
+
 module HidePremise
-  {V : Set} (vertex-width : V → ℕ)
+  {mB nB : ℕ} (B : Graph mB nB)
+  {V : Set} (width : V → ℕ)
   (inp : V)
-  {Q : Set} (blk : Q ⊎ Root → V)
+  (blk : Path⁺ B → V)
   {T : Set} (tgt : T → V)
-  {m' : ℕ} (Φ : M.Matrix m' (vertex-width inp))
-  (P : (t : T) → M.Matrix (vertex-width (tgt t)) (vertex-width (blk (inj₂ root))))
-  (K : (t : T) → M.Matrix (vertex-width (tgt t)) (vertex-width inp))
+  {m' : ℕ} (Φ : M.Matrix m' (width inp))
+  (P : (t : T) → M.Matrix (width (tgt t)) (width (blk (inj₂ root))))
+  (K : (t : T) → M.Matrix (width (tgt t)) (width inp))
   where
 
   record St : Set where
     field
-      into   : (q : Q ⊎ Root) → M.Matrix (vertex-width (blk q)) m'
-      inside : (p q : Q ⊎ Root) → M.Matrix (vertex-width (blk q)) (vertex-width (blk p))
+      into   : (q : Path⁺ B) → M.Matrix (width (blk q)) m'
+      inside : (p q : Path⁺ B) → M.Matrix (width (blk q)) (width (blk p))
 
   open St public
 
-  step : St → (Q ⊎ Root) → St
+  step : St → (Path⁺ B) → St
   step H w .into q = H .into q M.+ₘ (H .inside w q ∘ H .into w)
   step H w .inside p q = H .inside p q M.+ₘ (H .inside w q ∘ H .inside p w)
 
-  steps : St → List (Q ⊎ Root) → St
+  steps : St → List (Path⁺ B) → St
   steps = foldl step
 
-  folds : ∀ {A V' : Set} (prem : A → St) (ι : Q ⊎ Root → V') (h' : A → V' → A) →
+  folds : ∀ {A V' : Set} (prem : A → St) (ι : Path⁺ B → V') (h' : A → V' → A) →
           (∀ G w → step (prem G) w ≡ prem (h' G (ι w))) →
-          (ws : List (Q ⊎ Root)) (G : A) → steps (prem G) ws ≡ prem (foldl h' G (map ι ws))
+          (ws : List (Path⁺ B)) (G : A) → steps (prem G) ws ≡ prem (foldl h' G (map ι ws))
   folds prem ι h' ok []       G = ≡-refl
   folds prem ι h' ok (w ∷ ws) G =
     ≡-trans (≡-cong (λ H → steps H ws) (ok G w)) (folds prem ι h' ok ws (h' G (ι w)))
 
   private
-    Φ-step : ∀ (H : St) (w : (Q ⊎ Root)) (q : Q ⊎ Root) →
+    Φ-step : ∀ (H : St) (w : (Path⁺ B)) (q : Path⁺ B) →
              (step H w .into q ∘ Φ)
              ≈ ((H .into q ∘ Φ) M.+ₘ (H .inside w q ∘ (H .into w ∘ Φ)))
     Φ-step H w q =
       ≈-trans (M.comp-bilinear₁ (H .into q) (H .inside w q ∘ H .into w) Φ)
               (M.+ₘ-cong ≈-refl (assoc (H .inside w q) (H .into w) Φ))
 
-  record Agrees (G : Relation vertex-width) (H : St) : Set where
+  record Agrees (G : Relation width) (H : St) : Set where
     field
       into-ok   : ∀ q → G inp (blk q) ≈ (H .into q ∘ Φ)
       inside-ok : ∀ p q → G (blk p) (blk q) ≈ H .inside p q
       tgt-ok    : ∀ t → G inp (tgt t) ≈ (K t M.+ₘ (P t ∘ (H .into (inj₂ root) ∘ Φ)))
-      up-ok     : ∀ t (p : Q) → G (blk (inj₁ p)) (tgt t)
+      up-ok     : ∀ t (p : Vertex (Graph.shape B)) → G (blk (inj₁ p)) (tgt t)
                                 ≈ (P t ∘ H .inside (inj₁ p) (inj₂ root))
 
   open Agrees public
 
-  agrees-hide : ∀ {G H} (w : Q) → Agrees G H → Agrees (hide vertex-width G (blk (inj₁ w))) (step H (inj₁ w))
+  agrees-hide : ∀ {G H} (w : Vertex (Graph.shape B)) → Agrees G H → Agrees (hide width G (blk (inj₁ w))) (step H (inj₁ w))
   agrees-hide {H = H} w s .into-ok q =
     ≈-trans (M.+ₘ-cong (s .into-ok q) (∘-cong (s .inside-ok (inj₁ w) q) (s .into-ok (inj₁ w))))
             (≈-sym (Φ-step H (inj₁ w) q))
@@ -588,25 +604,25 @@ module HidePremise
               {Y = H .inside (inj₁ w) (inj₂ root)} {Z = H .inside (inj₁ p) (inj₁ w)}
       (s .up-ok t p) (s .up-ok t w) (s .inside-ok (inj₁ p) (inj₁ w))
 
-  agrees-hide-all : ∀ {G H} (ws : List (Q)) → Agrees G H →
-                    Agrees (hide-all vertex-width G (map (λ w → blk (inj₁ w)) ws)) (steps H (map inj₁ ws))
+  agrees-hide-all : ∀ {G H} (ws : List (Vertex (Graph.shape B))) → Agrees G H →
+                    Agrees (hide-all width G (map (λ w → blk (inj₁ w)) ws)) (steps H (map inj₁ ws))
   agrees-hide-all []       s = s
   agrees-hide-all (w ∷ ws) s = agrees-hide-all ws (agrees-hide w s)
 
   -- The relations a rule contributes, before the graph's root is hidden. Every edge from the graph to
   -- a target leaves the graph's root, which here is a matter of the vertex set rather than a lemma.
-  record Start (G : Relation vertex-width) (H : St) : Set where
+  record Start (G : Relation width) (H : St) : Set where
     field
       into-start   : ∀ q → G inp (blk q) ≈ (H .into q ∘ Φ)
       inside-start : ∀ p q → G (blk p) (blk q) ≈ H .inside p q
       tgt-start    : ∀ t → G inp (tgt t) ≈ K t
       up-start     : ∀ t → G (blk (inj₂ root)) (tgt t) ≈ P t
-      off-start    : ∀ t (p : Q) → G (blk (inj₁ p)) (tgt t) ≈ M.εₘ
+      off-start    : ∀ t (p : Vertex (Graph.shape B)) → G (blk (inj₁ p)) (tgt t) ≈ M.εₘ
       sink         : ∀ q → H .inside (inj₂ root) q ≈ M.εₘ
 
   open Start public
 
-  agrees-start : ∀ {G H} → Start G H → Agrees (hide vertex-width G (blk (inj₂ root))) (step H (inj₂ root))
+  agrees-start : ∀ {G H} → Start G H → Agrees (hide width G (blk (inj₂ root))) (step H (inj₂ root))
   agrees-start {H = H} r .into-ok q =
     ≈-trans (M.+ₘ-cong (r .into-start q)
                      (∘-cong (r .inside-start (inj₂ root) q) (r .into-start (inj₂ root))))
@@ -635,6 +651,24 @@ module HidePremise
     unchanged =
       ≈-trans (M.+ₘ-cong ≈-refl (∘-cong₁ (r .sink (inj₂ root))))
               (M.absorb₁ (H .inside (inj₁ p) (inj₂ root)) (H .inside (inj₁ p) (inj₂ root)))
+
+  module Hidden (G₀ : Relation width) (prem : Relation (vertex-width B) → St)
+                (prem-step : ∀ G w → step (prem G) w ≡ prem (hide (vertex-width B) G (inj₂ w))) where
+
+    H⁰ : St
+    H⁰ = prem (gr B)
+
+    G : Relation width
+    G = hide-all width (hide width G₀ (blk (inj₂ root))) (map (λ w → blk (inj₁ w)) (vertices (Graph.shape B)))
+
+    H : St
+    H = steps (step H⁰ (inj₂ root)) (map inj₁ (vertices (Graph.shape B)))
+
+    done : Start G₀ H⁰ → Agrees G H
+    done start = agrees-hide-all (vertices (Graph.shape B)) (agrees-start start)
+
+    κ : H .into (inj₂ root) ≡ prem (hide-all (vertex-width B) (gr B) (map inj₂ (paths⁺ B))) .into (inj₂ root)
+    κ = ≡-cong (λ H' → H' .into (inj₂ root)) (folds prem inj₂ (hide (vertex-width B)) prem-step (paths⁺ B) (gr B))
 
 module NoEdgeIntoHidden
   {V : Set} (vertex-width : V → ℕ)
@@ -667,21 +701,6 @@ module NoEdgeIntoHidden
   fixed-resp : ∀ {G G'} → G ≐ G' → Fixed G → Fixed G'
   fixed-resp e k .edge s t = ≈-trans (≈-sym (e (src s) (col t))) (k .edge s t)
   fixed-resp e k .no-edge s w = ≈-trans (≈-sym (e (src s) (hid w))) (k .no-edge s w)
-
-module _ {m n : ℕ} (B : Graph m n) where
-
-  root-row : ∀ y → gr B (inj₂ (inj₂ root)) y ≈ M.εₘ
-  root-row (inj₁ _) = ≈-refl {f = M.εₘ}
-  root-row (inj₂ _) = ≈-refl {f = M.εₘ}
-
-  hide-paths⁺ : hide-all (vertex-width B) (gr B) (map inj₂ (paths⁺ B)) (inj₁ input) (inj₂ (inj₂ root))
-                ≈ collapse B
-  hide-paths⁺ =
-    ≈-trans (≡-to-≈ (≡-cong (λ l → hide-all (vertex-width B) (gr B) l (inj₁ input) (inj₂ (inj₂ root)))
-                            (≡-cong (inj₂ (inj₂ root) ∷_) (≡-sym (map-∘ {g = inj₂} {f = inj₁} (vertices (Graph.shape B)))))))
-            (hide-all-cong (vertex-width B) (map (λ q → inj₂ (inj₁ q)) (vertices (Graph.shape B)))
-                           (hide-sink (vertex-width B) (gr B) (inj₂ (inj₂ root)) root-row)
-                           (inj₁ input) (inj₂ (inj₂ root)))
 
 private
   factor : ∀ {x y z w v} (A : M.Matrix z y) (r : M.Matrix y x) (l : M.Matrix y w)
@@ -773,13 +792,15 @@ module Rule₁
     er : V E
     er = inj₂ (inj₂ root)
 
-    module S = HidePremise (vertex-width E) (inj₁ input) b (λ (_ : Root) → er) inputs (λ _ → up-root) (λ _ → out-root)
+    module S = HidePremise B (vertex-width E) (inj₁ input) b (λ (_ : Root) → er) inputs (λ _ → up-root) (λ _ → out-root)
 
-    H⁰ : S.St
-    H⁰ .S.into q = into⁺ B q
-    H⁰ .S.inside p q = inside⁺ B p q
+    prem : Relation (vertex-width B) → S.St
+    prem G .S.into q = G (inj₁ input) (inj₂ q)
+    prem G .S.inside p q = G (inj₂ p) (inj₂ q)
 
-    start : S.Start (gr E) H⁰
+    module hidden = S.Hidden (gr E) prem (λ G w → ≡-refl)
+
+    start : S.Start (gr E) hidden.H⁰
     start .S.into-start q = ≈-refl
     start .S.inside-start p q = ≈-refl
     start .S.tgt-start _ = ≈-refl {f = out-root}
@@ -787,32 +808,15 @@ module Rule₁
     start .S.off-start _ p = ≈-refl {f = M.εₘ}
     start .S.sink q = ≈-refl {f = M.εₘ}
 
-    H : S.St
-    H = S.steps (S.step H⁰ (inj₂ root)) (map inj₁ (vertices (Graph.shape B)))
-
-    done : S.Agrees (hide-all (vertex-width E) (hide (vertex-width E) (gr E) (b (inj₂ root)))
-                              (map (λ w → b (inj₁ w)) (vertices (Graph.shape B)))) H
-    done = S.agrees-hide-all (vertices (Graph.shape B)) (S.agrees-start start)
-
-    prem : Relation (vertex-width B) → S.St
-    prem G .S.into q = G (inj₁ input) (inj₂ q)
-    prem G .S.inside p q = G (inj₂ p) (inj₂ q)
-
-    κ : H .S.into (inj₂ root) ≈ collapse B
-    κ =
-      ≈-trans (≡-to-≈ (≡-cong (λ H' → H' .S.into (inj₂ root))
-                              (S.folds prem inj₂ (hide (vertex-width B)) (λ G w → ≡-refl)
-                                       (paths⁺ B) (gr B))))
-              (hide-paths⁺ B)
-
-    plumb : collapse E
-            ≡ hide-all (vertex-width E) (hide (vertex-width E) (gr E) (b (inj₂ root)))
-                       (map (λ w → b (inj₁ w)) (vertices (Graph.shape B))) (inj₁ input) er
+    plumb : collapse E ≡ hidden.G (inj₁ input) er
     plumb = ≡-cong (λ l → hide-all (vertex-width E) (gr E) l (inj₁ input) er)
                    (≡-cong (b (inj₂ root) ∷_) (≡-sym (map-∘ {g = b} {f = inj₁} (vertices (Graph.shape B)))))
 
   agree : collapse E ≈ (out-root M.+ₘ (up-root ∘ (collapse B ∘ inputs)))
-  agree = ≈-trans (≡-to-≈ plumb) (≈-trans (done .S.tgt-ok root) (M.+ₘ-cong ≈-refl (∘-cong₂ (∘-cong₁ κ))))
+  agree =
+    ≈-trans (≡-to-≈ plumb)
+            (≈-trans (hidden.done start .S.tgt-ok root)
+                     (M.+ₘ-cong ≈-refl (∘-cong₂ (∘-cong₁ (≈-trans (≡-to-≈ hidden.κ) (hide-paths⁺ B))))))
 
 module Rule₂
   {m : ℕ}
@@ -884,42 +888,27 @@ module Rule₂
     K₁ (inj₁ q) = into⁺ B₂ q ∘ from-inputs₂
     K₁ (inj₂ _) = out-root
 
-    module prem₁ = HidePremise (vertex-width E) (inj₁ input) b1 tgt₁ inputs₁ P₁ K₁
+    module S₁ = HidePremise B₁ (vertex-width E) (inj₁ input) b1 tgt₁ inputs₁ P₁ K₁
 
-    H₁⁰ : prem₁.St
-    H₁⁰ .prem₁.into q = into⁺ B₁ q
-    H₁⁰ .prem₁.inside p q = inside⁺ B₁ p q
+    prem₁ : Relation (vertex-width B₁) → S₁.St
+    prem₁ G .S₁.into q = G (inj₁ input) (inj₂ q)
+    prem₁ G .S₁.inside p q = G (inj₂ p) (inj₂ q)
 
-    start₁ : prem₁.Start (gr E) H₁⁰
-    start₁ .prem₁.into-start q = ≈-refl
-    start₁ .prem₁.inside-start p q = ≈-refl
-    start₁ .prem₁.tgt-start (inj₁ q) = ≈-refl
-    start₁ .prem₁.tgt-start (inj₂ _) = ≈-refl {f = out-root}
-    start₁ .prem₁.up-start (inj₁ q) = ≈-refl
-    start₁ .prem₁.up-start (inj₂ _) = ≈-refl {f = up₁}
-    start₁ .prem₁.off-start (inj₁ q) p = ≈-refl {f = M.εₘ}
-    start₁ .prem₁.off-start (inj₂ _) p = ≈-refl {f = M.εₘ}
-    start₁ .prem₁.sink q = ≈-refl {f = M.εₘ}
+    module hidden₁ = S₁.Hidden (gr E) prem₁ (λ G w → ≡-refl)
 
-    G₁ : Relation (vertex-width E)
-    G₁ = hide-all (vertex-width E) (hide (vertex-width E) (gr E) (b1 (inj₂ root))) (map (λ w → b1 (inj₁ w)) ps₁)
+    start₁ : S₁.Start (gr E) hidden₁.H⁰
+    start₁ .S₁.into-start q = ≈-refl
+    start₁ .S₁.inside-start p q = ≈-refl
+    start₁ .S₁.tgt-start (inj₁ q) = ≈-refl
+    start₁ .S₁.tgt-start (inj₂ _) = ≈-refl {f = out-root}
+    start₁ .S₁.up-start (inj₁ q) = ≈-refl
+    start₁ .S₁.up-start (inj₂ _) = ≈-refl {f = up₁}
+    start₁ .S₁.off-start (inj₁ q) p = ≈-refl {f = M.εₘ}
+    start₁ .S₁.off-start (inj₂ _) p = ≈-refl {f = M.εₘ}
+    start₁ .S₁.sink q = ≈-refl {f = M.εₘ}
 
-    H₁ : prem₁.St
-    H₁ = prem₁.steps (prem₁.step H₁⁰ (inj₂ root)) (map inj₁ ps₁)
-
-    done₁ : prem₁.Agrees G₁ H₁
-    done₁ = prem₁.agrees-hide-all ps₁ (prem₁.agrees-start start₁)
-
-    prem₁ : Relation (vertex-width B₁) → prem₁.St
-    prem₁ G .prem₁.into q = G (inj₁ input) (inj₂ q)
-    prem₁ G .prem₁.inside p q = G (inj₂ p) (inj₂ q)
-
-    κ₁ : H₁ .prem₁.into (inj₂ root) ≈ collapse B₁
-    κ₁ =
-      ≈-trans (≡-to-≈ (≡-cong (λ H → H .prem₁.into (inj₂ root))
-                              (prem₁.folds prem₁ inj₂ (hide (vertex-width B₁)) (λ G w → ≡-refl)
-                                        (paths⁺ B₁) (gr B₁))))
-              (hide-paths⁺ B₁)
+    done₁ = hidden₁.done start₁
+    κ₁ = ≈-trans (≡-to-≈ hidden₁.κ) (hide-paths⁺ B₁)
 
   Φ₂ : M.Matrix m₂ m
   Φ₂ = inputs₂ ∘ M.⟨ M.I , collapse B₁ ∘ inputs₁ ⟩
@@ -932,8 +921,14 @@ module Rule₂
     Φ₂-split = ≈-sym (≈-trans (M.∘-pair inputs₂ M.I (collapse B₁ ∘ inputs₁))
                               (M.+ₘ-cong (id-right {f = from-inputs₂}) (≈-refl {f = from-root₁ ∘ (collapse B₁ ∘ inputs₁)})))
 
-    module prem₂ = HidePremise (vertex-width E) (inj₁ input) b2 (λ (_ : Root) → er) Φ₂' (λ _ → up₂)
-                             (λ _ → out-root M.+ₘ (up₁ ∘ (collapse B₁ ∘ inputs₁)))
+    module S₂ = HidePremise B₂ (vertex-width E) (inj₁ input) b2 (λ (_ : Root) → er) Φ₂' (λ _ → up₂)
+                            (λ _ → out-root M.+ₘ (up₁ ∘ (collapse B₁ ∘ inputs₁)))
+
+    prem₂ : Relation (vertex-width B₂) → S₂.St
+    prem₂ G .S₂.into q = G (inj₁ input) (inj₂ q)
+    prem₂ G .S₂.inside p q = G (inj₂ p) (inj₂ q)
+
+    module hidden₂ = S₂.Hidden hidden₁.G prem₂ (λ G w → ≡-refl)
 
     Bh : (s : Path⁺ B₂) (t : Path⁺ B₂ ⊎ Root) → M.Matrix (vertex-width E (tgt₁ t)) (width⁺ B₂ s)
     Bh s (inj₁ q) = inside⁺ B₂ s q
@@ -946,41 +941,17 @@ module Rule₂
     fixed₀ .IntoHidden.edge s (inj₂ _) = ≈-refl {f = up-root⁺ B₂ up₂ s}
     fixed₀ .IntoHidden.no-edge s w = ≈-refl {f = M.εₘ}
 
-    fixed₁ : IntoHidden.Fixed G₁
+    fixed₁ : IntoHidden.Fixed hidden₁.G
     fixed₁ = IntoHidden.fixed-hide-all inj₁ ps₁ (IntoHidden.fixed-hide (inj₂ root) fixed₀)
 
-    H₂⁰ : prem₂.St
-    H₂⁰ .prem₂.into q = into⁺ B₂ q
-    H₂⁰ .prem₂.inside p q = inside⁺ B₂ p q
-
-    start₂ : prem₂.Start G₁ H₂⁰
-    start₂ .prem₂.into-start q =
-      ≈-trans (done₁ .prem₁.tgt-ok (inj₁ q)) (factor (into⁺ B₂ q) from-inputs₂ from-root₁ inputs₁ κ₁)
-    start₂ .prem₂.inside-start p q = fixed₁ .IntoHidden.edge p (inj₁ q)
-    start₂ .prem₂.tgt-start _ = ≈-trans (done₁ .prem₁.tgt-ok (inj₂ root)) (M.+ₘ-cong ≈-refl (∘-cong₂ (∘-cong₁ κ₁)))
-    start₂ .prem₂.up-start _ = fixed₁ .IntoHidden.edge (inj₂ root) (inj₂ root)
-    start₂ .prem₂.off-start _ p = fixed₁ .IntoHidden.edge (inj₁ p) (inj₂ root)
-    start₂ .prem₂.sink q = ≈-refl {f = M.εₘ}
-
-    G₂ : Relation (vertex-width E)
-    G₂ = hide-all (vertex-width E) (hide (vertex-width E) G₁ (b2 (inj₂ root))) (map (λ w → b2 (inj₁ w)) ps₂)
-
-    H₂ : prem₂.St
-    H₂ = prem₂.steps (prem₂.step H₂⁰ (inj₂ root)) (map inj₁ ps₂)
-
-    done₂ : prem₂.Agrees G₂ H₂
-    done₂ = prem₂.agrees-hide-all ps₂ (prem₂.agrees-start start₂)
-
-    prem₂ : Relation (vertex-width B₂) → prem₂.St
-    prem₂ G .prem₂.into q = G (inj₁ input) (inj₂ q)
-    prem₂ G .prem₂.inside p q = G (inj₂ p) (inj₂ q)
-
-    κ₂ : H₂ .prem₂.into (inj₂ root) ≈ collapse B₂
-    κ₂ =
-      ≈-trans (≡-to-≈ (≡-cong (λ H → H .prem₂.into (inj₂ root))
-                              (prem₂.folds prem₂ inj₂ (hide (vertex-width B₂)) (λ G w → ≡-refl)
-                                        (paths⁺ B₂) (gr B₂))))
-              (hide-paths⁺ B₂)
+    start₂ : S₂.Start hidden₁.G hidden₂.H⁰
+    start₂ .S₂.into-start q =
+      ≈-trans (done₁ .S₁.tgt-ok (inj₁ q)) (factor (into⁺ B₂ q) from-inputs₂ from-root₁ inputs₁ κ₁)
+    start₂ .S₂.inside-start p q = fixed₁ .IntoHidden.edge p (inj₁ q)
+    start₂ .S₂.tgt-start _ = ≈-trans (done₁ .S₁.tgt-ok (inj₂ root)) (M.+ₘ-cong ≈-refl (∘-cong₂ (∘-cong₁ κ₁)))
+    start₂ .S₂.up-start _ = fixed₁ .IntoHidden.edge (inj₂ root) (inj₂ root)
+    start₂ .S₂.off-start _ p = fixed₁ .IntoHidden.edge (inj₁ p) (inj₂ root)
+    start₂ .S₂.sink q = ≈-refl {f = M.εₘ}
 
     lst : map (λ q → inj₂ {A = Input} (inj₁ q)) (vertices (Graph.shape E))
           ≡ (b1 (inj₂ root) ∷ map (λ w → b1 (inj₁ w)) ps₁)
@@ -993,7 +964,7 @@ module Rule₂
                 (≡-trans (≡-sym (map-∘ {g = (λ q → inj₂ (inj₁ q))} {f = inj₂} (paths⁺ B₂)))
                          (≡-cong (b2 (inj₂ root) ∷_) (≡-sym (map-∘ {g = b2} {f = inj₁} ps₂)))))
 
-    plumb : collapse E ≡ G₂ (inj₁ input) er
+    plumb : collapse E ≡ hidden₂.G (inj₁ input) er
     plumb =
       ≡-trans (≡-cong (λ l → hide-all (vertex-width E) (gr E) l (inj₁ input) er) lst)
               (≡-cong (λ G → G (inj₁ input) er)
@@ -1002,8 +973,8 @@ module Rule₂
   agree : collapse E ≈ ((out-root M.+ₘ (up₁ ∘ (collapse B₁ ∘ inputs₁))) M.+ₘ (up₂ ∘ (collapse B₂ ∘ Φ₂)))
   agree =
     ≈-trans (≡-to-≈ plumb)
-            (≈-trans (done₂ .prem₂.tgt-ok root)
-                     (M.+ₘ-cong ≈-refl (∘-cong₂ (∘-cong κ₂ Φ₂-split))))
+            (≈-trans (hidden₂.done start₂ .S₂.tgt-ok root)
+                     (M.+ₘ-cong ≈-refl (∘-cong₂ (∘-cong (≈-trans (≡-to-≈ hidden₂.κ) (hide-paths⁺ B₂)) Φ₂-split))))
 
 module Rule₃
   {m : ℕ}
@@ -1112,42 +1083,27 @@ module Rule₃
     K₁ (inj₁ q) = into⁺ B₃ q ∘ from-inputs₃
     K₁ (inj₂ _) = out-root
 
-    module prem₁ = HidePremise (vertex-width E) (inj₁ input) b1 tgt inputs₁ P₁ K₁
+    module S₁ = HidePremise B₁ (vertex-width E) (inj₁ input) b1 tgt inputs₁ P₁ K₁
 
-    H₁⁰ : prem₁.St
-    H₁⁰ .prem₁.into q = into⁺ B₁ q
-    H₁⁰ .prem₁.inside p q = inside⁺ B₁ p q
+    prem₁ : Relation (vertex-width B₁) → S₁.St
+    prem₁ G .S₁.into q = G (inj₁ input) (inj₂ q)
+    prem₁ G .S₁.inside p q = G (inj₂ p) (inj₂ q)
 
-    start₁ : prem₁.Start (gr E) H₁⁰
-    start₁ .prem₁.into-start q = ≈-refl
-    start₁ .prem₁.inside-start p q = ≈-refl
-    start₁ .prem₁.tgt-start (inj₁ q) = ≈-refl
-    start₁ .prem₁.tgt-start (inj₂ _) = ≈-refl {f = out-root}
-    start₁ .prem₁.up-start (inj₁ q) = ≈-refl
-    start₁ .prem₁.up-start (inj₂ _) = ≈-refl {f = up₁}
-    start₁ .prem₁.off-start (inj₁ q) p = ≈-refl {f = M.εₘ}
-    start₁ .prem₁.off-start (inj₂ _) p = ≈-refl {f = M.εₘ}
-    start₁ .prem₁.sink q = ≈-refl {f = M.εₘ}
+    module hidden₁ = S₁.Hidden (gr E) prem₁ (λ G w → ≡-refl)
 
-    G₁ : Relation (vertex-width E)
-    G₁ = hide-all (vertex-width E) (hide (vertex-width E) (gr E) (b1 (inj₂ root))) (map (λ w → b1 (inj₁ w)) ps₁)
+    start₁ : S₁.Start (gr E) hidden₁.H⁰
+    start₁ .S₁.into-start q = ≈-refl
+    start₁ .S₁.inside-start p q = ≈-refl
+    start₁ .S₁.tgt-start (inj₁ q) = ≈-refl
+    start₁ .S₁.tgt-start (inj₂ _) = ≈-refl {f = out-root}
+    start₁ .S₁.up-start (inj₁ q) = ≈-refl
+    start₁ .S₁.up-start (inj₂ _) = ≈-refl {f = up₁}
+    start₁ .S₁.off-start (inj₁ q) p = ≈-refl {f = M.εₘ}
+    start₁ .S₁.off-start (inj₂ _) p = ≈-refl {f = M.εₘ}
+    start₁ .S₁.sink q = ≈-refl {f = M.εₘ}
 
-    H₁ : prem₁.St
-    H₁ = prem₁.steps (prem₁.step H₁⁰ (inj₂ root)) (map inj₁ ps₁)
-
-    done₁ : prem₁.Agrees G₁ H₁
-    done₁ = prem₁.agrees-hide-all ps₁ (prem₁.agrees-start start₁)
-
-    prem₁ : Relation (vertex-width B₁) → prem₁.St
-    prem₁ G .prem₁.into q = G (inj₁ input) (inj₂ q)
-    prem₁ G .prem₁.inside p q = G (inj₂ p) (inj₂ q)
-
-    κ₁ : H₁ .prem₁.into (inj₂ root) ≈ collapse B₁
-    κ₁ =
-      ≈-trans (≡-to-≈ (≡-cong (λ H → H .prem₁.into (inj₂ root))
-                              (prem₁.folds prem₁ inj₂ (hide (vertex-width B₁)) (λ G w → ≡-refl)
-                                        (paths⁺ B₁) (gr B₁))))
-              (hide-paths⁺ B₁)
+    done₁ = hidden₁.done start₁
+    κ₁ = ≈-trans (≡-to-≈ hidden₁.κ) (hide-paths⁺ B₁)
 
     module OutOfHidden = NoEdgeOutOfHidden (vertex-width E) b1 (inj₁ {A = Input}) b2 (λ _ q → into⁺ B₂ q ∘ inputs₂)
 
@@ -1155,7 +1111,7 @@ module Rule₃
     fixed₀ .OutOfHidden.edge _ q = ≈-refl
     fixed₀ .OutOfHidden.no-edge w q = ≈-refl {f = M.εₘ}
 
-    fixed₁ : OutOfHidden.Fixed G₁
+    fixed₁ : OutOfHidden.Fixed hidden₁.G
     fixed₁ = OutOfHidden.fixed-hide-all inj₁ ps₁ (OutOfHidden.fixed-hide (inj₂ root) fixed₀)
 
     cols₂ : Path⁺ B₂ ⊎ (Path⁺ B₃ ⊎ Root) → V E
@@ -1169,7 +1125,7 @@ module Rule₃
 
     module IntoHidden₂ = NoEdgeIntoHidden (vertex-width E) b1 b2 cols₂ Bh₂
 
-    fixed₂ : IntoHidden₂.Fixed G₁
+    fixed₂ : IntoHidden₂.Fixed hidden₁.G
     fixed₂ = IntoHidden₂.fixed-hide-all inj₁ ps₁ (IntoHidden₂.fixed-hide (inj₂ root) k₀)
       where
       k₀ : IntoHidden₂.Fixed (gr E)
@@ -1189,45 +1145,30 @@ module Rule₃
     K₂ (inj₁ q) = into⁺ B₃ q ∘ Φ₃₁
     K₂ (inj₂ _) = out-root M.+ₘ (up₁ ∘ c₁)
 
-    module prem₂ = HidePremise (vertex-width E) (inj₁ input) b2 tgt inputs₂ P₂ K₂
+    module S₂ = HidePremise B₂ (vertex-width E) (inj₁ input) b2 tgt inputs₂ P₂ K₂
 
-    H₂⁰ : prem₂.St
-    H₂⁰ .prem₂.into q = into⁺ B₂ q
-    H₂⁰ .prem₂.inside p q = inside⁺ B₂ p q
+    prem₂ : Relation (vertex-width B₂) → S₂.St
+    prem₂ G .S₂.into q = G (inj₁ input) (inj₂ q)
+    prem₂ G .S₂.inside p q = G (inj₂ p) (inj₂ q)
 
-    start₂ : prem₂.Start G₁ H₂⁰
-    start₂ .prem₂.into-start q = fixed₁ .OutOfHidden.edge input q
-    start₂ .prem₂.inside-start p q = fixed₂ .IntoHidden₂.edge p (inj₁ q)
-    start₂ .prem₂.tgt-start (inj₁ q) =
-      ≈-trans (done₁ .prem₁.tgt-ok (inj₁ q)) (factor (into⁺ B₃ q) from-inputs₃ from-root₁ inputs₁ κ₁)
-    start₂ .prem₂.tgt-start (inj₂ _) =
-      ≈-trans (done₁ .prem₁.tgt-ok (inj₂ root))
+    module hidden₂ = S₂.Hidden hidden₁.G prem₂ (λ G w → ≡-refl)
+
+    start₂ : S₂.Start hidden₁.G hidden₂.H⁰
+    start₂ .S₂.into-start q = fixed₁ .OutOfHidden.edge input q
+    start₂ .S₂.inside-start p q = fixed₂ .IntoHidden₂.edge p (inj₁ q)
+    start₂ .S₂.tgt-start (inj₁ q) =
+      ≈-trans (done₁ .S₁.tgt-ok (inj₁ q)) (factor (into⁺ B₃ q) from-inputs₃ from-root₁ inputs₁ κ₁)
+    start₂ .S₂.tgt-start (inj₂ _) =
+      ≈-trans (done₁ .S₁.tgt-ok (inj₂ root))
               (M.+ₘ-cong ≈-refl (∘-cong₂ (∘-cong₁ κ₁)))
-    start₂ .prem₂.up-start (inj₁ q) = fixed₂ .IntoHidden₂.edge (inj₂ root) (inj₂ (inj₁ q))
-    start₂ .prem₂.up-start (inj₂ _) = fixed₂ .IntoHidden₂.edge (inj₂ root) (inj₂ (inj₂ root))
-    start₂ .prem₂.off-start (inj₁ q) p = fixed₂ .IntoHidden₂.edge (inj₁ p) (inj₂ (inj₁ q))
-    start₂ .prem₂.off-start (inj₂ _) p = fixed₂ .IntoHidden₂.edge (inj₁ p) (inj₂ (inj₂ root))
-    start₂ .prem₂.sink q = ≈-refl {f = M.εₘ}
+    start₂ .S₂.up-start (inj₁ q) = fixed₂ .IntoHidden₂.edge (inj₂ root) (inj₂ (inj₁ q))
+    start₂ .S₂.up-start (inj₂ _) = fixed₂ .IntoHidden₂.edge (inj₂ root) (inj₂ (inj₂ root))
+    start₂ .S₂.off-start (inj₁ q) p = fixed₂ .IntoHidden₂.edge (inj₁ p) (inj₂ (inj₁ q))
+    start₂ .S₂.off-start (inj₂ _) p = fixed₂ .IntoHidden₂.edge (inj₁ p) (inj₂ (inj₂ root))
+    start₂ .S₂.sink q = ≈-refl {f = M.εₘ}
 
-    G₂ : Relation (vertex-width E)
-    G₂ = hide-all (vertex-width E) (hide (vertex-width E) G₁ (b2 (inj₂ root))) (map (λ w → b2 (inj₁ w)) ps₂)
-
-    H₂ : prem₂.St
-    H₂ = prem₂.steps (prem₂.step H₂⁰ (inj₂ root)) (map inj₁ ps₂)
-
-    done₂ : prem₂.Agrees G₂ H₂
-    done₂ = prem₂.agrees-hide-all ps₂ (prem₂.agrees-start start₂)
-
-    prem₂ : Relation (vertex-width B₂) → prem₂.St
-    prem₂ G .prem₂.into q = G (inj₁ input) (inj₂ q)
-    prem₂ G .prem₂.inside p q = G (inj₂ p) (inj₂ q)
-
-    κ₂ : H₂ .prem₂.into (inj₂ root) ≈ collapse B₂
-    κ₂ =
-      ≈-trans (≡-to-≈ (≡-cong (λ H → H .prem₂.into (inj₂ root))
-                              (prem₂.folds prem₂ inj₂ (hide (vertex-width B₂)) (λ G w → ≡-refl)
-                                        (paths⁺ B₂) (gr B₂))))
-              (hide-paths⁺ B₂)
+    done₂ = hidden₂.done start₂
+    κ₂ = ≈-trans (≡-to-≈ hidden₂.κ) (hide-paths⁺ B₂)
 
     hid₁₂ : Path⁺ B₁ ⊎ Path⁺ B₂ → V E
     hid₁₂ (inj₁ q) = b1 q
@@ -1239,7 +1180,7 @@ module Rule₃
 
     module IntoHidden₃ = NoEdgeIntoHidden (vertex-width E) hid₁₂ b3 tgt Bh₃
 
-    fixed₃ : IntoHidden₃.Fixed G₂
+    fixed₃ : IntoHidden₃.Fixed hidden₂.G
     fixed₃ =
       IntoHidden₃.fixed-hide-all (λ w → inj₂ (inj₁ w)) ps₂
         (IntoHidden₃.fixed-hide (inj₂ (inj₂ root))
@@ -1266,41 +1207,23 @@ module Rule₃
                                          (M.+ₘ-cong (id-right {f = from-inputs₃}) (≈-refl {f = from-root₁ ∘ c₁})))
                                 (≈-refl {f = from-root₂ ∘ c₂})))
 
-    module prem₃ = HidePremise (vertex-width E) (inj₁ input) b3 (λ (_ : Root) → er) Φ₃' (λ _ → up₃)
-                             (λ _ → (out-root M.+ₘ (up₁ ∘ c₁)) M.+ₘ (up₂ ∘ c₂))
+    module S₃ = HidePremise B₃ (vertex-width E) (inj₁ input) b3 (λ (_ : Root) → er) Φ₃' (λ _ → up₃)
+                            (λ _ → (out-root M.+ₘ (up₁ ∘ c₁)) M.+ₘ (up₂ ∘ c₂))
 
-    H₃⁰ : prem₃.St
-    H₃⁰ .prem₃.into q = into⁺ B₃ q
-    H₃⁰ .prem₃.inside p q = inside⁺ B₃ p q
+    prem₃ : Relation (vertex-width B₃) → S₃.St
+    prem₃ G .S₃.into q = G (inj₁ input) (inj₂ q)
+    prem₃ G .S₃.inside p q = G (inj₂ p) (inj₂ q)
 
-    start₃ : prem₃.Start G₂ H₃⁰
-    start₃ .prem₃.into-start q =
-      ≈-trans (done₂ .prem₂.tgt-ok (inj₁ q)) (factor (into⁺ B₃ q) Φ₃₁ from-root₂ inputs₂ κ₂)
-    start₃ .prem₃.inside-start p q = fixed₃ .IntoHidden₃.edge p (inj₁ q)
-    start₃ .prem₃.tgt-start _ = ≈-trans (done₂ .prem₂.tgt-ok (inj₂ root)) (M.+ₘ-cong ≈-refl (∘-cong₂ (∘-cong₁ κ₂)))
-    start₃ .prem₃.up-start _ = fixed₃ .IntoHidden₃.edge (inj₂ root) (inj₂ root)
-    start₃ .prem₃.off-start _ p = fixed₃ .IntoHidden₃.edge (inj₁ p) (inj₂ root)
-    start₃ .prem₃.sink q = ≈-refl {f = M.εₘ}
+    module hidden₃ = S₃.Hidden hidden₂.G prem₃ (λ G w → ≡-refl)
 
-    G₃ : Relation (vertex-width E)
-    G₃ = hide-all (vertex-width E) (hide (vertex-width E) G₂ (b3 (inj₂ root))) (map (λ w → b3 (inj₁ w)) ps₃)
-
-    H₃ : prem₃.St
-    H₃ = prem₃.steps (prem₃.step H₃⁰ (inj₂ root)) (map inj₁ ps₃)
-
-    done₃ : prem₃.Agrees G₃ H₃
-    done₃ = prem₃.agrees-hide-all ps₃ (prem₃.agrees-start start₃)
-
-    prem₃ : Relation (vertex-width B₃) → prem₃.St
-    prem₃ G .prem₃.into q = G (inj₁ input) (inj₂ q)
-    prem₃ G .prem₃.inside p q = G (inj₂ p) (inj₂ q)
-
-    κ₃ : H₃ .prem₃.into (inj₂ root) ≈ collapse B₃
-    κ₃ =
-      ≈-trans (≡-to-≈ (≡-cong (λ H → H .prem₃.into (inj₂ root))
-                              (prem₃.folds prem₃ inj₂ (hide (vertex-width B₃)) (λ G w → ≡-refl)
-                                        (paths⁺ B₃) (gr B₃))))
-              (hide-paths⁺ B₃)
+    start₃ : S₃.Start hidden₂.G hidden₃.H⁰
+    start₃ .S₃.into-start q =
+      ≈-trans (done₂ .S₂.tgt-ok (inj₁ q)) (factor (into⁺ B₃ q) Φ₃₁ from-root₂ inputs₂ κ₂)
+    start₃ .S₃.inside-start p q = fixed₃ .IntoHidden₃.edge p (inj₁ q)
+    start₃ .S₃.tgt-start _ = ≈-trans (done₂ .S₂.tgt-ok (inj₂ root)) (M.+ₘ-cong ≈-refl (∘-cong₂ (∘-cong₁ κ₂)))
+    start₃ .S₃.up-start _ = fixed₃ .IntoHidden₃.edge (inj₂ root) (inj₂ root)
+    start₃ .S₃.off-start _ p = fixed₃ .IntoHidden₃.edge (inj₁ p) (inj₂ root)
+    start₃ .S₃.sink q = ≈-refl {f = M.εₘ}
 
     l₁ l₂ l₃ : List (V E)
     l₁ = b1 (inj₂ root) ∷ map (λ w → b1 (inj₁ w)) ps₁
@@ -1323,16 +1246,16 @@ module Rule₃
                            (≡-trans (≡-sym (map-∘ {g = (λ q → inj₂ (inj₁ (inj₂ q)))} {f = inj₂} (paths⁺ B₃)))
                                     (≡-cong (b3 (inj₂ root) ∷_) (≡-sym (map-∘ {g = b3} {f = inj₁} ps₃))))))))
 
-    plumb : collapse E ≡ G₃ (inj₁ input) er
+    plumb : collapse E ≡ hidden₃.G (inj₁ input) er
     plumb =
       ≡-trans (≡-cong (λ l → hide-all (vertex-width E) (gr E) l (inj₁ input) er) lst)
               (≡-trans (≡-cong (λ G → G (inj₁ input) er)
                                (foldl-++ (hide (vertex-width E)) (gr E) l₁ (l₂ ++ l₃)))
                        (≡-cong (λ G → G (inj₁ input) er)
-                               (foldl-++ (hide (vertex-width E)) G₁ l₂ l₃)))
+                               (foldl-++ (hide (vertex-width E)) hidden₁.G l₂ l₃)))
 
   agree : collapse E ≈ (((out-root M.+ₘ (up₁ ∘ c₁)) M.+ₘ (up₂ ∘ c₂)) M.+ₘ (up₃ ∘ (collapse B₃ ∘ Φ₃)))
   agree =
     ≈-trans (≡-to-≈ plumb)
-            (≈-trans (done₃ .prem₃.tgt-ok root)
-                     (M.+ₘ-cong ≈-refl (∘-cong₂ (∘-cong κ₃ Φ₃-split))))
+            (≈-trans (hidden₃.done start₃ .S₃.tgt-ok root)
+                     (M.+ₘ-cong ≈-refl (∘-cong₂ (∘-cong (≈-trans (≡-to-≈ hidden₃.κ) (hide-paths⁺ B₃)) Φ₃-split))))
