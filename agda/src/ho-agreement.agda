@@ -5,7 +5,7 @@
 -- the control dependence at the control input's value. Soundness of values at every type and of dependence at
 -- first-order types.
 open import Level using (0ℓ; lift)
-open import Data.Nat using (ℕ; suc; _+_; _⊔_)
+open import Data.Nat using (ℕ; suc; _+_; _⊔_; _≤_)
 open import Data.Nat.Properties using (≤-refl)
 open import Data.Fin using (Fin; zero; suc)
 open import Data.Product using (_,_; proj₁; proj₂)
@@ -459,143 +459,47 @@ map-built-suc γ {m} F w x o k =
     (app-congᵥ F (λ l → ≈-trans (ap-sub-inputs γ (M.p₂ {1} {m}) w x o l)
                                 (+-cong ≈-refl (app-congᵥ (M.in₂ {suc (width-env γ)} {m}) (ap-p₂₁ o) l))) k))
 
-map-dep-inl : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
+map-dep-inj : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
               (IHv : ∀ {w' u T} (D : γ · w' , s ⇓ u [ T ]) {gj} (rγ : EnvValRel (γ · w') gj) →
                      ValRel σr u (⟦ s ⟧tm .idxf .sfunc gj))
-              {σ₁ σ₂ : type 1} {v v' F} (M : Map γ s σ₁ v v' F) {gi} (rγ : EnvValRel γ gi)
-              {i} (r : ValRel ((σ₁ [+] σ₂) [ μ τ₀ ]) (inl {τ₂ = σ₂ [ μ τ₀ ]} v) i) (w : Setoid.Carrier A)
-              (x : ∣ 𝔽 (width-env γ) ∣) (g : ∣ FibC Γ gi ∣) →
-              (∀ {i'} (r' : ValRel (σ₁ [ μ τ₀ ]) v i') (o : ∣ 𝔽 (width v) ∣) (e : ∣ Fib (σ₁ [ μ τ₀ ]) i' ∣) →
-                 DepRel (σ₁ [ μ τ₀ ]) r' o (Fib._+_ (σ₁ [ μ τ₀ ]) i' (ctrl-dep-at (σ₁ [ μ τ₀ ]) i' w) e) →
-                 DepRel (σ₁ [ σr ]) (map-val IHv M rγ r') (ap F (map-input γ w x o))
-                   (Fib._+_ (σ₁ [ σr ]) (fold-map τ₀ σr σ₁ ⟦ s ⟧tm .idxf .sfunc (gi , i'))
-                     (ctrl-dep-at (σ₁ [ σr ]) (fold-map τ₀ σr σ₁ ⟦ s ⟧tm .idxf .sfunc (gi , i')) w)
-                     (fold-map τ₀ σr σ₁ ⟦ s ⟧tm .famf .transf (gi , i') .func (g , e)))) →
-              (o : ∣ 𝔽 (suc (width v)) ∣) (e : ∣ Fib ((σ₁ [+] σ₂) [ μ τ₀ ]) i ∣) →
-              DepRel ((σ₁ [+] σ₂) [ μ τ₀ ]) {inl {τ₂ = σ₂ [ μ τ₀ ]} v} {i} r o
-                (Fib._+_ ((σ₁ [+] σ₂) [ μ τ₀ ]) i (ctrl-dep-at ((σ₁ [+] σ₂) [ μ τ₀ ]) i w) e) →
-              DepRel ((σ₁ [+] σ₂) [ σr ]) {inl {τ₂ = σ₂ [ σr ]} v'} {fold-map τ₀ σr (σ₁ [+] σ₂) ⟦ s ⟧tm .idxf .sfunc (gi , i)}
-                (map-val {s = s} IHv {σ₁ [+] σ₂} (m-inl M) rγ {i} r)
-                (ap (map-built-out γ (width v) (width v') M.+ₘ (M.in₂ {1} ∘ (F ∘ sub-inputs γ (M.p₂ {1} {width v}))))
-                    (map-input γ w x o))
-                (Fib._+_ ((σ₁ [+] σ₂) [ σr ]) (fold-map τ₀ σr (σ₁ [+] σ₂) ⟦ s ⟧tm .idxf .sfunc (gi , i))
-                  (ctrl-dep-at ((σ₁ [+] σ₂) [ σr ]) (fold-map τ₀ σr (σ₁ [+] σ₂) ⟦ s ⟧tm .idxf .sfunc (gi , i)) w)
-                  (fold-map τ₀ σr (σ₁ [+] σ₂) ⟦ s ⟧tm .famf .transf (gi , i) .func (g , e)))
-map-dep-inl {γ = γ} {τ₀} {σr} {s} IHv {σ₁} {σ₂} {v} {v'} {F} M {gi} rγ {i} (i' , r₁ , ⟪ e₀ ⟫) w x g IHM o e (h₀ , h₁) =
-  root-eq ,
-  DepRel-at-bound (σ₁ [ σr ]) rv'
-    (DepRel-resp (σ₁ [ σr ]) rv' (λ k → ≈-sym (map-built-suc γ F w x o k)) payload-eq
-      (IHM r₁' (λ k → o (suc k)) (proj₂ ẽ) h₁'))
+              {σ : type 1} {v v' F} (M : Map γ s σ v v' F) {gi} (rγ : EnvValRel γ gi)
+              {N} {p : arr-depth (σ [ μ τ₀ ]) ≤ N} {i'} (r₁ : ValRel′ N (σ [ μ τ₀ ]) p v i')
+              (w : Setoid.Carrier A) (x : ∣ 𝔽 (width-env γ) ∣) (g : ∣ FibC Γ gi ∣) →
+              (∀ {j} (r' : ValRel (σ [ μ τ₀ ]) v j) (o : ∣ 𝔽 (width v) ∣) (e : ∣ Fib (σ [ μ τ₀ ]) j ∣) →
+                 DepRel (σ [ μ τ₀ ]) r' o (Fib._+_ (σ [ μ τ₀ ]) j (ctrl-dep-at (σ [ μ τ₀ ]) j w) e) →
+                 DepRel (σ [ σr ]) (map-val IHv M rγ r') (ap F (map-input γ w x o))
+                   (Fib._+_ (σ [ σr ]) (fold-map τ₀ σr σ ⟦ s ⟧tm .idxf .sfunc (gi , j))
+                     (ctrl-dep-at (σ [ σr ]) (fold-map τ₀ σr σ ⟦ s ⟧tm .idxf .sfunc (gi , j)) w)
+                     (fold-map τ₀ σr σ ⟦ s ⟧tm .famf .transf (gi , j) .func (g , e)))) →
+              (o : ∣ 𝔽 (suc (width v)) ∣) {a a' : Setoid.Carrier A} {ẽ ẽ' : ∣ Fib (σ [ μ τ₀ ]) i' ∣} →
+              o zero ≈s a' → DepRel′ N (σ [ μ τ₀ ]) p r₁ (λ k → o (suc k)) ẽ' →
+              a' ≈s ((ctrl ·ₛ w) +ₛ a) →
+              Fib._≈_ (σ [ μ τ₀ ]) i' ẽ' (Fib._+_ (σ [ μ τ₀ ]) i' (ctrl-dep-at (σ [ μ τ₀ ]) i' w) ẽ) →
+              let Iₖ = fold-map τ₀ σr σ ⟦ s ⟧tm .idxf .sfunc (gi , i')
+                  o' = ap (map-built-out γ (width v) (width v') M.+ₘ (M.in₂ {1} ∘ (F ∘ sub-inputs γ (M.p₂ {1} {width v}))))
+                          (map-input γ w x o)
+              in
+              ∀ {c' : Setoid.Carrier A} {f' : ∣ Fib (σ [ σr ]) Iₖ ∣} →
+              c' ≈s ((ctrl ·ₛ w) +ₛ a) →
+              Fib._≈_ (σ [ σr ]) Iₖ f'
+                (Fib._+_ (σ [ σr ]) Iₖ (ctrl-dep-at (σ [ σr ]) Iₖ w) (fold-map τ₀ σr σ ⟦ s ⟧tm .famf .transf (gi , i') .func (g , ẽ))) →
+              ∀ {N'} {p' : arr-depth (σ [ σr ]) ≤ N'} →
+              (o' zero ≈s c') ∧
+              DepRel′ N' (σ [ σr ]) p' (ValRel-at-bound (σ [ σr ]) (map-val IHv M rγ (ValRel-at-bound (σ [ μ τ₀ ]) r₁)))
+                (λ k → o' (suc k)) f'
+map-dep-inj {γ = γ} {τ₀} {σr} {s} IHv {σ} {v} {v'} {F} M {gi} rγ {i' = i'} r₁ w x g IHM o {ẽ = ẽ} h₀ h₁ ra re rc rf =
+  ≈-trans (map-built γ (F ∘ sub-inputs γ (M.p₂ {1} {width v})) w x o zero)
+  (≈-trans (+-cong ≈-refl (≈-trans h₀ ra))
+  (≈-trans (≈-sym +-assoc)
+  (≈-trans (+-cong (+-idem (ctrl ·ₛ w)) ≈-refl) (≈-sym rc)))) ,
+  DepRel-at-bound (σ [ σr ]) rv'
+    (DepRel-resp (σ [ σr ]) rv' (λ k → ≈-sym (map-built-suc γ F w x o k)) (Fib.sym (σ [ σr ]) Iₖ rf)
+      (IHM r₁' (λ k → o (suc k)) ẽ
+        (DepRel-resp (σ [ μ τ₀ ]) r₁' (λ k → ≈-refl) re (DepRel-at-bound (σ [ μ τ₀ ]) r₁ h₁))))
   where
-  τ₊ = (σ₁ [+] σ₂) [ σr ]
-  τμ = (σ₁ [+] σ₂) [ μ τ₀ ]
-  F₊ = fold-map τ₀ σr (σ₁ [+] σ₂) ⟦ s ⟧tm
-  F₁ = fold-map τ₀ σr σ₁ ⟦ s ⟧tm
-  r₁' = ValRel-at-bound (σ₁ [ μ τ₀ ]) r₁
+  r₁' = ValRel-at-bound (σ [ μ τ₀ ]) r₁
   rv' = map-val IHv M rγ r₁'
-  Iₖ = F₁ .idxf .sfunc (gi , i')
-  I₊ = F₊ .idxf .sfunc (gi , i)
-  E = inl-idx {τ₀ = τ₀} s σ₁ σ₂ gi {i} {i'} e₀
-  ẽ = ⟦ τμ ⟧ .fam .subst {i} {inj₁ i'} e₀ .func e
-  y = map-input γ w x o
-  dF = F₊ .famf .transf (gi , i) .func (g , e)
-  d'' = ⟦ τ₊ ⟧ .fam .subst {I₊} {inj₁ Iₖ} E .func (Fib._+_ τ₊ I₊ (ctrl-dep-at τ₊ I₊ w) dF)
-  split' = subst-ctrl-dep+ τμ {i} {inj₁ i'} e₀ w e
-  split'' = subst-ctrl-dep+ τ₊ {I₊} {inj₁ Iₖ} E w dF
-  h₁' : DepRel (σ₁ [ μ τ₀ ]) r₁' (λ k → o (suc k))
-          (Fib._+_ (σ₁ [ μ τ₀ ]) i' (ctrl-dep-at (σ₁ [ μ τ₀ ]) i' w) (proj₂ ẽ))
-  h₁' = DepRel-resp (σ₁ [ μ τ₀ ]) r₁' (λ k → ≈-refl)
-          (Fib.trans (σ₁ [ μ τ₀ ]) i' (proj₂ split')
-             (Fib.+-cong (σ₁ [ μ τ₀ ]) i' (proj₂ (ctrl-dep-inj₁ {σ₁ [ μ τ₀ ]} {σ₂ [ μ τ₀ ]} i' w)) (Fib.refl (σ₁ [ μ τ₀ ]) i')))
-          (DepRel-at-bound (σ₁ [ μ τ₀ ]) r₁ h₁)
-  root-eq : ap (map-built-out γ (width v) (width v') M.+ₘ (M.in₂ {1} ∘ (F ∘ sub-inputs γ (M.p₂ {1} {width v})))) y zero
-            ≈s proj₁ d''
-  root-eq =
-    ≈-trans (map-built γ (F ∘ sub-inputs γ (M.p₂ {1} {width v})) w x o zero)
-    (≈-trans (+-cong ≈-refl (≈-trans h₀ (≈-trans (proj₁ split')
-                                                 (+-cong (proj₁ (ctrl-dep-inj₁ {σ₁ [ μ τ₀ ]} {σ₂ [ μ τ₀ ]} i' w)) ≈-refl))))
-    (≈-trans (≈-sym +-assoc)
-    (≈-trans (+-cong (+-idem (ctrl ·ₛ w)) ≈-refl)
-    (≈-sym (≈-trans (proj₁ split'')
-                    (+-cong (proj₁ (ctrl-dep-inj₁ {σ₁ [ σr ]} {σ₂ [ σr ]} Iₖ w))
-                            (proj₁ (inl-fibre {τ₀ = τ₀} s σ₁ σ₂ gi {i} {i'} e₀ g e))))))))
-  payload-eq : Fib._≈_ (σ₁ [ σr ]) Iₖ
-                 (Fib._+_ (σ₁ [ σr ]) Iₖ (ctrl-dep-at (σ₁ [ σr ]) Iₖ w) (F₁ .famf .transf (gi , i') .func (g , proj₂ ẽ)))
-                 (proj₂ d'')
-  payload-eq =
-    Fib.sym (σ₁ [ σr ]) Iₖ
-      (Fib.trans (σ₁ [ σr ]) Iₖ (proj₂ split'')
-        (Fib.+-cong (σ₁ [ σr ]) Iₖ (proj₂ (ctrl-dep-inj₁ {σ₁ [ σr ]} {σ₂ [ σr ]} Iₖ w))
-                                   (proj₂ (inl-fibre {τ₀ = τ₀} s σ₁ σ₂ gi {i} {i'} e₀ g e))))
-
-map-dep-inr : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
-              (IHv : ∀ {w' u T} (D : γ · w' , s ⇓ u [ T ]) {gj} (rγ : EnvValRel (γ · w') gj) →
-                     ValRel σr u (⟦ s ⟧tm .idxf .sfunc gj))
-              {σ₁ σ₂ : type 1} {v v' F} (M : Map γ s σ₂ v v' F) {gi} (rγ : EnvValRel γ gi)
-              {i} (r : ValRel ((σ₁ [+] σ₂) [ μ τ₀ ]) (inr {τ₁ = σ₁ [ μ τ₀ ]} v) i) (w : Setoid.Carrier A)
-              (x : ∣ 𝔽 (width-env γ) ∣) (g : ∣ FibC Γ gi ∣) →
-              (∀ {i'} (r' : ValRel (σ₂ [ μ τ₀ ]) v i') (o : ∣ 𝔽 (width v) ∣) (e : ∣ Fib (σ₂ [ μ τ₀ ]) i' ∣) →
-                 DepRel (σ₂ [ μ τ₀ ]) r' o (Fib._+_ (σ₂ [ μ τ₀ ]) i' (ctrl-dep-at (σ₂ [ μ τ₀ ]) i' w) e) →
-                 DepRel (σ₂ [ σr ]) (map-val IHv M rγ r') (ap F (map-input γ w x o))
-                   (Fib._+_ (σ₂ [ σr ]) (fold-map τ₀ σr σ₂ ⟦ s ⟧tm .idxf .sfunc (gi , i'))
-                     (ctrl-dep-at (σ₂ [ σr ]) (fold-map τ₀ σr σ₂ ⟦ s ⟧tm .idxf .sfunc (gi , i')) w)
-                     (fold-map τ₀ σr σ₂ ⟦ s ⟧tm .famf .transf (gi , i') .func (g , e)))) →
-              (o : ∣ 𝔽 (suc (width v)) ∣) (e : ∣ Fib ((σ₁ [+] σ₂) [ μ τ₀ ]) i ∣) →
-              DepRel ((σ₁ [+] σ₂) [ μ τ₀ ]) {inr {τ₁ = σ₁ [ μ τ₀ ]} v} {i} r o
-                (Fib._+_ ((σ₁ [+] σ₂) [ μ τ₀ ]) i (ctrl-dep-at ((σ₁ [+] σ₂) [ μ τ₀ ]) i w) e) →
-              DepRel ((σ₁ [+] σ₂) [ σr ]) {inr {τ₁ = σ₁ [ σr ]} v'} {fold-map τ₀ σr (σ₁ [+] σ₂) ⟦ s ⟧tm .idxf .sfunc (gi , i)}
-                (map-val {s = s} IHv {σ₁ [+] σ₂} (m-inr M) rγ {i} r)
-                (ap (map-built-out γ (width v) (width v') M.+ₘ (M.in₂ {1} ∘ (F ∘ sub-inputs γ (M.p₂ {1} {width v}))))
-                    (map-input γ w x o))
-                (Fib._+_ ((σ₁ [+] σ₂) [ σr ]) (fold-map τ₀ σr (σ₁ [+] σ₂) ⟦ s ⟧tm .idxf .sfunc (gi , i))
-                  (ctrl-dep-at ((σ₁ [+] σ₂) [ σr ]) (fold-map τ₀ σr (σ₁ [+] σ₂) ⟦ s ⟧tm .idxf .sfunc (gi , i)) w)
-                  (fold-map τ₀ σr (σ₁ [+] σ₂) ⟦ s ⟧tm .famf .transf (gi , i) .func (g , e)))
-map-dep-inr {γ = γ} {τ₀} {σr} {s} IHv {σ₁} {σ₂} {v} {v'} {F} M {gi} rγ {i} (i' , r₁ , ⟪ e₀ ⟫) w x g IHM o e (h₀ , h₁) =
-  root-eq ,
-  DepRel-at-bound (σ₂ [ σr ]) rv'
-    (DepRel-resp (σ₂ [ σr ]) rv' (λ k → ≈-sym (map-built-suc γ F w x o k)) payload-eq
-      (IHM r₁' (λ k → o (suc k)) (proj₂ ẽ) h₁'))
-  where
-  τ₊ = (σ₁ [+] σ₂) [ σr ]
-  τμ = (σ₁ [+] σ₂) [ μ τ₀ ]
-  F₊ = fold-map τ₀ σr (σ₁ [+] σ₂) ⟦ s ⟧tm
-  F₂ = fold-map τ₀ σr σ₂ ⟦ s ⟧tm
-  r₁' = ValRel-at-bound (σ₂ [ μ τ₀ ]) r₁
-  rv' = map-val IHv M rγ r₁'
-  Iₖ = F₂ .idxf .sfunc (gi , i')
-  I₊ = F₊ .idxf .sfunc (gi , i)
-  E = inr-idx {τ₀ = τ₀} s σ₁ σ₂ gi {i} {i'} e₀
-  ẽ = ⟦ τμ ⟧ .fam .subst {i} {inj₂ i'} e₀ .func e
-  y = map-input γ w x o
-  dF = F₊ .famf .transf (gi , i) .func (g , e)
-  d'' = ⟦ τ₊ ⟧ .fam .subst {I₊} {inj₂ Iₖ} E .func (Fib._+_ τ₊ I₊ (ctrl-dep-at τ₊ I₊ w) dF)
-  split' = subst-ctrl-dep+ τμ {i} {inj₂ i'} e₀ w e
-  split'' = subst-ctrl-dep+ τ₊ {I₊} {inj₂ Iₖ} E w dF
-  h₁' : DepRel (σ₂ [ μ τ₀ ]) r₁' (λ k → o (suc k))
-          (Fib._+_ (σ₂ [ μ τ₀ ]) i' (ctrl-dep-at (σ₂ [ μ τ₀ ]) i' w) (proj₂ ẽ))
-  h₁' = DepRel-resp (σ₂ [ μ τ₀ ]) r₁' (λ k → ≈-refl)
-          (Fib.trans (σ₂ [ μ τ₀ ]) i' (proj₂ split')
-             (Fib.+-cong (σ₂ [ μ τ₀ ]) i' (proj₂ (ctrl-dep-inj₂ {σ₁ [ μ τ₀ ]} {σ₂ [ μ τ₀ ]} i' w)) (Fib.refl (σ₂ [ μ τ₀ ]) i')))
-          (DepRel-at-bound (σ₂ [ μ τ₀ ]) r₁ h₁)
-  root-eq : ap (map-built-out γ (width v) (width v') M.+ₘ (M.in₂ {1} ∘ (F ∘ sub-inputs γ (M.p₂ {1} {width v})))) y zero
-            ≈s proj₁ d''
-  root-eq =
-    ≈-trans (map-built γ (F ∘ sub-inputs γ (M.p₂ {1} {width v})) w x o zero)
-    (≈-trans (+-cong ≈-refl (≈-trans h₀ (≈-trans (proj₁ split')
-                                                 (+-cong (proj₁ (ctrl-dep-inj₂ {σ₁ [ μ τ₀ ]} {σ₂ [ μ τ₀ ]} i' w)) ≈-refl))))
-    (≈-trans (≈-sym +-assoc)
-    (≈-trans (+-cong (+-idem (ctrl ·ₛ w)) ≈-refl)
-    (≈-sym (≈-trans (proj₁ split'')
-                    (+-cong (proj₁ (ctrl-dep-inj₂ {σ₁ [ σr ]} {σ₂ [ σr ]} Iₖ w))
-                            (proj₁ (inr-fibre {τ₀ = τ₀} s σ₁ σ₂ gi {i} {i'} e₀ g e))))))))
-  payload-eq : Fib._≈_ (σ₂ [ σr ]) Iₖ
-                 (Fib._+_ (σ₂ [ σr ]) Iₖ (ctrl-dep-at (σ₂ [ σr ]) Iₖ w) (F₂ .famf .transf (gi , i') .func (g , proj₂ ẽ)))
-                 (proj₂ d'')
-  payload-eq =
-    Fib.sym (σ₂ [ σr ]) Iₖ
-      (Fib.trans (σ₂ [ σr ]) Iₖ (proj₂ split'')
-        (Fib.+-cong (σ₂ [ σr ]) Iₖ (proj₂ (ctrl-dep-inj₂ {σ₁ [ σr ]} {σ₂ [ σr ]} Iₖ w))
-                                   (proj₂ (inr-fibre {τ₀ = τ₀} s σ₁ σ₂ gi {i} {i'} e₀ g e))))
+  Iₖ = fold-map τ₀ σr σ ⟦ s ⟧tm .idxf .sfunc (gi , i')
 
 private
   pair-fibre : ∀ {Γ} {τ₀ : type 1} {σr : type 0} (s : Γ ▸ τ₀ [ σr ] ⊢ σr) (σ₁ σ₂ : type 1) gi
@@ -972,12 +876,38 @@ map-dep {γ = γ} {τ₀} {σr} {s} IHv IHd (m-arrow {σ₁ = σ₁} {σ₂ = σ
   map-dep-leaf {γ = γ} (σ₁ [→] σ₂) {v = v} r (idx-eq (fold-map-arrow τ₀ σr σ₁ σ₂ ⟦ s ⟧tm) (gi , i)) w x o
     {e = e} {d = fold-map τ₀ σr (σ₁ [→] σ₂) ⟦ s ⟧tm .famf .transf (gi , i) .func (g , e)}
     (fam-eq (fold-map-arrow τ₀ σr σ₁ σ₂ ⟦ s ⟧tm) (gi , i) (g , e)) h
-map-dep {γ = γ} {τ₀} {σr} {s} IHv IHd (m-inl {σ₁ = σ₁} {σ₂ = σ₂} M) {gi} rγ {i} r w x g rel o e h =
-  map-dep-inl {τ₀ = τ₀} IHv {σ₁ = σ₁} {σ₂ = σ₂} M rγ {i = i} r w x g
-    (λ r' o' e' h' → map-dep IHv IHd M rγ r' w x g rel o' e' h') o e h
-map-dep {γ = γ} {τ₀} {σr} {s} IHv IHd (m-inr {σ₁ = σ₁} {σ₂ = σ₂} M) {gi} rγ {i} r w x g rel o e h =
-  map-dep-inr {τ₀ = τ₀} IHv {σ₁ = σ₁} {σ₂ = σ₂} M rγ {i = i} r w x g
-    (λ r' o' e' h' → map-dep IHv IHd M rγ r' w x g rel o' e' h') o e h
+map-dep {γ = γ} {τ₀} {σr} {s} IHv IHd (m-inl {σ₁ = σ₁} {σ₂ = σ₂} M) {gi} rγ {i} (i' , r₁ , ⟪ e₀ ⟫) w x g rel o e (h₀ , h₁) =
+  map-dep-inj IHv M rγ r₁ w x g (λ r' o' e' h' → map-dep IHv IHd M rγ r' w x g rel o' e' h') o h₀ h₁
+    (≈-trans (proj₁ split') (+-cong (proj₁ (ctrl-dep-inj₁ {σ₁ [ μ τ₀ ]} {σ₂ [ μ τ₀ ]} i' w)) ≈-refl))
+    (Fib.trans (σ₁ [ μ τ₀ ]) i' (proj₂ split')
+      (Fib.+-cong (σ₁ [ μ τ₀ ]) i' (proj₂ (ctrl-dep-inj₁ {σ₁ [ μ τ₀ ]} {σ₂ [ μ τ₀ ]} i' w)) (Fib.refl (σ₁ [ μ τ₀ ]) i')))
+    (≈-trans (proj₁ split'') (+-cong (proj₁ (ctrl-dep-inj₁ {σ₁ [ σr ]} {σ₂ [ σr ]} Iₖ w)) (proj₁ fib)))
+    (Fib.trans (σ₁ [ σr ]) Iₖ (proj₂ split'')
+      (Fib.+-cong (σ₁ [ σr ]) Iₖ (proj₂ (ctrl-dep-inj₁ {σ₁ [ σr ]} {σ₂ [ σr ]} Iₖ w)) (proj₂ fib)))
+  where
+  F₊ = fold-map τ₀ σr (σ₁ [+] σ₂) ⟦ s ⟧tm
+  I₊ = F₊ .idxf .sfunc (gi , i)
+  Iₖ = fold-map τ₀ σr σ₁ ⟦ s ⟧tm .idxf .sfunc (gi , i')
+  split' = subst-ctrl-dep+ ((σ₁ [+] σ₂) [ μ τ₀ ]) {i} {inj₁ i'} e₀ w e
+  split'' = subst-ctrl-dep+ ((σ₁ [+] σ₂) [ σr ]) {I₊} {inj₁ Iₖ} (inl-idx {τ₀ = τ₀} s σ₁ σ₂ gi {i} {i'} e₀) w
+              (F₊ .famf .transf (gi , i) .func (g , e))
+  fib = inl-fibre {τ₀ = τ₀} s σ₁ σ₂ gi {i} {i'} e₀ g e
+map-dep {γ = γ} {τ₀} {σr} {s} IHv IHd (m-inr {σ₁ = σ₁} {σ₂ = σ₂} M) {gi} rγ {i} (i' , r₁ , ⟪ e₀ ⟫) w x g rel o e (h₀ , h₁) =
+  map-dep-inj IHv M rγ r₁ w x g (λ r' o' e' h' → map-dep IHv IHd M rγ r' w x g rel o' e' h') o h₀ h₁
+    (≈-trans (proj₁ split') (+-cong (proj₁ (ctrl-dep-inj₂ {σ₁ [ μ τ₀ ]} {σ₂ [ μ τ₀ ]} i' w)) ≈-refl))
+    (Fib.trans (σ₂ [ μ τ₀ ]) i' (proj₂ split')
+      (Fib.+-cong (σ₂ [ μ τ₀ ]) i' (proj₂ (ctrl-dep-inj₂ {σ₁ [ μ τ₀ ]} {σ₂ [ μ τ₀ ]} i' w)) (Fib.refl (σ₂ [ μ τ₀ ]) i')))
+    (≈-trans (proj₁ split'') (+-cong (proj₁ (ctrl-dep-inj₂ {σ₁ [ σr ]} {σ₂ [ σr ]} Iₖ w)) (proj₁ fib)))
+    (Fib.trans (σ₂ [ σr ]) Iₖ (proj₂ split'')
+      (Fib.+-cong (σ₂ [ σr ]) Iₖ (proj₂ (ctrl-dep-inj₂ {σ₁ [ σr ]} {σ₂ [ σr ]} Iₖ w)) (proj₂ fib)))
+  where
+  F₊ = fold-map τ₀ σr (σ₁ [+] σ₂) ⟦ s ⟧tm
+  I₊ = F₊ .idxf .sfunc (gi , i)
+  Iₖ = fold-map τ₀ σr σ₂ ⟦ s ⟧tm .idxf .sfunc (gi , i')
+  split' = subst-ctrl-dep+ ((σ₁ [+] σ₂) [ μ τ₀ ]) {i} {inj₂ i'} e₀ w e
+  split'' = subst-ctrl-dep+ ((σ₁ [+] σ₂) [ σr ]) {I₊} {inj₂ Iₖ} (inr-idx {τ₀ = τ₀} s σ₁ σ₂ gi {i} {i'} e₀) w
+              (F₊ .famf .transf (gi , i) .func (g , e))
+  fib = inr-fibre {τ₀ = τ₀} s σ₁ σ₂ gi {i} {i'} e₀ g e
 map-dep {γ = γ} {τ₀} {σr} {s} IHv IHd (m-pair {σ₁ = σ₁} {σ₂ = σ₂} M₁ M₂) {gi} rγ {i} r w x g rel o e h =
   map-dep-pair {τ₀ = τ₀} IHv {σ₁ = σ₁} {σ₂ = σ₂} M₁ M₂ rγ {i = i} r w x g
     (λ r' o' e' h' → map-dep IHv IHd M₁ rγ r' w x g rel o' e' h')
