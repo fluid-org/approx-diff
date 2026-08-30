@@ -72,7 +72,8 @@ open language-operational.type-substitution Sig using (unfold₁-sub; unfold₁;
 open HasMu hasMu public
 open HasMuLaws hasMuLaws
   using (⦅⦆-cong; ⦅⦆-β; ⦅⦆-reflect; fusion; ∘co-push; copair-comp;
-         strong-fmor-comp; strong-fmor-cong; strong-fmor-p₂; strong-extend-mor-comp) public
+         strong-fmor-comp; strong-fmor-cong; strong-fmor-p₂; strong-fmor-ext-p₂; strong-extend-mor-comp;
+         fusion-inMap) public
 
 module coKl {Γ' : Obj} = Category (coKleisli-prod Fam.products Γ')
 open Model Int public
