@@ -359,7 +359,8 @@ strong-as-poly-map-natural (σ [×] τ) hs fs =
     (≈-sym (strong-Lf-map-comp _ _)))
 strong-as-poly-map-natural (σ [→] τ) hs fs = ≈-refl
 strong-as-poly-map-natural {Δ} {n} (μ τ) {Γ'} {δ} {δ'} hs {δ₀} {δ₀'} fs =
-  ≈-trans (fusion-inMap P δ₀ Q δ₀ (inMap Q δ₀' ∘ SFbQ) SAB₀ SAB₁
+  ≈-trans (fusion-inMap P δ₀ Q δ₀ (inMap Q δ₀' ∘ SFbQ) (strong-as-poly-map τ hs (extend δ₀ (μ-obj Q δ₀)))
+             (strong-as-poly-map τ hs (extend δ₀ M₀'))
              (strong-as-poly-map-natural {n = suc n} τ hs (strong-extend-mor (λ i → p₂) SFμ')))
   (≈-trans (⦅⦆-cong P δ₀ (tail-cong (strong-as-poly-map-natural {n = suc n} τ hs (strong-extend-mor fs p₂))))
   (≈-sym (≈-trans (fusion-inMap P δ₀ P δ₀' (inMap Q δ₀' ∘ SAB') SFbP SFPfs sq) (⦅⦆-cong P δ₀ (assoc _ _ _)))))
@@ -368,7 +369,6 @@ strong-as-poly-map-natural {Δ} {n} (μ τ) {Γ'} {δ} {δ'} hs {δ₀} {δ₀'}
   P = as-poly {Δ} {suc n} τ δ
   Q : Poly Fam.cat (suc n)
   Q = as-poly {Δ} {suc n} τ δ'
-  M₀  = μ-obj Q δ₀
   M₀' = μ-obj Q δ₀'
   N₀' = μ-obj P δ₀'
   SFbQ : prod Γ' (fobj μ-obj Q (extend δ₀ M₀')) ⇒ fobj μ-obj Q (extend δ₀' M₀')
@@ -377,8 +377,6 @@ strong-as-poly-map-natural {Δ} {n} (μ τ) {Γ'} {δ} {δ'} hs {δ₀} {δ₀'}
   SFbP = strong-fmor P (strong-extend-mor fs p₂)
   SFPfs : prod Γ' (fobj μ-obj P (extend δ₀ M₀')) ⇒ fobj μ-obj P (extend δ₀' M₀')
   SFPfs = strong-fmor P (strong-extend-mor fs p₂)
-  SAB₀ = strong-as-poly-map τ hs (extend δ₀ M₀)
-  SAB₁ = strong-as-poly-map τ hs (extend δ₀ M₀')
   SAB' = strong-as-poly-map τ hs (extend δ₀' M₀')
   SFμ' : prod Γ' (μ-obj Q δ₀) ⇒ M₀'
   SFμ' = ⦅ inMap Q δ₀' ∘ SFbQ ⦆
@@ -774,10 +772,9 @@ preserves-as-poly-ren {Δ₁} {Δ₂} {n} ρ (μ τ) {δ} δc {δ₀} δ₀c =
       δ₀c δ₀c
       (as-poly-section (extᵗⁿ (suc n) ρ *ᵗ τ) δ δc)
       (as-poly-section τ (λ i → δ (ρ i)) (λ i → δc (ρ i)))
-      (cast (as-poly-ren ρ τ δ) (extend δ₀ M))
+      (cast (as-poly-ren ρ τ δ) (extend δ₀ (μ-obj (as-poly {Δ₁} {suc n} τ (λ i → δ (ρ i))) δ₀)))
       (preserves-as-poly-ren ρ τ δc (extend-section δ₀c μM)))
   where
-  M  = μ-obj (as-poly {Δ₁} {suc n} τ (λ i → δ (ρ i))) δ₀
   μM = poly-section (as-poly {Δ₁} {n} (μ τ) (λ i → δ (ρ i)))
          (as-poly-section {Δ₁} {n} (μ τ) (λ i → δ (ρ i)) (λ i → δc (ρ i))) δ₀c
 
@@ -1487,14 +1484,13 @@ mutual
       (λ ()) δ₀c
       (as-poly-section {n + Δ} {1} τ (concat δ₀ δ) (concat-section δ₀c δc))
       (as-poly-section {Δ} {suc n} τ δ δc)
-      (apply-fwd-body τ δ δ₀ M)
+      (apply-fwd-body τ δ δ₀ (μ-obj (as-poly {Δ} {suc n} τ δ) δ₀))
       (preserves-section-∘
         (preserves-section-∘
           (preserves-apply-fwd {n = suc n} τ δc (extend-section δ₀c μM))
           (preserves-as-poly-map τ (λ i → preserves-env-pw δc δ₀c μM i) δ∅ (λ ())))
         (preserves-apply-bwd {n = 1} τ (concat-section δ₀c δc) (extend-section (λ ()) μM)))
     where
-    M  = μ-obj (as-poly {Δ} {suc n} τ δ) δ₀
     μM = poly-section (as-poly {Δ} {n} (μ τ) δ) (as-poly-section {Δ} {n} (μ τ) δ δc) δ₀c
 
   preserves-apply-bwd : ∀ {Δ n} (τ : type (n + Δ)) {δ : Fin Δ → obj} {δ₀ : Fin n → obj}

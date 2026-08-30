@@ -123,11 +123,10 @@ module sig-model (Sig : Signature 0ℓ) (ℐ : Interpretation S Sig) where
     (M.≈ₘ-trans (M.∘-cong (M.≈ₘ-refl {f = P'}) (M.≈ₘ-sym (ℐ.rel-deps ψ .func-resp-≈ e)))
     (M.≈ₘ-trans (M.∘-cong (M.≈ₘ-sym (𝒞Bool-root .Fam⟨𝒞⟩μ.at-natural {x₁ = o} {x₂ = o'} (ℐ.rel-pred ψ .func-resp-≈ e)))
                           (M.≈ₘ-refl {f = d' ψ c}))
-                (M.assoc sub P (d' ψ c))))
+                (M.assoc sub (𝒞Bool-root .Fam⟨𝒞⟩μ.at o) (d' ψ c))))
     where
     o  = ℐ.rel-pred ψ .func c
     o' = ℐ.rel-pred ψ .func c'
-    P  = 𝒞Bool-root .Fam⟨𝒞⟩μ.at o
     P' = 𝒞Bool-root .Fam⟨𝒞⟩μ.at o'
     sub = 𝒞Bool .Fam⟨𝒞⟩μ.fam .Fam⟨𝒞⟩μ.subst {o} {o'} (ℐ.rel-pred ψ .func-resp-≈ e)
 
@@ -191,14 +190,13 @@ module interp (Sig : Signature 0ℓ) (ℐ : Interpretation S Sig) where
                    (app D y Fin.zero , λ _ → S.ε)
         branch {x₁} {x} e =
           Semimodule.trans (L (𝔽 1))
-            (Lmap-elt g (u Fin.zero) (λ k → u (Fin.suc k)))
+            (Lmap-elt (𝒟𝟙ty .fam .subst {x₁} {x} e) (u Fin.zero) (λ k → u (Fin.suc k)))
             (S.trans (app-∘ (M.in₁ {1} {1}) D y Fin.zero) (app-in₁ {1} {1} (app D y) Fin.zero) ,
              λ k → S.trans (app-congᵥ G (λ j → S.trans (app-∘ (M.in₁ {1} {1}) D y (Fin.suc j))
                                                        (app-in₁ {1} {1} (app D y) (Fin.suc j))) k)
                             (app-ε G k))
           where
           G = 𝒞𝟙ty .Fam⟨𝒞⟩μ.fam .Fam⟨𝒞⟩μ.subst {x₁} {x} e
-          g = 𝒟𝟙ty .fam .subst {x₁} {x} e
 
       core : ∀ i₀ b (e : Setoid._≈_ (𝒟Bool .idx) (Ω .idxf .func i₀) b) →
              Semimodule._≈_ (𝒟Bool .fam .fm b)

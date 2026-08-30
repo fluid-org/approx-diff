@@ -52,11 +52,10 @@ private
 γ-test = emp · const 1ℚ
 
 γ-mavg : Env (emp , base number [×] (base number [×] (base number [×] base number)))
-γ-mavg = emp · pair (const 1ℚ) (pair (const two) (pair (const four) (const eight)))
+γ-mavg = emp · pair (const 1ℚ) (pair (const two) (pair (const four) (const (four +ℚ four))))
   where
   two   = 1ℚ +ℚ 1ℚ
   four  = two +ℚ two
-  eight = four +ℚ four
 
 γ-total : Env (emp , (list (base label [×] base number)) [×] (base number [×] base number))
 γ-total = emp · pair (el label.a 0ℚ ∷ᵥ el label.b 1ℚ ∷ᵥ el label.a 1ℚ ∷ᵥ nilᵥ)
@@ -66,13 +65,12 @@ private
 γ-sum-mul = emp · pair (const 0ℚ ∷ᵥ const 1ℚ ∷ᵥ const (1ℚ +ℚ 1ℚ) ∷ᵥ nilᵥ) (const (1ℚ +ℚ 1ℚ))
 
 γ-rose : Env (emp , rose)
-γ-rose = emp · nodeᵥ 1ℚ (nodeᵥ two (nodeᵥ three nilᵥ ∷ᵥ nilᵥ) ∷ᵥ nodeᵥ four nilᵥ ∷ᵥ nilᵥ)
+γ-rose = emp · nodeᵥ 1ℚ (nodeᵥ two (nodeᵥ (two +ℚ 1ℚ) nilᵥ ∷ᵥ nilᵥ) ∷ᵥ
+                         nodeᵥ (two +ℚ two) nilᵥ ∷ᵥ nilᵥ)
   where
   nodeᵥ : ℚ → Val (list rose) → Val rose
   nodeᵥ n ts = roll (pair (const n) ts)
   two   = 1ℚ +ℚ 1ℚ
-  three = two +ℚ 1ℚ
-  four  = two +ℚ two
 
 -- The derivative of x * y is [y, x], so at (1, 0) the result depends on y alone.
 γ-mult : Env (emp , base number [×] base number)

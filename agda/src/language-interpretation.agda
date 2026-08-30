@@ -72,19 +72,16 @@ preserves-subst-fwd σ unit        δc = preserves-section-id 𝟙ty-section
 preserves-subst-fwd σ (base s)    δc = preserves-section-id (sort-section s)
 preserves-subst-fwd σ (τ₁ [+] τ₂) {δ} δc =
   preserves-coprod-m
-    (preserves-Lf-map {c = u₁} {d = v₁} (preserves-subst-fwd σ τ₁ δc))
-    (preserves-Lf-map {c = u₂} {d = v₂} (preserves-subst-fwd σ τ₂ δc))
+    (preserves-Lf-map {c = (unit-section (sub σ τ₁) δ δc)} {d = v₁} (preserves-subst-fwd σ τ₁ δc))
+    (preserves-Lf-map {c = (unit-section (sub σ τ₂) δ δc)} {d = v₂} (preserves-subst-fwd σ τ₂ δc))
   where
-  u₁ = unit-section (sub σ τ₁) δ δc
-  u₂ = unit-section (sub σ τ₂) δ δc
   v₁ = unit-section τ₁ (λ i → ⟦ σ i ⟧ty δ) (λ i → unit-section (σ i) δ δc)
   v₂ = unit-section τ₂ (λ i → ⟦ σ i ⟧ty δ) (λ i → unit-section (σ i) δ δc)
 preserves-subst-fwd σ (τ₁ [×] τ₂) {δ} δc =
-  preserves-Lf-map {c = prod-section u₁ u₂} {d = prod-section v₁ v₂}
+  preserves-Lf-map {c = prod-section (unit-section (sub σ τ₁) δ δc) (unit-section (sub σ τ₂) δ δc)}
+    {d = prod-section v₁ v₂}
     (preserves-prod-m (preserves-subst-fwd σ τ₁ δc) (preserves-subst-fwd σ τ₂ δc))
   where
-  u₁ = unit-section (sub σ τ₁) δ δc
-  u₂ = unit-section (sub σ τ₂) δ δc
   v₁ = unit-section τ₁ (λ i → ⟦ σ i ⟧ty δ) (λ i → unit-section (σ i) δ δc)
   v₂ = unit-section τ₂ (λ i → ⟦ σ i ⟧ty δ) (λ i → unit-section (σ i) δ δc)
 preserves-subst-fwd σ (τ₁ [→] τ₂) δc = preserves-section-id (Lf-section exp-section)
@@ -94,7 +91,7 @@ preserves-subst-fwd {Δ} {Δ'} σ (μ τ) {δ} δc =
     (λ ()) (λ ())
     (as-poly-section {Δ'} {1} (sub (sub-lift σ) τ) δ δc)
     (as-poly-section {Δ} {1} τ (λ i → ⟦ σ i ⟧ty δ) (λ i → unit-section (σ i) δ δc))
-    (subst-fwd-body σ τ δ M)
+    (subst-fwd-body σ τ δ (μ-obj (as-poly {Δ} {1} τ (λ i → ⟦ σ i ⟧ty δ)) δ∅))
     (preserves-section-∘
       (preserves-section-∘
         (preserves-section-∘
@@ -105,7 +102,6 @@ preserves-subst-fwd {Δ} {Δ'} σ (μ τ) {δ} δc =
           (concat-section {n = 1} (extend-section (λ ()) μM) δc)))
       (preserves-apply-bwd {n = 1} (sub (sub-lift σ) τ) δc (extend-section (λ ()) μM)))
   where
-  M  = μ-obj (as-poly {Δ} {1} τ (λ i → ⟦ σ i ⟧ty δ)) δ∅
   μM = unit-section (μ τ) (λ i → ⟦ σ i ⟧ty δ) (λ i → unit-section (σ i) δ δc)
 
 push-pw : ∀ (τ' : type 0) (i : Fin 1) → ⟦ push τ' i ⟧ty (λ ()) ≡ concat (extend {0} δ∅ (⟦ τ' ⟧ty (λ ()))) (λ ()) i
@@ -186,15 +182,14 @@ mutual
     fτ  = apply-fwd τ₂ δ δ₀
     fσ' = apply-fwd σ δ' δ₀'
     fτ' = apply-fwd τ₂ δ' δ₀'
-    SAMσ' = strong-as-poly-map σ (strong-concat-mor hs ks) δ∅
-    SAMτ' = strong-as-poly-map τ₂ (strong-concat-mor hs ks) δ∅
     inner = ≈-trans (coKl.∘-cong ≈-refl (≈-trans (coKl.∘-cong ≈-refl (≈-sym (prod-m-weaken fσ fτ)))
                                                 (strong-prod-m-comp _ _ _ _)))
             (≈-trans (strong-prod-m-comp _ _ _ _)
             (≈-trans (strong-prod-m-cong
                        (≈-trans (strong-apply-fwd-natural σ ks hs) (lift-post fσ' _))
                        (≈-trans (strong-apply-fwd-natural τ₂ ks hs) (lift-post fτ' _)))
-                     (≈-sym (strong-prod-m-post fσ' fτ' SAMσ' SAMτ'))))
+                     (≈-sym (strong-prod-m-post fσ' fτ' (strong-as-poly-map σ (strong-concat-mor hs ks) δ∅)
+                                                        (strong-as-poly-map τ₂ (strong-concat-mor hs ks) δ∅)))))
   strong-apply-fwd-natural {Δ} {n} (μ τ₂) {Γ'} {δ} {δ'} ks {δ₀} {δ₀'} hs = main
     where
     A   = as-poly {Δ} {suc n} τ₂ δ
@@ -1319,7 +1314,8 @@ fold-map-inl : ∀ (τ₀ : type 1) (σ : type 0) (σ₁ σ₂ : type 1) {Γ' : 
                (fold-map τ₀ σ (σ₁ [+] σ₂) B ∘ ⟨ p₁ , (in₁ ∘ injF) ∘ p₂ ⟩)
                  ≈ ((in₁ ∘ injF) ∘ fold-map τ₀ σ σ₁ B)
 fold-map-inl τ₀ σ σ₁ σ₂ B =
-  fold-through b⁺ S⁺ f⁺ b₁ S₁ f₁ (in₁ ∘ injF) (in₁ ∘ injF) (in₁ ∘ injF) (in₁ ∘ injF)
+  fold-through (sub-as-apply-bwd (σ₁ [+] σ₂) σ) (fold-strong τ₀ σ (σ₁ [+] σ₂) B) (sub-as-apply-fwd (σ₁ [+] σ₂) (μ τ₀))
+    b₁ S₁ f₁ (in₁ ∘ injF) (in₁ ∘ injF) (in₁ ∘ injF) (in₁ ∘ injF)
     (≈-trans (∘-cong (sub-as-apply-fwd-[+] σ₁ σ₂ (μ τ₀)) ≈-refl) ([+]-map-inj₁ f₁ (sub-as-apply-fwd σ₂ (μ τ₀))))
     (≈-trans (coKl.∘-cong ≈-refl (lift-comp in₁ injF))
     (≈-trans (≈-sym (coKl.assoc _ _ _))
@@ -1327,9 +1323,6 @@ fold-map-inl τ₀ σ σ₁ σ₂ B =
     (tail-cong-assoc (strong-Lf-map-injF S₁)))))
     (≈-trans (∘-cong (sub-as-apply-bwd-[+] σ₁ σ₂ σ) ≈-refl) ([+]-map-inj₁ b₁ (sub-as-apply-bwd σ₂ σ)))
   where
-  f⁺ = sub-as-apply-fwd (σ₁ [+] σ₂) (μ τ₀)
-  b⁺ = sub-as-apply-bwd (σ₁ [+] σ₂) σ
-  S⁺ = fold-strong τ₀ σ (σ₁ [+] σ₂) B
   f₁ = sub-as-apply-fwd σ₁ (μ τ₀)
   b₁ = sub-as-apply-bwd σ₁ σ
   S₁ = fold-strong τ₀ σ σ₁ B
@@ -1339,7 +1332,8 @@ fold-map-inr : ∀ (τ₀ : type 1) (σ : type 0) (σ₁ σ₂ : type 1) {Γ' : 
                (fold-map τ₀ σ (σ₁ [+] σ₂) B ∘ ⟨ p₁ , (in₂ ∘ injF) ∘ p₂ ⟩)
                  ≈ ((in₂ ∘ injF) ∘ fold-map τ₀ σ σ₂ B)
 fold-map-inr τ₀ σ σ₁ σ₂ B =
-  fold-through b⁺ S⁺ f⁺ b₂ S₂ f₂ (in₂ ∘ injF) (in₂ ∘ injF) (in₂ ∘ injF) (in₂ ∘ injF)
+  fold-through (sub-as-apply-bwd (σ₁ [+] σ₂) σ) (fold-strong τ₀ σ (σ₁ [+] σ₂) B) (sub-as-apply-fwd (σ₁ [+] σ₂) (μ τ₀))
+    b₂ S₂ f₂ (in₂ ∘ injF) (in₂ ∘ injF) (in₂ ∘ injF) (in₂ ∘ injF)
     (≈-trans (∘-cong (sub-as-apply-fwd-[+] σ₁ σ₂ (μ τ₀)) ≈-refl) ([+]-map-inj₂ (sub-as-apply-fwd σ₁ (μ τ₀)) f₂))
     (≈-trans (coKl.∘-cong ≈-refl (lift-comp in₂ injF))
     (≈-trans (≈-sym (coKl.assoc _ _ _))
@@ -1347,9 +1341,6 @@ fold-map-inr τ₀ σ σ₁ σ₂ B =
     (tail-cong-assoc (strong-Lf-map-injF S₂)))))
     (≈-trans (∘-cong (sub-as-apply-bwd-[+] σ₁ σ₂ σ) ≈-refl) ([+]-map-inj₂ (sub-as-apply-bwd σ₁ σ) b₂))
   where
-  f⁺ = sub-as-apply-fwd (σ₁ [+] σ₂) (μ τ₀)
-  b⁺ = sub-as-apply-bwd (σ₁ [+] σ₂) σ
-  S⁺ = fold-strong τ₀ σ (σ₁ [+] σ₂) B
   f₂ = sub-as-apply-fwd σ₂ (μ τ₀)
   b₂ = sub-as-apply-bwd σ₂ σ
   S₂ = fold-strong τ₀ σ σ₂ B
@@ -1359,15 +1350,13 @@ fold-map-inl-L : ∀ (τ₀ : type 1) (σ : type 0) (σ₁ σ₂ : type 1) {Γ' 
                  (fold-map τ₀ σ (σ₁ [+] σ₂) B ∘ ⟨ p₁ , in₁ ∘ p₂ ⟩)
                    ≈ (in₁ ∘ strong-Lf-map (fold-map τ₀ σ σ₁ B))
 fold-map-inl-L τ₀ σ σ₁ σ₂ B =
-  ≈-trans (fold-through b⁺ S⁺ f⁺ (Lf-map b₁) (strong-Lf-map S₁) (Lf-map f₁) in₁ in₁ in₁ in₁
+  ≈-trans (fold-through (sub-as-apply-bwd (σ₁ [+] σ₂) σ) (fold-strong τ₀ σ (σ₁ [+] σ₂) B) (sub-as-apply-fwd (σ₁ [+] σ₂) (μ τ₀))
+             (Lf-map b₁) (strong-Lf-map S₁) (Lf-map f₁) in₁ in₁ in₁ in₁
              (≈-trans (∘-cong (sub-as-apply-fwd-[+] σ₁ σ₂ (μ τ₀)) ≈-refl) ([+]-map-in₁ f₁ (sub-as-apply-fwd σ₂ (μ τ₀))))
              (scopair-in₁ _ _)
              (≈-trans (∘-cong (sub-as-apply-bwd-[+] σ₁ σ₂ σ) ≈-refl) ([+]-map-in₁ b₁ (sub-as-apply-bwd σ₂ σ))))
           (∘-cong ≈-refl (strong-Lf-map-fold b₁ S₁ f₁))
   where
-  f⁺ = sub-as-apply-fwd (σ₁ [+] σ₂) (μ τ₀)
-  b⁺ = sub-as-apply-bwd (σ₁ [+] σ₂) σ
-  S⁺ = fold-strong τ₀ σ (σ₁ [+] σ₂) B
   f₁ = sub-as-apply-fwd σ₁ (μ τ₀)
   b₁ = sub-as-apply-bwd σ₁ σ
   S₁ = fold-strong τ₀ σ σ₁ B
@@ -1377,15 +1366,13 @@ fold-map-inr-L : ∀ (τ₀ : type 1) (σ : type 0) (σ₁ σ₂ : type 1) {Γ' 
                  (fold-map τ₀ σ (σ₁ [+] σ₂) B ∘ ⟨ p₁ , in₂ ∘ p₂ ⟩)
                    ≈ (in₂ ∘ strong-Lf-map (fold-map τ₀ σ σ₂ B))
 fold-map-inr-L τ₀ σ σ₁ σ₂ B =
-  ≈-trans (fold-through b⁺ S⁺ f⁺ (Lf-map b₂) (strong-Lf-map S₂) (Lf-map f₂) in₂ in₂ in₂ in₂
+  ≈-trans (fold-through (sub-as-apply-bwd (σ₁ [+] σ₂) σ) (fold-strong τ₀ σ (σ₁ [+] σ₂) B) (sub-as-apply-fwd (σ₁ [+] σ₂) (μ τ₀))
+             (Lf-map b₂) (strong-Lf-map S₂) (Lf-map f₂) in₂ in₂ in₂ in₂
              (≈-trans (∘-cong (sub-as-apply-fwd-[+] σ₁ σ₂ (μ τ₀)) ≈-refl) ([+]-map-in₂ (sub-as-apply-fwd σ₁ (μ τ₀)) f₂))
              (scopair-in₂ _ _)
              (≈-trans (∘-cong (sub-as-apply-bwd-[+] σ₁ σ₂ σ) ≈-refl) ([+]-map-in₂ (sub-as-apply-bwd σ₁ σ) b₂)))
           (∘-cong ≈-refl (strong-Lf-map-fold b₂ S₂ f₂))
   where
-  f⁺ = sub-as-apply-fwd (σ₁ [+] σ₂) (μ τ₀)
-  b⁺ = sub-as-apply-bwd (σ₁ [+] σ₂) σ
-  S⁺ = fold-strong τ₀ σ (σ₁ [+] σ₂) B
   f₂ = sub-as-apply-fwd σ₂ (μ τ₀)
   b₂ = sub-as-apply-bwd σ₂ σ
   S₂ = fold-strong τ₀ σ σ₂ B
@@ -1395,15 +1382,13 @@ fold-map-pair : ∀ (τ₀ : type 1) (σ : type 0) (σ₁ σ₂ : type 1) {Γ' :
                 (fold-map τ₀ σ (σ₁ [×] σ₂) B ∘ ⟨ p₁ , injF ∘ p₂ ⟩)
                   ≈ (injF ∘ strong-prod-m (fold-map τ₀ σ σ₁ B) (fold-map τ₀ σ σ₂ B))
 fold-map-pair τ₀ σ σ₁ σ₂ B =
-  ≈-trans (fold-through b× S× f× (prod-m b₁ b₂) (strong-prod-m S₁ S₂) (prod-m f₁ f₂) injF injF injF injF
+  ≈-trans (fold-through (sub-as-apply-bwd (σ₁ [×] σ₂) σ) (fold-strong τ₀ σ (σ₁ [×] σ₂) B) (sub-as-apply-fwd (σ₁ [×] σ₂) (μ τ₀))
+             (prod-m b₁ b₂) (strong-prod-m S₁ S₂) (prod-m f₁ f₂) injF injF injF injF
              (≈-trans (∘-cong (sub-as-apply-fwd-[×] σ₁ σ₂ (μ τ₀)) ≈-refl) (injF-natural (prod-m f₁ f₂)))
              (strong-Lf-map-injF (strong-prod-m S₁ S₂))
              (≈-trans (∘-cong (sub-as-apply-bwd-[×] σ₁ σ₂ σ) ≈-refl) (injF-natural (prod-m b₁ b₂))))
           (∘-cong ≈-refl (strong-prod-m-fold b₁ b₂ S₁ S₂ f₁ f₂))
   where
-  f× = sub-as-apply-fwd (σ₁ [×] σ₂) (μ τ₀)
-  b× = sub-as-apply-bwd (σ₁ [×] σ₂) σ
-  S× = fold-strong τ₀ σ (σ₁ [×] σ₂) B
   f₁ = sub-as-apply-fwd σ₁ (μ τ₀)
   f₂ = sub-as-apply-fwd σ₂ (μ τ₀)
   b₁ = sub-as-apply-bwd σ₁ σ
