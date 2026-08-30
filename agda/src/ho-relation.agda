@@ -52,7 +52,7 @@ open SemiMod._≈m_ public using (func-eq)
 module M = matrix.Mat S
 module Fam⟨𝒟⟩μ = model.Fam⟨𝒟⟩μ
 open Fam⟨𝒟⟩μ public using (Obj; Mor; idx; fam; fm; idxf; famf; Section; Lf; elimF;
-                          strong-Lf-map-transf; _≃_; module _≃_; preserves-section;
+                          strong-Lf-map; strong-Lf-map-transf; _≃_; module _≃_; preserves-section;
                           module preserves-section; module Fam-P; module Fam-cat)
 open HasStrongCoproducts Fam⟨𝒟⟩μ.strongCoproducts public using (copair; in₁; in₂)
 module ΠP = HasSetoidProducts model.SPmod
