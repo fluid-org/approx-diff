@@ -434,6 +434,15 @@ private
                     (Fpair-elt {Domₖ} {⟦ Γ ⟧ctxt} {⟦ τμ ⟧} (Fam-P.p₁ {⟦ Γ ⟧ctxt} {Lf ⟦ σ₂ [ μ τ₀ ] ⟧})
                        (Fam-cat._∘_ in₂ (Fam-P.p₂ {⟦ Γ ⟧ctxt} {Lf ⟦ σ₂ [ μ τ₀ ] ⟧})) (gi , i') (g , ẽ))))
 
+map-built-suc : ∀ {Γ} (γ : Env Γ) {m n} (F : M.Matrix n (suc (width-env γ) + m)) w x (o : ∣ 𝔽 (suc m) ∣) k →
+                ap (map-built-out γ m n M.+ₘ (M.in₂ {1} ∘ (F ∘ sub-inputs γ (M.p₂ {1} {m})))) (map-input γ w x o) (suc k)
+                  ≈s ap F (map-input γ w x (λ k → o (suc k))) k
+map-built-suc γ {m} F w x o k =
+  ≈-trans (map-built γ (F ∘ sub-inputs γ (M.p₂ {1} {m})) w x o (suc k))
+  (≈-trans (app-∘ F (sub-inputs γ (M.p₂ {1} {m})) (map-input γ w x o) k)
+    (app-congᵥ F (λ l → ≈-trans (ap-sub-inputs γ (M.p₂ {1} {m}) w x o l)
+                                (+-cong ≈-refl (app-congᵥ (M.in₂ {suc (width-env γ)} {m}) (ap-p₂₁ o) l))) k))
+
 map-dep-inl : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
               (IHv : ∀ {w' u T} (D : γ · w' , s ⇓ u [ T ]) {gj} (rγ : EnvValRel (γ · w') gj) →
                      ValRel σr u (⟦ s ⟧tm .idxf .sfunc gj))
@@ -459,7 +468,7 @@ map-dep-inl : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸
 map-dep-inl {γ = γ} {τ₀} {σr} {s} IHv {σ₁} {σ₂} {v} {v'} {F} M {gi} rγ {i} (i' , r₁ , ⟪ e₀ ⟫) w x g IHM o e (h₀ , h₁) =
   root-eq ,
   DepRel-at-bound (σ₁ [ σr ]) rv'
-    (DepRel-resp (σ₁ [ σr ]) rv' (λ k → ≈-sym (suc-eq k)) payload-eq
+    (DepRel-resp (σ₁ [ σr ]) rv' (λ k → ≈-sym (map-built-suc γ F w x o k)) payload-eq
       (IHM r₁' (λ k → o (suc k)) (proj₂ ẽ) h₁'))
   where
   τ₊ = (σ₁ [+] σ₂) [ σr ]
@@ -502,13 +511,6 @@ map-dep-inl {γ = γ} {τ₀} {σr} {s} IHv {σ₁} {σ₂} {v} {v'} {F} M {gi} 
       (Fib.trans (σ₁ [ σr ]) Iₖ (proj₂ split'')
         (Fib.+-cong (σ₁ [ σr ]) Iₖ (proj₂ (ctrl-dep-inj₁ {σ₁ [ σr ]} {σ₂ [ σr ]} Iₖ w))
                                    (proj₂ (inl-fibre {τ₀ = τ₀} s σ₁ σ₂ gi {i} {i'} e₀ g e))))
-  suc-eq : ∀ k → ap (map-built-out γ (width v) (width v') M.+ₘ (M.in₂ {1} ∘ (F ∘ sub-inputs γ (M.p₂ {1} {width v})))) y (suc k)
-                 ≈s ap F (map-input γ w x (λ k → o (suc k))) k
-  suc-eq k =
-    ≈-trans (map-built γ (F ∘ sub-inputs γ (M.p₂ {1} {width v})) w x o (suc k))
-    (≈-trans (app-∘ F (sub-inputs γ (M.p₂ {1} {width v})) y k)
-      (app-congᵥ F (λ l → ≈-trans (ap-sub-inputs γ (M.p₂ {1} {width v}) w x o l)
-                                  (+-cong ≈-refl (app-congᵥ (M.in₂ {suc (width-env γ)} {width v}) (ap-p₂₁ o) l))) k))
 
 map-dep-inr : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
               (IHv : ∀ {w' u T} (D : γ · w' , s ⇓ u [ T ]) {gj} (rγ : EnvValRel (γ · w') gj) →
@@ -535,7 +537,7 @@ map-dep-inr : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸
 map-dep-inr {γ = γ} {τ₀} {σr} {s} IHv {σ₁} {σ₂} {v} {v'} {F} M {gi} rγ {i} (i' , r₁ , ⟪ e₀ ⟫) w x g IHM o e (h₀ , h₁) =
   root-eq ,
   DepRel-at-bound (σ₂ [ σr ]) rv'
-    (DepRel-resp (σ₂ [ σr ]) rv' (λ k → ≈-sym (suc-eq k)) payload-eq
+    (DepRel-resp (σ₂ [ σr ]) rv' (λ k → ≈-sym (map-built-suc γ F w x o k)) payload-eq
       (IHM r₁' (λ k → o (suc k)) (proj₂ ẽ) h₁'))
   where
   τ₊ = (σ₁ [+] σ₂) [ σr ]
@@ -578,13 +580,6 @@ map-dep-inr {γ = γ} {τ₀} {σr} {s} IHv {σ₁} {σ₂} {v} {v'} {F} M {gi} 
       (Fib.trans (σ₂ [ σr ]) Iₖ (proj₂ split'')
         (Fib.+-cong (σ₂ [ σr ]) Iₖ (proj₂ (ctrl-dep-inj₂ {σ₁ [ σr ]} {σ₂ [ σr ]} Iₖ w))
                                    (proj₂ (inr-fibre {τ₀ = τ₀} s σ₁ σ₂ gi {i} {i'} e₀ g e))))
-  suc-eq : ∀ k → ap (map-built-out γ (width v) (width v') M.+ₘ (M.in₂ {1} ∘ (F ∘ sub-inputs γ (M.p₂ {1} {width v})))) y (suc k)
-                 ≈s ap F (map-input γ w x (λ k → o (suc k))) k
-  suc-eq k =
-    ≈-trans (map-built γ (F ∘ sub-inputs γ (M.p₂ {1} {width v})) w x o (suc k))
-    (≈-trans (app-∘ F (sub-inputs γ (M.p₂ {1} {width v})) y k)
-      (app-congᵥ F (λ l → ≈-trans (ap-sub-inputs γ (M.p₂ {1} {width v}) w x o l)
-                                  (+-cong ≈-refl (app-congᵥ (M.in₂ {suc (width-env γ)} {width v}) (ap-p₂₁ o) l))) k))
 
 private
   pair-fibre : ∀ {Γ} {τ₀ : type 1} {σr : type 0} (s : Γ ▸ τ₀ [ σr ] ⊢ σr) (σ₁ σ₂ : type 1) gi
