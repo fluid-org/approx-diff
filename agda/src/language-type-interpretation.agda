@@ -71,7 +71,7 @@ import language-operational.type-substitution
 open language-operational.type-substitution Sig using (unfold₁-sub; unfold₁; unfold₁-inst; ren-ren; sub-ren; ren-sub; sub-sub; sub-id; sub-ren-comm) public
 open HasMu hasMu public
 open HasMuLaws hasMuLaws
-  using (⦅⦆-cong; ⦅⦆-β; ⦅⦆-reflect; fusion; ∘co-push; copair-comp;
+  using (⦅⦆-cong; ⦅⦆-β; ⦅⦆-reflect; ∘co-push; copair-comp;
          strong-fmor-comp; strong-fmor-cong; strong-fmor-p₂; strong-fmor-ext-p₂; strong-extend-mor-comp;
          fusion-inMap) public
 
@@ -359,8 +359,10 @@ strong-as-poly-map-natural (σ [×] τ) hs fs =
     (≈-sym (strong-Lf-map-comp _ _)))
 strong-as-poly-map-natural (σ [→] τ) hs fs = ≈-refl
 strong-as-poly-map-natural {Δ} {n} (μ τ) {Γ'} {δ} {δ'} hs {δ₀} {δ₀'} fs =
-  ≈-trans (fusion {P = P} {δ = δ₀} algA alg⋆ SFμ' prem₁)
-          (≈-sym (fusion {P = P} {δ = δ₀} algF alg⋆ SAμ' prem₂))
+  ≈-trans (fusion-inMap P δ₀ Q δ₀ (inMap Q δ₀' ∘ SFbQ) SAB₀ SAB₁
+             (strong-as-poly-map-natural {n = suc n} τ hs (strong-extend-mor (λ i → p₂) SFμ')))
+  (≈-trans (⦅⦆-cong P δ₀ (tail-cong (strong-as-poly-map-natural {n = suc n} τ hs (strong-extend-mor fs p₂))))
+  (≈-sym (≈-trans (fusion-inMap P δ₀ P δ₀' (inMap Q δ₀' ∘ SAB') SFbP SFPfs sq) (⦅⦆-cong P δ₀ (assoc _ _ _)))))
   where
   P : Poly Fam.cat (suc n)
   P = as-poly {Δ} {suc n} τ δ
@@ -382,52 +384,13 @@ strong-as-poly-map-natural {Δ} {n} (μ τ) {Γ'} {δ} {δ'} hs {δ₀} {δ₀'}
   SFμ' = ⦅ inMap Q δ₀' ∘ SFbQ ⦆
   SAμ' : prod Γ' (μ-obj P δ₀') ⇒ M₀'
   SAμ' = ⦅ inMap Q δ₀' ∘ SAB' ⦆
-  algA = inMap Q δ₀ ∘ SAB₀
-  algF = inMap P δ₀' ∘ SFbP
-  alg⋆ : prod Γ' (fobj μ-obj P (extend δ₀ M₀')) ⇒ M₀'
-  alg⋆ = inMap Q δ₀' ∘ (SAB' ∘co SFPfs)
 
-  prem₁ : (SFμ' ∘co algA) ≈ (alg⋆ ∘co strong-fmor P (strong-extend-mor (λ i → p₂) SFμ'))
-  prem₁ = begin
-      SFμ' ∘co (inMap Q δ₀ ∘ SAB₀)
-    ≈˘⟨ ∘co-push SFμ' (inMap Q δ₀) SAB₀ ⟩
-      (SFμ' ∘co (inMap Q δ₀ ∘ p₂)) ∘co SAB₀
-    ≈⟨ coKl.∘-cong (⦅⦆-β {P = Q} {δ = δ₀} (inMap Q δ₀' ∘ SFbQ)) ≈-refl ⟩
-      ((inMap Q δ₀' ∘ SFbQ) ∘co strong-fmor Q (strong-extend-mor (λ i → p₂) SFμ')) ∘co SAB₀
-    ≈⟨ coKl.assoc _ _ _ ⟩
-      (inMap Q δ₀' ∘ SFbQ) ∘co (strong-fmor Q (strong-extend-mor (λ i → p₂) SFμ') ∘co SAB₀)
-    ≈⟨ coKl.∘-cong ≈-refl (strong-as-poly-map-natural {n = suc n} τ hs (strong-extend-mor (λ i → p₂) SFμ')) ⟩
-      (inMap Q δ₀' ∘ SFbQ) ∘co (SAB₁ ∘co strong-fmor P (strong-extend-mor (λ i → p₂) SFμ'))
-    ≈˘⟨ coKl.assoc _ _ _ ⟩
-      ((inMap Q δ₀' ∘ SFbQ) ∘co SAB₁) ∘co strong-fmor P (strong-extend-mor (λ i → p₂) SFμ')
-    ≈⟨ coKl.∘-cong (tail-cong (strong-as-poly-map-natural {n = suc n} τ hs (strong-extend-mor fs p₂))) ≈-refl ⟩
-      (inMap Q δ₀' ∘ (SAB' ∘co SFPfs)) ∘co strong-fmor P (strong-extend-mor (λ i → p₂) SFμ')
-    ∎
-    where open ≈-Reasoning isEquiv
-
-  prem₂ : (SAμ' ∘co algF) ≈ (alg⋆ ∘co strong-fmor P (strong-extend-mor (λ i → p₂) SAμ'))
-  prem₂ = begin
-      SAμ' ∘co (inMap P δ₀' ∘ SFbP)
-    ≈˘⟨ ∘co-push SAμ' (inMap P δ₀') SFbP ⟩
-      (SAμ' ∘co (inMap P δ₀' ∘ p₂)) ∘co SFbP
-    ≈⟨ coKl.∘-cong (⦅⦆-β {P = P} {δ = δ₀'} (inMap Q δ₀' ∘ SAB')) ≈-refl ⟩
-      ((inMap Q δ₀' ∘ SAB') ∘co strong-fmor P (strong-extend-mor (λ i → p₂) SAμ')) ∘co SFbP
-    ≈⟨ coKl.assoc _ _ _ ⟩
-      (inMap Q δ₀' ∘ SAB') ∘co (strong-fmor P (strong-extend-mor (λ i → p₂) SAμ') ∘co SFbP)
-    ≈⟨ coKl.∘-cong ≈-refl (≈-trans (strong-fmor-comp P _ _)
-         (strong-fmor-cong P (strong-extend-mor-comp (λ i → coKl.id-left) coKl.id-right))) ⟩
-      (inMap Q δ₀' ∘ SAB') ∘co strong-fmor P (strong-extend-mor fs SAμ')
-    ≈⟨ assoc _ _ _ ⟩
-      inMap Q δ₀' ∘ (SAB' ∘co strong-fmor P (strong-extend-mor fs SAμ'))
-    ≈˘⟨ ∘-cong ≈-refl (coKl.∘-cong ≈-refl (≈-trans (strong-fmor-comp P _ _)
-          (strong-fmor-cong P (strong-extend-mor-comp (λ i → coKl.id-right) coKl.id-left)))) ⟩
-      inMap Q δ₀' ∘ (SAB' ∘co (SFPfs ∘co strong-fmor P (strong-extend-mor (λ i → p₂) SAμ')))
-    ≈˘⟨ ∘-cong ≈-refl (coKl.assoc _ _ _) ⟩
-      inMap Q δ₀' ∘ ((SAB' ∘co SFPfs) ∘co strong-fmor P (strong-extend-mor (λ i → p₂) SAμ'))
-    ≈˘⟨ assoc _ _ _ ⟩
-      (inMap Q δ₀' ∘ (SAB' ∘co SFPfs)) ∘co strong-fmor P (strong-extend-mor (λ i → p₂) SAμ')
-    ∎
-    where open ≈-Reasoning isEquiv
+  sq : (strong-fmor P (strong-extend-mor (λ i → p₂) SAμ') ∘co SFbP)
+         ≈ (SFPfs ∘co strong-fmor P (strong-extend-mor (λ i → p₂) SAμ'))
+  sq = ≈-trans (≈-trans (strong-fmor-comp P _ _)
+                        (strong-fmor-cong P (strong-extend-mor-comp (λ i → coKl.id-left) coKl.id-right)))
+       (≈-sym (≈-trans (strong-fmor-comp P _ _)
+                       (strong-fmor-cong P (strong-extend-mor-comp (λ i → coKl.id-right) coKl.id-left))))
 
 strong-as-poly-map-comp : ∀ {Δ n} (τ : type (n + Δ)) {Γ' : Obj} {δ δ' δ'' : Fin Δ → obj}
   (hs' : ∀ i → prod Γ' (δ' i) ⇒ δ'' i) (hs : ∀ i → prod Γ' (δ i) ⇒ δ' i) (δ₀ : Fin n → obj) →
@@ -452,7 +415,9 @@ strong-as-poly-map-comp (σ [×] τ) hs' hs δ₀ =
                           (strong-as-poly-map-comp τ hs' hs δ₀))))
 strong-as-poly-map-comp (σ [→] τ) hs' hs δ₀ = coKl.id-left
 strong-as-poly-map-comp {Δ} {n} (μ τ) {Γ'} {δ} {δ'} {δ''} hs' hs δ₀ =
-  fusion {P = P} {δ = δ₀} (inMap Q' δ₀ ∘ SA₁) (inMap Q'' δ₀ ∘ SA₁₂) Sμ'' prem
+  ≈-trans (fusion-inMap P δ₀ Q' δ₀ (inMap Q'' δ₀ ∘ SA₂) SA₁ SA₁''
+             (strong-as-poly-map-natural {n = suc n} τ hs (strong-extend-mor (λ i → p₂) Sμ'')))
+          (⦅⦆-cong P δ₀ (tail-cong (strong-as-poly-map-comp {n = suc n} τ hs' hs (extend δ₀ M''))))
   where
   P : Poly Fam.cat (suc n)
   P = as-poly {Δ} {suc n} τ δ
@@ -468,29 +433,8 @@ strong-as-poly-map-comp {Δ} {n} (μ τ) {Γ'} {δ} {δ'} {δ''} hs' hs δ₀ =
   SA₁'' = strong-as-poly-map τ hs (extend δ₀ M'')
   SA₂ : prod Γ' (fobj μ-obj Q' (extend δ₀ M'')) ⇒ fobj μ-obj Q'' (extend δ₀ M'')
   SA₂ = strong-as-poly-map τ hs' (extend δ₀ M'')
-  SA₁₂ : prod Γ' (fobj μ-obj P (extend δ₀ M'')) ⇒ fobj μ-obj Q'' (extend δ₀ M'')
-  SA₁₂ = strong-as-poly-map τ (λ i → hs' i ∘co hs i) (extend δ₀ M'')
   Sμ'' : prod Γ' M' ⇒ M''
   Sμ'' = ⦅ inMap Q'' δ₀ ∘ SA₂ ⦆
-
-  prem : (Sμ'' ∘co (inMap Q' δ₀ ∘ SA₁))
-           ≈ ((inMap Q'' δ₀ ∘ SA₁₂) ∘co strong-fmor P (strong-extend-mor (λ i → p₂) Sμ''))
-  prem = begin
-      Sμ'' ∘co (inMap Q' δ₀ ∘ SA₁)
-    ≈˘⟨ ∘co-push Sμ'' (inMap Q' δ₀) SA₁ ⟩
-      (Sμ'' ∘co (inMap Q' δ₀ ∘ p₂)) ∘co SA₁
-    ≈⟨ coKl.∘-cong (⦅⦆-β {P = Q'} {δ = δ₀} (inMap Q'' δ₀ ∘ SA₂)) ≈-refl ⟩
-      ((inMap Q'' δ₀ ∘ SA₂) ∘co strong-fmor Q' (strong-extend-mor (λ i → p₂) Sμ'')) ∘co SA₁
-    ≈⟨ coKl.assoc _ _ _ ⟩
-      (inMap Q'' δ₀ ∘ SA₂) ∘co (strong-fmor Q' (strong-extend-mor (λ i → p₂) Sμ'') ∘co SA₁)
-    ≈⟨ coKl.∘-cong ≈-refl (strong-as-poly-map-natural {n = suc n} τ hs (strong-extend-mor (λ i → p₂) Sμ'')) ⟩
-      (inMap Q'' δ₀ ∘ SA₂) ∘co (SA₁'' ∘co strong-fmor P (strong-extend-mor (λ i → p₂) Sμ''))
-    ≈˘⟨ coKl.assoc _ _ _ ⟩
-      ((inMap Q'' δ₀ ∘ SA₂) ∘co SA₁'') ∘co strong-fmor P (strong-extend-mor (λ i → p₂) Sμ'')
-    ≈⟨ coKl.∘-cong (tail-cong (strong-as-poly-map-comp {n = suc n} τ hs' hs (extend δ₀ M''))) ≈-refl ⟩
-      (inMap Q'' δ₀ ∘ SA₁₂) ∘co strong-fmor P (strong-extend-mor (λ i → p₂) Sμ'')
-    ∎
-    where open ≈-Reasoning isEquiv
 
 strong-as-poly-map-p₂ : ∀ {Δ n} (τ : type (n + Δ)) {Γ' : Obj} {δ : Fin Δ → obj} (δ₀ : Fin n → obj) →
                         strong-as-poly-map τ {Γ'} {δ} {δ} (λ i → p₂) δ₀ ≈ p₂
@@ -1058,44 +1002,6 @@ strong-as-poly-map-ren {Δ₁} {Δ₂} {n} ρ (μ τ) {Γ'} {δ} {δ'} gs δ₀ 
     ∎
     where open ≈-Reasoning isEquiv
 
-  premL : (hL ∘co (inMap Ar' δ₀ ∘ SAMr-M))
-            ≈ (alg⋆ ∘co strong-fmor Ar (strong-extend-mor {δ = δ₀} {δ' = δ₀} (λ i → p₂) hL))
-  premL = begin
-      hL ∘co (inMap Ar' δ₀ ∘ SAMr-M)
-    ≈˘⟨ ∘co-push hL (inMap Ar' δ₀) SAMr-M ⟩
-      (hL ∘co (inMap Ar' δ₀ ∘ p₂)) ∘co SAMr-M
-    ≈⟨ coKl.∘-cong (⦅⦆-β {P = Ar'} {δ = δ₀} ((inMap A' δ₀ ∘ ce') ∘ p₂)) ≈-refl ⟩
-      ((((inMap A' δ₀ ∘ ce') ∘ p₂) ∘co strong-fmor Ar' (strong-extend-mor {δ = δ₀} {δ' = δ₀} (λ i → p₂) hL)) ∘co SAMr-M)
-    ≈⟨ coKl.assoc _ _ _ ⟩
-      (((inMap A' δ₀ ∘ ce') ∘ p₂) ∘co (strong-fmor Ar' (strong-extend-mor {δ = δ₀} {δ' = δ₀} (λ i → p₂) hL) ∘co SAMr-M))
-    ≈⟨ coKl.∘-cong ≈-refl (strong-as-poly-map-natural {n = suc n} (extᵗⁿ (suc n) ρ *ᵗ τ) gs (strong-extend-mor {δ = δ₀} {δ' = δ₀} (λ i → p₂) hL)) ⟩
-      (((inMap A' δ₀ ∘ ce') ∘ p₂) ∘co (SAMr-A ∘co strong-fmor Ar (strong-extend-mor {δ = δ₀} {δ' = δ₀} (λ i → p₂) hL)))
-    ≈˘⟨ coKl.assoc _ _ _ ⟩
-      ((((inMap A' δ₀ ∘ ce') ∘ p₂) ∘co SAMr-A) ∘co strong-fmor Ar (strong-extend-mor {δ = δ₀} {δ' = δ₀} (λ i → p₂) hL))
-    ≈⟨ coKl.∘-cong step-mid ≈-refl ⟩
-      alg⋆ ∘co strong-fmor Ar (strong-extend-mor {δ = δ₀} {δ' = δ₀} (λ i → p₂) hL)
-    ∎
-    where open ≈-Reasoning isEquiv
-
-  premR : (SAMμA ∘co ((inMap A δ₀ ∘ ce) ∘ p₂))
-            ≈ (alg⋆ ∘co strong-fmor Ar (strong-extend-mor {δ = δ₀} {δ' = δ₀} (λ i → p₂) SAMμA))
-  premR = begin
-      SAMμA ∘co ((inMap A δ₀ ∘ ce) ∘ p₂)
-    ≈⟨ coKl.∘-cong ≈-refl (assoc _ _ _) ⟩
-      SAMμA ∘co (inMap A δ₀ ∘ (ce ∘ p₂))
-    ≈˘⟨ ∘co-push SAMμA (inMap A δ₀) (ce ∘ p₂) ⟩
-      (SAMμA ∘co (inMap A δ₀ ∘ p₂)) ∘co (ce ∘ p₂)
-    ≈⟨ coKl.∘-cong (⦅⦆-β {P = A} {δ = δ₀} (inMap A' δ₀ ∘ SAM-A)) ≈-refl ⟩
-      (((inMap A' δ₀ ∘ SAM-A) ∘co strong-fmor A (strong-extend-mor {δ = δ₀} {δ' = δ₀} (λ i → p₂) SAMμA)) ∘co (ce ∘ p₂))
-    ≈⟨ coKl.assoc _ _ _ ⟩
-      ((inMap A' δ₀ ∘ SAM-A) ∘co (strong-fmor A (strong-extend-mor {δ = δ₀} {δ' = δ₀} (λ i → p₂) SAMμA) ∘co (ce ∘ p₂)))
-    ≈⟨ coKl.∘-cong ≈-refl (strong-cast-natural eq (strong-extend-mor {δ = δ₀} {δ' = δ₀} (λ i → p₂) SAMμA)) ⟩
-      ((inMap A' δ₀ ∘ SAM-A) ∘co ((ceM ∘ p₂) ∘co strong-fmor Ar (strong-extend-mor {δ = δ₀} {δ' = δ₀} (λ i → p₂) SAMμA)))
-    ≈˘⟨ coKl.assoc _ _ _ ⟩
-      (((inMap A' δ₀ ∘ SAM-A) ∘co (ceM ∘ p₂)) ∘co strong-fmor Ar (strong-extend-mor {δ = δ₀} {δ' = δ₀} (λ i → p₂) SAMμA))
-    ∎
-    where open ≈-Reasoning isEquiv
-
   main : ((cast (as-poly-ren ρ (μ τ) δ') δ₀ ∘ p₂) ∘co SAMμr)
            ≈ (SAMμA ∘co (cast (as-poly-ren ρ (μ τ) δ) δ₀ ∘ p₂))
   main = begin
@@ -1104,11 +1010,14 @@ strong-as-poly-map-ren {Δ₁} {Δ₂} {n} ρ (μ τ) {Γ'} {δ} {δ'} gs δ₀ 
       (μ-map Ar' δ₀ A' δ₀ ce' ∘ p₂) ∘co SAMμr
     ≈˘⟨ coKl.∘-cong (μ-map-weaken Ar' δ₀ A' δ₀ ce') ≈-refl ⟩
       hL ∘co SAMμr
-    ≈⟨ fusion {P = Ar} {δ = δ₀} (inMap Ar' δ₀ ∘ SAMr-M) alg⋆ hL premL ⟩
+    ≈⟨ ≈-trans (fusion-inMap Ar δ₀ Ar' δ₀ ((inMap A' δ₀ ∘ ce') ∘ p₂) SAMr-M SAMr-A
+                  (strong-as-poly-map-natural {n = suc n} (extᵗⁿ (suc n) ρ *ᵗ τ) gs (strong-extend-mor {δ = δ₀} {δ' = δ₀} (λ i → p₂) hL)))
+               (⦅⦆-cong Ar δ₀ step-mid) ⟩
       ⦅_⦆ {P = Ar} {δ = δ₀} alg⋆
-    ≈˘⟨ fusion {P = Ar} {δ = δ₀} ((inMap A δ₀ ∘ ce) ∘ p₂) alg⋆ SAMμA premR ⟩
-      SAMμA ∘co ⦅_⦆ {P = Ar} {δ = δ₀} ((inMap A δ₀ ∘ ce) ∘ p₂)
-    ≈⟨ coKl.∘-cong ≈-refl (μ-map-weaken Ar δ₀ A δ₀ ce) ⟩
+    ≈˘⟨ fusion-inMap Ar δ₀ A δ₀ (inMap A' δ₀ ∘ SAM-A) (ce ∘ p₂) (ceM ∘ p₂)
+          (strong-cast-natural eq (strong-extend-mor {δ = δ₀} {δ' = δ₀} (λ i → p₂) SAMμA)) ⟩
+      SAMμA ∘co ⦅_⦆ {P = Ar} {δ = δ₀} (inMap A δ₀ ∘ (ce ∘ p₂))
+    ≈⟨ coKl.∘-cong ≈-refl (≈-trans (⦅⦆-cong Ar δ₀ (≈-sym (assoc _ _ _))) (μ-map-weaken Ar δ₀ A δ₀ ce)) ⟩
       SAMμA ∘co (μ-map Ar δ₀ A δ₀ ce ∘ p₂)
     ≈˘⟨ coKl.∘-cong ≈-refl (∘-cong (cast-μ eq δ₀) ≈-refl) ⟩
       SAMμA ∘co (cast (cong Poly.μ eq) δ₀ ∘ p₂)
