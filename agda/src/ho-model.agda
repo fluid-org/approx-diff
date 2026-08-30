@@ -91,7 +91,6 @@ exp-section {X} {Y} .Fam⟨𝒟⟩μ.at-natural {f₁} {f₂} e =
 
 module sig-model (Sig : Signature 0ℓ) (ℐ : Interpretation S Sig) where
 
-  module prim = matrix-primitives.interp-primitives S Sig ℐ
   module ℐ = Interpretation ℐ
 
   boolify : Fam⟨𝒞⟩μ.Mor (matrix-primitives.Fam⟨𝒞⟩-bool S) 𝒞Bool
@@ -100,8 +99,10 @@ module sig-model (Sig : Signature 0ℓ) (ℐ : Interpretation S Sig) where
       (Fam⟨𝒞⟩μ.injF {X = 𝒞𝟙ty} Fam⟨𝒞⟩μ.Fam-cat.∘ Fam⟨𝒞⟩μ.injF {X = 𝟙F})
       (Fam⟨𝒞⟩μ.injF {X = 𝒞𝟙ty} Fam⟨𝒞⟩μ.Fam-cat.∘ Fam⟨𝒞⟩μ.injF {X = 𝟙F})
 
+  module prim = matrix-primitives.interp-primitives S Sig ℐ 𝒞Bool boolify
+
   private
-    open prim.over 𝒞Bool boolify using (model-over; arg-collect)
+    open prim using (model-over; arg-collect)
     open indexed-family._⇒f_
 
     d' : ∀ {is} (ψ : Signature.rel Sig is)

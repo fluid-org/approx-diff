@@ -38,7 +38,8 @@ Fam⟨𝒞⟩-bool =
     (Fam⟨𝒞⟩-terminal .HasTerminal.witness)
     (Fam⟨𝒞⟩-terminal .HasTerminal.witness)
 
-module interp-primitives (Sig : Signature 0ℓ) (ℐ : Interpretation S Sig) where
+module interp-primitives (Sig : Signature 0ℓ) (ℐ : Interpretation S Sig)
+                         (Ω : Fam⟨𝒞⟩.Obj) (into-Ω : Fam⟨𝒞⟩.Mor Fam⟨𝒞⟩-bool Ω) where
 
   open Signature Sig
   open Interpretation ℐ
@@ -83,15 +84,14 @@ module interp-primitives (Sig : Signature 0ℓ) (ℐ : Interpretation S Sig) whe
       (M-cat.≈-trans (M-cat.≈-sym (op-deps ω .func-resp-≈ e))
                   (M-cat.≈-sym (M-cat.id-left {f = op-deps ω .func c})))
 
-  module over (Ω : Obj) (into-Ω : Mor Fam⟨𝒞⟩-bool Ω) where
 
-    private
-      PF′ : PointedFPCat _ _ _
-      PF′ = PFPC[ Fam⟨𝒞⟩.cat , Fam⟨𝒞⟩-terminal , Fam⟨𝒞⟩-products , Ω ]
+  private
+    PF′ : PointedFPCat _ _ _
+    PF′ = PFPC[ Fam⟨𝒞⟩.cat , Fam⟨𝒞⟩-terminal , Fam⟨𝒞⟩-products , Ω ]
 
-    model-over : Model PF′ Sig
-    model-over .Model.⟦sort⟧ = ⟦sort⟧′
-    model-over .Model.⟦op⟧ {is} {o} ω = op-mor ω Fam⟨𝒞⟩-cat.∘ collect is
-    model-over .Model.⟦rel⟧ {is} ψ = into-Ω Fam⟨𝒞⟩-cat.∘ predicate (rel-pred ψ ∘S untuple is)
+  model-over : Model PF′ Sig
+  model-over .Model.⟦sort⟧ = ⟦sort⟧′
+  model-over .Model.⟦op⟧ {is} {o} ω = op-mor ω Fam⟨𝒞⟩-cat.∘ collect is
+  model-over .Model.⟦rel⟧ {is} ψ = into-Ω Fam⟨𝒞⟩-cat.∘ predicate (rel-pred ψ ∘S untuple is)
 
-    arg-collect = collect
+  arg-collect = collect
