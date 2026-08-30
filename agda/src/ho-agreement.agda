@@ -1098,13 +1098,11 @@ private
              Fib._≈_ τ' i (Fib._+_ τ' i (ctrl-dep-at τ' i ((ctrl ·ₛ s) +ₛ o'₀)) comp) (Fib._+_ τ' i (ctrl-dep-at τ' i s) G)
   proj-den τ' i s a₀ o'₀ comp G m eo ecomp eG =
     Fib.trans τ' i (Fib.+-cong τ' i ctrl-dep-part ecomp)
-    (Fib.trans τ' i rearr (Fib.+-cong τ' i (Fib.refl τ' i) (Fib.sym τ' i eG)))
+    (Fib.trans τ' i (Fib.trans τ' i (Fib.+-interchange τ' i) (Fib.+-cong τ' i (Fib.⊑-refl τ' i) (Fib.+-comm τ' i)))
+      (Fib.+-cong τ' i (Fib.refl τ' i) (Fib.sym τ' i eG)))
     where
     ctrl-dep-part : Fib._≈_ τ' i (ctrl-dep-at τ' i ((ctrl ·ₛ s) +ₛ o'₀)) (Fib._+_ τ' i (ctrl-dep-at τ' i s) (ctrl-dep-at τ' i a₀))
     ctrl-dep-part = ctrl-dep-split τ' i s a₀ eo
-    rearr : Fib._≈_ τ' i (Fib._+_ τ' i (Fib._+_ τ' i (ctrl-dep-at τ' i s) (ctrl-dep-at τ' i a₀)) (Fib._+_ τ' i (ctrl-dep-at τ' i s) m))
-                       (Fib._+_ τ' i (ctrl-dep-at τ' i s) (Fib._+_ τ' i m (ctrl-dep-at τ' i a₀)))
-    rearr = Fib.trans τ' i (Fib.+-interchange τ' i) (Fib.+-cong τ' i (Fib.⊑-refl τ' i) (Fib.+-comm τ' i))
 
 private
   branch-env : ∀ {Γ τk} {γ : Env Γ} {gi} (rγ : EnvValRel γ gi) {v : Val τk} {i'} (r_v : ValRel τk v i')
