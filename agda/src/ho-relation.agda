@@ -6,7 +6,7 @@
 -- positions and the control dependence, absorption, transport).
 open import Level using (0ℓ; lift)
 open import Data.Nat using (ℕ; suc; _+_; _⊔_; _≤_; s≤s)
-open import Data.Nat.Properties using (≤-refl; ≤-trans; m⊔n≤o⇒m≤o; m⊔n≤o⇒n≤o)
+open import Data.Nat.Properties using (≤-refl)
 open import Data.Fin using (Fin; zero; suc)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; cong) renaming (subst to ≡-subst)
 open import Data.Product using (Σ; _×_; _,_; proj₁; proj₂)
@@ -148,15 +148,6 @@ fib-+-idem τ i =
 module Fib τ i where
   open Semimodule (Fib τ i) public
   open commutative-monoid.AdditivePreorder additive (fib-+-idem τ i) public
-
-bound₁ : ∀ {m n o} → m ⊔ n ≤ o → m ≤ o
-bound₁ = m⊔n≤o⇒m≤o _ _
-
-bound₂ : ∀ {m n o} → m ⊔ n ≤ o → n ≤ o
-bound₂ = m⊔n≤o⇒n≤o _ _
-
-bound-μ : ∀ (τ : type 1) {N} → arr-depth (μ τ) ≤ N → arr-depth (τ [ μ τ ]) ≤ N
-bound-μ τ = ≤-trans (arr-depth-unfold τ)
 
 ValRel′ : ∀ N τ → arr-depth τ ≤ N → Val τ → Ix τ → Set
 ValRel′ N unit p unit i = ⊤

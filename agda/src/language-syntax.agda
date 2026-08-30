@@ -7,7 +7,7 @@
 open import Data.Fin using (Fin; zero; suc)
 open import Data.List using (List; []; _∷_)
 open import Data.Nat using (ℕ; zero; suc; _+_; _⊔_; _≤_; z≤n)
-open import Data.Nat.Properties using (≤-refl; ⊔-lub; m⊔n≤o⇒m≤o; m⊔n≤o⇒n≤o)
+open import Data.Nat.Properties using (≤-refl; ≤-trans; ⊔-lub; m⊔n≤o⇒m≤o; m⊔n≤o⇒n≤o)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂; sym; subst)
 open import Relation.Nullary using (Dec; yes; no)
 
@@ -205,6 +205,15 @@ arr-depth-unfold τ = arr-depth-sub (push (μ τ)) τ pushed ≤-refl
     pushed : ∀ i → arr-depth (push (μ τ) i) ≤ arr-depth τ
     pushed zero    = ≤-refl
     pushed (suc i) = z≤n
+
+bound₁ : ∀ {m n o} → m ⊔ n ≤ o → m ≤ o
+bound₁ = m⊔n≤o⇒m≤o _ _
+
+bound₂ : ∀ {m n o} → m ⊔ n ≤ o → n ≤ o
+bound₂ = m⊔n≤o⇒n≤o _ _
+
+bound-μ : ∀ {Δ} (τ : type (suc Δ)) {N} → arr-depth (μ τ) ≤ N → arr-depth (τ [ μ τ ]) ≤ N
+bound-μ τ = ≤-trans (arr-depth-unfold τ)
 
 data ctxt : Set ℓ where
   emp : ctxt
