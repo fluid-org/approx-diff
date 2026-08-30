@@ -42,6 +42,14 @@ module _ {o m e} {os es} {𝒞 : Category o m e} {A : Setoid os es} where
   open IsEquivalence
   open Fam
 
+  fam-subst-iso₁ : ∀ (F : Fam A 𝒞) {x y : A .Setoid.Carrier} (e : x ≈ y) →
+                   (F .subst e ∘ F .subst (A .Setoid.isEquivalence .sym e)) ≈C id _
+  fam-subst-iso₁ F e = ≈-trans (≈-sym (F .trans* e (A .Setoid.isEquivalence .sym e))) (F .refl*)
+
+  fam-subst-iso₂ : ∀ (F : Fam A 𝒞) {x y : A .Setoid.Carrier} (e : x ≈ y) →
+                   (F .subst (A .Setoid.isEquivalence .sym e) ∘ F .subst e) ≈C id _
+  fam-subst-iso₂ F e = ≈-trans (≈-sym (F .trans* (A .Setoid.isEquivalence .sym e) e)) (F .refl*)
+
   record _⇒f_ (P Q : Fam A 𝒞) : Set (m ⊔ e ⊔ os ⊔ es) where
     no-eta-equality
     field

@@ -21,7 +21,7 @@ open import commutative-monoid using (CommutativeMonoid)
 import lifting
 open import prop-setoid using (IsEquivalence; Setoid; module ≈-Reasoning)
 import prop-setoid as PS
-open import indexed-family using (Fam; _⇒f_)
+open import indexed-family using (Fam; _⇒f_; fam-subst-iso₁; fam-subst-iso₂)
 import fam
 import fam-functor
 open import functor using (StrongFunctor; functor-preserve-iso)
@@ -100,16 +100,6 @@ Lf-map : ∀ {X Y : Obj} → Mor X Y → Mor (Lf X) (Lf Y)
 Lf-map = LfS.fmor
 
 open LfS public using () renaming (fmor-cong to Lf-map-cong; fmor-id to Lf-map-id; fmor-comp to Lf-map-comp)
-
-fam-subst-iso₁ : ∀ {I : Setoid os (os ⊔ es)} (F : Fam I 𝒞)
-                 {x y : I .Setoid.Carrier} (e : I .Setoid._≈_ x y) →
-                 (F .subst e ∘ F .subst (I .Setoid.isEquivalence .sym e)) ≈ id _
-fam-subst-iso₁ {I} F e = ≈-trans (≈-sym (F .trans* e (I .Setoid.isEquivalence .sym e))) (F .refl*)
-
-fam-subst-iso₂ : ∀ {I : Setoid os (os ⊔ es)} (F : Fam I 𝒞)
-                 {x y : I .Setoid.Carrier} (e : I .Setoid._≈_ x y) →
-                 (F .subst (I .Setoid.isEquivalence .sym e) ∘ F .subst e) ≈ id _
-fam-subst-iso₂ {I} F e = ≈-trans (≈-sym (F .trans* (I .Setoid.isEquivalence .sym e) e)) (F .refl*)
 
 prod-m-iso : ∀ {a₁ a₂ b₁ b₂} {f : a₁ ⇒ a₂} {f' : a₂ ⇒ a₁} {h : b₁ ⇒ b₂} {h' : b₂ ⇒ b₁} →
              (f ∘ f') ≈ id a₂ → (h ∘ h') ≈ id b₂ → (prod-m f h ∘ prod-m f' h') ≈ id (prod a₂ b₂)
