@@ -105,10 +105,10 @@ filter-term =
     (when brel equal-number ((var zero) ∷ ((var (succ (succ zero))) ∷ []))
      ； return (var zero))
 
--- Window-two sums; the fold pairs each suffix's head with its windows so a step can reach the
+-- Adjacent-pair sums; the fold pairs each suffix's head with its sums so far, so a step can reach the
 -- next element.
-window-term : (emp , list (base number)) ⊢ list (base number)
-window-term = snd (foldr (pair (inl unit) nil) body (var zero))
+adjacent-sums-term : (emp , list (base number)) ⊢ list (base number)
+adjacent-sums-term = snd (foldr (pair (inl unit) nil) body (var zero))
   where
   body : (emp , list (base number)) , base number
          , ((unit [+] base number) [×] list (base number))

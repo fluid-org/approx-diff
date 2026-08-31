@@ -77,9 +77,9 @@ total-run   = run total-ctxt-fo (base number) (total label.a) γ-total
 sum-mul-run = run sum-mul-ctxt-fo (base number) sum-mul γ-sum-mul
 rose-run    = run rose-ctxt-fo (base number) rose-query γ-rose
 
-map-run filter-run cond-run eq-run window-run : Run
+map-run filter-run cond-run eq-run adjacent-sums-run : Run
 map-run    = run map-ctxt-fo numlist-fo map-term γ-nums
-window-run = run map-ctxt-fo numlist-fo window-term γ-window
+adjacent-sums-run = run map-ctxt-fo numlist-fo adjacent-sums-term γ-adjacent-sums
 filter-run = run filter-ctxt-fo numlist-fo filter-term γ-filter
 cond-run   = run cond-ctxt-fo (base number) cond-term γ-cond
 eq-run     = run eq-ctxt-fo (unit [+] unit) eq-term γ-eq
