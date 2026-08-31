@@ -19,7 +19,7 @@ module example.render.annotated-value {ℓ} (Sig : Signature ℓ)
 open Signature Sig
 open Interpretation ℐ
 open import language-syntax Sig using (unit; base; μ; var; _[+]_; _[×]_; _[→]_)
-open import language-operational.evaluation Sig S₀ ℐ ctrl-weight using (Val; Env; width; width-env)
+open import language-operational.evaluation Sig S₀ ℐ ctrl-weight using (Val; Env)
 open Val
 open Env
 open import Data.Fin using (zero)
@@ -39,20 +39,21 @@ arity nil       = 0
 arity (clo k)   = k
 arity (const _) = 0
 
--- A node covers a run of positions at its own site, then its children in order. A cons covers the
--- tag and the pair beneath it, and nil the tag and its unit.
+-- Positions are numbered by preorder traversal: a node's positions are consecutive and precede
+-- its descendants'. A cons has two positions, the tag and the pair beneath it; nil the tag and
+-- its unit; a scalar one; a label none.
 data AVal (X : Set) : Set where
   node : (t : Tag) → X → ℕ → Vec (AVal X) (arity t) → AVal X
 
-covers : ∀ {X} → AVal X → ℕ
-covers-vec : ∀ {X : Set} {k} → Vec (AVal X) k → ℕ
-covers-all : ∀ {X} → List (AVal X) → ℕ
+width : ∀ {X} → AVal X → ℕ
+width-vec : ∀ {X : Set} {k} → Vec (AVal X) k → ℕ
+width-all : ∀ {X} → List (AVal X) → ℕ
 
-covers (node _ _ n cs) = n + covers-vec cs
-covers-vec []ᵥ       = 0
-covers-vec (t ∷ᵥ ts) = covers t + covers-vec ts
-covers-all []       = 0
-covers-all (t ∷ ts) = covers t + covers-all ts
+width (node _ _ n cs) = n + width-vec cs
+width-vec []ᵥ       = 0
+width-vec (t ∷ᵥ ts) = width t + width-vec ts
+width-all []       = 0
+width-all (t ∷ ts) = width t + width-all ts
 
 fold : ∀ {X B : Set} → (∀ (t : Tag) → X → ℕ → ℕ → Vec B (arity t) → B) → ℕ → AVal X → B
 fold-vec : ∀ {X B : Set} {k} → (∀ (t : Tag) → X → ℕ → ℕ → Vec B (arity t) → B) → ℕ → Vec (AVal X) k → Vec B k
@@ -60,9 +61,9 @@ fold-all : ∀ {X B : Set} → (∀ (t : Tag) → X → ℕ → ℕ → Vec B (a
 
 fold f off (node sh x n cs) = f sh x n off (fold-vec f (off + n) cs)
 fold-vec f off []ᵥ       = []ᵥ
-fold-vec f off (t ∷ᵥ ts) = fold f off t ∷ᵥ fold-vec f (off + covers t) ts
+fold-vec f off (t ∷ᵥ ts) = fold f off t ∷ᵥ fold-vec f (off + width t) ts
 fold-all f off []       = []
-fold-all f off (t ∷ ts) = fold f off t ∷ fold-all f (off + covers t) ts
+fold-all f off (t ∷ ts) = fold f off t ∷ fold-all f (off + width t) ts
 
 module _ (show-const : ∀ {s} → sort-val s → String) where
 
@@ -104,16 +105,19 @@ module annotate {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) where
   Scalar = Setoid.Carrier A
 
   private
-    join-run : (ℕ → Scalar) → ℕ → ℕ → Scalar
-    join-run row off zero    = Sc.ε
-    join-run row off (suc n) = row off Sc.+ join-run row (suc off) n
+    sum-at : (ℕ → Scalar) → ℕ → ℕ → Scalar
+    sum-at row off zero    = Sc.ε
+    sum-at row off (suc n) = row off Sc.+ sum-at row (suc off) n
+
+  block-sum : (ℕ → ℕ → Scalar) → ℕ → ℕ → ℕ → ℕ → Scalar
+  block-sum M qoff qn poff pn = sum-at (λ q → sum-at (M q) poff pn) qoff qn
 
   fill : (ℕ → Scalar) → ℕ → AVal ⊤ → AVal Scalar
-  fill row = fold (λ sh _ n off cs → node sh (join-run row off n) n cs)
+  fill row = fold (λ sh _ n off cs → node sh (sum-at row off n) n cs)
 
   fill-all : (ℕ → Scalar) → ℕ → List (AVal ⊤) → List (AVal Scalar)
   fill-all row off []       = []
-  fill-all row off (t ∷ ts) = fill row off t ∷ fill-all row (off + covers t) ts
+  fill-all row off (t ∷ ts) = fill row off t ∷ fill-all row (off + width t) ts
 
   row→aval : ∀ {τ} (show-const : ∀ {s} → sort-val s → String) → (ℕ → Scalar) → Val τ → AVal Scalar
   row→aval sc row v = fill row 0 (shape-of sc v)

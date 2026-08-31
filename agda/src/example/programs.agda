@@ -8,15 +8,15 @@ module example.programs where
 import Data.Fin as Fin
 open import Data.Rational using (ℚ; 0ℚ; 1ℚ)
 open import Data.List.Relation.Unary.All using ([]; _∷_)
-import label
+open import Data.String using (String)
 open import signature.example ℚ
 open import language-syntax Sig
 
-`_ : ∀ {Γ} → label.label → Γ ⊢ base label
-` l = bop (lbl l) []
+`_ : ∀ {Γ} → String → Γ ⊢ base string
+` s = bop (str s) []
 
-_≟_ : ∀ {Γ} → Γ ⊢ base label → Γ ⊢ base label → Γ ⊢ bool
-M ≟ N = brel equal-label (M ∷ N ∷ [])
+_≟_ : ∀ {Γ} → Γ ⊢ base string → Γ ⊢ base string → Γ ⊢ bool
+M ≟ N = brel equal-string (M ∷ N ∷ [])
 
 sum : ∀ {Γ} → Γ ⊢ list (base number) [→] base number
 sum = lam (foldr (bop (lit 0ℚ) []) (bop add (var zero ∷ var (succ zero) ∷ [])) (var zero))
@@ -24,12 +24,12 @@ sum = lam (foldr (bop (lit 0ℚ) []) (bop add (var zero ∷ var (succ zero) ∷ 
 ------------------------------------------------------------------------------
 -- Programs over a list of labelled numbers.
 
-query-ctxt-fo : first-order-ctxt (emp , list (base label [×] base number))
-query-ctxt-fo = emp , μ (unit [+] ((base label [×] base number) [×] var Fin.zero))
+query-ctxt-fo : first-order-ctxt (emp , list (base string [×] base number))
+query-ctxt-fo = emp , μ (unit [+] ((base string [×] base number) [×] var Fin.zero))
 
 -- The running example: add up the numbers carrying a given label,
 --   sum [ snd e | e <- xs, equal-label l (fst e) ].
-query : label.label → emp , list (base label [×] base number) ⊢ base number
+query : String → emp , list (base string [×] base number) ⊢ base number
 query l =
   app sum
     (from var zero collect
@@ -37,11 +37,11 @@ query l =
     return (snd (var zero)))
 
 -- Ignores its input: every column must be zero.
-const-term : (emp , list (base label [×] base number)) ⊢ base number
+const-term : (emp , list (base string [×] base number)) ⊢ base number
 const-term = bop (lit 0ℚ) []
 
 -- Length: a fold ignoring the element, so only the cons cells should register.
-length-term : (emp , list (base label [×] base number)) ⊢ base number
+length-term : (emp , list (base string [×] base number)) ⊢ base number
 length-term =
   fold (case (var zero)
           (bop (lit 0ℚ) [])
@@ -49,35 +49,35 @@ length-term =
        (var zero)
 
 -- A fold whose body reads nothing: separates the fold itself from what its body consults.
-fold0-term : (emp , list (base label [×] base number)) ⊢ base number
+fold0-term : (emp , list (base string [×] base number)) ⊢ base number
 fold0-term = fold (bop (lit 0ℚ) []) (var zero)
 
 -- Matches the unfolding but returns a constant either way: separates matching from reading.
-case0-term : (emp , list (base label [×] base number)) ⊢ base number
+case0-term : (emp , list (base string [×] base number)) ⊢ base number
 case0-term = fold (case (var zero) (bop (lit 0ℚ) []) (bop (lit 0ℚ) [])) (var zero)
 
 -- Zero for nil, one for cons: should register the outermost tag and nothing else.
-tag-term : (emp , list (base label [×] base number)) ⊢ base number
+tag-term : (emp , list (base string [×] base number)) ⊢ base number
 tag-term = fold (case (var zero) (bop (lit 0ℚ) []) (bop (lit 1ℚ) [])) (var zero)
 
 -- Price-weighted sum of the quantities with a given label; the per-label prices are a further
 -- pair of inputs.
-total : label.label →
-        emp , (list (base label [×] base number)) [×] (base number [×] base number) ⊢ base number
+total : String →
+        emp , (list (base string [×] base number)) [×] (base number [×] base number) ⊢ base number
 total l = app sum
               (from fst (var zero) collect
                when fst (var zero) ≟ (` l) ；
                return (bop mult (price l ∷ snd (var zero) ∷ [])))
   where
-    price : label.label →
-            (emp , (list (base label [×] base number)) [×] (base number [×] base number))
-              , (base label [×] base number) ⊢ base number
-    price label.a = fst (snd (var (succ zero)))
+    price : String →
+            (emp , (list (base string [×] base number)) [×] (base number [×] base number))
+              , (base string [×] base number) ⊢ base number
+    price "a" = fst (snd (var (succ zero)))
     price _       = snd (snd (var (succ zero)))
 
-total-ctxt-fo : first-order-ctxt (emp , (list (base label [×] base number)) [×] (base number [×] base number))
+total-ctxt-fo : first-order-ctxt (emp , (list (base string [×] base number)) [×] (base number [×] base number))
 total-ctxt-fo =
-  emp , (μ (unit [+] ((base label [×] base number) [×] var Fin.zero)) [×] (base number [×] base number))
+  emp , (μ (unit [+] ((base string [×] base number) [×] var Fin.zero)) [×] (base number [×] base number))
 
 ------------------------------------------------------------------------------
 -- Programs over a list of numbers.
@@ -104,6 +104,40 @@ filter-term =
   from var zero collect
     (when brel equal-number ((var zero) ∷ ((var (succ (succ zero))) ∷ []))
      ； return (var zero))
+
+-- Adjacent-pair sums; the fold pairs each suffix's head with its sums so far, so a step can reach the
+-- next element.
+adjacent-sums-term : (emp , list (base number)) ⊢ list (base number)
+adjacent-sums-term = snd (foldr (pair (inl unit) nil) body (var zero))
+  where
+  body : (emp , list (base number)) , base number
+         , ((unit [+] base number) [×] list (base number))
+         ⊢ (unit [+] base number) [×] list (base number)
+  body = pair (inr (var (succ zero)))
+              (case (fst (var zero))
+                    nil
+                    (cons (bop add (var (succ (succ zero)) ∷ var zero ∷ []))
+                          (snd (var (succ zero)))))
+
+-- Merge two sorted lists.
+merge-term : (emp , list (base number) [×] list (base number)) ⊢ list (base number)
+merge-term =
+  app (foldr (lam (var zero)) step (fst (var zero))) (snd (var zero))
+  where
+  step : ((emp , list (base number) [×] list (base number)) , base number)
+         , (list (base number) [→] list (base number))
+         ⊢ list (base number) [→] list (base number)
+  step = lam (snd (foldr
+    (pair nil (cons (var (succ (succ zero))) (app (var (succ zero)) nil)))
+    (pair (cons (var (succ zero)) (fst (var zero)))
+          (if brel less-number (var (succ zero) ∷ var (succ (succ (succ (succ zero)))) ∷ [])
+           then cons (var (succ zero)) (snd (var zero))
+           else cons (var (succ (succ (succ (succ zero)))))
+                     (app (var (succ (succ (succ zero)))) (cons (var (succ zero)) (fst (var zero))))))
+    (var zero)))
+
+merge-ctxt-fo : first-order-ctxt (emp , list (base number) [×] list (base number))
+merge-ctxt-fo = emp , (numlist-fo [×] numlist-fo)
 
 sum-mul : emp , list (base number) [×] base number ⊢ base number
 sum-mul = bop mult (app sum (fst (var zero)) ∷ snd (var zero) ∷ [])
@@ -185,12 +219,12 @@ mavg-ctxt-fo = emp , base number [×] (base number [×] (base number [×] base n
 -- the -1 weight literal; positive weights are implicit. The bottom-middle cell is absent from
 -- the score, so masked.
 Row Grid : type 0
-Row  = (base number [×] base number) [×] base number
-Grid = (Row [×] Row) [×] Row
+Row  = base number [×] (base number [×] base number)
+Grid = Row [×] (Row [×] Row)
 
 score-ctxt-fo : first-order-ctxt (emp , Grid)
-score-ctxt-fo = emp , ((row [×] row) [×] row)
-  where row = (base number [×] base number) [×] base number
+score-ctxt-fo = emp , (row [×] (row [×] row))
+  where row = base number [×] (base number [×] base number)
 
 score : ℚ → emp , Grid ⊢ base number
 score neg =
@@ -205,18 +239,18 @@ score neg =
     g : emp , Grid ⊢ Grid
     g = var zero
     r1 r2 r3 : emp , Grid ⊢ Row
-    r1 = fst (fst g)
-    r2 = snd (fst g)
-    r3 = snd g
+    r1 = fst g
+    r2 = fst (snd g)
+    r3 = snd (snd g)
     x1 x2 x3 x4 x5 x6 x7 x9 : emp , Grid ⊢ base number
-    x1 = fst (fst r1)
-    x2 = snd (fst r1)
-    x3 = snd r1
-    x4 = fst (fst r2)
-    x5 = snd (fst r2)
-    x6 = snd r2
-    x7 = fst (fst r3)
-    x9 = snd r3
+    x1 = fst r1
+    x2 = fst (snd r1)
+    x3 = snd (snd r1)
+    x4 = fst r2
+    x5 = fst (snd r2)
+    x6 = snd (snd r2)
+    x7 = fst r3
+    x9 = snd (snd r3)
 
 ------------------------------------------------------------------------------
 -- Rose trees of numbers: a nested recursive type, the children list itself a μ-type mentioning

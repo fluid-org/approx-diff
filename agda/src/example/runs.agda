@@ -10,8 +10,8 @@ open import Data.Rational using (ℚ)
 module example.runs {A : Setoid 0ℓ 0ℓ} (as-weight : ℚ → Setoid.Carrier A) (S : CommutativeSemiring A)
                     (ctrl-weight : Setoid.Carrier A) where
 
-import label
 open import Data.Rational using (½; 1ℚ; -_)
+open import Data.String using (String)
 import matrix
 open import signature.example.interpretation as-weight S using (Sig; interpretation; number)
 open import example.programs
@@ -51,7 +51,7 @@ model-of : (r : Run) →
 model-of r = interp.dependency.mat-of (r .Γ-fo) (r .fo) (r .term) (model-input r)
 
 query-run const-run length-run fold0-run case0-run tag-run : Run
-query-run  = run query-ctxt-fo (base number) (query label.a) γ-query
+query-run  = run query-ctxt-fo (base number) (query "a") γ-query
 const-run  = run query-ctxt-fo (base number) const-term γ-query
 length-run = run query-ctxt-fo (base number) length-term γ-query
 fold0-run  = run query-ctxt-fo (base number) fold0-term γ-query
@@ -73,12 +73,14 @@ mavg-run : Run
 mavg-run = run mavg-ctxt-fo (base number [×] (base number [×] base number)) (mavg ½) γ-mavg
 
 total-run sum-mul-run rose-run : Run
-total-run   = run total-ctxt-fo (base number) (total label.a) γ-total
+total-run   = run total-ctxt-fo (base number) (total "a") γ-total
 sum-mul-run = run sum-mul-ctxt-fo (base number) sum-mul γ-sum-mul
 rose-run    = run rose-ctxt-fo (base number) rose-query γ-rose
 
-map-run filter-run cond-run eq-run : Run
+map-run filter-run cond-run eq-run adjacent-sums-run merge-run : Run
 map-run    = run map-ctxt-fo numlist-fo map-term γ-nums
+adjacent-sums-run = run map-ctxt-fo numlist-fo adjacent-sums-term γ-adjacent-sums
+merge-run  = run merge-ctxt-fo numlist-fo merge-term γ-merge
 filter-run = run filter-ctxt-fo numlist-fo filter-term γ-filter
 cond-run   = run cond-ctxt-fo (base number) cond-term γ-cond
 eq-run     = run eq-ctxt-fo (unit [+] unit) eq-term γ-eq

@@ -22,7 +22,7 @@ open import signature.example.interpretation (nonzero three.semiring) three.semi
 open import example.runs (nonzero three.semiring) three.semiring three.C using (map-run; filter-run; env; model-output; model-of)
 open import example.render.constants (nonzero three.semiring) three.semiring using (show-const)
 open import example.render.annotated-value Sig three.semiring interpretation three.C
-  using (AVal; node; Tag; arity; shape-of; shape-env-of; covers;
+  using (AVal; node; Tag; arity; shape-of; shape-env-of; width;
          label-of; fold; fold-all)
 open import Data.Unit using (⊤)
 open import Data.Nat using (_+_)
@@ -66,11 +66,11 @@ private
     owner-vec : ∀ {k} → ℕ → Vec (AVal ⊤) k → ℕ → ℕ
     owner-vec off Vec.[]         i = i
     owner-vec off (t Vec.∷ ts) i =
-      if lt i (off + covers t) then owner off t i else owner-vec (off + covers t) ts i
+      if lt i (off + width t) then owner off t i else owner-vec (off + width t) ts i
 
   owner-all : ℕ → List (AVal ⊤) → ℕ → ℕ
   owner-all off []       i = i
-  owner-all off (t ∷ ts) i = if lt i (off + covers t) then owner off t i else owner-all (off + covers t) ts i
+  owner-all off (t ∷ ts) i = if lt i (off + width t) then owner off t i else owner-all (off + width t) ts i
 
   nodes-of : List (AVal ⊤) → List (ℕ × String)
   nodes-of ts = drawn-all 0 ts

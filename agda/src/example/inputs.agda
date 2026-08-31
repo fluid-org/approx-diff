@@ -12,9 +12,9 @@ module example.inputs {A : Setoid 0ℓ 0ℓ} (as-weight : ℚ → Setoid.Carrier
 open import Data.Rational using (0ℚ; 1ℚ; _/_) renaming (_+_ to _+ℚ_)
 open import Data.Integer using (+_)
 open import Data.Nat using (ℕ)
+open import Data.String using (String)
 open import Relation.Binary.PropositionalEquality using (subst; sym)
-import label
-open import signature.example.interpretation as-weight S using (Sig; interpretation; number; label)
+open import signature.example.interpretation as-weight S using (Sig; interpretation; number; string)
 open import example.programs using (case-ctxt; Grid; rose)
 open import language-syntax Sig using (type; base; unit; list; _[×]_; _[+]_; emp; _,_; sub-ren-id)
 open import language-operational.evaluation Sig S interpretation ctrl-weight using (Val; Env)
@@ -30,12 +30,12 @@ private
   _∷ᵥ_ : ∀ {τ : type 0} → Val τ → Val (list τ) → Val (list τ)
   _∷ᵥ_ {τ} x xs = roll (inr (pair (subst Val (sym (sub-ren-id τ (λ ()))) x) xs))
 
-  el : label.label → ℚ → Val (base label [×] base number)
+  el : String → ℚ → Val (base string [×] base number)
   el l n = pair (const l) (const n)
 
 -- Three entries, two under the queried label.
-γ-query : Env (emp , list (base label [×] base number))
-γ-query = emp · (el label.a 0ℚ ∷ᵥ el label.b 1ℚ ∷ᵥ el label.a 1ℚ ∷ᵥ nilᵥ)
+γ-query : Env (emp , list (base string [×] base number))
+γ-query = emp · (el "a" 0ℚ ∷ᵥ el "b" 1ℚ ∷ᵥ el "a" 1ℚ ∷ᵥ nilᵥ)
 
 γ-nums : Env (emp , list (base number))
 γ-nums = emp · (const 0ℚ ∷ᵥ const 1ℚ ∷ᵥ const (1ℚ +ℚ 1ℚ) ∷ᵥ nilᵥ)
@@ -43,6 +43,19 @@ private
 -- The target, then the list.
 γ-filter : Env (emp , base number , list (base number))
 γ-filter = emp · const (1ℚ +ℚ 1ℚ) · (const 1ℚ ∷ᵥ const (1ℚ +ℚ 1ℚ) ∷ᵥ const ((1ℚ +ℚ 1ℚ) +ℚ 1ℚ) ∷ᵥ nilᵥ)
+
+γ-adjacent-sums : Env (emp , list (base number))
+γ-adjacent-sums = emp · (const 0ℚ ∷ᵥ const 1ℚ ∷ᵥ const two ∷ᵥ const four ∷ᵥ nilᵥ)
+  where
+  two  = 1ℚ +ℚ 1ℚ
+  four = two +ℚ two
+
+γ-merge : Env (emp , list (base number) [×] list (base number))
+γ-merge = emp · pair (const (num 1) ∷ᵥ const (num 2) ∷ᵥ const (num 7) ∷ᵥ const (num 8) ∷ᵥ nilᵥ)
+                     (const (num 3) ∷ᵥ const (num 4) ∷ᵥ const (num 5) ∷ᵥ const (num 6) ∷ᵥ const (num 9) ∷ᵥ nilᵥ)
+  where
+  num : ℕ → ℚ
+  num k = (+ k) / 1
 
 γ-cond : Env (emp , base number , base number)
 γ-cond = emp · const 0ℚ · const 1ℚ
@@ -57,8 +70,8 @@ private
   two   = 1ℚ +ℚ 1ℚ
   four  = two +ℚ two
 
-γ-total : Env (emp , (list (base label [×] base number)) [×] (base number [×] base number))
-γ-total = emp · pair (el label.a 0ℚ ∷ᵥ el label.b 1ℚ ∷ᵥ el label.a 1ℚ ∷ᵥ nilᵥ)
+γ-total : Env (emp , (list (base string [×] base number)) [×] (base number [×] base number))
+γ-total = emp · pair (el "a" 0ℚ ∷ᵥ el "b" 1ℚ ∷ᵥ el "a" 1ℚ ∷ᵥ nilᵥ)
                      (pair (const 1ℚ) (const (1ℚ +ℚ 1ℚ)))
 
 γ-sum-mul : Env (emp , list (base number) [×] base number)
@@ -77,12 +90,12 @@ private
 γ-mult = emp · pair (const 1ℚ) (const 0ℚ)
 
 γ-score : Env (emp , Grid)
-γ-score = emp · pair (pair (row 1 2 1) (row 3 5 4)) (row 1 7 1)
+γ-score = emp · pair (row 1 2 1) (pair (row 3 5 4) (row 1 7 1))
   where
   num : ℕ → ℚ
   num k = (+ k) / 1
-  row : ℕ → ℕ → ℕ → Val ((base number [×] base number) [×] base number)
-  row a b c = pair (pair (const (num a)) (const (num b))) (const (num c))
+  row : ℕ → ℕ → ℕ → Val (base number [×] (base number [×] base number))
+  row a b c = pair (const (num a)) (pair (const (num b)) (const (num c)))
 
 γ-case-l γ-case-r : Env case-ctxt
 γ-case-l = emp · const 1ℚ · inl unit

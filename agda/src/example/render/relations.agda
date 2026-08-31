@@ -18,7 +18,6 @@ open import Level using (0ℓ)
 open import prop-setoid using (Setoid)
 open import commutative-semiring using (CommutativeSemiring)
 import matrix
-import two
 import three
 import semiring-sign as sign
 open import Data.Product using (_×_; _,_)
@@ -97,7 +96,7 @@ module render {A : Setoid 0ℓ 0ℓ} (as-weight : ℚ → Setoid.Carrier A) (S :
       "  " ++ ℕ-Show.show q ++ "   " ++ show-env (row→avals (λ {s} c → show-const {s} c) (at r) γ) ++ "\n"
       ++ go (suc q) rs
 
-  show-composite : ∀ {τ} → String → Val τ → ∀ {m} → M.Matrix m m → String
+  show-composite : ∀ {τ} → String → Val τ → ∀ {m n} → M.Matrix m n → String
   show-composite name v R = name ++ "\n" ++ go 0 (rows R)
     where
     go : ℕ → List (List Scalar) → String
@@ -107,10 +106,6 @@ module render {A : Setoid 0ℓ 0ℓ} (as-weight : ℚ → Setoid.Carrier A) (S :
       ++ go (suc q) rs
 
 private
-  suffix2 : two.Two → String
-  suffix2 two.I = ""
-  suffix2 two.O = "⊥"
-
   suffix3 : three.Three → String
   suffix3 three.D = ""
   suffix3 three.C = "ᶜ"
@@ -131,25 +126,6 @@ private
   signed-weight : ℚ → sign.Sign × three.Three
   signed-weight q = sign.sign-of q , nonzero three.semiring q
 
-  module boolean where
-    open render (nonzero two.semiring) two.semiring two.I suffix2
-    open example.runs (nonzero two.semiring) two.semiring two.I
-
-    entry : String → Run → String
-    entry name r = show-run name (env r) (model-output r) (model-of r)
-
-    contents : String
-    contents =
-      entry "query"      query-run  ++
-      entry "const"      const-run  ++
-      entry "length"     length-run ++
-      entry "fold0"      fold0-run  ++
-      entry "case0"      case0-run  ++
-      entry "tag"        tag-run    ++
-      entry "case-left"  case-l-run ++
-      entry "case-right" case-r-run ++
-      entry "test"       test-run
-
   module chain where
     open render (nonzero three.semiring) three.semiring three.C suffix3
     open example.runs (nonzero three.semiring) three.semiring three.C
@@ -161,10 +137,24 @@ private
     related : String → Run → String
     related name r = show-composite name (model-output r) (model-of r M3.∘ (model-of r M3.ᵀ))
 
+    forward : String → Run → String
+    forward name r = show-composite name (model-output r) (model-of r M3.ᵀ)
+
     contents : String
     contents =
+      entry "query"      query-run  ++
+      entry "const"      const-run  ++
+      entry "length"     length-run ++
+      entry "fold0"      fold0-run  ++
+      entry "case0"      case0-run  ++
+      entry "tag"        tag-run    ++
+      entry "case-left"  case-l-run ++
+      entry "case-right" case-r-run ++
+      entry "test"       test-run   ++
       entry "map"        map-run    ++
+      entry "adjacent-sums"     adjacent-sums-run ++
       entry "filter"     filter-run ++
+      entry "merge"      merge-run  ++
       entry "cond"       cond-run   ++
       entry "eq"         eq-run     ++
       entry "mult"       mult-run   ++
@@ -172,7 +162,11 @@ private
       entry "total"      total-run   ++
       entry "sum-mul"    sum-mul-run ++
       entry "rose"       rose-run    ++
-      related "mavg-related" mavg-run
+      related "mavg-related" mavg-run ++
+      related "adjacent-sums-related" adjacent-sums-run ++
+      forward "map-forward"    map-run    ++
+      forward "filter-forward" filter-run ++
+      forward "query-forward"  query-run
 
   module signed where
     open render signed-weight (sign.semiring ⊗S three.semiring) (sign.unk , three.C) suffix-signed
@@ -184,11 +178,8 @@ private
     contents : String
     contents = entry "score" score-run
 
--- The Booleans for the programs whose point is which positions are read; the three-chain, which
--- separates consumption from value flow, for those whose point is that distinction; signs paired
--- with the three-chain for the saliency reading of the grid scorer.
 contents : String
-contents = boolean.contents ++ chain.contents ++ signed.contents
+contents = chain.contents ++ signed.contents
 
 main : Main
 main = run (writeFile "test-baselines/relations.txt" contents)

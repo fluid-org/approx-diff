@@ -21,11 +21,15 @@ import interaction.graph
 -- Operational agreement: agree, agree-s, agree-m.
 import interaction.dependence-graph
 
+-- The value at each vertex of a dependence graph, its width the vertex's: label.
+import interaction.labelling
+
 -- Summaries assemble: summaries-assemble. Moves maintain the configuration: initial-summarised,
 -- hide-at-summarised, reveal-at-summarised. Hide and reveal are mutually inverse: hide-reveal, reveal-hide.
 import interaction.moves
 
 -- Tests.
 import example.interaction
+import example.render.latex
 import example.render.relations
 import example.render.dep-graph
