@@ -5,8 +5,10 @@ module example.render.latex where
 
 open import IO
 open import IO.Finite using (writeFile)
-open import Data.List using (List; []; _∷_; map)
-open import Data.Nat using (ℕ; zero; suc; _+_)
+open import Data.Bool using (Bool; false; true; _∨_)
+open import Data.List using (List; []; _∷_)
+open import Data.Maybe using (Maybe; just; nothing)
+open import Data.Nat using (ℕ; zero; suc; _+_; _≡ᵇ_)
 open import Data.Product using (_×_; _,_)
 open import Data.Unit using (⊤)
 import Data.Vec as Vec
@@ -92,16 +94,35 @@ private
   mark three.C = "\\posC{\\circ}"
   mark three.O = ""
 
-  mcell : List (List three.Three) → ℕ × ℕ → String × ℕ × ℕ → String
-  mcell rs (rn , roff) (_ , cn , coff) =
-    " & \\gcell{$" ++ mark (block-sum (λ q p → at (nth q rs) p) roff rn coff cn) ++ "$}"
+  sel? : Maybe ℕ → ℕ → Bool
+  sel? nothing  _ = false
+  sel? (just k) i = k ≡ᵇ i
 
-  mrow : List (List three.Three) → List (String × ℕ × ℕ) → String × ℕ × ℕ → String
-  mrow rs ctoks (l , rn , roff) =
-    "$" ++ l ++ "$" ++ cat (map (mcell rs (rn , roff)) ctoks) ++ " \\\\\n"
+  band : Bool → String
+  band false = ""
+  band true  = "\\cellcolor{blue!10}"
 
-  mhead : String × ℕ × ℕ → String
-  mhead (l , _ , _) = " & $" ++ l ++ "$"
+  chip : Bool → String → String
+  chip false l = "$" ++ l ++ "$"
+  chip true  l = "\\colorbox{blue!25}{$" ++ l ++ "$}"
+
+  cells-go : List (List three.Three) → ℕ → ℕ → Bool → Maybe ℕ → ℕ → List (String × ℕ × ℕ) → String
+  cells-go rs rn roff rsel csel i [] = ""
+  cells-go rs rn roff rsel csel i ((_ , cn , coff) ∷ cts) =
+    " & " ++ band (rsel ∨ sel? csel i) ++ "\\gcell{$"
+    ++ mark (block-sum (λ q p → at (nth q rs) p) roff rn coff cn) ++ "$}"
+    ++ cells-go rs rn roff rsel csel (suc i) cts
+
+  rows-go : List (List three.Three) → List (String × ℕ × ℕ) → Maybe ℕ → Maybe ℕ → ℕ
+          → List (String × ℕ × ℕ) → String
+  rows-go rs ctoks hr hc i [] = ""
+  rows-go rs ctoks hr hc i ((l , rn , roff) ∷ rts) =
+    chip (sel? hr i) l ++ cells-go rs rn roff (sel? hr i) hc 0 ctoks ++ " \\\\\n"
+    ++ rows-go rs ctoks hr hc (suc i) rts
+
+  heads-go : Maybe ℕ → ℕ → List (String × ℕ × ℕ) → String
+  heads-go hc i [] = ""
+  heads-go hc i ((l , _ , _) ∷ ts) = " & " ++ chip (sel? hc i) l ++ heads-go hc (suc i) ts
 
   count : List (String × ℕ × ℕ) → ℕ
   count []       = 0
@@ -116,13 +137,16 @@ private
   in-tokens  r = tokens-env 0 (shape-env-of (λ {s} c → shw {s} c) (env r))
   out-tokens r = tokens 0 (shape-of (λ {s} c → shw {s} c) (model-output r))
 
-  grid : String → Run → String
-  grid name r =
-    frame name (crep (count itoks)) (cat (map mhead itoks))
-          (cat (map (mrow (rows (model-of r)) itoks) otoks))
+  hgrid : String → Run → Maybe ℕ → Maybe ℕ → String
+  hgrid name r hr hc =
+    frame name (crep (count itoks)) (heads-go hc 0 itoks)
+          (rows-go (rows (model-of r)) itoks hr hc 0 otoks)
     where
     itoks = in-tokens r
     otoks = out-tokens r
+
+  grid : String → Run → String
+  grid name r = hgrid name r nothing nothing
 
 contents : String
 contents =
@@ -146,7 +170,10 @@ contents =
   grid "total"       total-run ++
   grid "sum-mul"     sum-mul-run ++
   grid "rose"        rose-run ++
-  grid "score"       score-run
+  grid "score"       score-run   ++
+  hgrid "map (backward slice)"          map-run           (just 2) nothing ++
+  hgrid "adjacent-sums (forward slice)" adjacent-sums-run nothing (just 2) ++
+  hgrid "merge (forward slice)"         merge-run         nothing (just 5)
 
 main : Main
 main = run (writeFile "test-baselines/slices.tex" contents)
