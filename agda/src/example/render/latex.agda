@@ -168,22 +168,49 @@ private
   grid-row itoks rs (l , zero  , _)   = "$" ++ l ++ "$" ++ cat (map (cells-for (λ _ → three.O)) itoks) ++ " \\\\\n"
   grid-row itoks rs (l , suc k , off) = "$" ++ l ++ "$" ++ cat (map (cells-for (at (nth off rs))) itoks) ++ " \\\\\n"
 
-  grid-of : String → List (String × ℕ × ℕ) → List (String × ℕ × ℕ) → List (List three.Three) → String
-  grid-of name ctoks rtoks rs =
+  run-join : (ℕ → three.Three) → ℕ → ℕ → three.Three
+  run-join f zero    _ = three.O
+  run-join f (suc k) o = f o three.⊔ run-join f k (suc o)
+
+  cell-join : List (List three.Three) → ℕ × ℕ → String × ℕ × ℕ → three.Three
+  cell-join rs (rn , roff) (_ , cn , coff) = run-join (λ q → run-join (at (nth q rs)) cn coff) rn roff
+
+  mcell : List (List three.Three) → ℕ × ℕ → String × ℕ × ℕ → String
+  mcell rs rq ct = " & \\gcell{$" ++ mark (cell-join rs rq ct) ++ "$}"
+
+  mrow : List (List three.Three) → List (String × ℕ × ℕ) → String × ℕ × ℕ → String
+  mrow rs ctoks (l , rn , roff) =
+    "$" ++ l ++ "$" ++ cat (map (mcell rs (rn , roff)) ctoks) ++ " \\\\\n"
+
+  mhead : String × ℕ × ℕ → String
+  mhead (l , _ , _) = " & $" ++ l ++ "$"
+
+  count : List (String × ℕ × ℕ) → ℕ
+  count []       = 0
+  count (_ ∷ ts) = suc (count ts)
+
+  frame : String → String → String → String → String
+  frame name spec header body =
     "\\run{" ++ name ++ "}\n{\\scriptsize\\setlength{\\tabcolsep}{2.5pt}%\n\\begin{tabular}{l"
-    ++ crep (ncols ctoks) ++ "}\n" ++ cat (map hcell ctoks) ++ " \\\\\n"
-    ++ cat (map (grid-row ctoks rs) rtoks)
-    ++ "\\end{tabular}}\n"
+    ++ spec ++ "}\n" ++ header ++ " \\\\\n" ++ body ++ "\\end{tabular}}\n"
 
-  in-tokens : Run → List (String × ℕ × ℕ)
-  in-tokens r = tokens-env 0 (shape-env-of (λ {s} c → shw {s} c) (env r))
-
-  out-tokens : Run → List (String × ℕ × ℕ)
+  in-tokens out-tokens : Run → List (String × ℕ × ℕ)
+  in-tokens  r = tokens-env 0 (shape-env-of (λ {s} c → shw {s} c) (env r))
   out-tokens r = tokens 0 (shape-of (λ {s} c → shw {s} c) (model-output r))
 
-  grid tgrid : String → Run → String
-  grid  name r = grid-of (name ++ " (matrix)") (in-tokens r) (out-tokens r) (rows (model-of r))
-  tgrid name r = grid-of (name ++ " (matrix, transposed)") (out-tokens r) (in-tokens r) (rows (model-of r M3.ᵀ))
+  grid grid-by-position : String → Run → String
+  grid name r =
+    frame (name ++ " (matrix)") (crep (count itoks)) (cat (map mhead itoks))
+          (cat (map (mrow (rows (model-of r)) itoks) otoks))
+    where
+    itoks = in-tokens r
+    otoks = out-tokens r
+  grid-by-position name r =
+    frame (name ++ " (matrix, by position)") (crep (ncols itoks)) (cat (map hcell itoks))
+          (cat (map (grid-row itoks (rows (model-of r))) otoks))
+    where
+    itoks = in-tokens r
+    otoks = out-tokens r
 
   bpair fpair : Run → ℕ × String → String × String
   bpair r (q , l) =
@@ -233,8 +260,8 @@ contents =
   catalogue "rose"       rose-run    ++
   grid "map"    map-run    ++
   grid "window" window-run ++
-  grid "query" query-run ++
-  tgrid "query" query-run
+  grid "query"  query-run  ++
+  grid-by-position "window" window-run
 
 main : Main
 main = run (writeFile "test-baselines/slices.tex" contents)
