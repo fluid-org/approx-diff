@@ -51,8 +51,8 @@ private
   four = two +ℚ two
 
 γ-merge : Env (emp , list (base number) [×] list (base number))
-γ-merge = emp · pair (const (num 1) ∷ᵥ const (num 4) ∷ᵥ const (num 6) ∷ᵥ const (num 8) ∷ᵥ nilᵥ)
-                     (const (num 2) ∷ᵥ const (num 3) ∷ᵥ const (num 5) ∷ᵥ const (num 7) ∷ᵥ const (num 9) ∷ᵥ nilᵥ)
+γ-merge = emp · pair (const (num 1) ∷ᵥ const (num 2) ∷ᵥ const (num 7) ∷ᵥ const (num 8) ∷ᵥ nilᵥ)
+                     (const (num 3) ∷ᵥ const (num 4) ∷ᵥ const (num 5) ∷ᵥ const (num 6) ∷ᵥ const (num 9) ∷ᵥ nilᵥ)
   where
   num : ℕ → ℚ
   num k = (+ k) / 1

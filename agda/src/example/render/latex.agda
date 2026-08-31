@@ -109,8 +109,8 @@ private
 
   frame : String → String → String → String → String
   frame name spec header body =
-    "\\run{" ++ name ++ "}\n{\\scriptsize\\setlength{\\tabcolsep}{1.5pt}%\n\\begin{tabular}{l"
-    ++ spec ++ "}\n" ++ header ++ " \\\\\n" ++ body ++ "\\end{tabular}}\n"
+    "\\run{" ++ name ++ "}\n{\\scriptsize\\setlength{\\tabcolsep}{1.5pt}%\n\\begin{tabular}{l|"
+    ++ spec ++ "}\n" ++ header ++ " \\\\ \\hline\n" ++ body ++ "\\end{tabular}}\n"
 
   in-tokens out-tokens : Run → List (String × ℕ × ℕ)
   in-tokens  r = tokens-env 0 (shape-env-of (λ {s} c → shw {s} c) (env r))
