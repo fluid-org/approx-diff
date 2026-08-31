@@ -56,6 +56,7 @@ private
   appL (x ∷ xs) ys = x ∷ appL xs ys
 
   tokens : ℕ → AVal ⊤ → List (String × ℕ × ℕ)
+  tokens-snd : ℕ → AVal ⊤ → List (String × ℕ × ℕ)
   tokens-vec : ∀ {k} → ℕ → Vec.Vec (AVal ⊤) k → List (String × ℕ × ℕ)
 
   tokens off (node Tag.unit      _ n _)  = ("()" , n , off) ∷ []
@@ -65,10 +66,14 @@ private
   tokens off (node (Tag.clo _)   _ n _)  = ("\\lambda" , n , off) ∷ []
   tokens off (node Tag.nil       _ n _)  = ("[\\,]" , n , off) ∷ []
   tokens off (node Tag.pair      _ n (p Vec.∷ q Vec.∷ Vec.[])) =
-    ("(" , n , off) ∷ appL (tokens (off + n) p)
-      (("," , 0 , 0) ∷ appL (tokens (off + n + width p) q) ((")" , 0 , 0) ∷ []))
+    ("(" , 0 , 0) ∷ appL (tokens (off + n) p)
+      (("," , n , off) ∷ appL (tokens-snd (off + n + width p) q) ((")" , 0 , 0) ∷ []))
   tokens off (node Tag.cons      _ n (h Vec.∷ t Vec.∷ Vec.[])) =
     appL (tokens (off + n) h) (("\\cons" , n , off) ∷ tokens (off + n + width h) t)
+
+  tokens-snd off (node Tag.pair _ n (p Vec.∷ q Vec.∷ Vec.[])) =
+    appL (tokens (off + n) p) (("," , n , off) ∷ tokens-snd (off + n + width p) q)
+  tokens-snd off t = tokens off t
 
   tokens-vec off Vec.[]      = []
   tokens-vec off (t Vec.∷ _) = tokens off t
