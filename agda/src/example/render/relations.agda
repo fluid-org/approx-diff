@@ -154,6 +154,7 @@ private
       entry "map"        map-run    ++
       entry "adjacent-sums"     adjacent-sums-run ++
       entry "filter"     filter-run ++
+      entry "merge"      merge-run  ++
       entry "cond"       cond-run   ++
       entry "eq"         eq-run     ++
       entry "mult"       mult-run   ++

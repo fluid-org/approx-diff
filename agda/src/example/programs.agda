@@ -119,6 +119,26 @@ adjacent-sums-term = snd (foldr (pair (inl unit) nil) body (var zero))
                     (cons (bop add (var (succ (succ zero)) ∷ var zero ∷ []))
                           (snd (var (succ zero)))))
 
+-- Merge two sorted lists.
+merge-term : (emp , list (base number) [×] list (base number)) ⊢ list (base number)
+merge-term =
+  app (foldr (lam (var zero)) step (fst (var zero))) (snd (var zero))
+  where
+  step : ((emp , list (base number) [×] list (base number)) , base number)
+         , (list (base number) [→] list (base number))
+         ⊢ list (base number) [→] list (base number)
+  step = lam (snd (foldr
+    (pair nil (cons (var (succ (succ zero))) (app (var (succ zero)) nil)))
+    (pair (cons (var (succ zero)) (fst (var zero)))
+          (if brel less-number (var (succ zero) ∷ var (succ (succ (succ (succ zero)))) ∷ [])
+           then cons (var (succ zero)) (snd (var zero))
+           else cons (var (succ (succ (succ (succ zero)))))
+                     (app (var (succ (succ (succ zero)))) (cons (var (succ zero)) (fst (var zero))))))
+    (var zero)))
+
+merge-ctxt-fo : first-order-ctxt (emp , list (base number) [×] list (base number))
+merge-ctxt-fo = emp , (numlist-fo [×] numlist-fo)
+
 sum-mul : emp , list (base number) [×] base number ⊢ base number
 sum-mul = bop mult (app sum (fst (var zero)) ∷ snd (var zero) ∷ [])
 

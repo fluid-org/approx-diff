@@ -23,10 +23,10 @@ open import Relation.Binary.PropositionalEquality using (refl)
 open import Data.Product using (_,_)
 open import Data.Sum using (inj₁; inj₂)
 open import prop using (liftS)
-open import Data.Rational using (0ℚ) renaming (_≟_ to _≟ℚ_)
+open import Data.Rational using (0ℚ) renaming (_≟_ to _≟ℚ_; _<?_ to _<?ℚ_)
 open import Relation.Nullary using (yes; no)
 open import signature.example ℚ
-  using (Sig; sort; number; label; op; rel; lit; add; mult; lbl; equal-label; equal-number)
+  using (Sig; sort; number; label; op; rel; lit; add; mult; lbl; equal-label; equal-number; less-number)
   public
 
 private
@@ -48,6 +48,11 @@ private
 
   eq-out : ℚ → ℚ → Setoid.Carrier (+-setoid (𝟙 {0ℓ} {0ℓ}) 𝟙)
   eq-out x y with x ≟ℚ y
+  ... | yes _ = inj₁ _
+  ... | no  _ = inj₂ _
+
+  lt-out : ℚ → ℚ → Setoid.Carrier (+-setoid (𝟙 {0ℓ} {0ℓ}) 𝟙)
+  lt-out x y with x <?ℚ y
   ... | yes _ = inj₁ _
   ... | no  _ = inj₂ _
 
@@ -79,10 +84,16 @@ interpretation .rel-pred equal-number .func (x , y , _) = eq-out x y
 interpretation .rel-pred equal-number .func-resp-≈ {x , y , _} {x' , y' , _}
   (liftS refl prop., (liftS refl prop., _)) =
   Setoid.isEquivalence (+-setoid (𝟙 {0ℓ} {0ℓ}) 𝟙) .IsEquivalence.refl {eq-out x y}
+interpretation .rel-pred less-number .func (x , y , _) = lt-out x y
+interpretation .rel-pred less-number .func-resp-≈ {x , y , _} {x' , y' , _}
+  (liftS refl prop., (liftS refl prop., _)) =
+  Setoid.isEquivalence (+-setoid (𝟙 {0ℓ} {0ℓ}) 𝟙) .IsEquivalence.refl {lt-out x y}
 interpretation .rel-deps equal-label .func _ = MS.εₘ
 interpretation .rel-deps equal-label .func-resp-≈ _ = ≈-refl {f = MS.εₘ}
 interpretation .rel-deps equal-number .func _ = MS.I ∥ MS.I
 interpretation .rel-deps equal-number .func-resp-≈ _ = ≈-refl {f = MS.I ∥ MS.I}
+interpretation .rel-deps less-number .func _ = MS.I ∥ MS.I
+interpretation .rel-deps less-number .func-resp-≈ _ = ≈-refl {f = MS.I ∥ MS.I}
 
 sort-val : sort → Set
 sort-val = Interpretation.sort-val interpretation

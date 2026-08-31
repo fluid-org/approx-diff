@@ -19,7 +19,7 @@ open import signature.example.interpretation (nonzero three.semiring) three.semi
   using (Sig; interpretation)
 open import example.runs (nonzero three.semiring) three.semiring three.C
   using (Run; query-run; const-run; length-run; fold0-run; case0-run; tag-run; case-l-run;
-         case-r-run; test-run; map-run; adjacent-sums-run; filter-run; cond-run; eq-run; mult-run; mavg-run;
+         case-r-run; test-run; map-run; adjacent-sums-run; merge-run; filter-run; cond-run; eq-run; mult-run; mavg-run;
          total-run; sum-mul-run; rose-run; score-run; env; model-output; model-of)
 open import example.render.constants (nonzero three.semiring) three.semiring using (show-const)
 import example.render.annotated-value as AV
@@ -138,6 +138,7 @@ contents =
   grid "map"         map-run ++
   grid "adjacent-sums"      adjacent-sums-run ++
   grid "filter"      filter-run ++
+  grid "merge"       merge-run  ++
   grid "cond"        cond-run ++
   grid "eq"          eq-run ++
   grid "mult"        mult-run ++
