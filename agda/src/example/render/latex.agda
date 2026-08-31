@@ -22,7 +22,7 @@ open import signature.example.interpretation (nonzero three.semiring) three.semi
   using (Sig; interpretation)
 open import example.runs (nonzero three.semiring) three.semiring three.C
   using (Run; query-run; const-run; length-run; fold0-run; case0-run; tag-run; case-l-run;
-         case-r-run; test-run; map-run; filter-run; cond-run; eq-run; mult-run; mavg-run;
+         case-r-run; test-run; map-run; window-run; filter-run; cond-run; eq-run; mult-run; mavg-run;
          total-run; sum-mul-run; rose-run; env; model-output; model-of)
 open import example.render.constants (nonzero three.semiring) three.semiring using (show-const)
 import example.render.annotated-value as AV
@@ -215,6 +215,7 @@ contents =
   catalogue "case-right" case-r-run  ++
   catalogue "test"       test-run    ++
   catalogue "map"        map-run     ++
+  catalogue "window"     window-run  ++
   catalogue "filter"     filter-run  ++
   catalogue "cond"       cond-run    ++
   catalogue "eq"         eq-run      ++
@@ -223,7 +224,8 @@ contents =
   catalogue "total"      total-run   ++
   catalogue "sum-mul"    sum-mul-run ++
   catalogue "rose"       rose-run    ++
-  grid "map"   map-run   ++
+  grid "map"    map-run    ++
+  grid "window" window-run ++
   grid "query" query-run
 
 main : Main

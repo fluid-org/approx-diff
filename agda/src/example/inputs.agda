@@ -44,6 +44,12 @@ private
 γ-filter : Env (emp , base number , list (base number))
 γ-filter = emp · const (1ℚ +ℚ 1ℚ) · (const 1ℚ ∷ᵥ const (1ℚ +ℚ 1ℚ) ∷ᵥ const ((1ℚ +ℚ 1ℚ) +ℚ 1ℚ) ∷ᵥ nilᵥ)
 
+γ-window : Env (emp , list (base number))
+γ-window = emp · (const 0ℚ ∷ᵥ const 1ℚ ∷ᵥ const two ∷ᵥ const four ∷ᵥ nilᵥ)
+  where
+  two  = 1ℚ +ℚ 1ℚ
+  four = two +ℚ two
+
 γ-cond : Env (emp , base number , base number)
 γ-cond = emp · const 0ℚ · const 1ℚ
 

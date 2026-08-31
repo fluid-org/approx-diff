@@ -152,6 +152,7 @@ private
       entry "case-right" case-r-run ++
       entry "test"       test-run   ++
       entry "map"        map-run    ++
+      entry "window"     window-run ++
       entry "filter"     filter-run ++
       entry "cond"       cond-run   ++
       entry "eq"         eq-run     ++
@@ -161,6 +162,7 @@ private
       entry "sum-mul"    sum-mul-run ++
       entry "rose"       rose-run    ++
       related "mavg-related" mavg-run ++
+      related "window-related" window-run ++
       forward "map-forward"    map-run    ++
       forward "filter-forward" filter-run ++
       forward "query-forward"  query-run
