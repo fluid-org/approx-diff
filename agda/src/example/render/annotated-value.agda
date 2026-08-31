@@ -19,7 +19,7 @@ module example.render.annotated-value {ℓ} (Sig : Signature ℓ)
 open Signature Sig
 open Interpretation ℐ
 open import language-syntax Sig using (unit; base; μ; var; _[+]_; _[×]_; _[→]_)
-open import language-operational.evaluation Sig S₀ ℐ ctrl-weight using (Val; Env; width; width-env)
+open import language-operational.evaluation Sig S₀ ℐ ctrl-weight using (Val; Env)
 open Val
 open Env
 open import Data.Fin using (zero)
