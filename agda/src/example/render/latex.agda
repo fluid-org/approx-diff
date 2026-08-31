@@ -134,14 +134,6 @@ private
   tokens-env off (c ∷ []) = tokens off c
   tokens-env off (c ∷ cs) = appL (tokens off c) ((";" , 0 , 0) ∷ tokens-env (off + width c) cs)
 
-  max1 : ℕ → ℕ
-  max1 zero    = suc zero
-  max1 (suc k) = suc k
-
-  ncols : List (String × ℕ × ℕ) → ℕ
-  ncols []                 = 0
-  ncols ((_ , n , _) ∷ ts) = max1 n + ncols ts
-
   crep : ℕ → String
   crep zero    = ""
   crep (suc k) = "c" ++ crep k
@@ -150,23 +142,6 @@ private
   mark three.D = "\\posD{\\bullet}"
   mark three.C = "\\posC{\\circ}"
   mark three.O = ""
-
-  hcell : String × ℕ × ℕ → String
-  hcell (l , zero , _)        = " & $" ++ l ++ "$"
-  hcell (l , suc zero , _)    = " & $" ++ l ++ "$"
-  hcell (l , suc (suc k) , _) = " & \\multicolumn{" ++ ℕ-Show.show (suc (suc k)) ++ "}{c}{$" ++ l ++ "$}"
-
-  cells-for : (ℕ → three.Three) → String × ℕ × ℕ → String
-  cells-for v (_ , zero , _)    = " & \\gcell{}"
-  cells-for v (_ , suc k , off) = go (suc k) off
-    where
-    go : ℕ → ℕ → String
-    go zero    _ = ""
-    go (suc k) o = " & \\gcell{$" ++ mark (v o) ++ "$}" ++ go k (suc o)
-
-  grid-row : List (String × ℕ × ℕ) → List (List three.Three) → String × ℕ × ℕ → String
-  grid-row itoks rs (l , zero  , _)   = "$" ++ l ++ "$" ++ cat (map (cells-for (λ _ → three.O)) itoks) ++ " \\\\\n"
-  grid-row itoks rs (l , suc k , off) = "$" ++ l ++ "$" ++ cat (map (cells-for (at (nth off rs))) itoks) ++ " \\\\\n"
 
   mcell : List (List three.Three) → ℕ × ℕ → String × ℕ × ℕ → String
   mcell rs (rn , roff) (_ , cn , coff) =
@@ -192,20 +167,13 @@ private
   in-tokens  r = tokens-env 0 (shape-env-of (λ {s} c → shw {s} c) (env r))
   out-tokens r = tokens 0 (shape-of (λ {s} c → shw {s} c) (model-output r))
 
-  grid grid-by-position : String → Run → String
+  grid : String → Run → String
   grid name r =
     frame (name ++ " (matrix)") (crep (count itoks)) (cat (map mhead itoks))
           (cat (map (mrow (rows (model-of r)) itoks) otoks))
     where
     itoks = in-tokens r
     otoks = out-tokens r
-  grid-by-position name r =
-    frame (name ++ " (matrix, by position)") (crep (ncols itoks)) (cat (map hcell itoks))
-          (cat (map (grid-row itoks (rows (model-of r))) otoks))
-    where
-    itoks = in-tokens r
-    otoks = out-tokens r
-
   bpair fpair : Run → ℕ × String → String × String
   bpair r (q , l) =
     ("$\\leftarrow$ " ++ ℕ-Show.show q ++ " (" ++ tex-label l ++ ")") ,
@@ -254,8 +222,7 @@ contents =
   catalogue "rose"       rose-run    ++
   grid "map"    map-run    ++
   grid "window" window-run ++
-  grid "query"  query-run  ++
-  grid-by-position "window" window-run
+  grid "query"  query-run
 
 main : Main
 main = run (writeFile "test-baselines/slices.tex" contents)
