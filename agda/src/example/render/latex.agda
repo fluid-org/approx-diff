@@ -150,4 +150,4 @@ contents =
   catalogue "rose"       rose-run
 
 main : Main
-main = run (writeFile "latex-preview/slices.tex" contents)
+main = run (writeFile "test-baselines/slices.tex" contents)
