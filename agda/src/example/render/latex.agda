@@ -69,4 +69,4 @@ contents =
   fwd "merge (forward slice)"         merge-run         5
 
 main : Main
-main = run (writeFile "test-baselines/slices.tex" contents)
+main = run (writeFile "test-baselines/matrices.tex" contents)

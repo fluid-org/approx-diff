@@ -1,4 +1,4 @@
-.PHONY: main notes mu-types check clean submit arXiv # otherwise confused by folders with the same name
+.PHONY: main examples notes mu-types check clean submit arXiv # otherwise confused by folders with the same name
 
 default: check main
 
@@ -14,6 +14,7 @@ agda/_build/check.stamp: $(CHECK_DEPS)
 	touch $@
 
 main: main.pdf
+examples: examples.pdf
 notes: notes.pdf
 mu-types: mu-types.pdf
 
@@ -38,6 +39,10 @@ mu-types.pdf: mu-types.tex $(MU_TYPES_DEPS)
 	latexmk $(LATEXMK_OPTS) -g mu-types
 	cp _latex/mu-types.pdf .
 	@! grep -qE "LaTeX Warning: There were undefined references\.|natbib Warning: There were undefined citations\." _latex/mu-types.log
+
+examples.pdf: examples.tex test-baselines/matrices.tex
+	latexmk $(LATEXMK_OPTS) examples
+	cp _latex/examples.pdf .
 
 NOTES_DEPS:=$(wildcard notes/*.tex) $(wildcard fig/*.tex) macros.tex bib.bib
 
@@ -87,4 +92,5 @@ clean:
 	rm -f suppl-submit.zip
 	rm -f arXiv.zip
 	rm -f notes.pdf
+	rm -f examples.pdf
 	rm -f mu-types.pdf
