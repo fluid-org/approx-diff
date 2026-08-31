@@ -27,9 +27,9 @@ open import example.runs (nonzero three.semiring) three.semiring three.C
 open import example.render.constants (nonzero three.semiring) three.semiring using (show-const)
 import example.render.annotated-value as AV
 open AV Sig three.semiring interpretation three.C
-  using (AVal; node; Tag; arity; covers; label-of; fold-all; shape-of; shape-env-of)
+  using (AVal; node; Tag; arity; width; label-of; fold-all; shape-of; shape-env-of)
 open AV.annotate Sig three.semiring interpretation three.C three.semiring
-  using (row→aval; row→avals)
+  using (row→aval; row→avals; block-sum)
 
 private
   module M3 = matrix.Mat three.semiring
@@ -122,9 +122,9 @@ private
   tokens off (node Tag.nil       _ n _)  = ("[\\,]" , n , off) ∷ []
   tokens off (node Tag.pair      _ n (p Vec.∷ q Vec.∷ Vec.[])) =
     ("(" , n , off) ∷ appL (tokens (off + n) p)
-      (("," , 0 , 0) ∷ appL (tokens (off + n + covers p) q) ((")" , 0 , 0) ∷ []))
+      (("," , 0 , 0) ∷ appL (tokens (off + n + width p) q) ((")" , 0 , 0) ∷ []))
   tokens off (node Tag.cons      _ n (h Vec.∷ t Vec.∷ Vec.[])) =
-    appL (tokens (off + n) h) (("\\cons" , n , off) ∷ tokens (off + n + covers h) t)
+    appL (tokens (off + n) h) (("\\cons" , n , off) ∷ tokens (off + n + width h) t)
 
   tokens-vec off Vec.[]      = []
   tokens-vec off (t Vec.∷ _) = tokens off t
@@ -132,7 +132,7 @@ private
   tokens-env : ℕ → List (AVal ⊤) → List (String × ℕ × ℕ)
   tokens-env _   []       = []
   tokens-env off (c ∷ []) = tokens off c
-  tokens-env off (c ∷ cs) = appL (tokens off c) ((";" , 0 , 0) ∷ tokens-env (off + covers c) cs)
+  tokens-env off (c ∷ cs) = appL (tokens off c) ((";" , 0 , 0) ∷ tokens-env (off + width c) cs)
 
   max1 : ℕ → ℕ
   max1 zero    = suc zero
@@ -168,15 +168,9 @@ private
   grid-row itoks rs (l , zero  , _)   = "$" ++ l ++ "$" ++ cat (map (cells-for (λ _ → three.O)) itoks) ++ " \\\\\n"
   grid-row itoks rs (l , suc k , off) = "$" ++ l ++ "$" ++ cat (map (cells-for (at (nth off rs))) itoks) ++ " \\\\\n"
 
-  run-join : (ℕ → three.Three) → ℕ → ℕ → three.Three
-  run-join f zero    _ = three.O
-  run-join f (suc k) o = f o three.⊔ run-join f k (suc o)
-
-  cell-join : List (List three.Three) → ℕ × ℕ → String × ℕ × ℕ → three.Three
-  cell-join rs (rn , roff) (_ , cn , coff) = run-join (λ q → run-join (at (nth q rs)) cn coff) rn roff
-
   mcell : List (List three.Three) → ℕ × ℕ → String × ℕ × ℕ → String
-  mcell rs rq ct = " & \\gcell{$" ++ mark (cell-join rs rq ct) ++ "$}"
+  mcell rs (rn , roff) (_ , cn , coff) =
+    " & \\gcell{$" ++ mark (block-sum (λ q p → at (nth q rs) p) roff rn coff cn) ++ "$}"
 
   mrow : List (List three.Three) → List (String × ℕ × ℕ) → String × ℕ × ℕ → String
   mrow rs ctoks (l , rn , roff) =
