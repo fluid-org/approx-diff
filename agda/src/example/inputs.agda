@@ -83,12 +83,12 @@ private
 γ-mult = emp · pair (const 1ℚ) (const 0ℚ)
 
 γ-score : Env (emp , Grid)
-γ-score = emp · pair (pair (row 1 2 1) (row 3 5 4)) (row 1 7 1)
+γ-score = emp · pair (row 1 2 1) (pair (row 3 5 4) (row 1 7 1))
   where
   num : ℕ → ℚ
   num k = (+ k) / 1
-  row : ℕ → ℕ → ℕ → Val ((base number [×] base number) [×] base number)
-  row a b c = pair (pair (const (num a)) (const (num b))) (const (num c))
+  row : ℕ → ℕ → ℕ → Val (base number [×] (base number [×] base number))
+  row a b c = pair (const (num a)) (pair (const (num b)) (const (num c)))
 
 γ-case-l γ-case-r : Env case-ctxt
 γ-case-l = emp · const 1ℚ · inl unit

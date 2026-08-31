@@ -199,12 +199,12 @@ mavg-ctxt-fo = emp , base number [×] (base number [×] (base number [×] base n
 -- the -1 weight literal; positive weights are implicit. The bottom-middle cell is absent from
 -- the score, so masked.
 Row Grid : type 0
-Row  = (base number [×] base number) [×] base number
-Grid = (Row [×] Row) [×] Row
+Row  = base number [×] (base number [×] base number)
+Grid = Row [×] (Row [×] Row)
 
 score-ctxt-fo : first-order-ctxt (emp , Grid)
-score-ctxt-fo = emp , ((row [×] row) [×] row)
-  where row = (base number [×] base number) [×] base number
+score-ctxt-fo = emp , (row [×] (row [×] row))
+  where row = base number [×] (base number [×] base number)
 
 score : ℚ → emp , Grid ⊢ base number
 score neg =
@@ -219,18 +219,18 @@ score neg =
     g : emp , Grid ⊢ Grid
     g = var zero
     r1 r2 r3 : emp , Grid ⊢ Row
-    r1 = fst (fst g)
-    r2 = snd (fst g)
-    r3 = snd g
+    r1 = fst g
+    r2 = fst (snd g)
+    r3 = snd (snd g)
     x1 x2 x3 x4 x5 x6 x7 x9 : emp , Grid ⊢ base number
-    x1 = fst (fst r1)
-    x2 = snd (fst r1)
-    x3 = snd r1
-    x4 = fst (fst r2)
-    x5 = snd (fst r2)
-    x6 = snd r2
-    x7 = fst (fst r3)
-    x9 = snd r3
+    x1 = fst r1
+    x2 = fst (snd r1)
+    x3 = snd (snd r1)
+    x4 = fst r2
+    x5 = fst (snd r2)
+    x6 = snd (snd r2)
+    x7 = fst r3
+    x9 = snd (snd r3)
 
 ------------------------------------------------------------------------------
 -- Rose trees of numbers: a nested recursive type, the children list itself a μ-type mentioning
