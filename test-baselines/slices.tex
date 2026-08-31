@@ -1,241 +1,58 @@
 \run{query}
-\slice{$\leftarrow$ 0 (1)}{\posD{1}}{\posC{(}\posO{a}\posC{,\,}\posD{0}\posC{)} \posC{\cons} \posO{(}\posO{b}\posO{,\,}\posO{1}\posO{)} \posC{\cons} \posC{(}\posO{a}\posC{,\,}\posD{1}\posC{)} \posC{\cons} \posC{[\,]}}
-\slice{$\rightarrow$ 0 ($\cons$)}{\posO{(}\posO{a}\posO{,\,}\posO{0}\posO{)} \posD{\cons} \posO{(}\posO{b}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{(}\posO{a}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{[\,]}}{\posC{1}}
-\slice{$\rightarrow$ 2 (pr)}{\posD{(}\posO{a}\posD{,\,}\posO{0}\posD{)} \posO{\cons} \posO{(}\posO{b}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{(}\posO{a}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{[\,]}}{\posC{1}}
-\slice{$\rightarrow$ 3 (0)}{\posO{(}\posO{a}\posO{,\,}\posD{0}\posO{)} \posO{\cons} \posO{(}\posO{b}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{(}\posO{a}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{[\,]}}{\posD{1}}
-\slice{$\rightarrow$ 4 ($\cons$)}{\posO{(}\posO{a}\posO{,\,}\posO{0}\posO{)} \posO{\cons} \posO{(}\posO{b}\posO{,\,}\posO{1}\posO{)} \posD{\cons} \posO{(}\posO{a}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{[\,]}}{\posC{1}}
-\slice{$\rightarrow$ 6 (pr)}{\posO{(}\posO{a}\posO{,\,}\posO{0}\posO{)} \posO{\cons} \posD{(}\posO{b}\posD{,\,}\posO{1}\posD{)} \posO{\cons} \posO{(}\posO{a}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{[\,]}}{\posO{1}}
-\slice{$\rightarrow$ 7 (1)}{\posO{(}\posO{a}\posO{,\,}\posO{0}\posO{)} \posO{\cons} \posO{(}\posO{b}\posO{,\,}\posD{1}\posO{)} \posO{\cons} \posO{(}\posO{a}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{[\,]}}{\posO{1}}
-\slice{$\rightarrow$ 8 ($\cons$)}{\posO{(}\posO{a}\posO{,\,}\posO{0}\posO{)} \posO{\cons} \posO{(}\posO{b}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{(}\posO{a}\posO{,\,}\posO{1}\posO{)} \posD{\cons} \posO{[\,]}}{\posC{1}}
-\slice{$\rightarrow$ 10 (pr)}{\posO{(}\posO{a}\posO{,\,}\posO{0}\posO{)} \posO{\cons} \posO{(}\posO{b}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posD{(}\posO{a}\posD{,\,}\posO{1}\posD{)} \posO{\cons} \posO{[\,]}}{\posC{1}}
-\slice{$\rightarrow$ 11 (1)}{\posO{(}\posO{a}\posO{,\,}\posO{0}\posO{)} \posO{\cons} \posO{(}\posO{b}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{(}\posO{a}\posO{,\,}\posD{1}\posO{)} \posO{\cons} \posO{[\,]}}{\posD{1}}
-\slice{$\rightarrow$ 12 ([])}{\posO{(}\posO{a}\posO{,\,}\posO{0}\posO{)} \posO{\cons} \posO{(}\posO{b}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{(}\posO{a}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posD{[\,]}}{\posC{1}}
-\slice{$\rightarrow$ 13 ([])}{\posO{(}\posO{a}\posO{,\,}\posO{0}\posO{)} \posO{\cons} \posO{(}\posO{b}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{(}\posO{a}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posD{[\,]}}{\posO{1}}
+{\scriptsize\setlength{\tabcolsep}{1.5pt}%
+\begin{tabular}{lccccccccccccccccccc}
+ & $($ & $a$ & $,$ & $0$ & $)$ & $\cons$ & $($ & $b$ & $,$ & $1$ & $)$ & $\cons$ & $($ & $a$ & $,$ & $1$ & $)$ & $\cons$ & $[\,]$ \\
+$1$ & \gcell{$\posC{\circ}$} & \gcell{$$} & \gcell{$$} & \gcell{$\posD{\bullet}$} & \gcell{$$} & \gcell{$\posC{\circ}$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$\posC{\circ}$} & \gcell{$\posC{\circ}$} & \gcell{$$} & \gcell{$$} & \gcell{$\posD{\bullet}$} & \gcell{$$} & \gcell{$\posC{\circ}$} & \gcell{$\posC{\circ}$} \\
+\end{tabular}}
 \run{const}
-\slice{$\leftarrow$ 0 (0)}{\posD{0}}{\posO{(}\posO{a}\posO{,\,}\posO{0}\posO{)} \posO{\cons} \posO{(}\posO{b}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{(}\posO{a}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{[\,]}}
-\slice{$\rightarrow$ 0 ($\cons$)}{\posO{(}\posO{a}\posO{,\,}\posO{0}\posO{)} \posD{\cons} \posO{(}\posO{b}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{(}\posO{a}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{[\,]}}{\posO{0}}
-\slice{$\rightarrow$ 2 (pr)}{\posD{(}\posO{a}\posD{,\,}\posO{0}\posD{)} \posO{\cons} \posO{(}\posO{b}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{(}\posO{a}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{[\,]}}{\posO{0}}
-\slice{$\rightarrow$ 3 (0)}{\posO{(}\posO{a}\posO{,\,}\posD{0}\posO{)} \posO{\cons} \posO{(}\posO{b}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{(}\posO{a}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{[\,]}}{\posO{0}}
-\slice{$\rightarrow$ 4 ($\cons$)}{\posO{(}\posO{a}\posO{,\,}\posO{0}\posO{)} \posO{\cons} \posO{(}\posO{b}\posO{,\,}\posO{1}\posO{)} \posD{\cons} \posO{(}\posO{a}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{[\,]}}{\posO{0}}
-\slice{$\rightarrow$ 6 (pr)}{\posO{(}\posO{a}\posO{,\,}\posO{0}\posO{)} \posO{\cons} \posD{(}\posO{b}\posD{,\,}\posO{1}\posD{)} \posO{\cons} \posO{(}\posO{a}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{[\,]}}{\posO{0}}
-\slice{$\rightarrow$ 7 (1)}{\posO{(}\posO{a}\posO{,\,}\posO{0}\posO{)} \posO{\cons} \posO{(}\posO{b}\posO{,\,}\posD{1}\posO{)} \posO{\cons} \posO{(}\posO{a}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{[\,]}}{\posO{0}}
-\slice{$\rightarrow$ 8 ($\cons$)}{\posO{(}\posO{a}\posO{,\,}\posO{0}\posO{)} \posO{\cons} \posO{(}\posO{b}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{(}\posO{a}\posO{,\,}\posO{1}\posO{)} \posD{\cons} \posO{[\,]}}{\posO{0}}
-\slice{$\rightarrow$ 10 (pr)}{\posO{(}\posO{a}\posO{,\,}\posO{0}\posO{)} \posO{\cons} \posO{(}\posO{b}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posD{(}\posO{a}\posD{,\,}\posO{1}\posD{)} \posO{\cons} \posO{[\,]}}{\posO{0}}
-\slice{$\rightarrow$ 11 (1)}{\posO{(}\posO{a}\posO{,\,}\posO{0}\posO{)} \posO{\cons} \posO{(}\posO{b}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{(}\posO{a}\posO{,\,}\posD{1}\posO{)} \posO{\cons} \posO{[\,]}}{\posO{0}}
-\slice{$\rightarrow$ 12 ([])}{\posO{(}\posO{a}\posO{,\,}\posO{0}\posO{)} \posO{\cons} \posO{(}\posO{b}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{(}\posO{a}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posD{[\,]}}{\posO{0}}
+{\scriptsize\setlength{\tabcolsep}{1.5pt}%
+\begin{tabular}{lccccccccccccccccccc}
+ & $($ & $a$ & $,$ & $0$ & $)$ & $\cons$ & $($ & $b$ & $,$ & $1$ & $)$ & $\cons$ & $($ & $a$ & $,$ & $1$ & $)$ & $\cons$ & $[\,]$ \\
+$0$ & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} \\
+\end{tabular}}
 \run{length}
-\slice{$\leftarrow$ 0 (3)}{\posD{3}}{\posO{(}\posO{a}\posO{,\,}\posO{0}\posO{)} \posC{\cons} \posO{(}\posO{b}\posO{,\,}\posO{1}\posO{)} \posC{\cons} \posO{(}\posO{a}\posO{,\,}\posO{1}\posO{)} \posC{\cons} \posC{[\,]}}
-\slice{$\rightarrow$ 0 ($\cons$)}{\posO{(}\posO{a}\posO{,\,}\posO{0}\posO{)} \posD{\cons} \posO{(}\posO{b}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{(}\posO{a}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{[\,]}}{\posC{3}}
-\slice{$\rightarrow$ 2 (pr)}{\posD{(}\posO{a}\posD{,\,}\posO{0}\posD{)} \posO{\cons} \posO{(}\posO{b}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{(}\posO{a}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{[\,]}}{\posO{3}}
-\slice{$\rightarrow$ 3 (0)}{\posO{(}\posO{a}\posO{,\,}\posD{0}\posO{)} \posO{\cons} \posO{(}\posO{b}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{(}\posO{a}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{[\,]}}{\posO{3}}
-\slice{$\rightarrow$ 4 ($\cons$)}{\posO{(}\posO{a}\posO{,\,}\posO{0}\posO{)} \posO{\cons} \posO{(}\posO{b}\posO{,\,}\posO{1}\posO{)} \posD{\cons} \posO{(}\posO{a}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{[\,]}}{\posC{3}}
-\slice{$\rightarrow$ 6 (pr)}{\posO{(}\posO{a}\posO{,\,}\posO{0}\posO{)} \posO{\cons} \posD{(}\posO{b}\posD{,\,}\posO{1}\posD{)} \posO{\cons} \posO{(}\posO{a}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{[\,]}}{\posO{3}}
-\slice{$\rightarrow$ 7 (1)}{\posO{(}\posO{a}\posO{,\,}\posO{0}\posO{)} \posO{\cons} \posO{(}\posO{b}\posO{,\,}\posD{1}\posO{)} \posO{\cons} \posO{(}\posO{a}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{[\,]}}{\posO{3}}
-\slice{$\rightarrow$ 8 ($\cons$)}{\posO{(}\posO{a}\posO{,\,}\posO{0}\posO{)} \posO{\cons} \posO{(}\posO{b}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{(}\posO{a}\posO{,\,}\posO{1}\posO{)} \posD{\cons} \posO{[\,]}}{\posC{3}}
-\slice{$\rightarrow$ 10 (pr)}{\posO{(}\posO{a}\posO{,\,}\posO{0}\posO{)} \posO{\cons} \posO{(}\posO{b}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posD{(}\posO{a}\posD{,\,}\posO{1}\posD{)} \posO{\cons} \posO{[\,]}}{\posO{3}}
-\slice{$\rightarrow$ 11 (1)}{\posO{(}\posO{a}\posO{,\,}\posO{0}\posO{)} \posO{\cons} \posO{(}\posO{b}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{(}\posO{a}\posO{,\,}\posD{1}\posO{)} \posO{\cons} \posO{[\,]}}{\posO{3}}
-\slice{$\rightarrow$ 12 ([])}{\posO{(}\posO{a}\posO{,\,}\posO{0}\posO{)} \posO{\cons} \posO{(}\posO{b}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{(}\posO{a}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posD{[\,]}}{\posC{3}}
-\slice{$\rightarrow$ 13 ([])}{\posO{(}\posO{a}\posO{,\,}\posO{0}\posO{)} \posO{\cons} \posO{(}\posO{b}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{(}\posO{a}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posD{[\,]}}{\posO{3}}
+{\scriptsize\setlength{\tabcolsep}{1.5pt}%
+\begin{tabular}{lccccccccccccccccccc}
+ & $($ & $a$ & $,$ & $0$ & $)$ & $\cons$ & $($ & $b$ & $,$ & $1$ & $)$ & $\cons$ & $($ & $a$ & $,$ & $1$ & $)$ & $\cons$ & $[\,]$ \\
+$3$ & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$\posC{\circ}$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$\posC{\circ}$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$\posC{\circ}$} & \gcell{$\posC{\circ}$} \\
+\end{tabular}}
 \run{fold0}
-\slice{$\leftarrow$ 0 (0)}{\posD{0}}{\posO{(}\posO{a}\posO{,\,}\posO{0}\posO{)} \posO{\cons} \posO{(}\posO{b}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{(}\posO{a}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{[\,]}}
-\slice{$\rightarrow$ 0 ($\cons$)}{\posO{(}\posO{a}\posO{,\,}\posO{0}\posO{)} \posD{\cons} \posO{(}\posO{b}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{(}\posO{a}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{[\,]}}{\posO{0}}
-\slice{$\rightarrow$ 2 (pr)}{\posD{(}\posO{a}\posD{,\,}\posO{0}\posD{)} \posO{\cons} \posO{(}\posO{b}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{(}\posO{a}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{[\,]}}{\posO{0}}
-\slice{$\rightarrow$ 3 (0)}{\posO{(}\posO{a}\posO{,\,}\posD{0}\posO{)} \posO{\cons} \posO{(}\posO{b}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{(}\posO{a}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{[\,]}}{\posO{0}}
-\slice{$\rightarrow$ 4 ($\cons$)}{\posO{(}\posO{a}\posO{,\,}\posO{0}\posO{)} \posO{\cons} \posO{(}\posO{b}\posO{,\,}\posO{1}\posO{)} \posD{\cons} \posO{(}\posO{a}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{[\,]}}{\posO{0}}
-\slice{$\rightarrow$ 6 (pr)}{\posO{(}\posO{a}\posO{,\,}\posO{0}\posO{)} \posO{\cons} \posD{(}\posO{b}\posD{,\,}\posO{1}\posD{)} \posO{\cons} \posO{(}\posO{a}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{[\,]}}{\posO{0}}
-\slice{$\rightarrow$ 7 (1)}{\posO{(}\posO{a}\posO{,\,}\posO{0}\posO{)} \posO{\cons} \posO{(}\posO{b}\posO{,\,}\posD{1}\posO{)} \posO{\cons} \posO{(}\posO{a}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{[\,]}}{\posO{0}}
-\slice{$\rightarrow$ 8 ($\cons$)}{\posO{(}\posO{a}\posO{,\,}\posO{0}\posO{)} \posO{\cons} \posO{(}\posO{b}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{(}\posO{a}\posO{,\,}\posO{1}\posO{)} \posD{\cons} \posO{[\,]}}{\posO{0}}
-\slice{$\rightarrow$ 10 (pr)}{\posO{(}\posO{a}\posO{,\,}\posO{0}\posO{)} \posO{\cons} \posO{(}\posO{b}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posD{(}\posO{a}\posD{,\,}\posO{1}\posD{)} \posO{\cons} \posO{[\,]}}{\posO{0}}
-\slice{$\rightarrow$ 11 (1)}{\posO{(}\posO{a}\posO{,\,}\posO{0}\posO{)} \posO{\cons} \posO{(}\posO{b}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{(}\posO{a}\posO{,\,}\posD{1}\posO{)} \posO{\cons} \posO{[\,]}}{\posO{0}}
-\slice{$\rightarrow$ 12 ([])}{\posO{(}\posO{a}\posO{,\,}\posO{0}\posO{)} \posO{\cons} \posO{(}\posO{b}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{(}\posO{a}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posD{[\,]}}{\posO{0}}
+{\scriptsize\setlength{\tabcolsep}{1.5pt}%
+\begin{tabular}{lccccccccccccccccccc}
+ & $($ & $a$ & $,$ & $0$ & $)$ & $\cons$ & $($ & $b$ & $,$ & $1$ & $)$ & $\cons$ & $($ & $a$ & $,$ & $1$ & $)$ & $\cons$ & $[\,]$ \\
+$0$ & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} \\
+\end{tabular}}
 \run{case0}
-\slice{$\leftarrow$ 0 (0)}{\posD{0}}{\posO{(}\posO{a}\posO{,\,}\posO{0}\posO{)} \posC{\cons} \posO{(}\posO{b}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{(}\posO{a}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{[\,]}}
-\slice{$\rightarrow$ 0 ($\cons$)}{\posO{(}\posO{a}\posO{,\,}\posO{0}\posO{)} \posD{\cons} \posO{(}\posO{b}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{(}\posO{a}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{[\,]}}{\posC{0}}
-\slice{$\rightarrow$ 1 ($\cons$)}{\posO{(}\posO{a}\posO{,\,}\posO{0}\posO{)} \posD{\cons} \posO{(}\posO{b}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{(}\posO{a}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{[\,]}}{\posO{0}}
-\slice{$\rightarrow$ 2 (pr)}{\posD{(}\posO{a}\posD{,\,}\posO{0}\posD{)} \posO{\cons} \posO{(}\posO{b}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{(}\posO{a}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{[\,]}}{\posO{0}}
-\slice{$\rightarrow$ 3 (0)}{\posO{(}\posO{a}\posO{,\,}\posD{0}\posO{)} \posO{\cons} \posO{(}\posO{b}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{(}\posO{a}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{[\,]}}{\posO{0}}
-\slice{$\rightarrow$ 4 ($\cons$)}{\posO{(}\posO{a}\posO{,\,}\posO{0}\posO{)} \posO{\cons} \posO{(}\posO{b}\posO{,\,}\posO{1}\posO{)} \posD{\cons} \posO{(}\posO{a}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{[\,]}}{\posO{0}}
-\slice{$\rightarrow$ 6 (pr)}{\posO{(}\posO{a}\posO{,\,}\posO{0}\posO{)} \posO{\cons} \posD{(}\posO{b}\posD{,\,}\posO{1}\posD{)} \posO{\cons} \posO{(}\posO{a}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{[\,]}}{\posO{0}}
-\slice{$\rightarrow$ 7 (1)}{\posO{(}\posO{a}\posO{,\,}\posO{0}\posO{)} \posO{\cons} \posO{(}\posO{b}\posO{,\,}\posD{1}\posO{)} \posO{\cons} \posO{(}\posO{a}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{[\,]}}{\posO{0}}
-\slice{$\rightarrow$ 8 ($\cons$)}{\posO{(}\posO{a}\posO{,\,}\posO{0}\posO{)} \posO{\cons} \posO{(}\posO{b}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{(}\posO{a}\posO{,\,}\posO{1}\posO{)} \posD{\cons} \posO{[\,]}}{\posO{0}}
-\slice{$\rightarrow$ 10 (pr)}{\posO{(}\posO{a}\posO{,\,}\posO{0}\posO{)} \posO{\cons} \posO{(}\posO{b}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posD{(}\posO{a}\posD{,\,}\posO{1}\posD{)} \posO{\cons} \posO{[\,]}}{\posO{0}}
-\slice{$\rightarrow$ 11 (1)}{\posO{(}\posO{a}\posO{,\,}\posO{0}\posO{)} \posO{\cons} \posO{(}\posO{b}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{(}\posO{a}\posO{,\,}\posD{1}\posO{)} \posO{\cons} \posO{[\,]}}{\posO{0}}
-\slice{$\rightarrow$ 12 ([])}{\posO{(}\posO{a}\posO{,\,}\posO{0}\posO{)} \posO{\cons} \posO{(}\posO{b}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{(}\posO{a}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posD{[\,]}}{\posO{0}}
+{\scriptsize\setlength{\tabcolsep}{1.5pt}%
+\begin{tabular}{lccccccccccccccccccc}
+ & $($ & $a$ & $,$ & $0$ & $)$ & $\cons$ & $($ & $b$ & $,$ & $1$ & $)$ & $\cons$ & $($ & $a$ & $,$ & $1$ & $)$ & $\cons$ & $[\,]$ \\
+$0$ & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$\posC{\circ}$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} \\
+\end{tabular}}
 \run{tag}
-\slice{$\leftarrow$ 0 (1)}{\posD{1}}{\posO{(}\posO{a}\posO{,\,}\posO{0}\posO{)} \posC{\cons} \posO{(}\posO{b}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{(}\posO{a}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{[\,]}}
-\slice{$\rightarrow$ 0 ($\cons$)}{\posO{(}\posO{a}\posO{,\,}\posO{0}\posO{)} \posD{\cons} \posO{(}\posO{b}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{(}\posO{a}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{[\,]}}{\posC{1}}
-\slice{$\rightarrow$ 1 ($\cons$)}{\posO{(}\posO{a}\posO{,\,}\posO{0}\posO{)} \posD{\cons} \posO{(}\posO{b}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{(}\posO{a}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{[\,]}}{\posO{1}}
-\slice{$\rightarrow$ 2 (pr)}{\posD{(}\posO{a}\posD{,\,}\posO{0}\posD{)} \posO{\cons} \posO{(}\posO{b}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{(}\posO{a}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{[\,]}}{\posO{1}}
-\slice{$\rightarrow$ 3 (0)}{\posO{(}\posO{a}\posO{,\,}\posD{0}\posO{)} \posO{\cons} \posO{(}\posO{b}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{(}\posO{a}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{[\,]}}{\posO{1}}
-\slice{$\rightarrow$ 4 ($\cons$)}{\posO{(}\posO{a}\posO{,\,}\posO{0}\posO{)} \posO{\cons} \posO{(}\posO{b}\posO{,\,}\posO{1}\posO{)} \posD{\cons} \posO{(}\posO{a}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{[\,]}}{\posO{1}}
-\slice{$\rightarrow$ 6 (pr)}{\posO{(}\posO{a}\posO{,\,}\posO{0}\posO{)} \posO{\cons} \posD{(}\posO{b}\posD{,\,}\posO{1}\posD{)} \posO{\cons} \posO{(}\posO{a}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{[\,]}}{\posO{1}}
-\slice{$\rightarrow$ 7 (1)}{\posO{(}\posO{a}\posO{,\,}\posO{0}\posO{)} \posO{\cons} \posO{(}\posO{b}\posO{,\,}\posD{1}\posO{)} \posO{\cons} \posO{(}\posO{a}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{[\,]}}{\posO{1}}
-\slice{$\rightarrow$ 8 ($\cons$)}{\posO{(}\posO{a}\posO{,\,}\posO{0}\posO{)} \posO{\cons} \posO{(}\posO{b}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{(}\posO{a}\posO{,\,}\posO{1}\posO{)} \posD{\cons} \posO{[\,]}}{\posO{1}}
-\slice{$\rightarrow$ 10 (pr)}{\posO{(}\posO{a}\posO{,\,}\posO{0}\posO{)} \posO{\cons} \posO{(}\posO{b}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posD{(}\posO{a}\posD{,\,}\posO{1}\posD{)} \posO{\cons} \posO{[\,]}}{\posO{1}}
-\slice{$\rightarrow$ 11 (1)}{\posO{(}\posO{a}\posO{,\,}\posO{0}\posO{)} \posO{\cons} \posO{(}\posO{b}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{(}\posO{a}\posO{,\,}\posD{1}\posO{)} \posO{\cons} \posO{[\,]}}{\posO{1}}
-\slice{$\rightarrow$ 12 ([])}{\posO{(}\posO{a}\posO{,\,}\posO{0}\posO{)} \posO{\cons} \posO{(}\posO{b}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{(}\posO{a}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posD{[\,]}}{\posO{1}}
+{\scriptsize\setlength{\tabcolsep}{1.5pt}%
+\begin{tabular}{lccccccccccccccccccc}
+ & $($ & $a$ & $,$ & $0$ & $)$ & $\cons$ & $($ & $b$ & $,$ & $1$ & $)$ & $\cons$ & $($ & $a$ & $,$ & $1$ & $)$ & $\cons$ & $[\,]$ \\
+$1$ & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$\posC{\circ}$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} \\
+\end{tabular}}
 \run{case-left}
-\slice{$\leftarrow$ 0 (1)}{\posD{1}}{\posD{1};\ \posC{\mathsf{inl}\,}\posO{()}}
-\slice{$\rightarrow$ 0 (1)}{\posD{1};\ \posO{\mathsf{inl}\,}\posO{()}}{\posD{1}}
-\slice{$\rightarrow$ 1 (inl)}{\posO{1};\ \posD{\mathsf{inl}\,}\posO{()}}{\posC{1}}
-\slice{$\rightarrow$ 2 (())}{\posO{1};\ \posO{\mathsf{inl}\,}\posD{()}}{\posO{1}}
+{\scriptsize\setlength{\tabcolsep}{1.5pt}%
+\begin{tabular}{lcccc}
+ & $1$ & $;$ & $\mathsf{inl}\,$ & $()$ \\
+$1$ & \gcell{$\posD{\bullet}$} & \gcell{$$} & \gcell{$\posC{\circ}$} & \gcell{$$} \\
+\end{tabular}}
 \run{case-right}
-\slice{$\leftarrow$ 0 (0)}{\posD{0}}{\posO{1};\ \posC{\mathsf{inr}\,}\posO{()}}
-\slice{$\rightarrow$ 0 (1)}{\posD{1};\ \posO{\mathsf{inr}\,}\posO{()}}{\posO{0}}
-\slice{$\rightarrow$ 1 (inr)}{\posO{1};\ \posD{\mathsf{inr}\,}\posO{()}}{\posC{0}}
-\slice{$\rightarrow$ 2 (())}{\posO{1};\ \posO{\mathsf{inr}\,}\posD{()}}{\posO{0}}
+{\scriptsize\setlength{\tabcolsep}{1.5pt}%
+\begin{tabular}{lcccc}
+ & $1$ & $;$ & $\mathsf{inr}\,$ & $()$ \\
+$0$ & \gcell{$$} & \gcell{$$} & \gcell{$\posC{\circ}$} & \gcell{$$} \\
+\end{tabular}}
 \run{test}
-\slice{$\leftarrow$ 0 (0)}{\posD{0}}{\posC{1}}
-\slice{$\rightarrow$ 0 (1)}{\posD{1}}{\posC{0}}
+{\scriptsize\setlength{\tabcolsep}{1.5pt}%
+\begin{tabular}{lc}
+ & $1$ \\
+$0$ & \gcell{$\posC{\circ}$} \\
+\end{tabular}}
 \run{map}
-\slice{$\leftarrow$ 0 ($\cons$)}{\posO{1} \posD{\cons} \posO{2} \posO{\cons} \posO{3} \posO{\cons} \posO{[\,]}}{\posO{0} \posC{\cons} \posO{1} \posO{\cons} \posO{2} \posO{\cons} \posO{[\,]}}
-\slice{$\leftarrow$ 2 (1)}{\posD{1} \posO{\cons} \posO{2} \posO{\cons} \posO{3} \posO{\cons} \posO{[\,]}}{\posD{0} \posC{\cons} \posO{1} \posO{\cons} \posO{2} \posO{\cons} \posO{[\,]}}
-\slice{$\leftarrow$ 3 ($\cons$)}{\posO{1} \posO{\cons} \posO{2} \posD{\cons} \posO{3} \posO{\cons} \posO{[\,]}}{\posO{0} \posC{\cons} \posO{1} \posC{\cons} \posO{2} \posO{\cons} \posO{[\,]}}
-\slice{$\leftarrow$ 5 (2)}{\posO{1} \posO{\cons} \posD{2} \posO{\cons} \posO{3} \posO{\cons} \posO{[\,]}}{\posO{0} \posC{\cons} \posD{1} \posC{\cons} \posO{2} \posO{\cons} \posO{[\,]}}
-\slice{$\leftarrow$ 6 ($\cons$)}{\posO{1} \posO{\cons} \posO{2} \posO{\cons} \posO{3} \posD{\cons} \posO{[\,]}}{\posO{0} \posC{\cons} \posO{1} \posC{\cons} \posO{2} \posC{\cons} \posO{[\,]}}
-\slice{$\leftarrow$ 8 (3)}{\posO{1} \posO{\cons} \posO{2} \posO{\cons} \posD{3} \posO{\cons} \posO{[\,]}}{\posO{0} \posC{\cons} \posO{1} \posC{\cons} \posD{2} \posC{\cons} \posO{[\,]}}
-\slice{$\leftarrow$ 9 ([])}{\posO{1} \posO{\cons} \posO{2} \posO{\cons} \posO{3} \posO{\cons} \posD{[\,]}}{\posO{0} \posC{\cons} \posO{1} \posC{\cons} \posO{2} \posC{\cons} \posC{[\,]}}
-\slice{$\rightarrow$ 0 ($\cons$)}{\posO{0} \posD{\cons} \posO{1} \posO{\cons} \posO{2} \posO{\cons} \posO{[\,]}}{\posC{1} \posC{\cons} \posC{2} \posC{\cons} \posC{3} \posC{\cons} \posC{[\,]}}
-\slice{$\rightarrow$ 1 ($\cons$)}{\posO{0} \posD{\cons} \posO{1} \posO{\cons} \posO{2} \posO{\cons} \posO{[\,]}}{\posC{1} \posO{\cons} \posC{2} \posC{\cons} \posC{3} \posC{\cons} \posC{[\,]}}
-\slice{$\rightarrow$ 2 (0)}{\posD{0} \posO{\cons} \posO{1} \posO{\cons} \posO{2} \posO{\cons} \posO{[\,]}}{\posD{1} \posO{\cons} \posO{2} \posO{\cons} \posO{3} \posO{\cons} \posO{[\,]}}
-\slice{$\rightarrow$ 3 ($\cons$)}{\posO{0} \posO{\cons} \posO{1} \posD{\cons} \posO{2} \posO{\cons} \posO{[\,]}}{\posO{1} \posO{\cons} \posC{2} \posC{\cons} \posC{3} \posC{\cons} \posC{[\,]}}
-\slice{$\rightarrow$ 4 ($\cons$)}{\posO{0} \posO{\cons} \posO{1} \posD{\cons} \posO{2} \posO{\cons} \posO{[\,]}}{\posO{1} \posO{\cons} \posC{2} \posO{\cons} \posC{3} \posC{\cons} \posC{[\,]}}
-\slice{$\rightarrow$ 5 (1)}{\posO{0} \posO{\cons} \posD{1} \posO{\cons} \posO{2} \posO{\cons} \posO{[\,]}}{\posO{1} \posO{\cons} \posD{2} \posO{\cons} \posO{3} \posO{\cons} \posO{[\,]}}
-\slice{$\rightarrow$ 6 ($\cons$)}{\posO{0} \posO{\cons} \posO{1} \posO{\cons} \posO{2} \posD{\cons} \posO{[\,]}}{\posO{1} \posO{\cons} \posO{2} \posO{\cons} \posC{3} \posC{\cons} \posC{[\,]}}
-\slice{$\rightarrow$ 7 ($\cons$)}{\posO{0} \posO{\cons} \posO{1} \posO{\cons} \posO{2} \posD{\cons} \posO{[\,]}}{\posO{1} \posO{\cons} \posO{2} \posO{\cons} \posC{3} \posO{\cons} \posC{[\,]}}
-\slice{$\rightarrow$ 8 (2)}{\posO{0} \posO{\cons} \posO{1} \posO{\cons} \posD{2} \posO{\cons} \posO{[\,]}}{\posO{1} \posO{\cons} \posO{2} \posO{\cons} \posD{3} \posO{\cons} \posO{[\,]}}
-\slice{$\rightarrow$ 9 ([])}{\posO{0} \posO{\cons} \posO{1} \posO{\cons} \posO{2} \posO{\cons} \posD{[\,]}}{\posO{1} \posO{\cons} \posO{2} \posO{\cons} \posO{3} \posO{\cons} \posC{[\,]}}
-\slice{$\rightarrow$ 10 ([])}{\posO{0} \posO{\cons} \posO{1} \posO{\cons} \posO{2} \posO{\cons} \posD{[\,]}}{\posO{1} \posO{\cons} \posO{2} \posO{\cons} \posO{3} \posO{\cons} \posO{[\,]}}
-\run{window}
-\slice{$\leftarrow$ 0 ($\cons$)}{\posO{1} \posD{\cons} \posO{3} \posO{\cons} \posO{6} \posO{\cons} \posO{[\,]}}{\posO{0} \posC{\cons} \posO{1} \posC{\cons} \posO{2} \posO{\cons} \posO{4} \posO{\cons} \posO{[\,]}}
-\slice{$\leftarrow$ 2 (1)}{\posD{1} \posO{\cons} \posO{3} \posO{\cons} \posO{6} \posO{\cons} \posO{[\,]}}{\posD{0} \posC{\cons} \posD{1} \posC{\cons} \posO{2} \posO{\cons} \posO{4} \posO{\cons} \posO{[\,]}}
-\slice{$\leftarrow$ 3 ($\cons$)}{\posO{1} \posO{\cons} \posO{3} \posD{\cons} \posO{6} \posO{\cons} \posO{[\,]}}{\posO{0} \posC{\cons} \posO{1} \posC{\cons} \posO{2} \posC{\cons} \posO{4} \posO{\cons} \posO{[\,]}}
-\slice{$\leftarrow$ 5 (3)}{\posO{1} \posO{\cons} \posD{3} \posO{\cons} \posO{6} \posO{\cons} \posO{[\,]}}{\posO{0} \posC{\cons} \posD{1} \posC{\cons} \posD{2} \posC{\cons} \posO{4} \posO{\cons} \posO{[\,]}}
-\slice{$\leftarrow$ 6 ($\cons$)}{\posO{1} \posO{\cons} \posO{3} \posO{\cons} \posO{6} \posD{\cons} \posO{[\,]}}{\posO{0} \posC{\cons} \posO{1} \posC{\cons} \posO{2} \posC{\cons} \posO{4} \posC{\cons} \posO{[\,]}}
-\slice{$\leftarrow$ 8 (6)}{\posO{1} \posO{\cons} \posO{3} \posO{\cons} \posD{6} \posO{\cons} \posO{[\,]}}{\posO{0} \posC{\cons} \posO{1} \posC{\cons} \posD{2} \posC{\cons} \posD{4} \posC{\cons} \posO{[\,]}}
-\slice{$\leftarrow$ 9 ([])}{\posO{1} \posO{\cons} \posO{3} \posO{\cons} \posO{6} \posO{\cons} \posD{[\,]}}{\posO{0} \posC{\cons} \posO{1} \posC{\cons} \posO{2} \posC{\cons} \posO{4} \posC{\cons} \posC{[\,]}}
-\slice{$\rightarrow$ 0 ($\cons$)}{\posO{0} \posD{\cons} \posO{1} \posO{\cons} \posO{2} \posO{\cons} \posO{4} \posO{\cons} \posO{[\,]}}{\posC{1} \posC{\cons} \posC{3} \posC{\cons} \posC{6} \posC{\cons} \posC{[\,]}}
-\slice{$\rightarrow$ 2 (0)}{\posD{0} \posO{\cons} \posO{1} \posO{\cons} \posO{2} \posO{\cons} \posO{4} \posO{\cons} \posO{[\,]}}{\posD{1} \posO{\cons} \posO{3} \posO{\cons} \posO{6} \posO{\cons} \posO{[\,]}}
-\slice{$\rightarrow$ 3 ($\cons$)}{\posO{0} \posO{\cons} \posO{1} \posD{\cons} \posO{2} \posO{\cons} \posO{4} \posO{\cons} \posO{[\,]}}{\posC{1} \posC{\cons} \posC{3} \posC{\cons} \posC{6} \posC{\cons} \posC{[\,]}}
-\slice{$\rightarrow$ 4 ($\cons$)}{\posO{0} \posO{\cons} \posO{1} \posD{\cons} \posO{2} \posO{\cons} \posO{4} \posO{\cons} \posO{[\,]}}{\posC{1} \posO{\cons} \posC{3} \posC{\cons} \posC{6} \posC{\cons} \posC{[\,]}}
-\slice{$\rightarrow$ 5 (1)}{\posO{0} \posO{\cons} \posD{1} \posO{\cons} \posO{2} \posO{\cons} \posO{4} \posO{\cons} \posO{[\,]}}{\posD{1} \posO{\cons} \posD{3} \posO{\cons} \posO{6} \posO{\cons} \posO{[\,]}}
-\slice{$\rightarrow$ 6 ($\cons$)}{\posO{0} \posO{\cons} \posO{1} \posO{\cons} \posO{2} \posD{\cons} \posO{4} \posO{\cons} \posO{[\,]}}{\posO{1} \posO{\cons} \posC{3} \posC{\cons} \posC{6} \posC{\cons} \posC{[\,]}}
-\slice{$\rightarrow$ 7 ($\cons$)}{\posO{0} \posO{\cons} \posO{1} \posO{\cons} \posO{2} \posD{\cons} \posO{4} \posO{\cons} \posO{[\,]}}{\posO{1} \posO{\cons} \posC{3} \posO{\cons} \posC{6} \posC{\cons} \posC{[\,]}}
-\slice{$\rightarrow$ 8 (2)}{\posO{0} \posO{\cons} \posO{1} \posO{\cons} \posD{2} \posO{\cons} \posO{4} \posO{\cons} \posO{[\,]}}{\posO{1} \posO{\cons} \posD{3} \posO{\cons} \posD{6} \posO{\cons} \posO{[\,]}}
-\slice{$\rightarrow$ 9 ($\cons$)}{\posO{0} \posO{\cons} \posO{1} \posO{\cons} \posO{2} \posO{\cons} \posO{4} \posD{\cons} \posO{[\,]}}{\posO{1} \posO{\cons} \posO{3} \posO{\cons} \posC{6} \posC{\cons} \posC{[\,]}}
-\slice{$\rightarrow$ 10 ($\cons$)}{\posO{0} \posO{\cons} \posO{1} \posO{\cons} \posO{2} \posO{\cons} \posO{4} \posD{\cons} \posO{[\,]}}{\posO{1} \posO{\cons} \posO{3} \posO{\cons} \posC{6} \posO{\cons} \posC{[\,]}}
-\slice{$\rightarrow$ 11 (4)}{\posO{0} \posO{\cons} \posO{1} \posO{\cons} \posO{2} \posO{\cons} \posD{4} \posO{\cons} \posO{[\,]}}{\posO{1} \posO{\cons} \posO{3} \posO{\cons} \posD{6} \posO{\cons} \posO{[\,]}}
-\slice{$\rightarrow$ 12 ([])}{\posO{0} \posO{\cons} \posO{1} \posO{\cons} \posO{2} \posO{\cons} \posO{4} \posO{\cons} \posD{[\,]}}{\posO{1} \posO{\cons} \posO{3} \posO{\cons} \posO{6} \posO{\cons} \posC{[\,]}}
-\slice{$\rightarrow$ 13 ([])}{\posO{0} \posO{\cons} \posO{1} \posO{\cons} \posO{2} \posO{\cons} \posO{4} \posO{\cons} \posD{[\,]}}{\posO{1} \posO{\cons} \posO{3} \posO{\cons} \posO{6} \posO{\cons} \posO{[\,]}}
-\run{filter}
-\slice{$\leftarrow$ 0 ($\cons$)}{\posO{2} \posD{\cons} \posO{[\,]}}{\posC{2};\ \posC{1} \posC{\cons} \posC{2} \posC{\cons} \posO{3} \posO{\cons} \posO{[\,]}}
-\slice{$\leftarrow$ 2 (2)}{\posD{2} \posO{\cons} \posO{[\,]}}{\posC{2};\ \posC{1} \posC{\cons} \posD{2} \posC{\cons} \posO{3} \posO{\cons} \posO{[\,]}}
-\slice{$\leftarrow$ 3 ([])}{\posO{2} \posO{\cons} \posD{[\,]}}{\posC{2};\ \posC{1} \posC{\cons} \posC{2} \posC{\cons} \posC{3} \posC{\cons} \posC{[\,]}}
-\slice{$\rightarrow$ 0 (2)}{\posD{2};\ \posO{1} \posO{\cons} \posO{2} \posO{\cons} \posO{3} \posO{\cons} \posO{[\,]}}{\posC{2} \posC{\cons} \posC{[\,]}}
-\slice{$\rightarrow$ 1 ($\cons$)}{\posO{2};\ \posO{1} \posD{\cons} \posO{2} \posO{\cons} \posO{3} \posO{\cons} \posO{[\,]}}{\posC{2} \posC{\cons} \posC{[\,]}}
-\slice{$\rightarrow$ 3 (1)}{\posO{2};\ \posD{1} \posO{\cons} \posO{2} \posO{\cons} \posO{3} \posO{\cons} \posO{[\,]}}{\posC{2} \posC{\cons} \posC{[\,]}}
-\slice{$\rightarrow$ 4 ($\cons$)}{\posO{2};\ \posO{1} \posO{\cons} \posO{2} \posD{\cons} \posO{3} \posO{\cons} \posO{[\,]}}{\posC{2} \posC{\cons} \posC{[\,]}}
-\slice{$\rightarrow$ 6 (2)}{\posO{2};\ \posO{1} \posO{\cons} \posD{2} \posO{\cons} \posO{3} \posO{\cons} \posO{[\,]}}{\posD{2} \posC{\cons} \posC{[\,]}}
-\slice{$\rightarrow$ 7 ($\cons$)}{\posO{2};\ \posO{1} \posO{\cons} \posO{2} \posO{\cons} \posO{3} \posD{\cons} \posO{[\,]}}{\posO{2} \posO{\cons} \posC{[\,]}}
-\slice{$\rightarrow$ 9 (3)}{\posO{2};\ \posO{1} \posO{\cons} \posO{2} \posO{\cons} \posD{3} \posO{\cons} \posO{[\,]}}{\posO{2} \posO{\cons} \posC{[\,]}}
-\slice{$\rightarrow$ 10 ([])}{\posO{2};\ \posO{1} \posO{\cons} \posO{2} \posO{\cons} \posO{3} \posO{\cons} \posD{[\,]}}{\posO{2} \posO{\cons} \posC{[\,]}}
-\slice{$\rightarrow$ 11 ([])}{\posO{2};\ \posO{1} \posO{\cons} \posO{2} \posO{\cons} \posO{3} \posO{\cons} \posD{[\,]}}{\posO{2} \posO{\cons} \posO{[\,]}}
-\run{cond}
-\slice{$\leftarrow$ 0 (2)}{\posD{2}}{\posC{0};\ \posD{1}}
-\slice{$\rightarrow$ 0 (0)}{\posD{0};\ \posO{1}}{\posC{2}}
-\slice{$\rightarrow$ 1 (1)}{\posO{0};\ \posD{1}}{\posD{2}}
-\run{eq}
-\slice{$\leftarrow$ 0 (inl)}{\posD{\mathsf{inl}\,}\posO{()}}{\posD{0}}
-\slice{$\leftarrow$ 1 (())}{\posO{\mathsf{inl}\,}\posD{()}}{\posO{0}}
-\slice{$\rightarrow$ 0 (0)}{\posD{0}}{\posD{\mathsf{inl}\,}\posO{()}}
-\run{mult}
-\slice{$\leftarrow$ 0 (0)}{\posD{0}}{\posC{(}\posO{1}\posC{,\,}\posD{0}\posC{)}}
-\slice{$\rightarrow$ 0 (pr)}{\posD{(}\posO{1}\posD{,\,}\posO{0}\posD{)}}{\posC{0}}
-\slice{$\rightarrow$ 1 (1)}{\posO{(}\posD{1}\posO{,\,}\posO{0}\posO{)}}{\posO{0}}
-\slice{$\rightarrow$ 2 (0)}{\posO{(}\posO{1}\posO{,\,}\posD{0}\posO{)}}{\posD{0}}
-\run{mavg}
-\slice{$\leftarrow$ 0 (pr)}{\posD{(}\posO{3/2}\posD{,\,}\posO{(}\posO{3}\posO{,\,}\posO{6}\posO{)}\posD{)}}{\posO{(}\posO{1}\posO{,\,}\posO{(}\posO{2}\posO{,\,}\posO{(}\posO{4}\posO{,\,}\posO{8}\posO{)}\posO{)}\posO{)}}
-\slice{$\leftarrow$ 1 (3/2)}{\posO{(}\posD{3/2}\posO{,\,}\posO{(}\posO{3}\posO{,\,}\posO{6}\posO{)}\posO{)}}{\posC{(}\posD{1}\posC{,\,}\posC{(}\posD{2}\posC{,\,}\posO{(}\posO{4}\posO{,\,}\posO{8}\posO{)}\posC{)}\posC{)}}
-\slice{$\leftarrow$ 2 (pr)}{\posO{(}\posO{3/2}\posO{,\,}\posD{(}\posO{3}\posD{,\,}\posO{6}\posD{)}\posO{)}}{\posO{(}\posO{1}\posO{,\,}\posO{(}\posO{2}\posO{,\,}\posO{(}\posO{4}\posO{,\,}\posO{8}\posO{)}\posO{)}\posO{)}}
-\slice{$\leftarrow$ 3 (3)}{\posO{(}\posO{3/2}\posO{,\,}\posO{(}\posD{3}\posO{,\,}\posO{6}\posO{)}\posO{)}}{\posC{(}\posO{1}\posC{,\,}\posC{(}\posD{2}\posC{,\,}\posC{(}\posD{4}\posC{,\,}\posO{8}\posC{)}\posC{)}\posC{)}}
-\slice{$\leftarrow$ 4 (6)}{\posO{(}\posO{3/2}\posO{,\,}\posO{(}\posO{3}\posO{,\,}\posD{6}\posO{)}\posO{)}}{\posC{(}\posO{1}\posC{,\,}\posC{(}\posO{2}\posC{,\,}\posC{(}\posD{4}\posC{,\,}\posD{8}\posC{)}\posC{)}\posC{)}}
-\slice{$\rightarrow$ 0 (pr)}{\posD{(}\posO{1}\posD{,\,}\posO{(}\posO{2}\posO{,\,}\posO{(}\posO{4}\posO{,\,}\posO{8}\posO{)}\posO{)}\posD{)}}{\posO{(}\posC{3/2}\posO{,\,}\posO{(}\posC{3}\posO{,\,}\posC{6}\posO{)}\posO{)}}
-\slice{$\rightarrow$ 1 (1)}{\posO{(}\posD{1}\posO{,\,}\posO{(}\posO{2}\posO{,\,}\posO{(}\posO{4}\posO{,\,}\posO{8}\posO{)}\posO{)}\posO{)}}{\posO{(}\posD{3/2}\posO{,\,}\posO{(}\posO{3}\posO{,\,}\posO{6}\posO{)}\posO{)}}
-\slice{$\rightarrow$ 2 (pr)}{\posO{(}\posO{1}\posO{,\,}\posD{(}\posO{2}\posD{,\,}\posO{(}\posO{4}\posO{,\,}\posO{8}\posO{)}\posD{)}\posO{)}}{\posO{(}\posC{3/2}\posO{,\,}\posO{(}\posC{3}\posO{,\,}\posC{6}\posO{)}\posO{)}}
-\slice{$\rightarrow$ 3 (2)}{\posO{(}\posO{1}\posO{,\,}\posO{(}\posD{2}\posO{,\,}\posO{(}\posO{4}\posO{,\,}\posO{8}\posO{)}\posO{)}\posO{)}}{\posO{(}\posD{3/2}\posO{,\,}\posO{(}\posD{3}\posO{,\,}\posO{6}\posO{)}\posO{)}}
-\slice{$\rightarrow$ 4 (pr)}{\posO{(}\posO{1}\posO{,\,}\posO{(}\posO{2}\posO{,\,}\posD{(}\posO{4}\posD{,\,}\posO{8}\posD{)}\posO{)}\posO{)}}{\posO{(}\posO{3/2}\posO{,\,}\posO{(}\posC{3}\posO{,\,}\posC{6}\posO{)}\posO{)}}
-\slice{$\rightarrow$ 5 (4)}{\posO{(}\posO{1}\posO{,\,}\posO{(}\posO{2}\posO{,\,}\posO{(}\posD{4}\posO{,\,}\posO{8}\posO{)}\posO{)}\posO{)}}{\posO{(}\posO{3/2}\posO{,\,}\posO{(}\posD{3}\posO{,\,}\posD{6}\posO{)}\posO{)}}
-\slice{$\rightarrow$ 6 (8)}{\posO{(}\posO{1}\posO{,\,}\posO{(}\posO{2}\posO{,\,}\posO{(}\posO{4}\posO{,\,}\posD{8}\posO{)}\posO{)}\posO{)}}{\posO{(}\posO{3/2}\posO{,\,}\posO{(}\posO{3}\posO{,\,}\posD{6}\posO{)}\posO{)}}
-\run{total}
-\slice{$\leftarrow$ 0 (1)}{\posD{1}}{\posC{(}\posC{(}\posO{a}\posC{,\,}\posD{0}\posC{)} \posC{\cons} \posO{(}\posO{b}\posO{,\,}\posO{1}\posO{)} \posC{\cons} \posC{(}\posO{a}\posC{,\,}\posD{1}\posC{)} \posC{\cons} \posC{[\,]}\posC{,\,}\posC{(}\posD{1}\posC{,\,}\posO{2}\posC{)}\posC{)}}
-\slice{$\rightarrow$ 0 (pr)}{\posD{(}\posO{(}\posO{a}\posO{,\,}\posO{0}\posO{)} \posO{\cons} \posO{(}\posO{b}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{(}\posO{a}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{[\,]}\posD{,\,}\posO{(}\posO{1}\posO{,\,}\posO{2}\posO{)}\posD{)}}{\posC{1}}
-\slice{$\rightarrow$ 1 ($\cons$)}{\posO{(}\posO{(}\posO{a}\posO{,\,}\posO{0}\posO{)} \posD{\cons} \posO{(}\posO{b}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{(}\posO{a}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{[\,]}\posO{,\,}\posO{(}\posO{1}\posO{,\,}\posO{2}\posO{)}\posO{)}}{\posC{1}}
-\slice{$\rightarrow$ 3 (pr)}{\posO{(}\posD{(}\posO{a}\posD{,\,}\posO{0}\posD{)} \posO{\cons} \posO{(}\posO{b}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{(}\posO{a}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{[\,]}\posO{,\,}\posO{(}\posO{1}\posO{,\,}\posO{2}\posO{)}\posO{)}}{\posC{1}}
-\slice{$\rightarrow$ 4 (0)}{\posO{(}\posO{(}\posO{a}\posO{,\,}\posD{0}\posO{)} \posO{\cons} \posO{(}\posO{b}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{(}\posO{a}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{[\,]}\posO{,\,}\posO{(}\posO{1}\posO{,\,}\posO{2}\posO{)}\posO{)}}{\posD{1}}
-\slice{$\rightarrow$ 5 ($\cons$)}{\posO{(}\posO{(}\posO{a}\posO{,\,}\posO{0}\posO{)} \posO{\cons} \posO{(}\posO{b}\posO{,\,}\posO{1}\posO{)} \posD{\cons} \posO{(}\posO{a}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{[\,]}\posO{,\,}\posO{(}\posO{1}\posO{,\,}\posO{2}\posO{)}\posO{)}}{\posC{1}}
-\slice{$\rightarrow$ 7 (pr)}{\posO{(}\posO{(}\posO{a}\posO{,\,}\posO{0}\posO{)} \posO{\cons} \posD{(}\posO{b}\posD{,\,}\posO{1}\posD{)} \posO{\cons} \posO{(}\posO{a}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{[\,]}\posO{,\,}\posO{(}\posO{1}\posO{,\,}\posO{2}\posO{)}\posO{)}}{\posO{1}}
-\slice{$\rightarrow$ 8 (1)}{\posO{(}\posO{(}\posO{a}\posO{,\,}\posO{0}\posO{)} \posO{\cons} \posO{(}\posO{b}\posO{,\,}\posD{1}\posO{)} \posO{\cons} \posO{(}\posO{a}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{[\,]}\posO{,\,}\posO{(}\posO{1}\posO{,\,}\posO{2}\posO{)}\posO{)}}{\posO{1}}
-\slice{$\rightarrow$ 9 ($\cons$)}{\posO{(}\posO{(}\posO{a}\posO{,\,}\posO{0}\posO{)} \posO{\cons} \posO{(}\posO{b}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{(}\posO{a}\posO{,\,}\posO{1}\posO{)} \posD{\cons} \posO{[\,]}\posO{,\,}\posO{(}\posO{1}\posO{,\,}\posO{2}\posO{)}\posO{)}}{\posC{1}}
-\slice{$\rightarrow$ 11 (pr)}{\posO{(}\posO{(}\posO{a}\posO{,\,}\posO{0}\posO{)} \posO{\cons} \posO{(}\posO{b}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posD{(}\posO{a}\posD{,\,}\posO{1}\posD{)} \posO{\cons} \posO{[\,]}\posO{,\,}\posO{(}\posO{1}\posO{,\,}\posO{2}\posO{)}\posO{)}}{\posC{1}}
-\slice{$\rightarrow$ 12 (1)}{\posO{(}\posO{(}\posO{a}\posO{,\,}\posO{0}\posO{)} \posO{\cons} \posO{(}\posO{b}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{(}\posO{a}\posO{,\,}\posD{1}\posO{)} \posO{\cons} \posO{[\,]}\posO{,\,}\posO{(}\posO{1}\posO{,\,}\posO{2}\posO{)}\posO{)}}{\posD{1}}
-\slice{$\rightarrow$ 13 ([])}{\posO{(}\posO{(}\posO{a}\posO{,\,}\posO{0}\posO{)} \posO{\cons} \posO{(}\posO{b}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{(}\posO{a}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posD{[\,]}\posO{,\,}\posO{(}\posO{1}\posO{,\,}\posO{2}\posO{)}\posO{)}}{\posC{1}}
-\slice{$\rightarrow$ 14 ([])}{\posO{(}\posO{(}\posO{a}\posO{,\,}\posO{0}\posO{)} \posO{\cons} \posO{(}\posO{b}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{(}\posO{a}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posD{[\,]}\posO{,\,}\posO{(}\posO{1}\posO{,\,}\posO{2}\posO{)}\posO{)}}{\posO{1}}
-\slice{$\rightarrow$ 15 (pr)}{\posO{(}\posO{(}\posO{a}\posO{,\,}\posO{0}\posO{)} \posO{\cons} \posO{(}\posO{b}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{(}\posO{a}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{[\,]}\posO{,\,}\posD{(}\posO{1}\posD{,\,}\posO{2}\posD{)}\posO{)}}{\posC{1}}
-\slice{$\rightarrow$ 16 (1)}{\posO{(}\posO{(}\posO{a}\posO{,\,}\posO{0}\posO{)} \posO{\cons} \posO{(}\posO{b}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{(}\posO{a}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{[\,]}\posO{,\,}\posO{(}\posD{1}\posO{,\,}\posO{2}\posO{)}\posO{)}}{\posD{1}}
-\slice{$\rightarrow$ 17 (2)}{\posO{(}\posO{(}\posO{a}\posO{,\,}\posO{0}\posO{)} \posO{\cons} \posO{(}\posO{b}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{(}\posO{a}\posO{,\,}\posO{1}\posO{)} \posO{\cons} \posO{[\,]}\posO{,\,}\posO{(}\posO{1}\posO{,\,}\posD{2}\posO{)}\posO{)}}{\posO{1}}
-\run{sum-mul}
-\slice{$\leftarrow$ 0 (6)}{\posD{6}}{\posC{(}\posD{0} \posC{\cons} \posD{1} \posC{\cons} \posD{2} \posC{\cons} \posC{[\,]}\posC{,\,}\posD{2}\posC{)}}
-\slice{$\rightarrow$ 0 (pr)}{\posD{(}\posO{0} \posO{\cons} \posO{1} \posO{\cons} \posO{2} \posO{\cons} \posO{[\,]}\posD{,\,}\posO{2}\posD{)}}{\posC{6}}
-\slice{$\rightarrow$ 1 ($\cons$)}{\posO{(}\posO{0} \posD{\cons} \posO{1} \posO{\cons} \posO{2} \posO{\cons} \posO{[\,]}\posO{,\,}\posO{2}\posO{)}}{\posC{6}}
-\slice{$\rightarrow$ 3 (0)}{\posO{(}\posD{0} \posO{\cons} \posO{1} \posO{\cons} \posO{2} \posO{\cons} \posO{[\,]}\posO{,\,}\posO{2}\posO{)}}{\posD{6}}
-\slice{$\rightarrow$ 4 ($\cons$)}{\posO{(}\posO{0} \posO{\cons} \posO{1} \posD{\cons} \posO{2} \posO{\cons} \posO{[\,]}\posO{,\,}\posO{2}\posO{)}}{\posC{6}}
-\slice{$\rightarrow$ 6 (1)}{\posO{(}\posO{0} \posO{\cons} \posD{1} \posO{\cons} \posO{2} \posO{\cons} \posO{[\,]}\posO{,\,}\posO{2}\posO{)}}{\posD{6}}
-\slice{$\rightarrow$ 7 ($\cons$)}{\posO{(}\posO{0} \posO{\cons} \posO{1} \posO{\cons} \posO{2} \posD{\cons} \posO{[\,]}\posO{,\,}\posO{2}\posO{)}}{\posC{6}}
-\slice{$\rightarrow$ 9 (2)}{\posO{(}\posO{0} \posO{\cons} \posO{1} \posO{\cons} \posD{2} \posO{\cons} \posO{[\,]}\posO{,\,}\posO{2}\posO{)}}{\posD{6}}
-\slice{$\rightarrow$ 10 ([])}{\posO{(}\posO{0} \posO{\cons} \posO{1} \posO{\cons} \posO{2} \posO{\cons} \posD{[\,]}\posO{,\,}\posO{2}\posO{)}}{\posC{6}}
-\slice{$\rightarrow$ 11 ([])}{\posO{(}\posO{0} \posO{\cons} \posO{1} \posO{\cons} \posO{2} \posO{\cons} \posD{[\,]}\posO{,\,}\posO{2}\posO{)}}{\posO{6}}
-\slice{$\rightarrow$ 12 (2)}{\posO{(}\posO{0} \posO{\cons} \posO{1} \posO{\cons} \posO{2} \posO{\cons} \posO{[\,]}\posO{,\,}\posD{2}\posO{)}}{\posD{6}}
-\run{rose}
-\slice{$\leftarrow$ 0 (10)}{\posD{10}}{\posC{(}\posD{1}\posC{,\,}\posC{(}\posD{2}\posC{,\,}\posC{(}\posD{3}\posC{,\,}\posC{[\,]}\posC{)} \posC{\cons} \posC{[\,]}\posC{)} \posC{\cons} \posC{(}\posD{4}\posC{,\,}\posC{[\,]}\posC{)} \posC{\cons} \posC{[\,]}\posC{)}}
-\slice{$\rightarrow$ 0 (pr)}{\posD{(}\posO{1}\posD{,\,}\posO{(}\posO{2}\posO{,\,}\posO{(}\posO{3}\posO{,\,}\posO{[\,]}\posO{)} \posO{\cons} \posO{[\,]}\posO{)} \posO{\cons} \posO{(}\posO{4}\posO{,\,}\posO{[\,]}\posO{)} \posO{\cons} \posO{[\,]}\posD{)}}{\posC{10}}
-\slice{$\rightarrow$ 1 (1)}{\posO{(}\posD{1}\posO{,\,}\posO{(}\posO{2}\posO{,\,}\posO{(}\posO{3}\posO{,\,}\posO{[\,]}\posO{)} \posO{\cons} \posO{[\,]}\posO{)} \posO{\cons} \posO{(}\posO{4}\posO{,\,}\posO{[\,]}\posO{)} \posO{\cons} \posO{[\,]}\posO{)}}{\posD{10}}
-\slice{$\rightarrow$ 2 ($\cons$)}{\posO{(}\posO{1}\posO{,\,}\posO{(}\posO{2}\posO{,\,}\posO{(}\posO{3}\posO{,\,}\posO{[\,]}\posO{)} \posO{\cons} \posO{[\,]}\posO{)} \posD{\cons} \posO{(}\posO{4}\posO{,\,}\posO{[\,]}\posO{)} \posO{\cons} \posO{[\,]}\posO{)}}{\posC{10}}
-\slice{$\rightarrow$ 4 (pr)}{\posO{(}\posO{1}\posO{,\,}\posD{(}\posO{2}\posD{,\,}\posO{(}\posO{3}\posO{,\,}\posO{[\,]}\posO{)} \posO{\cons} \posO{[\,]}\posD{)} \posO{\cons} \posO{(}\posO{4}\posO{,\,}\posO{[\,]}\posO{)} \posO{\cons} \posO{[\,]}\posO{)}}{\posC{10}}
-\slice{$\rightarrow$ 5 (2)}{\posO{(}\posO{1}\posO{,\,}\posO{(}\posD{2}\posO{,\,}\posO{(}\posO{3}\posO{,\,}\posO{[\,]}\posO{)} \posO{\cons} \posO{[\,]}\posO{)} \posO{\cons} \posO{(}\posO{4}\posO{,\,}\posO{[\,]}\posO{)} \posO{\cons} \posO{[\,]}\posO{)}}{\posD{10}}
-\slice{$\rightarrow$ 6 ($\cons$)}{\posO{(}\posO{1}\posO{,\,}\posO{(}\posO{2}\posO{,\,}\posO{(}\posO{3}\posO{,\,}\posO{[\,]}\posO{)} \posD{\cons} \posO{[\,]}\posO{)} \posO{\cons} \posO{(}\posO{4}\posO{,\,}\posO{[\,]}\posO{)} \posO{\cons} \posO{[\,]}\posO{)}}{\posC{10}}
-\slice{$\rightarrow$ 8 (pr)}{\posO{(}\posO{1}\posO{,\,}\posO{(}\posO{2}\posO{,\,}\posD{(}\posO{3}\posD{,\,}\posO{[\,]}\posD{)} \posO{\cons} \posO{[\,]}\posO{)} \posO{\cons} \posO{(}\posO{4}\posO{,\,}\posO{[\,]}\posO{)} \posO{\cons} \posO{[\,]}\posO{)}}{\posC{10}}
-\slice{$\rightarrow$ 9 (3)}{\posO{(}\posO{1}\posO{,\,}\posO{(}\posO{2}\posO{,\,}\posO{(}\posD{3}\posO{,\,}\posO{[\,]}\posO{)} \posO{\cons} \posO{[\,]}\posO{)} \posO{\cons} \posO{(}\posO{4}\posO{,\,}\posO{[\,]}\posO{)} \posO{\cons} \posO{[\,]}\posO{)}}{\posD{10}}
-\slice{$\rightarrow$ 10 ([])}{\posO{(}\posO{1}\posO{,\,}\posO{(}\posO{2}\posO{,\,}\posO{(}\posO{3}\posO{,\,}\posD{[\,]}\posO{)} \posO{\cons} \posO{[\,]}\posO{)} \posO{\cons} \posO{(}\posO{4}\posO{,\,}\posO{[\,]}\posO{)} \posO{\cons} \posO{[\,]}\posO{)}}{\posC{10}}
-\slice{$\rightarrow$ 11 ([])}{\posO{(}\posO{1}\posO{,\,}\posO{(}\posO{2}\posO{,\,}\posO{(}\posO{3}\posO{,\,}\posD{[\,]}\posO{)} \posO{\cons} \posO{[\,]}\posO{)} \posO{\cons} \posO{(}\posO{4}\posO{,\,}\posO{[\,]}\posO{)} \posO{\cons} \posO{[\,]}\posO{)}}{\posO{10}}
-\slice{$\rightarrow$ 12 ([])}{\posO{(}\posO{1}\posO{,\,}\posO{(}\posO{2}\posO{,\,}\posO{(}\posO{3}\posO{,\,}\posO{[\,]}\posO{)} \posO{\cons} \posD{[\,]}\posO{)} \posO{\cons} \posO{(}\posO{4}\posO{,\,}\posO{[\,]}\posO{)} \posO{\cons} \posO{[\,]}\posO{)}}{\posC{10}}
-\slice{$\rightarrow$ 13 ([])}{\posO{(}\posO{1}\posO{,\,}\posO{(}\posO{2}\posO{,\,}\posO{(}\posO{3}\posO{,\,}\posO{[\,]}\posO{)} \posO{\cons} \posD{[\,]}\posO{)} \posO{\cons} \posO{(}\posO{4}\posO{,\,}\posO{[\,]}\posO{)} \posO{\cons} \posO{[\,]}\posO{)}}{\posO{10}}
-\slice{$\rightarrow$ 14 ($\cons$)}{\posO{(}\posO{1}\posO{,\,}\posO{(}\posO{2}\posO{,\,}\posO{(}\posO{3}\posO{,\,}\posO{[\,]}\posO{)} \posO{\cons} \posO{[\,]}\posO{)} \posO{\cons} \posO{(}\posO{4}\posO{,\,}\posO{[\,]}\posO{)} \posD{\cons} \posO{[\,]}\posO{)}}{\posC{10}}
-\slice{$\rightarrow$ 16 (pr)}{\posO{(}\posO{1}\posO{,\,}\posO{(}\posO{2}\posO{,\,}\posO{(}\posO{3}\posO{,\,}\posO{[\,]}\posO{)} \posO{\cons} \posO{[\,]}\posO{)} \posO{\cons} \posD{(}\posO{4}\posD{,\,}\posO{[\,]}\posD{)} \posO{\cons} \posO{[\,]}\posO{)}}{\posC{10}}
-\slice{$\rightarrow$ 17 (4)}{\posO{(}\posO{1}\posO{,\,}\posO{(}\posO{2}\posO{,\,}\posO{(}\posO{3}\posO{,\,}\posO{[\,]}\posO{)} \posO{\cons} \posO{[\,]}\posO{)} \posO{\cons} \posO{(}\posD{4}\posO{,\,}\posO{[\,]}\posO{)} \posO{\cons} \posO{[\,]}\posO{)}}{\posD{10}}
-\slice{$\rightarrow$ 18 ([])}{\posO{(}\posO{1}\posO{,\,}\posO{(}\posO{2}\posO{,\,}\posO{(}\posO{3}\posO{,\,}\posO{[\,]}\posO{)} \posO{\cons} \posO{[\,]}\posO{)} \posO{\cons} \posO{(}\posO{4}\posO{,\,}\posD{[\,]}\posO{)} \posO{\cons} \posO{[\,]}\posO{)}}{\posC{10}}
-\slice{$\rightarrow$ 19 ([])}{\posO{(}\posO{1}\posO{,\,}\posO{(}\posO{2}\posO{,\,}\posO{(}\posO{3}\posO{,\,}\posO{[\,]}\posO{)} \posO{\cons} \posO{[\,]}\posO{)} \posO{\cons} \posO{(}\posO{4}\posO{,\,}\posD{[\,]}\posO{)} \posO{\cons} \posO{[\,]}\posO{)}}{\posO{10}}
-\slice{$\rightarrow$ 20 ([])}{\posO{(}\posO{1}\posO{,\,}\posO{(}\posO{2}\posO{,\,}\posO{(}\posO{3}\posO{,\,}\posO{[\,]}\posO{)} \posO{\cons} \posO{[\,]}\posO{)} \posO{\cons} \posO{(}\posO{4}\posO{,\,}\posO{[\,]}\posO{)} \posO{\cons} \posD{[\,]}\posO{)}}{\posC{10}}
-\slice{$\rightarrow$ 21 ([])}{\posO{(}\posO{1}\posO{,\,}\posO{(}\posO{2}\posO{,\,}\posO{(}\posO{3}\posO{,\,}\posO{[\,]}\posO{)} \posO{\cons} \posO{[\,]}\posO{)} \posO{\cons} \posO{(}\posO{4}\posO{,\,}\posO{[\,]}\posO{)} \posO{\cons} \posD{[\,]}\posO{)}}{\posO{10}}
-\run{score}
-\slice{$\leftarrow$ 0 (3)}{\posD{3}}{\posC{(}\posC{(}\posC{(}\posC{(}\posD{1}\posC{,\,}\posD{2}\posC{)}\posC{,\,}\posD{1}\posC{)}\posC{,\,}\posC{(}\posC{(}\posD{3}\posC{,\,}\posD{5}\posC{)}\posC{,\,}\posD{4}\posC{)}\posC{)}\posC{,\,}\posC{(}\posC{(}\posD{1}\posC{,\,}\posO{7}\posC{)}\posC{,\,}\posD{1}\posC{)}\posC{)}}
-\slice{$\rightarrow$ 0 (pr)}{\posD{(}\posO{(}\posO{(}\posO{(}\posO{1}\posO{,\,}\posO{2}\posO{)}\posO{,\,}\posO{1}\posO{)}\posO{,\,}\posO{(}\posO{(}\posO{3}\posO{,\,}\posO{5}\posO{)}\posO{,\,}\posO{4}\posO{)}\posO{)}\posD{,\,}\posO{(}\posO{(}\posO{1}\posO{,\,}\posO{7}\posO{)}\posO{,\,}\posO{1}\posO{)}\posD{)}}{\posC{3}}
-\slice{$\rightarrow$ 1 (pr)}{\posO{(}\posD{(}\posO{(}\posO{(}\posO{1}\posO{,\,}\posO{2}\posO{)}\posO{,\,}\posO{1}\posO{)}\posD{,\,}\posO{(}\posO{(}\posO{3}\posO{,\,}\posO{5}\posO{)}\posO{,\,}\posO{4}\posO{)}\posD{)}\posO{,\,}\posO{(}\posO{(}\posO{1}\posO{,\,}\posO{7}\posO{)}\posO{,\,}\posO{1}\posO{)}\posO{)}}{\posC{3}}
-\slice{$\rightarrow$ 2 (pr)}{\posO{(}\posO{(}\posD{(}\posO{(}\posO{1}\posO{,\,}\posO{2}\posO{)}\posD{,\,}\posO{1}\posD{)}\posO{,\,}\posO{(}\posO{(}\posO{3}\posO{,\,}\posO{5}\posO{)}\posO{,\,}\posO{4}\posO{)}\posO{)}\posO{,\,}\posO{(}\posO{(}\posO{1}\posO{,\,}\posO{7}\posO{)}\posO{,\,}\posO{1}\posO{)}\posO{)}}{\posC{3}}
-\slice{$\rightarrow$ 3 (pr)}{\posO{(}\posO{(}\posO{(}\posD{(}\posO{1}\posD{,\,}\posO{2}\posD{)}\posO{,\,}\posO{1}\posO{)}\posO{,\,}\posO{(}\posO{(}\posO{3}\posO{,\,}\posO{5}\posO{)}\posO{,\,}\posO{4}\posO{)}\posO{)}\posO{,\,}\posO{(}\posO{(}\posO{1}\posO{,\,}\posO{7}\posO{)}\posO{,\,}\posO{1}\posO{)}\posO{)}}{\posC{3}}
-\slice{$\rightarrow$ 4 (1)}{\posO{(}\posO{(}\posO{(}\posO{(}\posD{1}\posO{,\,}\posO{2}\posO{)}\posO{,\,}\posO{1}\posO{)}\posO{,\,}\posO{(}\posO{(}\posO{3}\posO{,\,}\posO{5}\posO{)}\posO{,\,}\posO{4}\posO{)}\posO{)}\posO{,\,}\posO{(}\posO{(}\posO{1}\posO{,\,}\posO{7}\posO{)}\posO{,\,}\posO{1}\posO{)}\posO{)}}{\posD{3}}
-\slice{$\rightarrow$ 5 (2)}{\posO{(}\posO{(}\posO{(}\posO{(}\posO{1}\posO{,\,}\posD{2}\posO{)}\posO{,\,}\posO{1}\posO{)}\posO{,\,}\posO{(}\posO{(}\posO{3}\posO{,\,}\posO{5}\posO{)}\posO{,\,}\posO{4}\posO{)}\posO{)}\posO{,\,}\posO{(}\posO{(}\posO{1}\posO{,\,}\posO{7}\posO{)}\posO{,\,}\posO{1}\posO{)}\posO{)}}{\posD{3}}
-\slice{$\rightarrow$ 6 (1)}{\posO{(}\posO{(}\posO{(}\posO{(}\posO{1}\posO{,\,}\posO{2}\posO{)}\posO{,\,}\posD{1}\posO{)}\posO{,\,}\posO{(}\posO{(}\posO{3}\posO{,\,}\posO{5}\posO{)}\posO{,\,}\posO{4}\posO{)}\posO{)}\posO{,\,}\posO{(}\posO{(}\posO{1}\posO{,\,}\posO{7}\posO{)}\posO{,\,}\posO{1}\posO{)}\posO{)}}{\posD{3}}
-\slice{$\rightarrow$ 7 (pr)}{\posO{(}\posO{(}\posO{(}\posO{(}\posO{1}\posO{,\,}\posO{2}\posO{)}\posO{,\,}\posO{1}\posO{)}\posO{,\,}\posD{(}\posO{(}\posO{3}\posO{,\,}\posO{5}\posO{)}\posD{,\,}\posO{4}\posD{)}\posO{)}\posO{,\,}\posO{(}\posO{(}\posO{1}\posO{,\,}\posO{7}\posO{)}\posO{,\,}\posO{1}\posO{)}\posO{)}}{\posC{3}}
-\slice{$\rightarrow$ 8 (pr)}{\posO{(}\posO{(}\posO{(}\posO{(}\posO{1}\posO{,\,}\posO{2}\posO{)}\posO{,\,}\posO{1}\posO{)}\posO{,\,}\posO{(}\posD{(}\posO{3}\posD{,\,}\posO{5}\posD{)}\posO{,\,}\posO{4}\posO{)}\posO{)}\posO{,\,}\posO{(}\posO{(}\posO{1}\posO{,\,}\posO{7}\posO{)}\posO{,\,}\posO{1}\posO{)}\posO{)}}{\posC{3}}
-\slice{$\rightarrow$ 9 (3)}{\posO{(}\posO{(}\posO{(}\posO{(}\posO{1}\posO{,\,}\posO{2}\posO{)}\posO{,\,}\posO{1}\posO{)}\posO{,\,}\posO{(}\posO{(}\posD{3}\posO{,\,}\posO{5}\posO{)}\posO{,\,}\posO{4}\posO{)}\posO{)}\posO{,\,}\posO{(}\posO{(}\posO{1}\posO{,\,}\posO{7}\posO{)}\posO{,\,}\posO{1}\posO{)}\posO{)}}{\posD{3}}
-\slice{$\rightarrow$ 10 (5)}{\posO{(}\posO{(}\posO{(}\posO{(}\posO{1}\posO{,\,}\posO{2}\posO{)}\posO{,\,}\posO{1}\posO{)}\posO{,\,}\posO{(}\posO{(}\posO{3}\posO{,\,}\posD{5}\posO{)}\posO{,\,}\posO{4}\posO{)}\posO{)}\posO{,\,}\posO{(}\posO{(}\posO{1}\posO{,\,}\posO{7}\posO{)}\posO{,\,}\posO{1}\posO{)}\posO{)}}{\posD{3}}
-\slice{$\rightarrow$ 11 (4)}{\posO{(}\posO{(}\posO{(}\posO{(}\posO{1}\posO{,\,}\posO{2}\posO{)}\posO{,\,}\posO{1}\posO{)}\posO{,\,}\posO{(}\posO{(}\posO{3}\posO{,\,}\posO{5}\posO{)}\posO{,\,}\posD{4}\posO{)}\posO{)}\posO{,\,}\posO{(}\posO{(}\posO{1}\posO{,\,}\posO{7}\posO{)}\posO{,\,}\posO{1}\posO{)}\posO{)}}{\posD{3}}
-\slice{$\rightarrow$ 12 (pr)}{\posO{(}\posO{(}\posO{(}\posO{(}\posO{1}\posO{,\,}\posO{2}\posO{)}\posO{,\,}\posO{1}\posO{)}\posO{,\,}\posO{(}\posO{(}\posO{3}\posO{,\,}\posO{5}\posO{)}\posO{,\,}\posO{4}\posO{)}\posO{)}\posO{,\,}\posD{(}\posO{(}\posO{1}\posO{,\,}\posO{7}\posO{)}\posD{,\,}\posO{1}\posD{)}\posO{)}}{\posC{3}}
-\slice{$\rightarrow$ 13 (pr)}{\posO{(}\posO{(}\posO{(}\posO{(}\posO{1}\posO{,\,}\posO{2}\posO{)}\posO{,\,}\posO{1}\posO{)}\posO{,\,}\posO{(}\posO{(}\posO{3}\posO{,\,}\posO{5}\posO{)}\posO{,\,}\posO{4}\posO{)}\posO{)}\posO{,\,}\posO{(}\posD{(}\posO{1}\posD{,\,}\posO{7}\posD{)}\posO{,\,}\posO{1}\posO{)}\posO{)}}{\posC{3}}
-\slice{$\rightarrow$ 14 (1)}{\posO{(}\posO{(}\posO{(}\posO{(}\posO{1}\posO{,\,}\posO{2}\posO{)}\posO{,\,}\posO{1}\posO{)}\posO{,\,}\posO{(}\posO{(}\posO{3}\posO{,\,}\posO{5}\posO{)}\posO{,\,}\posO{4}\posO{)}\posO{)}\posO{,\,}\posO{(}\posO{(}\posD{1}\posO{,\,}\posO{7}\posO{)}\posO{,\,}\posO{1}\posO{)}\posO{)}}{\posD{3}}
-\slice{$\rightarrow$ 15 (7)}{\posO{(}\posO{(}\posO{(}\posO{(}\posO{1}\posO{,\,}\posO{2}\posO{)}\posO{,\,}\posO{1}\posO{)}\posO{,\,}\posO{(}\posO{(}\posO{3}\posO{,\,}\posO{5}\posO{)}\posO{,\,}\posO{4}\posO{)}\posO{)}\posO{,\,}\posO{(}\posO{(}\posO{1}\posO{,\,}\posD{7}\posO{)}\posO{,\,}\posO{1}\posO{)}\posO{)}}{\posO{3}}
-\slice{$\rightarrow$ 16 (1)}{\posO{(}\posO{(}\posO{(}\posO{(}\posO{1}\posO{,\,}\posO{2}\posO{)}\posO{,\,}\posO{1}\posO{)}\posO{,\,}\posO{(}\posO{(}\posO{3}\posO{,\,}\posO{5}\posO{)}\posO{,\,}\posO{4}\posO{)}\posO{)}\posO{,\,}\posO{(}\posO{(}\posO{1}\posO{,\,}\posO{7}\posO{)}\posO{,\,}\posD{1}\posO{)}\posO{)}}{\posD{3}}
-\run{map (matrix)}
 {\scriptsize\setlength{\tabcolsep}{1.5pt}%
 \begin{tabular}{lccccccc}
  & $0$ & $\cons$ & $1$ & $\cons$ & $2$ & $\cons$ & $[\,]$ \\
@@ -247,7 +64,7 @@ $3$ & \gcell{$$} & \gcell{$\posC{\circ}$} & \gcell{$$} & \gcell{$\posC{\circ}$} 
 $\cons$ & \gcell{$$} & \gcell{$\posC{\circ}$} & \gcell{$$} & \gcell{$\posC{\circ}$} & \gcell{$$} & \gcell{$\posC{\circ}$} & \gcell{$$} \\
 $[\,]$ & \gcell{$$} & \gcell{$\posC{\circ}$} & \gcell{$$} & \gcell{$\posC{\circ}$} & \gcell{$$} & \gcell{$\posC{\circ}$} & \gcell{$\posC{\circ}$} \\
 \end{tabular}}
-\run{window (matrix)}
+\run{window}
 {\scriptsize\setlength{\tabcolsep}{1.5pt}%
 \begin{tabular}{lccccccccc}
  & $0$ & $\cons$ & $1$ & $\cons$ & $2$ & $\cons$ & $4$ & $\cons$ & $[\,]$ \\
@@ -259,9 +76,68 @@ $6$ & \gcell{$$} & \gcell{$\posC{\circ}$} & \gcell{$$} & \gcell{$\posC{\circ}$} 
 $\cons$ & \gcell{$$} & \gcell{$\posC{\circ}$} & \gcell{$$} & \gcell{$\posC{\circ}$} & \gcell{$$} & \gcell{$\posC{\circ}$} & \gcell{$$} & \gcell{$\posC{\circ}$} & \gcell{$$} \\
 $[\,]$ & \gcell{$$} & \gcell{$\posC{\circ}$} & \gcell{$$} & \gcell{$\posC{\circ}$} & \gcell{$$} & \gcell{$\posC{\circ}$} & \gcell{$$} & \gcell{$\posC{\circ}$} & \gcell{$\posC{\circ}$} \\
 \end{tabular}}
-\run{query (matrix)}
+\run{filter}
 {\scriptsize\setlength{\tabcolsep}{1.5pt}%
-\begin{tabular}{lccccccccccccccccccc}
- & $($ & $a$ & $,$ & $0$ & $)$ & $\cons$ & $($ & $b$ & $,$ & $1$ & $)$ & $\cons$ & $($ & $a$ & $,$ & $1$ & $)$ & $\cons$ & $[\,]$ \\
-$1$ & \gcell{$\posC{\circ}$} & \gcell{$$} & \gcell{$$} & \gcell{$\posD{\bullet}$} & \gcell{$$} & \gcell{$\posC{\circ}$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$\posC{\circ}$} & \gcell{$\posC{\circ}$} & \gcell{$$} & \gcell{$$} & \gcell{$\posD{\bullet}$} & \gcell{$$} & \gcell{$\posC{\circ}$} & \gcell{$\posC{\circ}$} \\
+\begin{tabular}{lccccccccc}
+ & $2$ & $;$ & $1$ & $\cons$ & $2$ & $\cons$ & $3$ & $\cons$ & $[\,]$ \\
+$2$ & \gcell{$\posC{\circ}$} & \gcell{$$} & \gcell{$\posC{\circ}$} & \gcell{$\posC{\circ}$} & \gcell{$\posD{\bullet}$} & \gcell{$\posC{\circ}$} & \gcell{$$} & \gcell{$$} & \gcell{$$} \\
+$\cons$ & \gcell{$\posC{\circ}$} & \gcell{$$} & \gcell{$\posC{\circ}$} & \gcell{$\posC{\circ}$} & \gcell{$\posC{\circ}$} & \gcell{$\posC{\circ}$} & \gcell{$$} & \gcell{$$} & \gcell{$$} \\
+$[\,]$ & \gcell{$\posC{\circ}$} & \gcell{$$} & \gcell{$\posC{\circ}$} & \gcell{$\posC{\circ}$} & \gcell{$\posC{\circ}$} & \gcell{$\posC{\circ}$} & \gcell{$\posC{\circ}$} & \gcell{$\posC{\circ}$} & \gcell{$\posC{\circ}$} \\
+\end{tabular}}
+\run{cond}
+{\scriptsize\setlength{\tabcolsep}{1.5pt}%
+\begin{tabular}{lccc}
+ & $0$ & $;$ & $1$ \\
+$2$ & \gcell{$\posC{\circ}$} & \gcell{$$} & \gcell{$\posD{\bullet}$} \\
+\end{tabular}}
+\run{eq}
+{\scriptsize\setlength{\tabcolsep}{1.5pt}%
+\begin{tabular}{lc}
+ & $0$ \\
+$\mathsf{inl}\,$ & \gcell{$\posD{\bullet}$} \\
+$()$ & \gcell{$$} \\
+\end{tabular}}
+\run{mult}
+{\scriptsize\setlength{\tabcolsep}{1.5pt}%
+\begin{tabular}{lccccc}
+ & $($ & $1$ & $,$ & $0$ & $)$ \\
+$0$ & \gcell{$\posC{\circ}$} & \gcell{$$} & \gcell{$$} & \gcell{$\posD{\bullet}$} & \gcell{$$} \\
+\end{tabular}}
+\run{mavg}
+{\scriptsize\setlength{\tabcolsep}{1.5pt}%
+\begin{tabular}{lccccccccccccc}
+ & $($ & $1$ & $,$ & $($ & $2$ & $,$ & $($ & $4$ & $,$ & $8$ & $)$ & $)$ & $)$ \\
+$($ & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} \\
+$3/2$ & \gcell{$\posC{\circ}$} & \gcell{$\posD{\bullet}$} & \gcell{$$} & \gcell{$\posC{\circ}$} & \gcell{$\posD{\bullet}$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} \\
+$,$ & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} \\
+$($ & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} \\
+$3$ & \gcell{$\posC{\circ}$} & \gcell{$$} & \gcell{$$} & \gcell{$\posC{\circ}$} & \gcell{$\posD{\bullet}$} & \gcell{$$} & \gcell{$\posC{\circ}$} & \gcell{$\posD{\bullet}$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} \\
+$,$ & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} \\
+$6$ & \gcell{$\posC{\circ}$} & \gcell{$$} & \gcell{$$} & \gcell{$\posC{\circ}$} & \gcell{$$} & \gcell{$$} & \gcell{$\posC{\circ}$} & \gcell{$\posD{\bullet}$} & \gcell{$$} & \gcell{$\posD{\bullet}$} & \gcell{$$} & \gcell{$$} & \gcell{$$} \\
+$)$ & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} \\
+$)$ & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} \\
+\end{tabular}}
+\run{total}
+{\scriptsize\setlength{\tabcolsep}{1.5pt}%
+\begin{tabular}{lccccccccccccccccccccccccccc}
+ & $($ & $($ & $a$ & $,$ & $0$ & $)$ & $\cons$ & $($ & $b$ & $,$ & $1$ & $)$ & $\cons$ & $($ & $a$ & $,$ & $1$ & $)$ & $\cons$ & $[\,]$ & $,$ & $($ & $1$ & $,$ & $2$ & $)$ & $)$ \\
+$1$ & \gcell{$\posC{\circ}$} & \gcell{$\posC{\circ}$} & \gcell{$$} & \gcell{$$} & \gcell{$\posD{\bullet}$} & \gcell{$$} & \gcell{$\posC{\circ}$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$\posC{\circ}$} & \gcell{$\posC{\circ}$} & \gcell{$$} & \gcell{$$} & \gcell{$\posD{\bullet}$} & \gcell{$$} & \gcell{$\posC{\circ}$} & \gcell{$\posC{\circ}$} & \gcell{$$} & \gcell{$\posC{\circ}$} & \gcell{$\posD{\bullet}$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} \\
+\end{tabular}}
+\run{sum-mul}
+{\scriptsize\setlength{\tabcolsep}{1.5pt}%
+\begin{tabular}{lccccccccccc}
+ & $($ & $0$ & $\cons$ & $1$ & $\cons$ & $2$ & $\cons$ & $[\,]$ & $,$ & $2$ & $)$ \\
+$6$ & \gcell{$\posC{\circ}$} & \gcell{$\posD{\bullet}$} & \gcell{$\posC{\circ}$} & \gcell{$\posD{\bullet}$} & \gcell{$\posC{\circ}$} & \gcell{$\posD{\bullet}$} & \gcell{$\posC{\circ}$} & \gcell{$\posC{\circ}$} & \gcell{$$} & \gcell{$\posD{\bullet}$} & \gcell{$$} \\
+\end{tabular}}
+\run{rose}
+{\scriptsize\setlength{\tabcolsep}{1.5pt}%
+\begin{tabular}{lccccccccccccccccccccccc}
+ & $($ & $1$ & $,$ & $($ & $2$ & $,$ & $($ & $3$ & $,$ & $[\,]$ & $)$ & $\cons$ & $[\,]$ & $)$ & $\cons$ & $($ & $4$ & $,$ & $[\,]$ & $)$ & $\cons$ & $[\,]$ & $)$ \\
+$10$ & \gcell{$\posC{\circ}$} & \gcell{$\posD{\bullet}$} & \gcell{$$} & \gcell{$\posC{\circ}$} & \gcell{$\posD{\bullet}$} & \gcell{$$} & \gcell{$\posC{\circ}$} & \gcell{$\posD{\bullet}$} & \gcell{$$} & \gcell{$\posC{\circ}$} & \gcell{$$} & \gcell{$\posC{\circ}$} & \gcell{$\posC{\circ}$} & \gcell{$$} & \gcell{$\posC{\circ}$} & \gcell{$\posC{\circ}$} & \gcell{$\posD{\bullet}$} & \gcell{$$} & \gcell{$\posC{\circ}$} & \gcell{$$} & \gcell{$\posC{\circ}$} & \gcell{$\posC{\circ}$} & \gcell{$$} \\
+\end{tabular}}
+\run{score}
+{\scriptsize\setlength{\tabcolsep}{1.5pt}%
+\begin{tabular}{lccccccccccccccccccccccccccccccccc}
+ & $($ & $($ & $($ & $($ & $1$ & $,$ & $2$ & $)$ & $,$ & $1$ & $)$ & $,$ & $($ & $($ & $3$ & $,$ & $5$ & $)$ & $,$ & $4$ & $)$ & $)$ & $,$ & $($ & $($ & $1$ & $,$ & $7$ & $)$ & $,$ & $1$ & $)$ & $)$ \\
+$3$ & \gcell{$\posC{\circ}$} & \gcell{$\posC{\circ}$} & \gcell{$\posC{\circ}$} & \gcell{$\posC{\circ}$} & \gcell{$\posD{\bullet}$} & \gcell{$$} & \gcell{$\posD{\bullet}$} & \gcell{$$} & \gcell{$$} & \gcell{$\posD{\bullet}$} & \gcell{$$} & \gcell{$$} & \gcell{$\posC{\circ}$} & \gcell{$\posC{\circ}$} & \gcell{$\posD{\bullet}$} & \gcell{$$} & \gcell{$\posD{\bullet}$} & \gcell{$$} & \gcell{$$} & \gcell{$\posD{\bullet}$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$\posC{\circ}$} & \gcell{$\posC{\circ}$} & \gcell{$\posD{\bullet}$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$$} & \gcell{$\posD{\bullet}$} & \gcell{$$} & \gcell{$$} \\
 \end{tabular}}

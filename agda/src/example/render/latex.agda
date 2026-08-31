@@ -1,20 +1,17 @@
 {-# OPTIONS --prop --postfix-projections --guardedness #-}
 
--- A constructor's positions have identical matrix rows, so one line per constructor suffices,
--- selected at its first position. Run from the approx-diff repository root.
+-- Run from the approx-diff repository root.
 module example.render.latex where
 
 open import IO
 open import IO.Finite using (writeFile)
-open import Data.Bool using (if_then_else_)
-open import Data.List using (List; []; _∷_; concat; map)
-open import Data.Nat using (ℕ; zero; suc; _≡ᵇ_; _+_)
-import Data.Nat.Show as ℕ-Show
+open import Data.List using (List; []; _∷_; map)
+open import Data.Nat using (ℕ; zero; suc; _+_)
 open import Data.Product using (_×_; _,_)
 open import Data.Unit using (⊤)
 import Data.Vec as Vec
 open import Data.Vec using (toList; tabulate)
-open import Data.String using (String; _++_; _==_)
+open import Data.String using (String; _++_)
 import matrix
 import three
 open import semiring-Q using (nonzero)
@@ -27,39 +24,12 @@ open import example.runs (nonzero three.semiring) three.semiring three.C
 open import example.render.constants (nonzero three.semiring) three.semiring using (show-const)
 import example.render.annotated-value as AV
 open AV Sig three.semiring interpretation three.C
-  using (AVal; node; Tag; arity; width; label-of; fold-all; shape-of; shape-env-of)
+  using (AVal; node; Tag; width; shape-of; shape-env-of)
 open AV.annotate Sig three.semiring interpretation three.C three.semiring
-  using (row→aval; row→avals; block-sum)
+  using (block-sum)
 
 private
   module M3 = matrix.Mat three.semiring
-
-  cmd : three.Three → String → String
-  cmd three.D s = "\\posD{" ++ s ++ "}"
-  cmd three.C s = "\\posC{" ++ s ++ "}"
-  cmd three.O s = "\\posO{" ++ s ++ "}"
-
-  tex-aval : AVal three.Three → String
-  tex-kids : ∀ {k} → Vec.Vec (AVal three.Three) k → String
-
-  tex-aval (node Tag.unit      a _ _)  = cmd a "()"
-  tex-aval (node (Tag.const l) a _ _)  = cmd a l
-  tex-aval (node Tag.inl       a _ cs) = cmd a "\\mathsf{inl}\\," ++ tex-kids cs
-  tex-aval (node Tag.inr       a _ cs) = cmd a "\\mathsf{inr}\\," ++ tex-kids cs
-  tex-aval (node (Tag.clo _)   a _ _)  = cmd a "\\lambda"
-  tex-aval (node Tag.nil       a _ _)  = cmd a "[\\,]"
-  tex-aval (node Tag.pair      a _ (p Vec.∷ q Vec.∷ Vec.[])) =
-    cmd a "(" ++ tex-aval p ++ cmd a ",\\," ++ tex-aval q ++ cmd a ")"
-  tex-aval (node Tag.cons      a _ (h Vec.∷ t Vec.∷ Vec.[])) =
-    tex-aval h ++ " " ++ cmd a "\\cons" ++ " " ++ tex-aval t
-
-  tex-kids Vec.[]      = ""
-  tex-kids (t Vec.∷ _) = tex-aval t
-
-  tex-env : List (AVal three.Three) → String
-  tex-env []       = ""
-  tex-env (c ∷ []) = tex-aval c
-  tex-env (c ∷ cs) = tex-aval c ++ ";\\ " ++ tex-env cs
 
   at : List three.Three → ℕ → three.Three
   at []       _       = three.O
@@ -74,34 +44,8 @@ private
   rows : ∀ {m n} → M3.Matrix m n → List (List three.Three)
   rows M = toList (tabulate (λ q → toList (tabulate (M q))))
 
-  δ : ℕ → ℕ → three.Three
-  δ p i = if i ≡ᵇ p then three.D else three.O
-
   shw : ∀ {s} → _ → String
   shw {s} c = show-const {s} c
-
-  tex-out : Run → (ℕ → three.Three) → String
-  tex-out r f = tex-aval (row→aval (λ {s} c → shw {s} c) f (model-output r))
-
-  tex-in : Run → (ℕ → three.Three) → String
-  tex-in r f = tex-env (row→avals (λ {s} c → shw {s} c) f (env r))
-
-  entries : String → ℕ → ℕ → List (ℕ × String)
-  entries l zero    _   = []
-  entries l (suc k) off = (off , l) ∷ entries l k (suc off)
-
-  app : List (ℕ × String) → List (ℕ × String) → List (ℕ × String)
-  app []       ys = ys
-  app (x ∷ xs) ys = x ∷ app xs ys
-
-  node-entry : ∀ (t : Tag) → ⊤ → ℕ → ℕ → Vec.Vec (List (ℕ × String)) (arity t) → List (ℕ × String)
-  node-entry t _ n off rs = app (entries (label-of t) n off) (concat (toList rs))
-
-  reps-of : List (AVal ⊤) → List (ℕ × String)
-  reps-of ts = concat (fold-all node-entry 0 ts)
-
-  tex-label : String → String
-  tex-label l = if l == "∷" then "$\\cons$" else l
 
   cat : List String → String
   cat []       = ""
@@ -169,61 +113,34 @@ private
 
   grid : String → Run → String
   grid name r =
-    frame (name ++ " (matrix)") (crep (count itoks)) (cat (map mhead itoks))
+    frame name (crep (count itoks)) (cat (map mhead itoks))
           (cat (map (mrow (rows (model-of r)) itoks) otoks))
     where
     itoks = in-tokens r
     otoks = out-tokens r
-  bpair fpair : Run → ℕ × String → String × String
-  bpair r (q , l) =
-    ("$\\leftarrow$ " ++ ℕ-Show.show q ++ " (" ++ tex-label l ++ ")") ,
-    ("{" ++ tex-out r (δ q) ++ "}{" ++ tex-in r (at (nth q (rows (model-of r)))) ++ "}")
-  fpair r (p , l) =
-    ("$\\rightarrow$ " ++ ℕ-Show.show p ++ " (" ++ tex-label l ++ ")") ,
-    ("{" ++ tex-in r (δ p) ++ "}{" ++ tex-out r (at (nth p (rows (model-of r M3.ᵀ)))) ++ "}")
-
-  line : String → String → String
-  line l b = "\\slice{" ++ l ++ "}" ++ b ++ "\n"
-
-  collapse : List (String × String) → String
-  collapse []             = ""
-  collapse ((l , b) ∷ xs) = go l b xs
-    where
-    go : String → String → List (String × String) → String
-    go l b []               = line l b
-    go l b ((l' , b') ∷ xs) = if b == b' then go l b xs else line l b ++ go l' b' xs
-
-  catalogue : String → Run → String
-  catalogue name r =
-    "\\run{" ++ name ++ "}\n"
-    ++ collapse (map (bpair r) (reps-of (shape-of (λ {s} c → shw {s} c) (model-output r) ∷ [])))
-    ++ collapse (map (fpair r) (reps-of (shape-env-of (λ {s} c → shw {s} c) (env r))))
 
 contents : String
 contents =
-  catalogue "query"      query-run   ++
-  catalogue "const"      const-run   ++
-  catalogue "length"     length-run  ++
-  catalogue "fold0"      fold0-run   ++
-  catalogue "case0"      case0-run   ++
-  catalogue "tag"        tag-run     ++
-  catalogue "case-left"  case-l-run  ++
-  catalogue "case-right" case-r-run  ++
-  catalogue "test"       test-run    ++
-  catalogue "map"        map-run     ++
-  catalogue "window"     window-run  ++
-  catalogue "filter"     filter-run  ++
-  catalogue "cond"       cond-run    ++
-  catalogue "eq"         eq-run      ++
-  catalogue "mult"       mult-run    ++
-  catalogue "mavg"       mavg-run    ++
-  catalogue "total"      total-run   ++
-  catalogue "sum-mul"    sum-mul-run ++
-  catalogue "rose"       rose-run    ++
-  catalogue "score"      score-run   ++
-  grid "map"    map-run    ++
-  grid "window" window-run ++
-  grid "query"  query-run
+  grid "query"       query-run ++
+  grid "const"       const-run ++
+  grid "length"      length-run ++
+  grid "fold0"       fold0-run ++
+  grid "case0"       case0-run ++
+  grid "tag"         tag-run ++
+  grid "case-left"   case-l-run ++
+  grid "case-right"  case-r-run ++
+  grid "test"        test-run ++
+  grid "map"         map-run ++
+  grid "window"      window-run ++
+  grid "filter"      filter-run ++
+  grid "cond"        cond-run ++
+  grid "eq"          eq-run ++
+  grid "mult"        mult-run ++
+  grid "mavg"        mavg-run ++
+  grid "total"       total-run ++
+  grid "sum-mul"     sum-mul-run ++
+  grid "rose"        rose-run ++
+  grid "score"       score-run
 
 main : Main
 main = run (writeFile "test-baselines/slices.tex" contents)
