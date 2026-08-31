@@ -160,7 +160,7 @@ private
 
   frame : String → String → String → String → String
   frame name spec header body =
-    "\\run{" ++ name ++ "}\n{\\scriptsize\\setlength{\\tabcolsep}{2.5pt}%\n\\begin{tabular}{l"
+    "\\run{" ++ name ++ "}\n{\\scriptsize\\setlength{\\tabcolsep}{1.5pt}%\n\\begin{tabular}{l"
     ++ spec ++ "}\n" ++ header ++ " \\\\\n" ++ body ++ "\\end{tabular}}\n"
 
   in-tokens out-tokens : Run → List (String × ℕ × ℕ)
