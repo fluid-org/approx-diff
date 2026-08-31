@@ -8,7 +8,7 @@ open import IO
 open import IO.Finite using (writeFile)
 open import Data.Bool using (if_then_else_)
 open import Data.List using (List; []; _∷_; concat; map)
-open import Data.Nat using (ℕ; zero; suc; _≡ᵇ_)
+open import Data.Nat using (ℕ; zero; suc; _≡ᵇ_; _+_)
 import Data.Nat.Show as ℕ-Show
 open import Data.Product using (_×_; _,_)
 open import Data.Unit using (⊤)
@@ -27,7 +27,7 @@ open import example.runs (nonzero three.semiring) three.semiring three.C
 open import example.render.constants (nonzero three.semiring) three.semiring using (show-const)
 import example.render.annotated-value as AV
 open AV Sig three.semiring interpretation three.C
-  using (AVal; node; Tag; arity; label-of; fold-all; shape-of; shape-env-of)
+  using (AVal; node; Tag; arity; covers; label-of; fold-all; shape-of; shape-env-of)
 open AV.annotate Sig three.semiring interpretation three.C three.semiring
   using (row→aval; row→avals)
 
@@ -103,6 +103,81 @@ private
   tex-label : String → String
   tex-label l = if l == "∷" then "$\\cons$" else l
 
+  cat : List String → String
+  cat []       = ""
+  cat (s ∷ ss) = s ++ cat ss
+
+  appL : {A : Set} → List A → List A → List A
+  appL []       ys = ys
+  appL (x ∷ xs) ys = x ∷ appL xs ys
+
+  tokens : ℕ → AVal ⊤ → List (String × ℕ × ℕ)
+  tokens-vec : ∀ {k} → ℕ → Vec.Vec (AVal ⊤) k → List (String × ℕ × ℕ)
+
+  tokens off (node Tag.unit      _ n _)  = ("()" , n , off) ∷ []
+  tokens off (node (Tag.const l) _ n _)  = (l , n , off) ∷ []
+  tokens off (node Tag.inl       _ n cs) = ("\\mathsf{inl}\\," , n , off) ∷ tokens-vec (off + n) cs
+  tokens off (node Tag.inr       _ n cs) = ("\\mathsf{inr}\\," , n , off) ∷ tokens-vec (off + n) cs
+  tokens off (node (Tag.clo _)   _ n _)  = ("\\lambda" , n , off) ∷ []
+  tokens off (node Tag.nil       _ n _)  = ("[\\,]" , n , off) ∷ []
+  tokens off (node Tag.pair      _ n (p Vec.∷ q Vec.∷ Vec.[])) =
+    ("(" , n , off) ∷ appL (tokens (off + n) p)
+      (("," , 0 , 0) ∷ appL (tokens (off + n + covers p) q) ((")" , 0 , 0) ∷ []))
+  tokens off (node Tag.cons      _ n (h Vec.∷ t Vec.∷ Vec.[])) =
+    appL (tokens (off + n) h) (("\\cons" , n , off) ∷ tokens (off + n + covers h) t)
+
+  tokens-vec off Vec.[]      = []
+  tokens-vec off (t Vec.∷ _) = tokens off t
+
+  tokens-env : ℕ → List (AVal ⊤) → List (String × ℕ × ℕ)
+  tokens-env _   []       = []
+  tokens-env off (c ∷ []) = tokens off c
+  tokens-env off (c ∷ cs) = appL (tokens off c) ((";" , 0 , 0) ∷ tokens-env (off + covers c) cs)
+
+  max1 : ℕ → ℕ
+  max1 zero    = suc zero
+  max1 (suc k) = suc k
+
+  ncols : List (String × ℕ × ℕ) → ℕ
+  ncols []                 = 0
+  ncols ((_ , n , _) ∷ ts) = max1 n + ncols ts
+
+  crep : ℕ → String
+  crep zero    = ""
+  crep (suc k) = "c" ++ crep k
+
+  mark : three.Three → String
+  mark three.D = "\\posD{D}"
+  mark three.C = "\\posC{C}"
+  mark three.O = ""
+
+  hcell : String × ℕ × ℕ → String
+  hcell (l , zero , _)        = " & $" ++ l ++ "$"
+  hcell (l , suc zero , _)    = " & $" ++ l ++ "$"
+  hcell (l , suc (suc k) , _) = " & \\multicolumn{" ++ ℕ-Show.show (suc (suc k)) ++ "}{c}{$" ++ l ++ "$}"
+
+  cells-for : (ℕ → three.Three) → String × ℕ × ℕ → String
+  cells-for v (_ , zero , _)    = " & "
+  cells-for v (_ , suc k , off) = go (suc k) off
+    where
+    go : ℕ → ℕ → String
+    go zero    _ = ""
+    go (suc k) o = " & " ++ mark (v o) ++ go k (suc o)
+
+  grid-row : List (String × ℕ × ℕ) → List (List three.Three) → String × ℕ × ℕ → String
+  grid-row itoks rs (l , zero  , _)   = "$" ++ l ++ "$" ++ cat (map (cells-for (λ _ → three.O)) itoks) ++ " \\\\\n"
+  grid-row itoks rs (l , suc k , off) = "$" ++ l ++ "$" ++ cat (map (cells-for (at (nth off rs))) itoks) ++ " \\\\\n"
+
+  grid : String → Run → String
+  grid name r =
+    "\\run{" ++ name ++ " (matrix)}\n{\\scriptsize\\setlength{\\tabcolsep}{2.5pt}%\n\\begin{tabular}{l"
+    ++ crep (ncols itoks) ++ "}\n" ++ cat (map hcell itoks) ++ " \\\\\n"
+    ++ cat (map (grid-row itoks (rows (model-of r))) otoks)
+    ++ "\\end{tabular}}\n"
+    where
+    itoks = tokens-env 0 (shape-env-of (λ {s} c → shw {s} c) (env r))
+    otoks = tokens 0 (shape-of (λ {s} c → shw {s} c) (model-output r))
+
   bpair fpair : Run → ℕ × String → String × String
   bpair r (q , l) =
     ("$\\leftarrow$ " ++ ℕ-Show.show q ++ " (" ++ tex-label l ++ ")") ,
@@ -147,7 +222,9 @@ contents =
   catalogue "mavg"       mavg-run    ++
   catalogue "total"      total-run   ++
   catalogue "sum-mul"    sum-mul-run ++
-  catalogue "rose"       rose-run
+  catalogue "rose"       rose-run    ++
+  grid "map"   map-run   ++
+  grid "query" query-run
 
 main : Main
 main = run (writeFile "test-baselines/slices.tex" contents)

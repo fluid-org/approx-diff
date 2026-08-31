@@ -195,3 +195,21 @@
 \slice{$\rightarrow$ 19 ([])}{\posO{(}\posO{1}\posO{,\,}\posO{(}\posO{2}\posO{,\,}\posO{(}\posO{3}\posO{,\,}\posO{[\,]}\posO{)} \posO{\cons} \posO{[\,]}\posO{)} \posO{\cons} \posO{(}\posO{4}\posO{,\,}\posD{[\,]}\posO{)} \posO{\cons} \posO{[\,]}\posO{)}}{\posO{10}}
 \slice{$\rightarrow$ 20 ([])}{\posO{(}\posO{1}\posO{,\,}\posO{(}\posO{2}\posO{,\,}\posO{(}\posO{3}\posO{,\,}\posO{[\,]}\posO{)} \posO{\cons} \posO{[\,]}\posO{)} \posO{\cons} \posO{(}\posO{4}\posO{,\,}\posO{[\,]}\posO{)} \posO{\cons} \posD{[\,]}\posO{)}}{\posC{10}}
 \slice{$\rightarrow$ 21 ([])}{\posO{(}\posO{1}\posO{,\,}\posO{(}\posO{2}\posO{,\,}\posO{(}\posO{3}\posO{,\,}\posO{[\,]}\posO{)} \posO{\cons} \posO{[\,]}\posO{)} \posO{\cons} \posO{(}\posO{4}\posO{,\,}\posO{[\,]}\posO{)} \posO{\cons} \posD{[\,]}\posO{)}}{\posO{10}}
+\run{map (matrix)}
+{\scriptsize\setlength{\tabcolsep}{2.5pt}%
+\begin{tabular}{lccccccccccc}
+ & $0$ & \multicolumn{2}{c}{$\cons$} & $1$ & \multicolumn{2}{c}{$\cons$} & $2$ & \multicolumn{2}{c}{$\cons$} & \multicolumn{2}{c}{$[\,]$} \\
+$1$ & \posD{D} & \posC{C} & \posC{C} &  &  &  &  &  &  &  &  \\
+$\cons$ &  & \posC{C} &  &  &  &  &  &  &  &  &  \\
+$2$ &  & \posC{C} & \posC{C} & \posD{D} & \posC{C} & \posC{C} &  &  &  &  &  \\
+$\cons$ &  & \posC{C} & \posC{C} &  & \posC{C} &  &  &  &  &  &  \\
+$3$ &  & \posC{C} & \posC{C} &  & \posC{C} & \posC{C} & \posD{D} & \posC{C} & \posC{C} &  &  \\
+$\cons$ &  & \posC{C} & \posC{C} &  & \posC{C} & \posC{C} &  & \posC{C} &  &  &  \\
+$[\,]$ &  & \posC{C} & \posC{C} &  & \posC{C} & \posC{C} &  & \posC{C} & \posC{C} & \posC{C} &  \\
+\end{tabular}}
+\run{query (matrix)}
+{\scriptsize\setlength{\tabcolsep}{2.5pt}%
+\begin{tabular}{lccccccccccccccccccccccc}
+ & $($ & $a$ & $,$ & $0$ & $)$ & \multicolumn{2}{c}{$\cons$} & $($ & $b$ & $,$ & $1$ & $)$ & \multicolumn{2}{c}{$\cons$} & $($ & $a$ & $,$ & $1$ & $)$ & \multicolumn{2}{c}{$\cons$} & \multicolumn{2}{c}{$[\,]$} \\
+$1$ & \posC{C} &  &  & \posD{D} &  & \posC{C} & \posC{C} &  &  &  &  &  & \posC{C} & \posC{C} & \posC{C} &  &  & \posD{D} &  & \posC{C} & \posC{C} & \posC{C} &  \\
+\end{tabular}}
