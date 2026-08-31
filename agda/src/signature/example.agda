@@ -7,19 +7,19 @@ module signature.example (Num : Set) where
 open import Level using (0ℓ)
 open import signature using (Signature)
 open import Data.List using (List; []; _∷_)
-import label
+open import Data.String using (String)
 
 data sort : Set where
-  number label : sort
+  number string : sort
 
 data op : List sort → sort → Set where
   lit  : Num → op [] number
   add  : op (number ∷ number ∷ []) number
   mult : op (number ∷ number ∷ []) number
-  lbl  : label.label → op [] label
+  str  : String → op [] string
 
 data rel : List sort → Set where
-  equal-label : rel (label ∷ label ∷ [])
+  equal-string : rel (string ∷ string ∷ [])
   equal-number : rel (number ∷ number ∷ [])
   less-number : rel (number ∷ number ∷ [])
 

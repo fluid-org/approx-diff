@@ -8,15 +8,15 @@ module example.programs where
 import Data.Fin as Fin
 open import Data.Rational using (ℚ; 0ℚ; 1ℚ)
 open import Data.List.Relation.Unary.All using ([]; _∷_)
-import label
+open import Data.String using (String)
 open import signature.example ℚ
 open import language-syntax Sig
 
-`_ : ∀ {Γ} → label.label → Γ ⊢ base label
-` l = bop (lbl l) []
+`_ : ∀ {Γ} → String → Γ ⊢ base string
+` s = bop (str s) []
 
-_≟_ : ∀ {Γ} → Γ ⊢ base label → Γ ⊢ base label → Γ ⊢ bool
-M ≟ N = brel equal-label (M ∷ N ∷ [])
+_≟_ : ∀ {Γ} → Γ ⊢ base string → Γ ⊢ base string → Γ ⊢ bool
+M ≟ N = brel equal-string (M ∷ N ∷ [])
 
 sum : ∀ {Γ} → Γ ⊢ list (base number) [→] base number
 sum = lam (foldr (bop (lit 0ℚ) []) (bop add (var zero ∷ var (succ zero) ∷ [])) (var zero))
@@ -24,12 +24,12 @@ sum = lam (foldr (bop (lit 0ℚ) []) (bop add (var zero ∷ var (succ zero) ∷ 
 ------------------------------------------------------------------------------
 -- Programs over a list of labelled numbers.
 
-query-ctxt-fo : first-order-ctxt (emp , list (base label [×] base number))
-query-ctxt-fo = emp , μ (unit [+] ((base label [×] base number) [×] var Fin.zero))
+query-ctxt-fo : first-order-ctxt (emp , list (base string [×] base number))
+query-ctxt-fo = emp , μ (unit [+] ((base string [×] base number) [×] var Fin.zero))
 
 -- The running example: add up the numbers carrying a given label,
 --   sum [ snd e | e <- xs, equal-label l (fst e) ].
-query : label.label → emp , list (base label [×] base number) ⊢ base number
+query : String → emp , list (base string [×] base number) ⊢ base number
 query l =
   app sum
     (from var zero collect
@@ -37,11 +37,11 @@ query l =
     return (snd (var zero)))
 
 -- Ignores its input: every column must be zero.
-const-term : (emp , list (base label [×] base number)) ⊢ base number
+const-term : (emp , list (base string [×] base number)) ⊢ base number
 const-term = bop (lit 0ℚ) []
 
 -- Length: a fold ignoring the element, so only the cons cells should register.
-length-term : (emp , list (base label [×] base number)) ⊢ base number
+length-term : (emp , list (base string [×] base number)) ⊢ base number
 length-term =
   fold (case (var zero)
           (bop (lit 0ℚ) [])
@@ -49,35 +49,35 @@ length-term =
        (var zero)
 
 -- A fold whose body reads nothing: separates the fold itself from what its body consults.
-fold0-term : (emp , list (base label [×] base number)) ⊢ base number
+fold0-term : (emp , list (base string [×] base number)) ⊢ base number
 fold0-term = fold (bop (lit 0ℚ) []) (var zero)
 
 -- Matches the unfolding but returns a constant either way: separates matching from reading.
-case0-term : (emp , list (base label [×] base number)) ⊢ base number
+case0-term : (emp , list (base string [×] base number)) ⊢ base number
 case0-term = fold (case (var zero) (bop (lit 0ℚ) []) (bop (lit 0ℚ) [])) (var zero)
 
 -- Zero for nil, one for cons: should register the outermost tag and nothing else.
-tag-term : (emp , list (base label [×] base number)) ⊢ base number
+tag-term : (emp , list (base string [×] base number)) ⊢ base number
 tag-term = fold (case (var zero) (bop (lit 0ℚ) []) (bop (lit 1ℚ) [])) (var zero)
 
 -- Price-weighted sum of the quantities with a given label; the per-label prices are a further
 -- pair of inputs.
-total : label.label →
-        emp , (list (base label [×] base number)) [×] (base number [×] base number) ⊢ base number
+total : String →
+        emp , (list (base string [×] base number)) [×] (base number [×] base number) ⊢ base number
 total l = app sum
               (from fst (var zero) collect
                when fst (var zero) ≟ (` l) ；
                return (bop mult (price l ∷ snd (var zero) ∷ [])))
   where
-    price : label.label →
-            (emp , (list (base label [×] base number)) [×] (base number [×] base number))
-              , (base label [×] base number) ⊢ base number
-    price label.a = fst (snd (var (succ zero)))
+    price : String →
+            (emp , (list (base string [×] base number)) [×] (base number [×] base number))
+              , (base string [×] base number) ⊢ base number
+    price "a" = fst (snd (var (succ zero)))
     price _       = snd (snd (var (succ zero)))
 
-total-ctxt-fo : first-order-ctxt (emp , (list (base label [×] base number)) [×] (base number [×] base number))
+total-ctxt-fo : first-order-ctxt (emp , (list (base string [×] base number)) [×] (base number [×] base number))
 total-ctxt-fo =
-  emp , (μ (unit [+] ((base label [×] base number) [×] var Fin.zero)) [×] (base number [×] base number))
+  emp , (μ (unit [+] ((base string [×] base number) [×] var Fin.zero)) [×] (base number [×] base number))
 
 ------------------------------------------------------------------------------
 -- Programs over a list of numbers.

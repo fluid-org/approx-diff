@@ -12,9 +12,9 @@ module example.inputs {A : Setoid 0ℓ 0ℓ} (as-weight : ℚ → Setoid.Carrier
 open import Data.Rational using (0ℚ; 1ℚ; _/_) renaming (_+_ to _+ℚ_)
 open import Data.Integer using (+_)
 open import Data.Nat using (ℕ)
+open import Data.String using (String)
 open import Relation.Binary.PropositionalEquality using (subst; sym)
-import label
-open import signature.example.interpretation as-weight S using (Sig; interpretation; number; label)
+open import signature.example.interpretation as-weight S using (Sig; interpretation; number; string)
 open import example.programs using (case-ctxt; Grid; rose)
 open import language-syntax Sig using (type; base; unit; list; _[×]_; _[+]_; emp; _,_; sub-ren-id)
 open import language-operational.evaluation Sig S interpretation ctrl-weight using (Val; Env)
@@ -30,12 +30,12 @@ private
   _∷ᵥ_ : ∀ {τ : type 0} → Val τ → Val (list τ) → Val (list τ)
   _∷ᵥ_ {τ} x xs = roll (inr (pair (subst Val (sym (sub-ren-id τ (λ ()))) x) xs))
 
-  el : label.label → ℚ → Val (base label [×] base number)
+  el : String → ℚ → Val (base string [×] base number)
   el l n = pair (const l) (const n)
 
 -- Three entries, two under the queried label.
-γ-query : Env (emp , list (base label [×] base number))
-γ-query = emp · (el label.a 0ℚ ∷ᵥ el label.b 1ℚ ∷ᵥ el label.a 1ℚ ∷ᵥ nilᵥ)
+γ-query : Env (emp , list (base string [×] base number))
+γ-query = emp · (el "a" 0ℚ ∷ᵥ el "b" 1ℚ ∷ᵥ el "a" 1ℚ ∷ᵥ nilᵥ)
 
 γ-nums : Env (emp , list (base number))
 γ-nums = emp · (const 0ℚ ∷ᵥ const 1ℚ ∷ᵥ const (1ℚ +ℚ 1ℚ) ∷ᵥ nilᵥ)
@@ -70,8 +70,8 @@ private
   two   = 1ℚ +ℚ 1ℚ
   four  = two +ℚ two
 
-γ-total : Env (emp , (list (base label [×] base number)) [×] (base number [×] base number))
-γ-total = emp · pair (el label.a 0ℚ ∷ᵥ el label.b 1ℚ ∷ᵥ el label.a 1ℚ ∷ᵥ nilᵥ)
+γ-total : Env (emp , (list (base string [×] base number)) [×] (base number [×] base number))
+γ-total = emp · pair (el "a" 0ℚ ∷ᵥ el "b" 1ℚ ∷ᵥ el "a" 1ℚ ∷ᵥ nilᵥ)
                      (pair (const 1ℚ) (const (1ℚ +ℚ 1ℚ)))
 
 γ-sum-mul : Env (emp , list (base number) [×] base number)
