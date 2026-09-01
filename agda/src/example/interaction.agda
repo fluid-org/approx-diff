@@ -19,6 +19,8 @@ module Dep = signature.example.interpretation (nonzero three.semiring) three.sem
 
 open import language-syntax Sig using (_⊢_; zero; succ; base; var; inl; case; bop; emp) renaming (_,_ to _▸_)
 open import language-operational.evaluation Sig three.semiring Dep.interpretation three.C
+open import language-operational.totality Sig three.semiring Dep.interpretation three.C using (eval)
+open import Data.Product using (proj₂)
 open import interaction.graph three.semiring (λ x → three.∨-idem {x})
 open import interaction.dependence-graph Sig three.semiring Dep.interpretation three.C (λ x → three.∨-idem {x})
 open import interaction.moves three.semiring (λ x → three.∨-idem {x}) three.≡-of-≈ three.ε?
@@ -28,11 +30,11 @@ module rewiring where
   γ₀ : Env (emp ▸ base number)
   γ₀ = emp · const 1ℚ
 
-  D : γ₀ , case (inl (var zero)) (var zero) (var zero) ⇓ const 1ℚ [ _ ]
-  D = ⇓-case-l (⇓-inl (⇓-var zero)) (⇓-var zero)
+  t₀ : (emp ▸ base number) ⊢ base number
+  t₀ = case (inl (var zero)) (var zero) (var zero)
 
   G : Graph (suc (width-env γ₀)) _
-  G = graph D
+  G = graph (proj₂ (proj₂ (eval t₀ γ₀)))
 
   open Interaction G
 
@@ -83,11 +85,11 @@ module intermediate where
   γ₀ : Env (emp ▸ base number ▸ base number)
   γ₀ = emp · const 0ℚ · const 1ℚ
 
-  D : γ₀ , bop mult (bop add (var zero ∷ var (succ zero) ∷ []) ∷ var zero ∷ []) ⇓ _ [ _ ]
-  D = ⇓-bop (⇓-bop (⇓-var zero ∷ ⇓-var (succ zero) ∷ []) ∷ ⇓-var zero ∷ [])
+  t₀ : ((emp ▸ base number) ▸ base number) ⊢ base number
+  t₀ = bop mult (bop add (var zero ∷ var (succ zero) ∷ []) ∷ var zero ∷ [])
 
   G : Graph (suc (width-env γ₀)) _
-  G = graph D
+  G = graph (proj₂ (proj₂ (eval t₀ γ₀)))
 
   open Interaction G
 
