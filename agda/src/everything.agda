@@ -30,6 +30,7 @@ import interaction.moves
 
 -- Tests.
 import example.interaction
+import example.interaction-three
 import example.render.latex
 import example.render.relations
 import example.render.dep-graph
