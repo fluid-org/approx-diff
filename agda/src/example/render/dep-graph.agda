@@ -1,188 +1,178 @@
 {-# OPTIONS --prop --postfix-projections --guardedness #-}
 
--- Merging vertices joins their edges with the semiring's addition, which agrees with composition by
--- distributivity. Run from the approx-diff repository root.
+-- Run from approx-diff repository root.
 module example.render.dep-graph where
 
 open import IO
 open import IO.Finite using (writeFile)
-open import Data.Bool using (Bool; true; false; if_then_else_; _∧_; _∨_)
-open import Data.String using (String; _++_; _==_)
-open import Data.Unit.Polymorphic using () renaming (⊤ to ⊤p; tt to ttp)
-open import Data.List using (List; []; _∷_; concat) renaming (_++_ to _++L_; map to mapL)
-open import Data.Nat using (ℕ; zero; suc; _≡ᵇ_)
+open import Data.List using (List; []; _∷_; map; concat; foldl; length; applyUpTo)
+  renaming (_++_ to _++L_)
+open import Data.Bool using (Bool; true; false; _∧_; if_then_else_)
+open import Data.Nat using (ℕ; zero; suc; _+_)
 import Data.Nat.Show as ℕ-Show
-open import Data.Maybe using (Maybe; just; nothing)
 open import Data.Product using (_×_; _,_; proj₁; proj₂)
-open import Data.Vec as Vec using (Vec; toList; tabulate)
-open import Level using (0ℓ)
+open import Data.String using (String; _++_)
+open import Data.Sum using (inj₁; inj₂)
+open import Data.Vec using (toList; tabulate)
+import matrix
 import three
+open three using (Three; O; C; D; _⊔_; _⊓_)
 open import semiring-Q using (nonzero)
-open import signature.example.interpretation (nonzero three.semiring) three.semiring using (Sig; interpretation)
-open import example.runs (nonzero three.semiring) three.semiring three.C using (map-run; filter-run; env; model-output; model-of)
+open import signature.interpretation using (Interpretation)
+open import signature.example.interpretation (nonzero three.semiring) three.semiring
+  using (Sig; interpretation; sort-val)
+open Interpretation interpretation using (sort-vals)
 open import example.render.constants (nonzero three.semiring) three.semiring using (show-const)
-open import example.render.annotated-value Sig three.semiring interpretation three.C
-  using (AVal; node; Tag; arity; shape-of; shape-env-of; width;
-         label-of; fold; fold-all)
-open import Data.Unit using (⊤)
-open import Data.Nat using (_+_)
+open import language-operational.evaluation Sig three.semiring interpretation three.C
+  using (Env)
+open import interaction.graph three.semiring (λ x → three.∨-idem {x})
+open import interaction.labelling Sig three.semiring interpretation three.C (λ x → three.∨-idem {x})
+open import interaction.evaluated Sig three.semiring interpretation three.C (λ x → three.∨-idem {x})
+open import example.runs (nonzero three.semiring) three.semiring three.C
+  using (Run; map-run; filter-run; env; term)
+open import example.render.tokens using (show-val; show-env)
 
 private
-  in-tree out-tree filter-in-tree filter-out-tree : List (AVal ⊤)
-  in-tree         = shape-env-of (λ {s} c → show-const {s} c) (map-run .env)
-  out-tree        = shape-of (λ {s} c → show-const {s} c) (model-output map-run) ∷ []
-  filter-in-tree  = shape-env-of (λ {s} c → show-const {s} c) (filter-run .env)
-  filter-out-tree = shape-of (λ {s} c → show-const {s} c) (model-output filter-run) ∷ []
+  module M3 = matrix.Mat three.semiring
 
-  private
-    node-entry : ∀ (t : Tag) → ⊤ → ℕ → ℕ → Vec (List (ℕ × String)) (arity t) → List (ℕ × String)
-    node-entry sh _ _ off rs = (off , label-of sh) ∷ concat (toList rs)
+  -- Blocks materialised as lists so hide steps share entries; function-typed
+  -- relations recompute each entry through every enclosing hide step.
+  LL : Set
+  LL = List (List Three)
 
-    node-edges : ∀ (t : Tag) → ⊤ → ℕ → ℕ → Vec (ℕ × List (ℕ × ℕ)) (arity t) → ℕ × List (ℕ × ℕ)
-    node-edges _ _ _ off rs =
-      off , (mapL (λ r → off , proj₁ r) (toList rs) ++L concat (mapL proj₂ (toList rs)))
+  nth : ∀ {a} {A : Set a} → A → List A → ℕ → A
+  nth d []       _       = d
+  nth d (x ∷ xs) zero    = x
+  nth d (x ∷ xs) (suc i) = nth d xs i
 
-  drawn-all : ℕ → List (AVal ⊤) → List (ℕ × String)
-  drawn-all off ts = concat (fold-all node-entry off ts)
+  ll-at : LL → ℕ → ℕ → Three
+  ll-at rows p q = nth O (nth [] rows p) q
 
-  kid-edges-all : ℕ → List (AVal ⊤) → List (ℕ × ℕ)
-  kid-edges-all off ts = concat (mapL proj₂ (fold-all node-edges off ts))
+  ll-of : ∀ {m n} → M3.Matrix m n → LL
+  ll-of M = toList (tabulate λ p → toList (tabulate λ q → M p q))
 
-  private
-    lt : ℕ → ℕ → Bool
-    lt zero    (suc _) = true
-    lt _       zero    = false
-    lt (suc a) (suc b) = lt a b
+  mat-ll : ℕ → ℕ → (ℕ → ℕ → Three) → LL
+  mat-ll m n b = applyUpTo (λ p → applyUpTo (b p) n) m
 
-    in-run : ℕ → ℕ → ℕ → Bool
-    in-run o zero    j = false
-    in-run o (suc k) j = (o ≡ᵇ j) ∨ in-run (suc o) k j
+  mul : ℕ → (ℕ → ℕ → Three) → (ℕ → ℕ → Three) → ℕ → ℕ → Three
+  mul zero    b c p q = O
+  mul (suc s) b c p q = (b p s ⊓ c s q) ⊔ mul s b c p q
 
-  mutual
-    owner : ℕ → AVal ⊤ → ℕ → ℕ
-    owner off (node _ _ n cs) i =
-      if in-run off n i then off else owner-vec (off + n) cs i
+  join-list : List Three → Three
+  join-list []       = O
+  join-list (t ∷ ts) = t ⊔ join-list ts
 
-    owner-vec : ∀ {k} → ℕ → Vec (AVal ⊤) k → ℕ → ℕ
-    owner-vec off Vec.[]         i = i
-    owner-vec off (t Vec.∷ ts) i =
-      if lt i (off + width t) then owner off t i else owner-vec (off + width t) ts i
+  ll-join : LL → Three
+  ll-join rows = join-list (concat rows)
 
-  owner-all : ℕ → List (AVal ⊤) → ℕ → ℕ
-  owner-all off []       i = i
-  owner-all off (t ∷ ts) i = if lt i (off + width t) then owner off t i else owner-all (off + width t) ts i
+  Tbl : Set
+  Tbl = List (List LL)
 
-  nodes-of : List (AVal ⊤) → List (ℕ × String)
-  nodes-of ts = drawn-all 0 ts
+  at-t : Tbl → ℕ → ℕ → LL
+  at-t T x y = nth [] (nth [] T x) y
 
-  edges-of : List (AVal ⊤) → List (ℕ × ℕ)
-  edges-of ts = kid-edges-all 0 ts
+  any-three : List Three → Bool
+  any-three []       = false
+  any-three (O ∷ ts) = any-three ts
+  any-three (t ∷ ts) = true
 
-  id-of : List (AVal ⊤) → ℕ → ℕ
-  id-of ts i = owner-all 0 ts i
+  ll-any : LL → Bool
+  ll-any []           = false
+  ll-any (row ∷ rows) = if any-three row then true else ll-any rows
 
-  nodes-merged : String → List (ℕ × String) → String
-  nodes-merged pre []             = ""
-  nodes-merged pre ((i , l) ∷ ns) =
-    "    " ++ pre ++ ℕ-Show.show i ++ " [label=\"" ++ l ++ "\"];\n" ++ nodes-merged pre ns
+  blk-hide : ℕ → ℕ → ℕ → LL → LL → LL → LL
+  blk-hide m n k base row col = mat-ll m n (λ p q → ll-at base p q ⊔ mul k (ll-at row) (ll-at col) p q)
 
-  tree-edges-of : String → List (ℕ × ℕ) → String
-  tree-edges-of pre []             = ""
-  tree-edges-of pre ((i , j) ∷ ps) =
-    "    " ++ pre ++ ℕ-Show.show i ++ " -> " ++ pre ++ ℕ-Show.show j
-    ++ " [color=gray, arrowhead=none];\n" ++ tree-edges-of pre ps
-
-  dep-edge : three.Three → ℕ → ℕ → String
-  dep-edge three.O _ _ = ""
-  dep-edge three.D p q =
-    "  i" ++ ℕ-Show.show p ++ " -> o" ++ ℕ-Show.show q
-    ++ " [color=blue, constraint=false];\n"
-  dep-edge three.C p q =
-    "  i" ++ ℕ-Show.show p ++ " -> o" ++ ℕ-Show.show q
-    ++ " [color=black, style=dashed, constraint=false];\n"
-
-  map-rows filter-rows : List (List three.Three)
-  map-rows    = toList (tabulate (λ q → toList (tabulate (model-of map-run q))))
-  filter-rows = toList (tabulate (λ q → toList (tabulate (model-of filter-run q))))
-
-  Edge : Set
-  Edge = ℕ × ℕ × three.Three
-
-  -- Insert an edge between classes, joining the weight with any edge already present.
-  upd : ℕ → ℕ → three.Three → List Edge → List Edge
-  upd p q w [] = (p , q , w) ∷ []
-  upd p q w ((p' , q' , w') ∷ es) =
-    if (p ≡ᵇ p') ∧ (q ≡ᵇ q')
-    then (p' , q' , w three.⊔ w') ∷ es
-    else (p' , q' , w') ∷ upd p q w es
-
-  quotient-for : List (AVal ⊤) → List (AVal ⊤) → List (List three.Three) → List Edge
-  quotient-for isk osk rows = go-q 0 rows []
+  -- Values must flow through applied arguments: module- and where-level definitions
+  -- compile to functions of enclosing parameters, re-running per reference.
+  hide-tbl : List ℕ → ℕ → Tbl → ℕ → Tbl
+  hide-tbl ws N T r =
+    go (applyUpTo (λ x → ll-any (at-t T x r)) N) (applyUpTo (λ y → ll-any (at-t T r y)) N)
     where
-    add : ℕ → ℕ → three.Three → List Edge → List Edge
-    add p q three.O acc = acc
-    add p q w       acc = upd (id-of isk p) (id-of osk q) w acc
-    go-p : ℕ → ℕ → List three.Three → List Edge → List Edge
-    go-p q _ []       acc = acc
-    go-p q p (w ∷ ws) acc = go-p q (suc p) ws (add p q w acc)
-    go-q : ℕ → List (List three.Three) → List Edge → List Edge
-    go-q _ []       acc = acc
-    go-q q (r ∷ rs) acc = go-q (suc q) rs (go-p q 0 r acc)
+    go : List Bool → List Bool → Tbl
+    go preds succs = applyUpTo (λ x → applyUpTo (λ y →
+      if nth false preds x ∧ nth false succs y
+      then blk-hide (nth 0 ws y) (nth 0 ws x) (nth 0 ws r) (at-t T x y) (at-t T r y) (at-t T x r)
+      else at-t T x y) N) N
 
-  merged-dep-edges-for : List (AVal ⊤) → List (AVal ⊤) → List (List three.Three) → String
-  merged-dep-edges-for isk osk rows = go (quotient-for isk osk rows)
+  number : ∀ {a} {A : Set a} → ℕ → List A → List (ℕ × A)
+  number _ []       = []
+  number i (x ∷ xs) = (i , x) ∷ number (suc i) xs
+
+  edge-line : ℕ → ℕ → Three → String
+  edge-line i j D = "  n" ++ ℕ-Show.show i ++ " -> n" ++ ℕ-Show.show j ++ " [color=blue];\n"
+  edge-line i j C = "  n" ++ ℕ-Show.show i ++ " -> n" ++ ℕ-Show.show j ++ " [style=dashed];\n"
+  edge-line i j O = ""
+
+  txt-sort-vals : ∀ {is} → sort-vals is → String
+  txt-sort-vals {[]}     _        = "()"
+  txt-sort-vals {i ∷ is} (v , vs) = show-const {i} v ++ " " ++ txt-sort-vals {is} vs
+
+  node-text : Node → String
+  node-text (val v)        = show-val v
+  node-text (vals {is} vs) = txt-sort-vals {is} vs
+
+module render-run (r : Run) where
+
+  open Evaluated (env r) (term r)
+
+  dot : String
+  dot = go dependence labels
     where
-    go : List Edge → String
-    go []                 = ""
-    go ((p , q , w) ∷ es) = dep-edge w p q ++ go es
+    go : ∀ {m n} (G : Graph m n) → Labelling (Graph.shape G) (Graph.width G) → String
+    go G lab = emit (foldl (hide-tbl ws N) T₀ hid-ix)
+      where
+      fo-vs : List (V G)
+      fo-vs = map (λ p → inj₂ (inj₁ p)) (FO G)
 
-  reps : List (ℕ × String) → List ℕ
-  reps []            = []
-  reps ((i , _) ∷ ns) = i ∷ reps ns
+      hid-vs : List (V G)
+      hid-vs = map (λ p → inj₂ (inj₁ p)) (fo-hidden G)
 
-  last2 : List ℕ → List ℕ
-  last2 (i ∷ j ∷ []) = i ∷ j ∷ []
-  last2 (_ ∷ is)     = last2 is
-  last2 []           = []
+      all-vs : List (V G)
+      all-vs = (inj₁ input ∷ []) ++L fo-vs ++L hid-vs ++L (inj₂ (inj₂ root) ∷ [])
 
-  -- The cluster's label sits to the right of the tree, drawn there by invisible edges from the
-  -- rightmost two nodes, which centre it between the tree's rows.
-  anchor-edges : String → String → List ℕ → String
-  anchor-edges pre lab []       = ""
-  anchor-edges pre lab (i ∷ is) =
-    "    " ++ pre ++ ℕ-Show.show i ++ " -> " ++ lab
-    ++ " [style=invis];\n" ++ anchor-edges pre lab is
+      nf : ℕ
+      nf = length fo-vs
 
-  cluster : String → String → String → String → List ℕ → String
-  cluster name pre ns ts as =
-    "  subgraph cluster_" ++ name ++ " {\n    color=none;\n"
-    ++ ns ++ ts
-    ++ "    " ++ pre ++ "lab [label=\"" ++ name ++ "\", shape=plaintext];\n"
-    ++ anchor-edges pre (pre ++ "lab") as
-    ++ "  }\n"
+      N : ℕ
+      N = length all-vs
 
-  graph : String → String → String → String → List ℕ → List ℕ → String → String
-  graph in-nodes in-tree out-nodes out-tree in-as out-as deps =
-    "digraph G {\n  rankdir=LR;\n  node [shape=circle, fontsize=11];\n"
-    ++ cluster "input"  "i" in-nodes  in-tree  in-as
-    ++ cluster "output" "o" out-nodes out-tree out-as
-    ++ deps ++ "}\n"
+      ws : List ℕ
+      ws = map (vertex-width G) all-vs
 
-contents-map : String
-contents-map =
-  graph (nodes-merged "i" (nodes-of in-tree)) (tree-edges-of "i" (edges-of in-tree))
-        (nodes-merged "o" (nodes-of out-tree)) (tree-edges-of "o" (edges-of out-tree))
-        (last2 (reps (nodes-of in-tree))) (last2 (reps (nodes-of out-tree)))
-        (merged-dep-edges-for in-tree out-tree map-rows)
+      hid-ix : List ℕ
+      hid-ix = applyUpTo (λ i → suc (nf + i)) (length hid-vs)
 
-contents-filter : String
-contents-filter =
-  graph (nodes-merged "i" (nodes-of filter-in-tree))
-        (tree-edges-of "i" (edges-of filter-in-tree))
-        (nodes-merged "o" (nodes-of filter-out-tree))
-        (tree-edges-of "o" (edges-of filter-out-tree))
-        (last2 (reps (nodes-of filter-in-tree))) (last2 (reps (nodes-of filter-out-tree)))
-        (merged-dep-edges-for filter-in-tree filter-out-tree filter-rows)
+      T₀ : Tbl
+      T₀ = map (λ x → map (λ y → ll-of (gr G x y)) all-vs) all-vs
+
+      ivs : List (ℕ × V G)
+      ivs = (zero , inj₁ input) ∷ number 1 fo-vs ++L
+            ((suc (nf + length hid-vs) , inj₂ (inj₂ root)) ∷ [])
+
+      label-of : V G → String
+      label-of (inj₁ input)        = show-env (env r)
+      label-of (inj₂ (inj₂ root))  = show-val value
+      label-of (inj₂ (inj₁ p))     = node-text (proj₁ (lab .at p))
+
+      node-line : ℕ × V G → String
+      node-line (i , x) = "  n" ++ ℕ-Show.show i ++ " [shape=box, fontsize=11, label=\"" ++ label-of x ++ "\"];\n"
+
+      edges-from : Tbl → ℕ × V G → String
+      edges-from T (i , x) = walk ivs
+        where
+        walk : List (ℕ × V G) → String
+        walk []             = ""
+        walk ((j , y) ∷ zs) = edge-line i j (ll-join (at-t T i j)) ++ walk zs
+
+      cat : List String → String
+      cat []       = ""
+      cat (s ∷ ss) = s ++ cat ss
+
+      emit : Tbl → String
+      emit T = "digraph G {\n  rankdir=LR;\n" ++ cat (map node-line ivs) ++
+               cat (map (edges-from T) ivs) ++ "}\n"
 
 main : Main
-main = run (writeFile "dot/map-three.dot" contents-map >> writeFile "dot/filter-three.dot" contents-filter)
+main = run (writeFile "dot/map-three.dot" (render-run.dot map-run) >>
+            writeFile "dot/filter-three.dot" (render-run.dot filter-run))

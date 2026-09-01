@@ -2,7 +2,7 @@
 
 -- The model's output and relation of each example program at its input, the relation as slices in
 -- annotated-value form: the input environment annotated with the relation's row at each output
--- position. Run from the approx-diff repository root.
+-- position. Run from approx-diff repository root.
 module example.render.relations where
 
 open import IO

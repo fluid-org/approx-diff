@@ -1,6 +1,6 @@
 {-# OPTIONS --prop --postfix-projections --guardedness #-}
 
--- Run from the approx-diff repository root.
+-- Run from approx-diff repository root.
 module example.render.latex where
 
 open import IO
