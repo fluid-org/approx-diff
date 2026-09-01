@@ -2,7 +2,7 @@
 
 open import Level using (0ℓ; suc)
 open import Data.Product using (_,_)
-open import prop using (_,_; tt)
+open import prop using (_,_; tt; proj₁; proj₂)
 open import prop-setoid
   using (Setoid; idS; _∘S_; ∘S-cong; IsEquivalence; ⊗-setoid; project₁; project₂; 𝟙)
   renaming (_⇒_ to _⇒s_; _≃m_ to _≈s_; ≃m-isEquivalence to ≈s-isEquivalence; id-left to idS-left; id-right to idS-right; assoc to assocS; pair to pairS; pair-cong to pairS-cong)
@@ -269,3 +269,142 @@ module _ (𝒮 : Category 0ℓ 0ℓ 0ℓ) where
   limits D .functor.Limit.isLimit .functor.IsLimit.lambda-cong {M} α≃β .*≈* ._≈s_.func-eq {m}{n} m≈n x = α≃β .transf-eq x .*≈* ._≈s_.func-eq m≈n
   limits D .functor.Limit.isLimit .functor.IsLimit.lambda-eval α .transf-eq x .*≈* ._≈s_.func-eq = α .transf x .func-resp-≈
   limits D .functor.Limit.isLimit .functor.IsLimit.lambda-ext f .*≈* ._≈s_.func-eq {m}{n} m≈n x = f .func-resp-≈ m≈n x
+
+-- Unit and associativity isomorphisms for the biproduct, constructed concretely on the pair
+-- representation.
+module _ where
+  open Category cat using (Iso)
+  open _⇒_
+  open _≈m_
+  import Level
+  import Agda.Builtin.Unit
+  open import prop-setoid using () renaming (_≃m_ to _≈s_)
+
+  ⊕-lunit-iso : ∀ {N} → Iso (𝟘 ⊕ N) N
+  ⊕-lunit-iso {N} .Iso.fwd .*→* ._⇒s_.func (_ , n) = n
+  ⊕-lunit-iso {N} .Iso.fwd .*→* ._⇒s_.func-resp-≈ (_ , e) = e
+  ⊕-lunit-iso {N} .Iso.fwd .preserve-ze = refl N
+  ⊕-lunit-iso {N} .Iso.fwd .preserve-+ = refl N
+  ⊕-lunit-iso {N} .Iso.fwd .preserve-· = refl N
+  ⊕-lunit-iso {N} .Iso.bwd .*→* ._⇒s_.func n = Level.lift Agda.Builtin.Unit.tt , n
+  ⊕-lunit-iso {N} .Iso.bwd .*→* ._⇒s_.func-resp-≈ e = tt , e
+  ⊕-lunit-iso {N} .Iso.bwd .preserve-ze = tt , refl N
+  ⊕-lunit-iso {N} .Iso.bwd .preserve-+ = tt , refl N
+  ⊕-lunit-iso {N} .Iso.bwd .preserve-· = tt , refl N
+  ⊕-lunit-iso {N} .Iso.fwd∘bwd≈id .*≈* ._≈s_.func-eq e = e
+  ⊕-lunit-iso {N} .Iso.bwd∘fwd≈id .*≈* ._≈s_.func-eq (_ , e) = tt , e
+
+  ⊕-runit-iso : ∀ {M} → Iso (M ⊕ 𝟘) M
+  ⊕-runit-iso {M} .Iso.fwd .*→* ._⇒s_.func (m , _) = m
+  ⊕-runit-iso {M} .Iso.fwd .*→* ._⇒s_.func-resp-≈ (e , _) = e
+  ⊕-runit-iso {M} .Iso.fwd .preserve-ze = refl M
+  ⊕-runit-iso {M} .Iso.fwd .preserve-+ = refl M
+  ⊕-runit-iso {M} .Iso.fwd .preserve-· = refl M
+  ⊕-runit-iso {M} .Iso.bwd .*→* ._⇒s_.func m = m , Level.lift Agda.Builtin.Unit.tt
+  ⊕-runit-iso {M} .Iso.bwd .*→* ._⇒s_.func-resp-≈ e = e , tt
+  ⊕-runit-iso {M} .Iso.bwd .preserve-ze = refl M , tt
+  ⊕-runit-iso {M} .Iso.bwd .preserve-+ = refl M , tt
+  ⊕-runit-iso {M} .Iso.bwd .preserve-· = refl M , tt
+  ⊕-runit-iso {M} .Iso.fwd∘bwd≈id .*≈* ._≈s_.func-eq e = e
+  ⊕-runit-iso {M} .Iso.bwd∘fwd≈id .*≈* ._≈s_.func-eq (e , _) = e , tt
+
+  ⊕-assoc-iso : ∀ {M N P} → Iso ((M ⊕ N) ⊕ P) (M ⊕ (N ⊕ P))
+  ⊕-assoc-iso {M} {N} {P} .Iso.fwd .*→* ._⇒s_.func ((m , n) , p) = m , (n , p)
+  ⊕-assoc-iso {M} {N} {P} .Iso.fwd .*→* ._⇒s_.func-resp-≈ ((em , en) , ep) = em , (en , ep)
+  ⊕-assoc-iso {M} {N} {P} .Iso.fwd .preserve-ze = refl M , (refl N , refl P)
+  ⊕-assoc-iso {M} {N} {P} .Iso.fwd .preserve-+ = refl M , (refl N , refl P)
+  ⊕-assoc-iso {M} {N} {P} .Iso.fwd .preserve-· = refl M , (refl N , refl P)
+  ⊕-assoc-iso {M} {N} {P} .Iso.bwd .*→* ._⇒s_.func (m , (n , p)) = (m , n) , p
+  ⊕-assoc-iso {M} {N} {P} .Iso.bwd .*→* ._⇒s_.func-resp-≈ (em , (en , ep)) = (em , en) , ep
+  ⊕-assoc-iso {M} {N} {P} .Iso.bwd .preserve-ze = (refl M , refl N) , refl P
+  ⊕-assoc-iso {M} {N} {P} .Iso.bwd .preserve-+ = (refl M , refl N) , refl P
+  ⊕-assoc-iso {M} {N} {P} .Iso.bwd .preserve-· = (refl M , refl N) , refl P
+  ⊕-assoc-iso {M} {N} {P} .Iso.fwd∘bwd≈id .*≈* ._≈s_.func-eq (em , (en , ep)) = em , (en , ep)
+  ⊕-assoc-iso {M} {N} {P} .Iso.bwd∘fwd≈id .*≈* ._≈s_.func-eq ((em , en) , ep) = (em , en) , ep
+
+
+
+_⊸_ : Semimodule → Semimodule → Semimodule
+(M ⊸ N) .setoid = Category.hom-setoid cat M N
+(M ⊸ N) .additive = cmon-enriched .CMonEnriched.homCM M N
+(M ⊸ N) ._·_ s f .*→* ._⇒s_.func x = N ._·_ s (f .func x)
+(M ⊸ N) ._·_ s f .*→* ._⇒s_.func-resp-≈ = λ z → N .·-cong S.refl (f .func-resp-≈ z)
+(M ⊸ N) ._·_ s f .preserve-ze = trans N (·-cong N S.refl (f .preserve-ze)) (zero-distribˡ N)
+(M ⊸ N) ._·_ s f .preserve-+ = trans N (·-cong N S.refl (f .preserve-+)) (+-distribˡ N)
+(M ⊸ N) ._·_ s f .preserve-· {s₁}{x} =
+  N .trans (N .·-cong S.refl (f .preserve-·))
+ (N .trans (N .sym (N .·-mul))
+ (N .trans (N .·-cong S.·-comm (N .refl))
+           (N .·-mul)))
+(M ⊸ N) .·-cong x x₁ .*≈* ._≈s_.func-eq = λ z → ·-cong N x (x₁ .*≈* ._≈s_.func-eq z)
+(M ⊸ N) .·-mul {s₁} {s₂} {f} .*≈* ._≈s_.func-eq x = trans N (·-cong N S.refl (f .func-resp-≈ x)) (·-mul N)
+(M ⊸ N) .·-unit {f} .*≈* ._≈s_.func-eq x₁≈x₂ = N .trans (N .·-unit) (f .func-resp-≈ x₁≈x₂)
+(M ⊸ N) .+-distribʳ {s₁} {s₂} {f} .*≈* ._≈s_.func-eq x₁≈x₂ =
+  N .trans (N .·-cong S.refl (f .func-resp-≈ x₁≈x₂)) (+-distribʳ N)
+(M ⊸ N) .+-distribˡ {s} {f₁} {f₂} .*≈* ._≈s_.func-eq x₁≈x₂ =
+  N .trans (N .·-cong S.refl (N .+-cong (f₁ .func-resp-≈ x₁≈x₂) (f₂ .func-resp-≈ x₁≈x₂)))
+           (N .+-distribˡ)
+(M ⊸ N) .zero-distribʳ {f} .*≈* ._≈s_.func-eq x₁≈x₂ = zero-distribʳ N
+(M ⊸ N) .zero-distribˡ {s} .*≈* ._≈s_.func-eq x₁≈x₂ = zero-distribˡ N
+
+-- TODO: Tensor products and adjointness, or could just state that the
+-- category is closed without the tensor.
+
+
+------------------------------------------------------------------------------
+-- Top-absorption makes addition idempotent, so every S-semimodule is a bounded join-semilattice and every
+-- morphism join-preserving.
+
+module JoinSemilattices
+  (⊤-add-top : ∀ {x} → (S.ι S.+ x) S.≈ S.ι)
+  where
+
+  import commutative-monoid
+
+  open import preorder using (Preorder)
+  open import basics using (IsPreorder; IsJoin; IsBottom)
+  open import join-semilattice using (JoinSemilattice) renaming (_=>_ to _=>J_)
+
+  module _ (M : Semimodule) where
+    private module M = Semimodule M
+
+    +-idem : {x : M.Carrier} → (x M.+ x) M.≈ x
+    +-idem =
+      M.trans (M.+-cong (M.sym M.·-unit) (M.sym M.·-unit))
+        (M.trans (M.sym M.+-distribʳ)
+          (M.trans (M.·-cong ⊤-add-top M.refl) M.·-unit))
+
+    open commutative-monoid.AdditivePreorder (M .Semimodule.additive) +-idem public
+      using (⊑-isPreorder; ∨-isJoin; ⊥-isBottom)
+      renaming (_⊑_ to _≤_; ≈→⊑ to ≈→≤; ⊑-antisym to ≤-antisym)
+
+    ≤-isPreorder : IsPreorder _≤_
+    ≤-isPreorder = ⊑-isPreorder
+
+    preorder : Preorder
+    preorder .Preorder.Carrier = M.Carrier
+    preorder .Preorder._≤_ = _≤_
+    preorder .Preorder.≤-isPreorder = ≤-isPreorder
+
+    joins : JoinSemilattice preorder
+    joins .JoinSemilattice._∨_ = M._+_
+    joins .JoinSemilattice.⊥ = M.ε
+    joins .JoinSemilattice.∨-isJoin = ∨-isJoin
+    joins .JoinSemilattice.⊥-isBottom = ⊥-isBottom
+
+    -- x + y ≈ ε forces each summand to ε.
+    zero-sum-free : ∀ {x y} → (x M.+ y) M.≈ M.ε → prop._∧_ (x M.≈ M.ε) (y M.≈ M.ε)
+    zero-sum-free h .proj₁ =
+      M.trans (M.sym (M.trans M.+-comm M.+-lunit))
+              (≤-isPreorder .IsPreorder.trans (∨-isJoin .IsJoin.inl) (≈→≤ h))
+    zero-sum-free h .proj₂ =
+      M.trans (M.sym (M.trans M.+-comm M.+-lunit))
+              (≤-isPreorder .IsPreorder.trans (∨-isJoin .IsJoin.inr) (≈→≤ h))
+
+  -- Semimodule morphisms are now join-preserving.
+  joins-map : ∀ {M N} → (M ⇒ N) → joins M =>J joins N
+  joins-map {M} {N} f ._=>J_.func .preorder._=>_.fun = f .func
+  joins-map {M} {N} f ._=>J_.func .preorder._=>_.mono x≤y = trans N (sym N (f .preserve-+)) (f .func-resp-≈ x≤y)
+  joins-map {M} {N} f ._=>J_.∨-preserving = ≈→≤ N (f .preserve-+)
+  joins-map {M} {N} f ._=>J_.⊥-preserving = ≈→≤ N (f .preserve-ze)
+
