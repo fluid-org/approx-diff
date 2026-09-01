@@ -19,7 +19,7 @@ open import language-syntax Sig using (_⊢_; zero; succ; base; var; inl; case; 
 open import language-operational.evaluation Sig two.semiring Dep.interpretation two.I
 open import interaction.graph two.semiring (λ x → two.∨-idem {x})
 open import interaction.dependence-graph Sig two.semiring Dep.interpretation two.I (λ x → two.∨-idem {x})
-open import interaction.moves
+open import interaction.moves two.semiring (λ x → two.∨-idem {x}) two.≡-of-≈ two.ε?
 
 -- A run with rewiring: case (inl x) of inl x₁ → x₁ | inr y → y. The branch is evaluated under the
 -- extended environment, so its env edges are redistributed to env and the scrutinee root, giving the chain
