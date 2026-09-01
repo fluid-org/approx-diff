@@ -8,7 +8,7 @@ open import IO.Finite using (writeFile)
 open import Data.List using (List; []; _∷_; map; concat; foldl; length; applyUpTo)
   renaming (_++_ to _++L_)
 open import Data.Bool using (Bool; true; false; _∧_; if_then_else_)
-open import Data.Nat using (ℕ; zero; suc; _+_)
+open import Data.Nat using (ℕ; zero; suc; _+_; _≡ᵇ_)
 import Data.Nat.Show as ℕ-Show
 open import Data.Product using (_×_; _,_; proj₁; proj₂)
 open import Data.String using (String; _++_)
@@ -65,12 +65,6 @@ private
   ll-join : LL → Three
   ll-join rows = join-list (concat rows)
 
-  Tbl : Set
-  Tbl = List (List LL)
-
-  at-t : Tbl → ℕ → ℕ → LL
-  at-t T x y = nth [] (nth [] T x) y
-
   any-three : List Three → Bool
   any-three []       = false
   any-three (O ∷ ts) = any-three ts
@@ -80,20 +74,52 @@ private
   ll-any []           = false
   ll-any (row ∷ rows) = if any-three row then true else ll-any rows
 
-  blk-hide : ℕ → ℕ → ℕ → LL → LL → LL → LL
-  blk-hide m n k base row col = mat-ll m n (λ p q → ll-at base p q ⊔ mul k (ll-at row) (ll-at col) p q)
+  zip-⊔ : List Three → List Three → List Three
+  zip-⊔ []       ys       = ys
+  zip-⊔ xs       []       = xs
+  zip-⊔ (x ∷ xs) (y ∷ ys) = (x ⊔ y) ∷ zip-⊔ xs ys
 
-  -- Values must flow through applied arguments: module- and where-level definitions
-  -- compile to functions of enclosing parameters, re-running per reference.
-  hide-tbl : List ℕ → ℕ → Tbl → ℕ → Tbl
-  hide-tbl ws N T r =
-    go (applyUpTo (λ x → ll-any (at-t T x r)) N) (applyUpTo (λ y → ll-any (at-t T r y)) N)
+  ll-add : LL → LL → LL
+  ll-add []       rs'        = rs'
+  ll-add rs       []         = rs
+  ll-add (r ∷ rs) (r' ∷ rs') = zip-⊔ r r' ∷ ll-add rs rs'
+
+  Edge : Set
+  Edge = ℕ × ℕ × LL
+
+  keep : ℕ → ℕ → LL → List Edge
+  keep i j B = if ll-any B then (i , j , B) ∷ [] else []
+
+  upsert : ℕ → ℕ → LL → List Edge → List Edge
+  upsert x y B [] = (x , y , B) ∷ []
+  upsert x y B ((x' , y' , B') ∷ es) =
+    if (x ≡ᵇ x') ∧ (y ≡ᵇ y')
+    then (x' , y' , ll-add B B') ∷ es
+    else (x' , y' , B') ∷ upsert x y B es
+
+  merge : List Edge → List Edge → List Edge
+  merge []                 es = es
+  merge ((x , y , B) ∷ ns) es = merge ns (upsert x y B es)
+
+  part : ℕ → List Edge → List Edge × List Edge × List Edge
+  part r [] = [] , [] , []
+  part r ((x , y , B) ∷ es) with part r es
+  ... | ins , outs , rest =
+    if y ≡ᵇ r then (((x , y , B) ∷ ins) , outs , rest)
+    else if x ≡ᵇ r then (ins , ((x , y , B) ∷ outs) , rest)
+    else (ins , outs , ((x , y , B) ∷ rest))
+
+  compose-edges : (ℕ → ℕ) → ℕ → List Edge → List Edge → List Edge
+  compose-edges wd r ins outs = concat (map (λ ie → map (mk ie) outs) ins)
     where
-    go : List Bool → List Bool → Tbl
-    go preds succs = applyUpTo (λ x → applyUpTo (λ y →
-      if nth false preds x ∧ nth false succs y
-      then blk-hide (nth 0 ws y) (nth 0 ws x) (nth 0 ws r) (at-t T x y) (at-t T r y) (at-t T x r)
-      else at-t T x y) N) N
+    mk : Edge → Edge → Edge
+    mk (x , _ , Bxr) (_ , y , Bry) =
+      x , y , mat-ll (wd y) (wd x) (mul (wd r) (ll-at Bry) (ll-at Bxr))
+
+  elim : (ℕ → ℕ) → List Edge → ℕ → List Edge
+  elim wd es r with part r es
+  ... | ins , outs , rest = merge (compose-edges wd r ins outs) rest
+
 
   number : ∀ {a} {A : Set a} → ℕ → List A → List (ℕ × A)
   number _ []       = []
@@ -103,6 +129,10 @@ private
   edge-line i j D = "  n" ++ ℕ-Show.show i ++ " -> n" ++ ℕ-Show.show j ++ " [color=blue];\n"
   edge-line i j C = "  n" ++ ℕ-Show.show i ++ " -> n" ++ ℕ-Show.show j ++ " [style=dashed];\n"
   edge-line i j O = ""
+
+  edge-lines : List Edge → String
+  edge-lines []                 = ""
+  edge-lines ((i , j , B) ∷ es) = edge-line i j (ll-join B) ++ edge-lines es
 
   txt-sort-vals : ∀ {is} → sort-vals is → String
   txt-sort-vals {[]}     _        = "()"
@@ -120,7 +150,7 @@ module render-run (r : Run) where
   dot = go dependence labels
     where
     go : ∀ {m n} (G : Graph m n) → Labelling (Graph.shape G) (Graph.width G) → String
-    go G lab = emit (foldl (hide-tbl ws N) T₀ hid-ix)
+    go G lab = emit (foldl (elim wdf) edges₀ hid-ix)
       where
       fo-vs : List (V G)
       fo-vs = map (λ p → inj₂ (inj₁ p)) (FO G)
@@ -134,17 +164,25 @@ module render-run (r : Run) where
       nf : ℕ
       nf = length fo-vs
 
-      N : ℕ
-      N = length all-vs
-
       ws : List ℕ
       ws = map (vertex-width G) all-vs
+
+      wdf : ℕ → ℕ
+      wdf i = nth 0 ws i
 
       hid-ix : List ℕ
       hid-ix = applyUpTo (λ i → suc (nf + i)) (length hid-vs)
 
-      T₀ : Tbl
-      T₀ = map (λ x → map (λ y → ll-of (gr G x y)) all-vs) all-vs
+      rows : List (ℕ × V G) → List Edge
+      rows []             = []
+      rows ((i , x) ∷ is) = cols (number 0 all-vs) ++L rows is
+        where
+        cols : List (ℕ × V G) → List Edge
+        cols []             = []
+        cols ((j , y) ∷ js) = keep i j (ll-of (gr G x y)) ++L cols js
+
+      edges₀ : List Edge
+      edges₀ = rows (number 0 all-vs)
 
       ivs : List (ℕ × V G)
       ivs = (zero , inj₁ input) ∷ number 1 fo-vs ++L
@@ -158,20 +196,13 @@ module render-run (r : Run) where
       node-line : ℕ × V G → String
       node-line (i , x) = "  n" ++ ℕ-Show.show i ++ " [shape=box, fontsize=11, label=\"" ++ label-of x ++ "\"];\n"
 
-      edges-from : Tbl → ℕ × V G → String
-      edges-from T (i , x) = walk ivs
-        where
-        walk : List (ℕ × V G) → String
-        walk []             = ""
-        walk ((j , y) ∷ zs) = edge-line i j (ll-join (at-t T i j)) ++ walk zs
-
       cat : List String → String
       cat []       = ""
       cat (s ∷ ss) = s ++ cat ss
 
-      emit : Tbl → String
-      emit T = "digraph G {\n  rankdir=LR;\n" ++ cat (map node-line ivs) ++
-               cat (map (edges-from T) ivs) ++ "}\n"
+      emit : List Edge → String
+      emit es = "digraph G {\n  rankdir=LR;\n" ++ cat (map node-line ivs) ++
+                edge-lines es ++ "}\n"
 
 main : Main
 main = run (writeFile "dot/map-three.dot" (render-run.dot map-run) >>
