@@ -60,7 +60,7 @@ module _ where
   ------------------------------------------------------------------------------
   -- Transpose: the contravariant action of Dual, f ↦ (_ ∘ f).
 
-  open CMonEnriched SemiMod.cmon-enriched using (homCM; _+m_; εm; comp-bilinear₁; comp-bilinear-ε₁; comp-bilinear-ε₂)
+  open CMonEnriched SemiMod.cmon-enriched using (homCM; _+m_; εm; comp-bilinear₁; comp-bilinear₂; comp-bilinear-ε₁; comp-bilinear-ε₂)
 
   infix 25 _ᵀ
 
@@ -279,6 +279,21 @@ module _ where
           (∘-cong (≈-refl {f = X .dual .Iso.bwd})
             (≈-trans (≈-sym (assoc (f ᵀ) (g ᵀ) (Z .dual .Iso.fwd)))
               (∘-cong (≈-sym (ᵀ-comp g f)) (≈-refl {f = Z .dual .Iso.fwd}))))))
+
+    conjugate-+ : ∀ (X Y : SelfDual) (f g : X .obj ⇒ Y .obj) →
+                  conjugate X Y (f +m g) ≈m (conjugate X Y f +m conjugate X Y g)
+    conjugate-+ X Y f g =
+      ≈-trans (∘-cong (≈-refl {f = X .dual .Iso.bwd})
+                (≈-trans (∘-cong (ᵀ-+ f g) (≈-refl {f = Y .dual .Iso.fwd}))
+                         (comp-bilinear₁ (f ᵀ) (g ᵀ) (Y .dual .Iso.fwd))))
+              (comp-bilinear₂ (X .dual .Iso.bwd) (f ᵀ ∘ Y .dual .Iso.fwd) (g ᵀ ∘ Y .dual .Iso.fwd))
+
+    conjugate-ε : ∀ (X Y : SelfDual) → conjugate X Y (εm {X .obj} {Y .obj}) ≈m εm
+    conjugate-ε X Y =
+      ≈-trans (∘-cong (≈-refl {f = X .dual .Iso.bwd})
+                (≈-trans (∘-cong (ᵀ-ε {X .obj} {Y .obj}) (≈-refl {f = Y .dual .Iso.fwd}))
+                         (comp-bilinear-ε₁ (Y .dual .Iso.fwd))))
+              (comp-bilinear-ε₂ (X .dual .Iso.bwd))
 
     -- Isomorphisms compatible with the chosen self-dualities: the pairing is preserved.
     record _≅sd_ (X Y : SelfDual) : Set where
