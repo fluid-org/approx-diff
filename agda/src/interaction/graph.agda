@@ -24,7 +24,7 @@ open import prop using (Prf; ⟪_⟫; _∧_; _,_; proj₁; proj₂)
 open import prop-setoid using (Setoid)
 open import commutative-semiring using (CommutativeSemiring)
 open import basics using (IsStrictOrder)
-import sd-semimodule
+import semimodule
 
 -- A dependence graph as a value rather than a family indexed by a derivation: a graph is a set of
 -- interior vertices with widths, a distinguished root of given width, and the dependence relation
@@ -32,49 +32,46 @@ import sd-semimodule
 module interaction.graph {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A)
   (let module Semiring = CommutativeSemiring S) (+-idem : ∀ x → (x Semiring.+ x) Semiring.≈ x) where
 
-module SD = sd-semimodule S
-module SemiMod = SD.SemiMod
+module SemiMod = semimodule S
 
-open SD using (SelfDual; conjugate; conjugate-cong; conjugate-comp)
-open SelfDual using (obj)
+open SemiMod using (Semimodule)
 open import categories using (Category)
-open Category SD.cat
+open Category SemiMod.cat
   using (_⇒_; _∘_; _≈_; ∘-cong; ∘-cong₁; ∘-cong₂; assoc; id-left; id-right; ≈-refl; ≈-sym; ≈-trans; ≡-to-≈)
-open import cmon-enriched using (CMonEnriched)
+open import cmon-enriched using (CMonEnriched; Biproduct)
 private
   module CM = CMonEnriched SemiMod.cmon-enriched
 
 infixl 21 _+ₘ_
-_+ₘ_ : ∀ {X Y : SelfDual} → X ⇒ Y → X ⇒ Y → X ⇒ Y
+_+ₘ_ : ∀ {X Y : Semimodule} → X ⇒ Y → X ⇒ Y → X ⇒ Y
 _+ₘ_ = CM._+m_
 
-εₘ : ∀ {X Y : SelfDual} → X ⇒ Y
-εₘ {X} {Y} = CM.εm {X .obj} {Y .obj}
+εₘ : ∀ {X Y : Semimodule} → X ⇒ Y
+εₘ {X} {Y} = CM.εm {X} {Y}
 
 infixl 20 _⊕ᵥ_
-_⊕ᵥ_ : SelfDual → SelfDual → SelfDual
-_⊕ᵥ_ = SD.⊕-sd
+_⊕ᵥ_ : Semimodule → Semimodule → Semimodule
+_⊕ᵥ_ = SemiMod._⊕_
 
-open import cmon-enriched using (Biproduct)
 private
-  module BP {X Y : SelfDual} = Biproduct (SemiMod.biproduct (X .obj) (Y .obj))
+  module BP {X Y : Semimodule} = Biproduct (SemiMod.biproduct X Y)
 
-I : ∀ {X : SelfDual} → X ⇒ X
-I {X} = Category.id SD.cat X
+I : ∀ {X : Semimodule} → X ⇒ X
+I {X} = Category.id SemiMod.cat X
 
-inb₁ : ∀ {X Y : SelfDual} → X ⇒ (X ⊕ᵥ Y)
+inb₁ : ∀ {X Y : Semimodule} → X ⇒ (X ⊕ᵥ Y)
 inb₁ {X} {Y} = BP.in₁ {X} {Y}
 
-inb₂ : ∀ {X Y : SelfDual} → Y ⇒ (X ⊕ᵥ Y)
+inb₂ : ∀ {X Y : Semimodule} → Y ⇒ (X ⊕ᵥ Y)
 inb₂ {X} {Y} = BP.in₂ {X} {Y}
 
-pb₁ : ∀ {X Y : SelfDual} → (X ⊕ᵥ Y) ⇒ X
+pb₁ : ∀ {X Y : Semimodule} → (X ⊕ᵥ Y) ⇒ X
 pb₁ {X} {Y} = BP.p₁ {X} {Y}
 
-pb₂ : ∀ {X Y : SelfDual} → (X ⊕ᵥ Y) ⇒ Y
+pb₂ : ∀ {X Y : Semimodule} → (X ⊕ᵥ Y) ⇒ Y
 pb₂ {X} {Y} = BP.p₂ {X} {Y}
 
-⟨_,_⟩ : ∀ {Z X Y : SelfDual} → Z ⇒ X → Z ⇒ Y → Z ⇒ (X ⊕ᵥ Y)
+⟨_,_⟩ : ∀ {Z X Y : Semimodule} → Z ⇒ X → Z ⇒ Y → Z ⇒ (X ⊕ᵥ Y)
 ⟨ f , g ⟩ = (inb₁ ∘ f) +ₘ (inb₂ ∘ g)
 
 data Input : Set where
@@ -185,10 +182,10 @@ mutual
   lts-order (s ∷ [])     = sum-<-order (lt-order s) none-order
   lts-order (s ∷ t ∷ ss) = sum-<-order (sum-<-order (lt-order s) none-order) (lts-order (t ∷ ss))
 
-record Graph (X Y : SelfDual) : Set₁ where
+record Graph (X Y : Semimodule) : Set₁ where
   field
     shape   : Shape
-    object  : Vertex shape → SelfDual
+    object  : Vertex shape → Semimodule
     fo      : Vertex shape → Bool
     into    : (q : Vertex shape) → X ⇒ object q
     inside  : (p q : Vertex shape) → object p ⇒ object q
@@ -199,47 +196,44 @@ record Graph (X Y : SelfDual) : Set₁ where
     out     : X ⇒ Y
     up      : (p : Vertex shape) → object p ⇒ Y
 
-Relation : {V : Set} → (V → SelfDual) → Set
+Relation : {V : Set} → (V → Semimodule) → Set
 Relation {V} vertex-object = (x y : V) → vertex-object x ⇒ vertex-object y
 
-hide : {V : Set} (vertex-object : V → SelfDual) → Relation vertex-object → V → Relation vertex-object
+hide : {V : Set} (vertex-object : V → Semimodule) → Relation vertex-object → V → Relation vertex-object
 hide vertex-object G r x y = G x y +ₘ (G r y ∘ G x r)
 
-hide-all : {V : Set} (vertex-object : V → SelfDual) → Relation vertex-object → List V → Relation vertex-object
+hide-all : {V : Set} (vertex-object : V → Semimodule) → Relation vertex-object → List V → Relation vertex-object
 hide-all vertex-object = foldl (hide vertex-object)
 
-flip : {V : Set} {vertex-object : V → SelfDual} → Relation vertex-object → Relation vertex-object
-flip {vertex-object = vo} G x y = conjugate (vo y) (vo x) (G y x)
-
-_≐_ : {V : Set} {vertex-object : V → SelfDual} → Relation vertex-object → Relation vertex-object → Prop
+_≐_ : {V : Set} {vertex-object : V → Semimodule} → Relation vertex-object → Relation vertex-object → Prop
 _≐_ {V} G G' = ∀ x y → G x y ≈ G' x y
 
 private
   open import commutative-monoid using (CommutativeMonoid)
 
-  +ₘ-cong : ∀ {X Y : SelfDual} {f f' g g' : X ⇒ Y} → f ≈ f' → g ≈ g' → (f +ₘ g) ≈ (f' +ₘ g')
-  +ₘ-cong {X} {Y} = CommutativeMonoid.+-cong (CM.homCM (X .obj) (Y .obj))
+  +ₘ-cong : ∀ {X Y : Semimodule} {f f' g g' : X ⇒ Y} → f ≈ f' → g ≈ g' → (f +ₘ g) ≈ (f' +ₘ g')
+  +ₘ-cong {X} {Y} = CommutativeMonoid.+-cong (CM.homCM X Y)
 
-  +ₘ-assoc : ∀ {X Y : SelfDual} {f g h : X ⇒ Y} → ((f +ₘ g) +ₘ h) ≈ (f +ₘ (g +ₘ h))
-  +ₘ-assoc {X} {Y} = CommutativeMonoid.+-assoc (CM.homCM (X .obj) (Y .obj))
+  +ₘ-assoc : ∀ {X Y : Semimodule} {f g h : X ⇒ Y} → ((f +ₘ g) +ₘ h) ≈ (f +ₘ (g +ₘ h))
+  +ₘ-assoc {X} {Y} = CommutativeMonoid.+-assoc (CM.homCM X Y)
 
-  +ₘ-comm : ∀ {X Y : SelfDual} {f g : X ⇒ Y} → (f +ₘ g) ≈ (g +ₘ f)
-  +ₘ-comm {X} {Y} = CommutativeMonoid.+-comm (CM.homCM (X .obj) (Y .obj))
+  +ₘ-comm : ∀ {X Y : Semimodule} {f g : X ⇒ Y} → (f +ₘ g) ≈ (g +ₘ f)
+  +ₘ-comm {X} {Y} = CommutativeMonoid.+-comm (CM.homCM X Y)
 
-  +ₘ-lunit : ∀ {X Y : SelfDual} (f : X ⇒ Y) → (εₘ +ₘ f) ≈ f
-  +ₘ-lunit {X} {Y} f = CommutativeMonoid.+-lunit (CM.homCM (X .obj) (Y .obj))
+  +ₘ-lunit : ∀ {X Y : Semimodule} (f : X ⇒ Y) → (εₘ +ₘ f) ≈ f
+  +ₘ-lunit {X} {Y} f = CommutativeMonoid.+-lunit (CM.homCM X Y)
 
-  +ₘ-runit : ∀ {X Y : SelfDual} (f : X ⇒ Y) → (f +ₘ εₘ) ≈ f
+  +ₘ-runit : ∀ {X Y : Semimodule} (f : X ⇒ Y) → (f +ₘ εₘ) ≈ f
   +ₘ-runit f = ≈-trans +ₘ-comm (+ₘ-lunit f)
 
-  +ₘ-swap-mid : ∀ {X Y : SelfDual} (f g h : X ⇒ Y) → (f +ₘ (g +ₘ h)) ≈ (g +ₘ (f +ₘ h))
+  +ₘ-swap-mid : ∀ {X Y : Semimodule} (f g h : X ⇒ Y) → (f +ₘ (g +ₘ h)) ≈ (g +ₘ (f +ₘ h))
   +ₘ-swap-mid f g h =
     ≈-trans (≈-sym +ₘ-assoc) (≈-trans (+ₘ-cong +ₘ-comm ≈-refl) +ₘ-assoc)
 
-  absorb₁ : ∀ {X Y Z : SelfDual} (f : X ⇒ Y) (g : X ⇒ Z) → (f +ₘ (εₘ ∘ g)) ≈ f
+  absorb₁ : ∀ {X Y Z : Semimodule} (f : X ⇒ Y) (g : X ⇒ Z) → (f +ₘ (εₘ ∘ g)) ≈ f
   absorb₁ f g = ≈-trans (+ₘ-cong ≈-refl (CM.comp-bilinear-ε₁ g)) (+ₘ-runit f)
 
-  absorb₂ : ∀ {X Y Z : SelfDual} (f : X ⇒ Y) (g : Z ⇒ Y) → (f +ₘ (g ∘ εₘ)) ≈ f
+  absorb₂ : ∀ {X Y Z : Semimodule} (f : X ⇒ Y) (g : Z ⇒ Y) → (f +ₘ (g ∘ εₘ)) ≈ f
   absorb₂ f g = ≈-trans (+ₘ-cong ≈-refl (CM.comp-bilinear-ε₂ g)) (+ₘ-runit f)
 
   open SemiMod.Semimodule using ()
@@ -247,37 +241,33 @@ private
   open SemiMod._⇒_ using (func; func-resp-≈)
   open SemiMod._≈m_
 
-  +ₘ-idem : ∀ {X Y : SelfDual} (f : X ⇒ Y) → (f +ₘ f) ≈ f
+  +ₘ-idem : ∀ {X Y : Semimodule} (f : X ⇒ Y) → (f +ₘ f) ≈ f
   +ₘ-idem {X} {Y} f .*≈* ._≈s_.func-eq {x} {x'} x≈x' =
     N.trans (N.+-cong (f .func-resp-≈ x≈x') (f .func-resp-≈ x≈x')) (idem (f .func x'))
     where
-    module N = SemiMod.Semimodule (Y .obj)
+    module N = SemiMod.Semimodule Y
     idem : ∀ a → (a N.+ a) N.≈ a
     idem a =
       N.trans (N.+-cong (N.sym N.·-unit) (N.sym N.·-unit))
         (N.trans (N.sym N.+-distribʳ)
           (N.trans (N.·-cong (+-idem Semiring.ι) N.refl) N.·-unit))
 
-hide-cong : {V : Set} (vertex-object : V → SelfDual) {G G' : Relation vertex-object} (r : V) →
+hide-cong : {V : Set} (vertex-object : V → Semimodule) {G G' : Relation vertex-object} (r : V) →
             G ≐ G' → hide vertex-object G r ≐ hide vertex-object G' r
 hide-cong vertex-object r e x y = +ₘ-cong (e x y) (∘-cong (e r y) (e x r))
 
-flip-hide : {V : Set} (vertex-object : V → SelfDual) (G : Relation vertex-object) (r : V) →
-            hide vertex-object (flip G) r ≐ flip (hide vertex-object G r)
-flip-hide vertex-object G r x y =
-  ≈-sym (≈-trans (SD.conjugate-+ (vertex-object y) (vertex-object x) (G y x) (G r x ∘ G y r))
-                 (+ₘ-cong ≈-refl (conjugate-comp (vertex-object y) (vertex-object r) (vertex-object x) (G r x) (G y r))))
-
-hide-all-cong : {V : Set} (vertex-object : V → SelfDual) {G G' : Relation vertex-object} (rs : List V) →
+hide-all-cong : {V : Set} (vertex-object : V → Semimodule) {G G' : Relation vertex-object} (rs : List V) →
                 G ≐ G' → hide-all vertex-object G rs ≐ hide-all vertex-object G' rs
 hide-all-cong vertex-object []       e = e
 hide-all-cong vertex-object (r ∷ rs) e = hide-all-cong vertex-object rs (hide-cong vertex-object r e)
 
-hide-sink : {V : Set} (vertex-object : V → SelfDual) (G : Relation vertex-object) (r : V) →
+hide-sink : {V : Set} (vertex-object : V → Semimodule) (G : Relation vertex-object) (r : V) →
             (∀ y → G r y ≈ εₘ) → hide vertex-object G r ≐ G
-hide-sink vertex-object G r z x y = ≈-trans (+ₘ-cong ≈-refl (∘-cong₁ (z y))) (absorb₁ (G x y) (G x r))
+hide-sink vertex-object G r z x y =
+  ≈-trans (+ₘ-cong (≈-refl {f = G x y}) (∘-cong₁ {f₁ = G r y} {f₂ = εₘ} {g = G x r} (z y)))
+          (absorb₁ (G x y) (G x r))
 
-module Hide (V : Set) (w : V → SelfDual) where
+module Hide (V : Set) (w : V → Semimodule) where
   Gr : Set
   Gr = Relation w
 
@@ -285,20 +275,20 @@ module Hide (V : Set) (w : V → SelfDual) where
   h = hide w
 
   private
-    absorbˡ : ∀ {X Y : SelfDual} (f g : X ⇒ Y) → (f +ₘ (f +ₘ g)) ≈ (f +ₘ g)
+    absorbˡ : ∀ {X Y : Semimodule} (f g : X ⇒ Y) → (f +ₘ (f +ₘ g)) ≈ (f +ₘ g)
     absorbˡ f g = ≈-trans (≈-sym +ₘ-assoc) (+ₘ-cong (+ₘ-idem f) ≈-refl)
 
-    absorbʳ : ∀ {X Y : SelfDual} (f g : X ⇒ Y) → (f +ₘ (g +ₘ f)) ≈ (g +ₘ f)
+    absorbʳ : ∀ {X Y : Semimodule} (f g : X ⇒ Y) → (f +ₘ (g +ₘ f)) ≈ (g +ₘ f)
     absorbʳ f g = ≈-trans (+ₘ-cong ≈-refl +ₘ-comm) (≈-trans (absorbˡ f g) +ₘ-comm)
 
-    absorb-mono : ∀ {X Y : SelfDual} (f g h : X ⇒ Y) → f ≈ (g +ₘ f) → (h +ₘ g) ≈ g → f ≈ (h +ₘ f)
+    absorb-mono : ∀ {X Y : Semimodule} (f g h : X ⇒ Y) → f ≈ (g +ₘ f) → (h +ₘ g) ≈ g → f ≈ (h +ₘ f)
     absorb-mono f g h p q =
       ≈-trans p (≈-trans (+ₘ-cong (≈-sym q) ≈-refl) (≈-trans +ₘ-assoc (+ₘ-cong ≈-refl (≈-sym p))))
 
-    shift : ∀ {X Y : SelfDual} (f g h : X ⇒ Y) → ((f +ₘ g) +ₘ h) ≈ ((f +ₘ h) +ₘ g)
+    shift : ∀ {X Y : Semimodule} (f g h : X ⇒ Y) → ((f +ₘ g) +ₘ h) ≈ ((f +ₘ h) +ₘ g)
     shift f g h = ≈-trans +ₘ-assoc (≈-trans (+ₘ-cong ≈-refl +ₘ-comm) (≈-sym +ₘ-assoc))
 
-    insert : ∀ {X Y : SelfDual} (f g h : X ⇒ Y) → (f +ₘ g) ≈ g → (g +ₘ h) ≈ (g +ₘ (f +ₘ h))
+    insert : ∀ {X Y : Semimodule} (f g h : X ⇒ Y) → (f +ₘ g) ≈ g → (g +ₘ h) ≈ (g +ₘ (f +ₘ h))
     insert f g h q = ≈-sym (≈-trans (≈-sym +ₘ-assoc) (+ₘ-cong (≈-trans +ₘ-comm q) ≈-refl))
 
   zero-fold : ∀ {G : Gr} rs r₀ →
@@ -309,11 +299,11 @@ module Hide (V : Set) (w : V → SelfDual) where
     where
     zr' : ∀ (z : V) → h G r r₀ z ≈ εₘ
     zr' z =
-      ≈-trans (+ₘ-cong (zr z) (≈-trans (∘-cong₂ (zr r)) (CM.comp-bilinear-ε₂ (G r z)))) (+ₘ-lunit εₘ)
+      ≈-trans (+ₘ-cong (zr z) (≈-trans {g = G r z ∘ εₘ {w r₀} {w r}} (∘-cong₂ {f = G r z} (zr r)) (CM.comp-bilinear-ε₂ {X = w r₀} (G r z)))) (+ₘ-lunit εₘ)
 
     zc' : ∀ (z : V) → h G r z r₀ ≈ εₘ
     zc' z =
-      ≈-trans (+ₘ-cong (zc z) (≈-trans (∘-cong₁ (zc r)) (CM.comp-bilinear-ε₁ (G z r)))) (+ₘ-lunit εₘ)
+      ≈-trans (+ₘ-cong (zc z) (≈-trans {g = εₘ {w r} {w r₀} ∘ G z r} (∘-cong₁ {f₁ = G r r₀} {f₂ = εₘ} {g = G z r} (zc r)) (CM.comp-bilinear-ε₁ {Z = w r₀} (G z r)))) (+ₘ-lunit εₘ)
 
   increasing : ∀ {G : Gr} rs x y → foldl h G rs x y ≈ (G x y +ₘ foldl h G rs x y)
   increasing {G} []       x y = ≈-sym (+ₘ-idem (G x y))
@@ -379,7 +369,7 @@ module Hide (V : Set) (w : V → SelfDual) where
                           (absorbˡ (G z r') (G r r' ∘ G z r)))) ⟫)
       as
 
-module Ordered {V : Set} (vertex-object : V → SelfDual) (_<_ : V → V → Set) (o : IsStrictOrder _<_) where
+module Ordered {V : Set} (vertex-object : V → Semimodule) (_<_ : V → V → Set) (o : IsStrictOrder _<_) where
 
   open IsStrictOrder o using (trans; asym)
 
@@ -395,9 +385,9 @@ module Ordered {V : Set} (vertex-object : V → SelfDual) (_<_ : V → V → Set
   ... | inj₁ a     | _          | _          = inj₁ a
   ... | inj₂ _     | inj₁ ry    | inj₁ xr    = inj₁ (trans x r y xr ry)
   ... | inj₂ ⟪ z ⟫ | inj₂ ⟪ e ⟫ | _          =
-    inj₂ ⟪ ≈-trans (+ₘ-cong z (≈-trans (∘-cong₁ e) (CM.comp-bilinear-ε₁ (G x r)))) (+ₘ-lunit εₘ) ⟫
+    inj₂ ⟪ ≈-trans (+ₘ-cong z (≈-trans {g = εₘ {vertex-object r} {vertex-object y} ∘ G x r} (∘-cong₁ {f₁ = G r y} {f₂ = εₘ} {g = G x r} e) (CM.comp-bilinear-ε₁ {Z = vertex-object y} (G x r)))) (+ₘ-lunit εₘ) ⟫
   ... | inj₂ ⟪ z ⟫ | inj₁ _     | inj₂ ⟪ e ⟫ =
-    inj₂ ⟪ ≈-trans (+ₘ-cong z (≈-trans (∘-cong₂ e) (CM.comp-bilinear-ε₂ (G r y)))) (+ₘ-lunit εₘ) ⟫
+    inj₂ ⟪ ≈-trans (+ₘ-cong z (≈-trans {g = G r y ∘ εₘ {vertex-object x} {vertex-object r}} (∘-cong₂ {f = G r y} e) (CM.comp-bilinear-ε₂ {X = vertex-object x} (G r y)))) (+ₘ-lunit εₘ) ⟫
 
   fwd-hide-all : ∀ {G} rs → Fwd G → Fwd (hide-all vertex-object G rs)
   fwd-hide-all []       fwd = fwd
@@ -407,8 +397,8 @@ module Ordered {V : Set} (vertex-object : V → SelfDual) (_<_ : V → V → Set
     cycle : ∀ {G} → Fwd G → ∀ r r' → (G r' r ∘ G r r') ≈ εₘ
     cycle {G} fwd r r' with fwd r' r | fwd r r'
     ... | inj₁ a     | inj₁ b     = ⊥-elimₚ (asym r' r a b)
-    ... | inj₂ ⟪ e ⟫ | _          = ≈-trans (∘-cong₁ e) (CM.comp-bilinear-ε₁ (G r r'))
-    ... | inj₁ _     | inj₂ ⟪ e ⟫ = ≈-trans (∘-cong₂ e) (CM.comp-bilinear-ε₂ (G r' r))
+    ... | inj₂ ⟪ e ⟫ | _          = ≈-trans {g = εₘ {vertex-object r'} {vertex-object r} ∘ G r r'} (∘-cong₁ {f₁ = G r' r} {f₂ = εₘ} {g = G r r'} e) (CM.comp-bilinear-ε₁ {Z = vertex-object r} (G r r'))
+    ... | inj₁ _     | inj₂ ⟪ e ⟫ = ≈-trans {g = G r' r ∘ εₘ {vertex-object r} {vertex-object r'}} (∘-cong₂ {f = G r' r} e) (CM.comp-bilinear-ε₂ {X = vertex-object r} (G r' r))
 
     both : ∀ (G : Relation vertex-object) r r' x y → vertex-object x ⇒ vertex-object y
     both G r r' x y =
@@ -426,10 +416,10 @@ module Ordered {V : Set} (vertex-object : V → SelfDual) (_<_ : V → V → Set
       vanish : ((G r y ∘ G r' r) ∘ (G r r' ∘ G x r)) ≈ εₘ
       vanish =
         ≈-trans (assoc (G r y) (G r' r) (G r r' ∘ G x r))
-        (≈-trans (∘-cong₂ (≈-sym (assoc (G r' r) (G r r') (G x r))))
-        (≈-trans (∘-cong₂ (∘-cong₁ (cycle fwd r r')))
-        (≈-trans (∘-cong₂ (CM.comp-bilinear-ε₁ (G x r)))
-                 (CM.comp-bilinear-ε₂ (G r y)))))
+        (≈-trans (∘-cong₂ {f = G r y} (≈-sym (assoc (G r' r) (G r r') (G x r))))
+        (≈-trans (∘-cong₂ {f = G r y} (∘-cong₁ {f₁ = G r' r ∘ G r r'} {f₂ = εₘ} {g = G x r} (cycle fwd r r')))
+        (≈-trans (∘-cong₂ {f = G r y} (CM.comp-bilinear-ε₁ {Z = vertex-object r} (G x r)))
+                 (CM.comp-bilinear-ε₂ {X = vertex-object x} (G r y)))))
 
     swap : ∀ G r r' x y → both G r r' x y ≈ both G r' r x y
     swap G r r' x y =
@@ -461,13 +451,13 @@ module Ordered {V : Set} (vertex-object : V → SelfDual) (_<_ : V → V → Set
             (hide-all-perm (fwd-hide a (fwd-hide b fwd)) p x y)
   hide-all-perm fwd (↭.trans p q) x y = ≈-trans (hide-all-perm fwd p x y) (hide-all-perm fwd q x y)
 
-module _ {X Y : SelfDual} (B : Graph X Y) where
+module _ {X Y : Semimodule} (B : Graph X Y) where
   open Graph B
 
   Path⁺ : Set
   Path⁺ = Vertex shape ⊎ Root
 
-  object⁺ : Path⁺ → SelfDual
+  object⁺ : Path⁺ → Semimodule
   object⁺ = [ object , (λ _ → Y) ]
 
   fo⁺ : Path⁺ → Bool
@@ -477,7 +467,7 @@ module _ {X Y : SelfDual} (B : Graph X Y) where
   into⁺ (inj₁ q) = into q
   into⁺ (inj₂ _) = out
 
-  up-root⁺ : ∀ {K : SelfDual} → Y ⇒ K → (q : Path⁺) → object⁺ q ⇒ K
+  up-root⁺ : ∀ {K : Semimodule} → Y ⇒ K → (q : Path⁺) → object⁺ q ⇒ K
   up-root⁺ u (inj₁ _) = εₘ
   up-root⁺ u (inj₂ _) = u
 
@@ -503,7 +493,7 @@ module _ {X Y : SelfDual} (B : Graph X Y) where
   V : Set
   V = Input ⊎ Path⁺
 
-  vertex-object : V → SelfDual
+  vertex-object : V → Semimodule
   vertex-object = [ (λ _ → X) , object⁺ ]
 
   gr : Relation vertex-object
@@ -544,18 +534,18 @@ module _ {X Y : SelfDual} (B : Graph X Y) where
   fo-forward = fwd-hide-all (map (λ q → inj₂ (inj₁ q)) fo-hidden) gr-forward
 
 private
-  distrib-root : ∀ {W N K L : SelfDual} (P : N ⇒ W) (Xm : K ⇒ N) (Ym : L ⇒ N) (Zm : K ⇒ L) →
+  distrib-root : ∀ {W N K L : Semimodule} (P : N ⇒ W) (Xm : K ⇒ N) (Ym : L ⇒ N) (Zm : K ⇒ L) →
                  ((P ∘ Xm) +ₘ ((P ∘ Ym) ∘ Zm)) ≈ (P ∘ (Xm +ₘ (Ym ∘ Zm)))
   distrib-root P Xm Ym Zm =
     ≈-trans (+ₘ-cong ≈-refl (assoc P Ym Zm)) (≈-sym (CM.comp-bilinear₂ P Xm (Ym ∘ Zm)))
 
-  root-step : ∀ {W N L K : SelfDual} {P : N ⇒ W} {G₁ : K ⇒ W} {Xm : K ⇒ N}
+  root-step : ∀ {W N L K : Semimodule} {P : N ⇒ W} {G₁ : K ⇒ W} {Xm : K ⇒ N}
               {G₂ : L ⇒ W} {Ym : L ⇒ N} {G₃ Zm : K ⇒ L} →
               G₁ ≈ (P ∘ Xm) → G₂ ≈ (P ∘ Ym) → G₃ ≈ Zm →
               (G₁ +ₘ (G₂ ∘ G₃)) ≈ (P ∘ (Xm +ₘ (Ym ∘ Zm)))
   root-step {P = P} {Xm = Xm} {Ym = Ym} {Zm = Zm} a b c = ≈-trans (+ₘ-cong a (∘-cong b c)) (distrib-root P Xm Ym Zm)
 
-  offset-step : ∀ {W N L K : SelfDual} {Km : K ⇒ W} {P : N ⇒ W} {G₁ : K ⇒ W}
+  offset-step : ∀ {W N L K : Semimodule} {Km : K ⇒ W} {P : N ⇒ W} {G₁ : K ⇒ W}
                 {Xm : K ⇒ N} {G₂ : L ⇒ W} {Ym : L ⇒ N} {G₃ Zm : K ⇒ L} →
                 G₁ ≈ (Km +ₘ (P ∘ Xm)) → G₂ ≈ (P ∘ Ym) → G₃ ≈ Zm →
                 (G₁ +ₘ (G₂ ∘ G₃)) ≈ (Km +ₘ (P ∘ (Xm +ₘ (Ym ∘ Zm))))
@@ -566,7 +556,7 @@ private
 -- Hiding one premise's vertices, one at a time, inside the conclusion's graph. The state records
 -- the premise's own relations as they accumulate; Φ carries the premise's input columns to the
 -- conclusion's, which for a premise evaluated in a substituted environment is not the identity.
-module _ {X Y : SelfDual} (B : Graph X Y) where
+module _ {X Y : Semimodule} (B : Graph X Y) where
 
   root-row : ∀ y → gr B (inj₂ (inj₂ root)) y ≈ εₘ
   root-row (inj₁ _) = ≈-refl {f = εₘ}
@@ -582,12 +572,12 @@ module _ {X Y : SelfDual} (B : Graph X Y) where
                            (inj₁ input) (inj₂ (inj₂ root)))
 
 module HidePremise
-  {XB YB : SelfDual} (B : Graph XB YB)
-  {V : Set} (object' : V → SelfDual)
+  {XB YB : Semimodule} (B : Graph XB YB)
+  {V : Set} (object' : V → Semimodule)
   (inp : V)
   (blk : Path⁺ B → V)
   {T : Set} (tgt : T → V)
-  {M' : SelfDual} (Φ : object' inp ⇒ M')
+  {M' : Semimodule} (Φ : object' inp ⇒ M')
   (P : (t : T) → object' (blk (inj₂ root)) ⇒ object' (tgt t))
   (K : (t : T) → object' inp ⇒ object' (tgt t))
   where
@@ -643,7 +633,7 @@ module HidePremise
                          {Ym = H .inside (inj₁ w) (inj₂ root)}
                          {Zm = H .into (inj₁ w) ∘ Φ}
               (s .tgt-ok t) (s .up-ok t w) (s .into-ok (inj₁ w)))
-            (+ₘ-cong ≈-refl (∘-cong₂ (≈-sym (Φ-step H (inj₁ w) (inj₂ root)))))
+            (+ₘ-cong ≈-refl (∘-cong₂ {f = P t} (≈-sym (Φ-step H (inj₁ w) (inj₂ root)))))
   agrees-hide {H = H} w s .up-ok t p =
     root-step {P = P t} {Xm = H .inside (inj₁ p) (inj₂ root)}
               {Ym = H .inside (inj₁ w) (inj₂ root)} {Zm = H .inside (inj₁ p) (inj₁ w)}
@@ -678,23 +668,23 @@ module HidePremise
   agrees-start {H = H} r .tgt-ok t =
     ≈-trans (+ₘ-cong (r .tgt-start t)
                      (∘-cong (r .up-start t) (r .into-start (inj₂ root))))
-            (+ₘ-cong ≈-refl (∘-cong₂ (≈-sym unchanged)))
+            (+ₘ-cong ≈-refl (∘-cong₂ {f = P t} (≈-sym unchanged)))
     where
     unchanged : (step H (inj₂ root) .into (inj₂ root) ∘ Φ) ≈ (H .into (inj₂ root) ∘ Φ)
     unchanged =
       ≈-trans (Φ-step H (inj₂ root) (inj₂ root))
-              (≈-trans (+ₘ-cong ≈-refl (∘-cong₁ (r .sink (inj₂ root))))
+              (≈-trans (+ₘ-cong ≈-refl (∘-cong₁ {f₁ = H .inside (inj₂ root) (inj₂ root)} {f₂ = εₘ} {g = H .into (inj₂ root) ∘ Φ} (r .sink (inj₂ root))))
                        (absorb₁ (H .into (inj₂ root) ∘ Φ) (H .into (inj₂ root) ∘ Φ)))
   agrees-start {H = H} r .up-ok t p =
     ≈-trans (+ₘ-cong (r .off-start t p)
                      (∘-cong (r .up-start t) (r .inside-start (inj₁ p) (inj₂ root))))
     (≈-trans (+ₘ-lunit (P t ∘ H .inside (inj₁ p) (inj₂ root)))
-             (∘-cong₂ (≈-sym unchanged)))
+             (∘-cong₂ {f = P t} (≈-sym unchanged)))
     where
     unchanged : step H (inj₂ root) .inside (inj₁ p) (inj₂ root)
                 ≈ H .inside (inj₁ p) (inj₂ root)
     unchanged =
-      ≈-trans (+ₘ-cong ≈-refl (∘-cong₁ (r .sink (inj₂ root))))
+      ≈-trans (+ₘ-cong ≈-refl (∘-cong₁ {f₁ = H .inside (inj₂ root) (inj₂ root)} {f₂ = εₘ} {g = H .inside (inj₁ p) (inj₂ root)} (r .sink (inj₂ root))))
               (absorb₁ (H .inside (inj₁ p) (inj₂ root)) (H .inside (inj₁ p) (inj₂ root)))
 
   module Hidden (G₀ : Relation object') (prem : Relation (vertex-object B) → St)
@@ -716,7 +706,7 @@ module HidePremise
     κ = ≡-cong (λ H' → H' .into (inj₂ root)) (folds prem inj₂ (hide (vertex-object B)) prem-step (paths⁺ B) (gr B))
 
 module NoEdgeIntoHidden
-  {V : Set} (vertex-object : V → SelfDual)
+  {V : Set} (vertex-object : V → Semimodule)
   {W : Set} (hid : W → V)
   {S : Set} (src : S → V)
   {T : Set} (col : T → V)
@@ -732,10 +722,10 @@ module NoEdgeIntoHidden
 
   fixed-hide : ∀ {G} (w : W) → Fixed G → Fixed (hide vertex-object G (hid w))
   fixed-hide {G} w k .edge s t =
-    ≈-trans (+ₘ-cong (k .edge s t) (∘-cong₂ (k .no-edge s w)))
+    ≈-trans (+ₘ-cong (k .edge s t) (∘-cong₂ {f = G (hid w) (col t)} (k .no-edge s w)))
             (absorb₂ (B s t) (G (hid w) (col t)))
   fixed-hide {G} w k .no-edge s w' =
-    ≈-trans (+ₘ-cong (k .no-edge s w') (∘-cong₂ (k .no-edge s w)))
+    ≈-trans (+ₘ-cong (k .no-edge s w') (∘-cong₂ {f = G (hid w) (hid w')} (k .no-edge s w)))
             (absorb₂ εₘ (G (hid w) (hid w')))
 
   fixed-hide-all : ∀ {G} {W' : Set} (f : W' → W) (ws : List W') →
@@ -748,30 +738,27 @@ module NoEdgeIntoHidden
   fixed-resp e k .no-edge s w = ≈-trans (≈-sym (e (src s) (hid w))) (k .no-edge s w)
 
 private
-  factor : ∀ {Xo Yo Zo Wo Vo : SelfDual} (A : Yo ⇒ Zo) (r : Xo ⇒ Yo) (l : Wo ⇒ Yo)
+  factor : ∀ {Xo Yo Zo Wo Vo : Semimodule} (A : Yo ⇒ Zo) (r : Xo ⇒ Yo) (l : Wo ⇒ Yo)
            {h c : Vo ⇒ Wo} (ρ : Xo ⇒ Vo) → h ≈ c →
            ((A ∘ r) +ₘ ((A ∘ l) ∘ (h ∘ ρ))) ≈ (A ∘ (r +ₘ (l ∘ (c ∘ ρ))))
-  factor A r l ρ e =
-    ≈-trans (+ₘ-cong ≈-refl (≈-trans (∘-cong₂ (∘-cong₁ e)) (assoc A l (_ ∘ ρ))))
-            (≈-sym (CM.comp-bilinear₂ A r (l ∘ (_ ∘ ρ))))
+  factor A r l {h} {c} ρ e =
+    ≈-trans (+ₘ-cong ≈-refl (≈-trans (∘-cong₂ {f = A ∘ l} (∘-cong₁ {f₁ = h} {f₂ = c} {g = ρ} e)) (assoc A l (c ∘ ρ))))
+            (≈-sym (CM.comp-bilinear₂ A r (l ∘ (c ∘ ρ))))
 
 private
-  ∘-pair : ∀ {L M2 N2 K : SelfDual} (A : (M2 ⊕ᵥ N2) ⇒ L) (Xm : K ⇒ M2) (Ym : K ⇒ N2) →
+  ∘-pair : ∀ {L M2 N2 K : Semimodule} (A : (M2 ⊕ᵥ N2) ⇒ L) (Xm : K ⇒ M2) (Ym : K ⇒ N2) →
            (A ∘ ⟨ Xm , Ym ⟩) ≈ (((A ∘ inb₁) ∘ Xm) +ₘ ((A ∘ inb₂) ∘ Ym))
   ∘-pair A Xm Ym =
     ≈-trans (CM.comp-bilinear₂ A (inb₁ ∘ Xm) (inb₂ ∘ Ym))
             (+ₘ-cong (≈-sym (assoc A inb₁ Xm)) (≈-sym (assoc A inb₂ Ym)))
 
 module NoEdgeOutOfHidden
-  {V : Set} (vertex-object : V → SelfDual)
+  {V : Set} (vertex-object : V → Semimodule)
   {W : Set} (hid : W → V)
   {S : Set} (src : S → V)
   {T : Set} (col : T → V)
   (B : (s : S) (t : T) → vertex-object (src s) ⇒ vertex-object (col t))
   where
-
-  private
-    module Into = NoEdgeIntoHidden vertex-object hid col src (λ t s → conjugate (vertex-object (src s)) (vertex-object (col t)) (B s t))
 
   record Fixed (G : Relation vertex-object) : Set where
     field
@@ -780,24 +767,19 @@ module NoEdgeOutOfHidden
 
   open Fixed public
 
-  private
-    to : ∀ {G} → Fixed G → Into.Fixed (flip G)
-    to k .Into.edge t s = conjugate-cong _ _ (k .edge s t)
-    to k .Into.no-edge t w =
-      ≈-trans (conjugate-cong _ _ (k .no-edge w t)) (SD.conjugate-ε _ _)
-
-    from : ∀ {G} → Into.Fixed (flip G) → Fixed G
-    from {G} k .edge s t =
-      ≈-trans (≈-sym (SD.conjugate-involution _ _ (G (src s) (col t))))
-              (≈-trans (conjugate-cong _ _ (k .Into.edge t s))
-                       (SD.conjugate-involution _ _ (B s t)))
-    from {G} k .no-edge w t =
-      ≈-trans (≈-sym (SD.conjugate-involution _ _ (G (hid w) (col t))))
-              (≈-trans (conjugate-cong _ _ (k .Into.no-edge t w))
-                       (≈-trans (SD.conjugate-ε _ _) ≈-refl))
-
   fixed-hide : ∀ {G} (w : W) → Fixed G → Fixed (hide vertex-object G (hid w))
-  fixed-hide {G} w k = from (Into.fixed-resp (flip-hide vertex-object G (hid w)) (Into.fixed-hide w (to k)))
+  fixed-hide {G} w k .edge s t =
+    ≈-trans (+ₘ-cong (k .edge s t)
+                     (≈-trans {g = εₘ {vertex-object (hid w)} {vertex-object (col t)} ∘ G (src s) (hid w)}
+                              (∘-cong₁ {f₁ = G (hid w) (col t)} {f₂ = εₘ} {g = G (src s) (hid w)} (k .no-edge w t))
+                              (CM.comp-bilinear-ε₁ {Z = vertex-object (col t)} (G (src s) (hid w)))))
+            (+ₘ-runit (B s t))
+  fixed-hide {G} w k .no-edge w' t =
+    ≈-trans (+ₘ-cong (k .no-edge w' t)
+                     (≈-trans {g = εₘ {vertex-object (hid w)} {vertex-object (col t)} ∘ G (hid w') (hid w)}
+                              (∘-cong₁ {f₁ = G (hid w) (col t)} {f₂ = εₘ} {g = G (hid w') (hid w)} (k .no-edge w t))
+                              (CM.comp-bilinear-ε₁ {Z = vertex-object (col t)} (G (hid w') (hid w)))))
+            (+ₘ-runit εₘ)
 
   fixed-hide-all : ∀ {G} {W' : Set} (f : W' → W) (ws : List W') →
                    Fixed G → Fixed (hide-all vertex-object G (map (λ w → hid (f w)) ws))
@@ -805,7 +787,7 @@ module NoEdgeOutOfHidden
   fixed-hide-all f (w ∷ ws) k = fixed-hide-all f ws (fixed-hide (f w) k)
 
 module Rule₀
-  {X Y : SelfDual} (fo-root : Bool)
+  {X Y : Semimodule} (fo-root : Bool)
   (out-root : X ⇒ Y)
   where
 
@@ -824,9 +806,9 @@ module Rule₀
   agree = ≈-refl {f = out-root}
 
 module Rule₁
-  {X : SelfDual}
-  {XB YB : SelfDual} (B : Graph XB YB)
-  {Y : SelfDual}
+  {X : Semimodule}
+  {XB YB : Semimodule} (B : Graph XB YB)
+  {Y : Semimodule}
   (inputs : X ⇒ XB)
   (fo-root : Bool)
   (out-root : X ⇒ Y)
@@ -875,13 +857,13 @@ module Rule₁
   agree =
     ≈-trans (≡-to-≈ plumb)
             (≈-trans (hidden.done start .S.tgt-ok root)
-                     (+ₘ-cong ≈-refl (∘-cong₂ (∘-cong₁ (≈-trans (≡-to-≈ hidden.κ) (hide-paths⁺ B))))))
+                     (+ₘ-cong ≈-refl (∘-cong₂ {f = up-root} (∘-cong₁ {g = inputs} (≈-trans (≡-to-≈ hidden.κ) (hide-paths⁺ B))))))
 
 module Rule₂
-  {X : SelfDual}
-  {X₁ Y₁ : SelfDual} (B₁ : Graph X₁ Y₁)
-  {X₂ Y₂ : SelfDual} (B₂ : Graph X₂ Y₂)
-  {Y : SelfDual}
+  {X : Semimodule}
+  {X₁ Y₁ : Semimodule} (B₁ : Graph X₁ Y₁)
+  {X₂ Y₂ : Semimodule} (B₂ : Graph X₂ Y₂)
+  {Y : Semimodule}
   (inputs₁ : X ⇒ X₁)
   (inputs₂ : (X ⊕ᵥ Y₁) ⇒ X₂)
   (fo-root : Bool)
@@ -1008,7 +990,9 @@ module Rule₂
       ≈-trans (done₁ .S₁.tgt-ok (inj₁ q))
               (factor (into⁺ B₂ q) from-inputs₂ from-root₁ {h = hidden₁.H .S₁.into (inj₂ root)} {c = collapse B₁} inputs₁ κ₁)
     start₂ .S₂.inside-start p q = fixed₁ .IntoHidden.edge p (inj₁ q)
-    start₂ .S₂.tgt-start _ = ≈-trans (done₁ .S₁.tgt-ok (inj₂ root)) (+ₘ-cong ≈-refl (∘-cong₂ (∘-cong₁ κ₁)))
+    start₂ .S₂.tgt-start _ =
+      ≈-trans {g = out-root +ₘ (up₁ ∘ (hidden₁.H .S₁.into (inj₂ root) ∘ inputs₁))}
+              (done₁ .S₁.tgt-ok (inj₂ root)) (+ₘ-cong ≈-refl (∘-cong₂ {f = up₁} (∘-cong₁ {g = inputs₁} κ₁)))
     start₂ .S₂.up-start _ = fixed₁ .IntoHidden.edge (inj₂ root) (inj₂ root)
     start₂ .S₂.off-start _ p = fixed₁ .IntoHidden.edge (inj₁ p) (inj₂ root)
     start₂ .S₂.sink q = ≈-refl {f = εₘ}
@@ -1033,15 +1017,16 @@ module Rule₂
   agree : collapse E ≈ ((out-root +ₘ (up₁ ∘ (collapse B₁ ∘ inputs₁))) +ₘ (up₂ ∘ (collapse B₂ ∘ Φ₂)))
   agree =
     ≈-trans (≡-to-≈ plumb)
-            (≈-trans (hidden₂.done start₂ .S₂.tgt-ok root)
-                     (+ₘ-cong ≈-refl (∘-cong₂ (∘-cong (≈-trans (≡-to-≈ hidden₂.κ) (hide-paths⁺ B₂)) Φ₂-split))))
+            (≈-trans {g = (out-root +ₘ (up₁ ∘ (collapse B₁ ∘ inputs₁))) +ₘ (up₂ ∘ (hidden₂.H .S₂.into (inj₂ root) ∘ Φ₂'))}
+                     (hidden₂.done start₂ .S₂.tgt-ok root)
+                     (+ₘ-cong ≈-refl (∘-cong₂ {f = up₂} (∘-cong (≈-trans (≡-to-≈ hidden₂.κ) (hide-paths⁺ B₂)) Φ₂-split))))
 
 module Rule₃
-  {X : SelfDual}
-  {X₁ Y₁ : SelfDual} (B₁ : Graph X₁ Y₁)
-  {X₂ Y₂ : SelfDual} (B₂ : Graph X₂ Y₂)
-  {X₃ Y₃ : SelfDual} (B₃ : Graph X₃ Y₃)
-  {Y : SelfDual}
+  {X : Semimodule}
+  {X₁ Y₁ : Semimodule} (B₁ : Graph X₁ Y₁)
+  {X₂ Y₂ : Semimodule} (B₂ : Graph X₂ Y₂)
+  {X₃ Y₃ : Semimodule} (B₃ : Graph X₃ Y₃)
+  {Y : Semimodule}
   (inputs₁ : X ⇒ X₁)
   (inputs₂ : X ⇒ X₂)
   (inputs₃ : ((X ⊕ᵥ Y₁) ⊕ᵥ Y₂) ⇒ X₃)
@@ -1220,8 +1205,9 @@ module Rule₃
       ≈-trans (done₁ .S₁.tgt-ok (inj₁ q))
               (factor (into⁺ B₃ q) from-inputs₃ from-root₁ {h = hidden₁.H .S₁.into (inj₂ root)} {c = collapse B₁} inputs₁ κ₁)
     start₂ .S₂.tgt-start (inj₂ _) =
-      ≈-trans (done₁ .S₁.tgt-ok (inj₂ root))
-              (+ₘ-cong ≈-refl (∘-cong₂ (∘-cong₁ κ₁)))
+      ≈-trans {g = out-root +ₘ (up₁ ∘ (hidden₁.H .S₁.into (inj₂ root) ∘ inputs₁))}
+              (done₁ .S₁.tgt-ok (inj₂ root))
+              (+ₘ-cong ≈-refl (∘-cong₂ {f = up₁} (∘-cong₁ {g = inputs₁} κ₁)))
     start₂ .S₂.up-start (inj₁ q) = fixed₂ .IntoHidden₂.edge (inj₂ root) (inj₂ (inj₁ q))
     start₂ .S₂.up-start (inj₂ _) = fixed₂ .IntoHidden₂.edge (inj₂ root) (inj₂ (inj₂ root))
     start₂ .S₂.off-start (inj₁ q) p = fixed₂ .IntoHidden₂.edge (inj₁ p) (inj₂ (inj₁ q))
@@ -1283,7 +1269,9 @@ module Rule₃
               (done₂ .S₂.tgt-ok (inj₁ q))
               (factor (into⁺ B₃ q) Φ₃₁ from-root₂ {h = hidden₂.H .S₂.into (inj₂ root)} {c = collapse B₂} inputs₂ κ₂)
     start₃ .S₃.inside-start p q = fixed₃ .IntoHidden₃.edge p (inj₁ q)
-    start₃ .S₃.tgt-start _ = ≈-trans (done₂ .S₂.tgt-ok (inj₂ root)) (+ₘ-cong ≈-refl (∘-cong₂ (∘-cong₁ κ₂)))
+    start₃ .S₃.tgt-start _ =
+      ≈-trans {g = (out-root +ₘ (up₁ ∘ c₁)) +ₘ (up₂ ∘ (hidden₂.H .S₂.into (inj₂ root) ∘ inputs₂))}
+              (done₂ .S₂.tgt-ok (inj₂ root)) (+ₘ-cong ≈-refl (∘-cong₂ {f = up₂} (∘-cong₁ {g = inputs₂} κ₂)))
     start₃ .S₃.up-start _ = fixed₃ .IntoHidden₃.edge (inj₂ root) (inj₂ root)
     start₃ .S₃.off-start _ p = fixed₃ .IntoHidden₃.edge (inj₁ p) (inj₂ root)
     start₃ .S₃.sink q = ≈-refl {f = εₘ}
@@ -1320,5 +1308,6 @@ module Rule₃
   agree : collapse E ≈ (((out-root +ₘ (up₁ ∘ c₁)) +ₘ (up₂ ∘ c₂)) +ₘ (up₃ ∘ (collapse B₃ ∘ Φ₃)))
   agree =
     ≈-trans (≡-to-≈ plumb)
-            (≈-trans (hidden₃.done start₃ .S₃.tgt-ok root)
-                     (+ₘ-cong ≈-refl (∘-cong₂ (∘-cong (≈-trans (≡-to-≈ hidden₃.κ) (hide-paths⁺ B₃)) Φ₃-split))))
+            (≈-trans {g = ((out-root +ₘ (up₁ ∘ c₁)) +ₘ (up₂ ∘ c₂)) +ₘ (up₃ ∘ (hidden₃.H .S₃.into (inj₂ root) ∘ Φ₃'))}
+                     (hidden₃.done start₃ .S₃.tgt-ok root)
+                     (+ₘ-cong ≈-refl (∘-cong₂ {f = up₃} (∘-cong (≈-trans (≡-to-≈ hidden₃.κ) (hide-paths⁺ B₃)) Φ₃-split))))
