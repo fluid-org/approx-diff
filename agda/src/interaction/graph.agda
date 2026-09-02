@@ -208,49 +208,49 @@ hide-all vertex-object = foldl (hide vertex-object)
 _≐_ : {V : Set} {vertex-object : V → Semimodule} → Relation vertex-object → Relation vertex-object → Prop
 _≐_ {V} G G' = ∀ x y → G x y ≈ G' x y
 
+open import commutative-monoid using (CommutativeMonoid)
+
++ₘ-cong : ∀ {X Y : Semimodule} {f f' g g' : X ⇒ Y} → f ≈ f' → g ≈ g' → (f +ₘ g) ≈ (f' +ₘ g')
++ₘ-cong {X} {Y} = CommutativeMonoid.+-cong (CM.homCM X Y)
+
++ₘ-assoc : ∀ {X Y : Semimodule} {f g h : X ⇒ Y} → ((f +ₘ g) +ₘ h) ≈ (f +ₘ (g +ₘ h))
++ₘ-assoc {X} {Y} = CommutativeMonoid.+-assoc (CM.homCM X Y)
+
++ₘ-comm : ∀ {X Y : Semimodule} {f g : X ⇒ Y} → (f +ₘ g) ≈ (g +ₘ f)
++ₘ-comm {X} {Y} = CommutativeMonoid.+-comm (CM.homCM X Y)
+
++ₘ-lunit : ∀ {X Y : Semimodule} (f : X ⇒ Y) → (εₘ +ₘ f) ≈ f
++ₘ-lunit {X} {Y} f = CommutativeMonoid.+-lunit (CM.homCM X Y)
+
++ₘ-runit : ∀ {X Y : Semimodule} (f : X ⇒ Y) → (f +ₘ εₘ) ≈ f
++ₘ-runit f = ≈-trans +ₘ-comm (+ₘ-lunit f)
+
++ₘ-swap-mid : ∀ {X Y : Semimodule} (f g h : X ⇒ Y) → (f +ₘ (g +ₘ h)) ≈ (g +ₘ (f +ₘ h))
++ₘ-swap-mid f g h =
+  ≈-trans (≈-sym +ₘ-assoc) (≈-trans (+ₘ-cong +ₘ-comm ≈-refl) +ₘ-assoc)
+
+absorb₁ : ∀ {X Y Z : Semimodule} (f : X ⇒ Y) (g : X ⇒ Z) → (f +ₘ (εₘ ∘ g)) ≈ f
+absorb₁ f g = ≈-trans (+ₘ-cong ≈-refl (CM.comp-bilinear-ε₁ g)) (+ₘ-runit f)
+
+absorb₂ : ∀ {X Y Z : Semimodule} (f : X ⇒ Y) (g : Z ⇒ Y) → (f +ₘ (g ∘ εₘ)) ≈ f
+absorb₂ f g = ≈-trans (+ₘ-cong ≈-refl (CM.comp-bilinear-ε₂ g)) (+ₘ-runit f)
+
 private
-  open import commutative-monoid using (CommutativeMonoid)
-
-  +ₘ-cong : ∀ {X Y : Semimodule} {f f' g g' : X ⇒ Y} → f ≈ f' → g ≈ g' → (f +ₘ g) ≈ (f' +ₘ g')
-  +ₘ-cong {X} {Y} = CommutativeMonoid.+-cong (CM.homCM X Y)
-
-  +ₘ-assoc : ∀ {X Y : Semimodule} {f g h : X ⇒ Y} → ((f +ₘ g) +ₘ h) ≈ (f +ₘ (g +ₘ h))
-  +ₘ-assoc {X} {Y} = CommutativeMonoid.+-assoc (CM.homCM X Y)
-
-  +ₘ-comm : ∀ {X Y : Semimodule} {f g : X ⇒ Y} → (f +ₘ g) ≈ (g +ₘ f)
-  +ₘ-comm {X} {Y} = CommutativeMonoid.+-comm (CM.homCM X Y)
-
-  +ₘ-lunit : ∀ {X Y : Semimodule} (f : X ⇒ Y) → (εₘ +ₘ f) ≈ f
-  +ₘ-lunit {X} {Y} f = CommutativeMonoid.+-lunit (CM.homCM X Y)
-
-  +ₘ-runit : ∀ {X Y : Semimodule} (f : X ⇒ Y) → (f +ₘ εₘ) ≈ f
-  +ₘ-runit f = ≈-trans +ₘ-comm (+ₘ-lunit f)
-
-  +ₘ-swap-mid : ∀ {X Y : Semimodule} (f g h : X ⇒ Y) → (f +ₘ (g +ₘ h)) ≈ (g +ₘ (f +ₘ h))
-  +ₘ-swap-mid f g h =
-    ≈-trans (≈-sym +ₘ-assoc) (≈-trans (+ₘ-cong +ₘ-comm ≈-refl) +ₘ-assoc)
-
-  absorb₁ : ∀ {X Y Z : Semimodule} (f : X ⇒ Y) (g : X ⇒ Z) → (f +ₘ (εₘ ∘ g)) ≈ f
-  absorb₁ f g = ≈-trans (+ₘ-cong ≈-refl (CM.comp-bilinear-ε₁ g)) (+ₘ-runit f)
-
-  absorb₂ : ∀ {X Y Z : Semimodule} (f : X ⇒ Y) (g : Z ⇒ Y) → (f +ₘ (g ∘ εₘ)) ≈ f
-  absorb₂ f g = ≈-trans (+ₘ-cong ≈-refl (CM.comp-bilinear-ε₂ g)) (+ₘ-runit f)
-
   open SemiMod.Semimodule using ()
   open import prop-setoid using () renaming (_≃m_ to _≈s_)
   open SemiMod._⇒_ using (func; func-resp-≈)
   open SemiMod._≈m_
 
-  +ₘ-idem : ∀ {X Y : Semimodule} (f : X ⇒ Y) → (f +ₘ f) ≈ f
-  +ₘ-idem {X} {Y} f .*≈* ._≈s_.func-eq {x} {x'} x≈x' =
-    N.trans (N.+-cong (f .func-resp-≈ x≈x') (f .func-resp-≈ x≈x')) (idem (f .func x'))
-    where
-    module N = SemiMod.Semimodule Y
-    idem : ∀ a → (a N.+ a) N.≈ a
-    idem a =
-      N.trans (N.+-cong (N.sym N.·-unit) (N.sym N.·-unit))
-        (N.trans (N.sym N.+-distribʳ)
-          (N.trans (N.·-cong (+-idem Semiring.ι) N.refl) N.·-unit))
++ₘ-idem : ∀ {X Y : Semimodule} (f : X ⇒ Y) → (f +ₘ f) ≈ f
++ₘ-idem {X} {Y} f .*≈* ._≈s_.func-eq {x} {x'} x≈x' =
+  N.trans (N.+-cong (f .func-resp-≈ x≈x') (f .func-resp-≈ x≈x')) (idem (f .func x'))
+  where
+  module N = SemiMod.Semimodule Y
+  idem : ∀ a → (a N.+ a) N.≈ a
+  idem a =
+    N.trans (N.+-cong (N.sym N.·-unit) (N.sym N.·-unit))
+      (N.trans (N.sym N.+-distribʳ)
+        (N.trans (N.·-cong (+-idem Semiring.ι) N.refl) N.·-unit))
 
 hide-cong : {V : Set} (vertex-object : V → Semimodule) {G G' : Relation vertex-object} (r : V) →
             G ≐ G' → hide vertex-object G r ≐ hide vertex-object G' r
