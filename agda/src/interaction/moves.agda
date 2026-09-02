@@ -40,6 +40,7 @@ import matrix
 open import prop-setoid using (Setoid)
 open import commutative-semiring using (CommutativeSemiring)
 open import list
+import prop.set-elim as set-elim
 
 -- Configurations of the interaction: a visible set of vertices together with one hidden region per
 -- weakly connected component of the hidden set, each carrying the dependence routed through it as
@@ -70,21 +71,10 @@ private
   εₛ : S.Carrier
   εₛ = S.ε
 
-  absurd : ∀ {p} {P : Prop p} → ⊥ → P
-  absurd ()
-
-  dec-caseₚ : ∀ {a p} {A : Set a} {P : Prop p} → Dec A → (A → P) → (¬ A → P) → P
-  dec-caseₚ (yes k)  t f = t k
-  dec-caseₚ (no  ¬k) t f = f ¬k
-
   any-extract : ∀ {a q} {A' : Set a} {P : A' → Set a} {Q : Set q} {xs : List A'} →
                 (∀ {x} → P x → Q) → Any P xs → Q
   any-extract f (here px)  = f px
   any-extract f (there a₁) = any-extract f a₁
-
-  ⊎-caseₚ : ∀ {a b p} {A' : Set a} {B' : Set b} {P : Prop p} → (A' → P) → (B' → P) → A' ⊎ B' → P
-  ⊎-caseₚ f g (inj₁ x) = f x
-  ⊎-caseₚ f g (inj₂ y) = g y
 
   foldr-base : ∀ {P Q : SemiMod.Semimodule} (b : P ⇒ Q) (ts : List (P ⇒ Q)) →
                foldr _+ₘ_ b ts ≈ (b +ₘ foldr _+ₘ_ εₘ ts)
@@ -145,7 +135,7 @@ private
   when-yes : ∀ {p} {P : Set p} (d : Dec P) → P →
              ∀ {X Y : SemiMod.Semimodule} (f : X ⇒ Y) → when d f ≈ f
   when-yes (yes _)  h f = ≈-refl
-  when-yes (no  ¬h) h f = absurd (¬h h)
+  when-yes (no  ¬h) h f = set-elim.⊥-elim (¬h h)
 
   when-O : ∀ {p} {P : Set p} (d : Dec P) {X Y : SemiMod.Semimodule} (f : X ⇒ Y) →
            (P → f ≈ εₘ) → when d f ≈ εₘ
@@ -157,7 +147,7 @@ private
              (when d₁ f +ₘ when d₂ f) ≈ when d₂ f
   when-sub (no  _) d₂        f imp = +ₘ-lunit (when d₂ f)
   when-sub (yes k) (yes _)   f imp = +ₘ-idem f
-  when-sub (yes k) (no  ¬k') f imp = absurd (¬k' (imp k))
+  when-sub (yes k) (no  ¬k') f imp = set-elim.⊥-elim (¬k' (imp k))
 
 -- A configuration: the visible set, and one pair per hidden region of a set of vertices and a
 -- graph. No invariant is imposed; that the pairs are the regions of the hidden set with their
@@ -438,12 +428,12 @@ module _ {X Y : SemiMod.Semimodule} (𝒢 : Graph X Y)
     base-row : (z : V 𝒢) → restrict (fo-graph 𝒢) C (at q) z ≈ εₘ
     base-row z =
       when-O (at q ∈ᵥ? C ⊎-dec z ∈ᵥ? C) (fo-graph 𝒢 (at q) z)
-             (⊎-caseₚ (λ h → absurd (hm h)) (λ hz → entry-row hz))
+             (set-elim.⊎-case (λ h → set-elim.⊥-elim (hm h)) (λ hz → entry-row hz))
 
     base-col : (z : V 𝒢) → restrict (fo-graph 𝒢) C z (at q) ≈ εₘ
     base-col z =
       when-O (z ∈ᵥ? C ⊎-dec at q ∈ᵥ? C) (fo-graph 𝒢 z (at q))
-             (⊎-caseₚ (λ hz → entry-col hz) (λ h → absurd (hm h)))
+             (set-elim.⊎-case (λ hz → entry-col hz) (λ h → set-elim.⊥-elim (hm h)))
 
   Distinct : List (Path) → List (Path) → Set
   Distinct C C' = All (_∉ C) C'
@@ -643,12 +633,12 @@ module _ {X Y : SemiMod.Semimodule} (𝒢 : Graph X Y)
     vis-agree-row (inj₂ (inj₂ r)) =
       +ₘ-cong (when-yes (both-vis? (at p) (inj₂ (inj₂ r))) (hp , (λ ())) (G (at p) (inj₂ (inj₂ r)))) ≈-refl
     vis-agree-row (inj₂ (inj₁ q)) =
-      dec-caseₚ (q ∈? hidden-set K)
+      set-elim.dec-case (q ∈? hidden-set K)
         (λ hq →
           ≈-trans (+ₘ-cong (when-O (both-vis? (at p) (at q)) (G (at p) (at q))
-                                   (λ bv → absurd (proj₂ bv hq))) ≈-refl)
+                                   (λ bv → set-elim.⊥-elim (proj₂ bv hq))) ≈-refl)
           (≈-trans (+ₘ-lunit (Σat (at p) (at q)))
-            (⊎-caseₚ (λ aM → ≈-sym (absorb-G (at p) (at q) (Any-map inj₂ (at-inj₂ aM))))
+            (set-elim.⊎-case (λ aM → ≈-sym (absorb-G (at p) (at q) (Any-map inj₂ (at-inj₂ aM))))
                      (λ aU → ≈-sym (≈-trans (+ₘ-cong (proj₁ₚ (Prf.prf (non-adj-zero q aU))) ≈-refl)
                                             (+ₘ-lunit (Σat (at p) (at q)))))
                      (hid-split hq))))
@@ -662,12 +652,12 @@ module _ {X Y : SemiMod.Semimodule} (𝒢 : Graph X Y)
     vis-agree-col (inj₂ (inj₂ r)) =
       +ₘ-cong (when-yes (both-vis? (inj₂ (inj₂ r)) (at p)) ((λ ()) , hp) (G (inj₂ (inj₂ r)) (at p))) ≈-refl
     vis-agree-col (inj₂ (inj₁ q)) =
-      dec-caseₚ (q ∈? hidden-set K)
+      set-elim.dec-case (q ∈? hidden-set K)
         (λ hq →
           ≈-trans (+ₘ-cong (when-O (both-vis? (at q) (at p)) (G (at q) (at p))
-                                   (λ bv → absurd (proj₁ bv hq))) ≈-refl)
+                                   (λ bv → set-elim.⊥-elim (proj₁ bv hq))) ≈-refl)
           (≈-trans (+ₘ-lunit (Σat (at q) (at p)))
-            (⊎-caseₚ (λ aM → ≈-sym (absorb-G (at q) (at p) (Any-map inj₁ (at-inj₂ aM))))
+            (set-elim.⊎-case (λ aM → ≈-sym (absorb-G (at q) (at p) (Any-map inj₁ (at-inj₂ aM))))
                      (λ aU → ≈-sym (≈-trans (+ₘ-cong (proj₂ₚ (Prf.prf (non-adj-zero q aU))) ≈-refl)
                                             (+ₘ-lunit (Σat (at q) (at p)))))
                      (hid-split hq))))
@@ -684,7 +674,7 @@ module _ {X Y : SemiMod.Semimodule} (𝒢 : Graph X Y)
                  (B x' y' +ₘ Σat x' y') ≈
                  (restrict G C* x' y' +ₘ Σat x' y')
     base-agree x' y' =
-      dec-caseₚ (x' ∈ᵥ? (p ∷ []) ⊎-dec y' ∈ᵥ? (p ∷ []))
+      set-elim.dec-case (x' ∈ᵥ? (p ∷ []) ⊎-dec y' ∈ᵥ? (p ∷ []))
         (λ bp →
           ≈-trans (+ₘ-cong (≈-trans (when-yes (x' ∈ᵥ? (p ∷ []) ⊎-dec y' ∈ᵥ? (p ∷ [])) bp
                                               (visible-graph K x' y'))
@@ -698,10 +688,10 @@ module _ {X Y : SemiMod.Semimodule} (𝒢 : Graph X Y)
                                              (G x' y'))
                                    ≈-refl))))))
         (λ ¬bp →
-          dec-caseₚ (x' ∈ᵥ? C* ⊎-dec y' ∈ᵥ? C*)
+          set-elim.dec-case (x' ∈ᵥ? C* ⊎-dec y' ∈ᵥ? C*)
             (λ cg →
               ≈-trans (+ₘ-cong (when-O (x' ∈ᵥ? (p ∷ []) ⊎-dec y' ∈ᵥ? (p ∷ [])) (visible-graph K x' y')
-                                       (λ k → absurd (¬bp k)))
+                                       (λ k → set-elim.⊥-elim (¬bp k)))
                                ≈-refl)
               (≈-trans (+ₘ-lunit (Σat x' y'))
               (≈-sym (≈-trans (+ₘ-cong (when-yes (x' ∈ᵥ? C* ⊎-dec y' ∈ᵥ? C*) cg (G x' y')) ≈-refl)
@@ -711,9 +701,9 @@ module _ {X Y : SemiMod.Semimodule} (𝒢 : Graph X Y)
             (λ ¬cg →
               +ₘ-cong
                 (≈-trans (when-O (x' ∈ᵥ? (p ∷ []) ⊎-dec y' ∈ᵥ? (p ∷ [])) (visible-graph K x' y')
-                                 (λ k → absurd (¬bp k)))
+                                 (λ k → set-elim.⊥-elim (¬bp k)))
                          (≈-sym (when-O (x' ∈ᵥ? C* ⊎-dec y' ∈ᵥ? C*) (G x' y')
-                                        (λ k → absurd (¬cg k)))))
+                                        (λ k → set-elim.⊥-elim (¬cg k)))))
                 ≈-refl))
 
     base-swap : ∀ x' y' →
@@ -898,7 +888,7 @@ module _ {X Y : SemiMod.Semimodule} (𝒢 : Graph X Y)
 
       restrict-O : restrict G (hidden-set K) x y ≈ εₘ
       restrict-O = when-O (x ∈ᵥ? hidden-set K ⊎-dec y ∈ᵥ? hidden-set K) (G x y)
-                          (⊎-caseₚ (λ h → absurd (hx h)) (λ h → absurd (hy h)))
+                          (set-elim.⊎-case (λ h → set-elim.⊥-elim (hx h)) (λ h → set-elim.⊥-elim (hy h)))
 
       Σ-eq : foldr _+ₘ_ εₘ (map (λ CH → proj₂ CH x y) (K .hidden)) ≈ summary (hidden-set K) x y
       Σ-eq =
