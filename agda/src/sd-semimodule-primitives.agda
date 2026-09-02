@@ -77,6 +77,22 @@ Fam⟨𝒞⟩-bool =
     (Fam⟨𝒞⟩-terminal .HasTerminal.witness)
     (Fam⟨𝒞⟩-terminal .HasTerminal.witness)
 
+-- Dependency data of interpretation read as morphisms at free objects: form consumed by
+-- operational semantics.
+module interp-deps {ℓ} (Sig : Signature ℓ) (ℐ : Interpretation S Sig) where
+
+  open Signature Sig
+  open Interpretation ℐ
+  open prop-setoid._⇒_ using (func)
+
+  op-dep : ∀ {is o'} (ω : op is o') (vs : sort-vals is) →
+           SemiMod._⇒_ (ME.𝔽 (bases-width is)) (ME.𝔽 (sort-width o'))
+  op-dep ω vs = ME.mat (op-deps ω .func vs)
+
+  rel-dep : ∀ {is} (ψ : rel is) (vs : sort-vals is) →
+            SemiMod._⇒_ (ME.𝔽 (bases-width is)) (ME.𝔽 1)
+  rel-dep ψ vs = ME.mat (rel-deps ψ .func vs)
+
 module interp-primitives (Sig : Signature 0ℓ) (ℐ : Interpretation S Sig)
                          (Ω : Fam⟨𝒞⟩.Obj) (into-Ω : Fam⟨𝒞⟩.Mor Fam⟨𝒞⟩-bool Ω) where
 
