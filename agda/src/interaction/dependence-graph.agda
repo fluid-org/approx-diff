@@ -2,22 +2,21 @@
 
 import Data.Bool as Bool
 open Bool using (Bool)
-open import Data.Fin using (zero)
 open import Data.Nat using (ℕ; suc; _+_)
 open import Level using (0ℓ)
-open import Relation.Binary.PropositionalEquality using (sym)
+open import Relation.Binary.PropositionalEquality using (sym; cong)
 open import Relation.Nullary.Decidable using (⌊_⌋)
 open import Data.List.Relation.Unary.All using ([]; _∷_) renaming (All to Every)
 open import prop-setoid using (Setoid) renaming (_⇒_ to _⇒ₛ_)
 open import commutative-semiring using (CommutativeSemiring)
 open import signature using (Signature)
 open import signature.interpretation using (Interpretation)
-import matrix
+import sd-semimodule-primitives
 
 -- The dependence graph of a derivation with a control input. Each rule builds its graph from its
 -- premises' graphs using the wiring that also defines the rule's relation, so collapsing the graph
--- recovers the relation rule by rule. Vertices carry free semimodules; the relation's matrices
--- enter as morphisms through the embedding.
+-- recovers the relation rule by rule. Vertices carry free semimodules; the relation is a morphism
+-- and enters the graph directly, with join comparing the vertex pairing with the width sum.
 module interaction.dependence-graph {ℓ} (Sig : Signature ℓ) {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A)
   (ℐ : Interpretation S Sig) (ctrl-weight : Setoid.Carrier A)
   (let module S = CommutativeSemiring S) (+-idem : ∀ x → (x S.+ x) S.≈ x) where
@@ -27,49 +26,49 @@ open Interpretation ℐ
 open _⇒ₛ_ using (func)
 open import language-syntax Sig renaming (_,_ to _▸_)
 open import language-operational.type-substitution Sig using (unfold₁; unfold₁-inst)
-open import language-operational.evaluation Sig S ℐ ctrl-weight hiding (_⇒_)
+open import language-operational.evaluation Sig S ℐ ctrl-weight hiding (_⇒_; ⟨_,_⟩; I; εₘ)
 open import interaction.graph S +-idem
-open import matrix-embedding S using (𝔽; mat; mat-cong; mat-comp; mat-I; mat-ε; mat-+)
+open import matrix-embedding S using (𝔽; 𝔽-biproduct)
 
 private
-  module M = matrix.Mat S
+  module SDP = sd-semimodule-primitives S
+open SDP.interp-deps Sig ℐ using (op-dep)
 
-open import categories using (Category; HasProducts)
+open import categories using (Category)
 open Category SemiMod.cat
   using (_⇒_; _∘_; _≈_; ∘-cong; ∘-cong₁; ∘-cong₂; assoc; id-left; id-right; ≈-refl; ≈-sym; ≈-trans)
-open HasProducts M.products using (p₁; p₂)
-open M using () renaming (⟨_,_⟩ to ⟨_,_⟩ₘ)
 open import cmon-enriched using (CMonEnriched; Biproduct)
 private
   module CME = CMonEnriched SemiMod.cmon-enriched
   module BPP {X Y : SemiMod.Semimodule} = Biproduct (SemiMod.biproduct X Y)
+  module FB {m n : ℕ} = Biproduct (𝔽-biproduct m n)
 
 fo-of : ∀ {Δ} (τ : type Δ) → Bool
 fo-of τ = ⌊ first-order? τ ⌋
 
 private
   join : ∀ m n → (𝔽 m ⊕ᵥ 𝔽 n) ⇒ 𝔽 (m + n)
-  join m n = (mat (M.in₁ {m} {n}) ∘ pb₁) +ₘ (mat (M.in₂ {m} {n}) ∘ pb₂)
+  join m n = (in₁ {m} {n} ∘ pb₁) +ₘ (in₂ {m} {n} ∘ pb₂)
 
-  join-inb₁ : ∀ m n → (join m n ∘ inb₁) ≈ mat (M.in₁ {m} {n})
+  join-inb₁ : ∀ m n → (join m n ∘ inb₁) ≈ in₁ {m} {n}
   join-inb₁ m n =
-    ≈-trans (CME.comp-bilinear₁ (mat (M.in₁ {m} {n}) ∘ pb₁) (mat (M.in₂ {m} {n}) ∘ pb₂) inb₁)
-    (≈-trans (+ₘ-cong (≈-trans (assoc (mat (M.in₁ {m} {n})) pb₁ inb₁)
-                               (≈-trans (∘-cong₂ {f = mat (M.in₁ {m} {n})} BPP.id-1) id-right))
-                      (≈-trans (assoc (mat (M.in₂ {m} {n})) pb₂ inb₁)
-                               (≈-trans (∘-cong₂ {f = mat (M.in₂ {m} {n})} BPP.zero-2)
-                                        (CME.comp-bilinear-ε₂ (mat (M.in₂ {m} {n}))))))
-             (+ₘ-runit (mat (M.in₁ {m} {n}))))
+    ≈-trans (CME.comp-bilinear₁ (in₁ {m} {n} ∘ pb₁) (in₂ {m} {n} ∘ pb₂) inb₁)
+    (≈-trans (+ₘ-cong (≈-trans (assoc (in₁ {m} {n}) pb₁ inb₁)
+                               (≈-trans (∘-cong₂ {f = in₁ {m} {n}} BPP.id-1) id-right))
+                      (≈-trans (assoc (in₂ {m} {n}) pb₂ inb₁)
+                               (≈-trans (∘-cong₂ {f = in₂ {m} {n}} BPP.zero-2)
+                                        (CME.comp-bilinear-ε₂ (in₂ {m} {n})))))
+             (+ₘ-runit (in₁ {m} {n})))
 
-  join-inb₂ : ∀ m n → (join m n ∘ inb₂) ≈ mat (M.in₂ {m} {n})
+  join-inb₂ : ∀ m n → (join m n ∘ inb₂) ≈ in₂ {m} {n}
   join-inb₂ m n =
-    ≈-trans (CME.comp-bilinear₁ (mat (M.in₁ {m} {n}) ∘ pb₁) (mat (M.in₂ {m} {n}) ∘ pb₂) inb₂)
-    (≈-trans (+ₘ-cong (≈-trans (assoc (mat (M.in₁ {m} {n})) pb₁ inb₂)
-                               (≈-trans (∘-cong₂ {f = mat (M.in₁ {m} {n})} BPP.zero-1)
-                                        (CME.comp-bilinear-ε₂ (mat (M.in₁ {m} {n})))))
-                      (≈-trans (assoc (mat (M.in₂ {m} {n})) pb₂ inb₂)
-                               (≈-trans (∘-cong₂ {f = mat (M.in₂ {m} {n})} BPP.id-2) id-right)))
-             (+ₘ-lunit (mat (M.in₂ {m} {n}))))
+    ≈-trans (CME.comp-bilinear₁ (in₁ {m} {n} ∘ pb₁) (in₂ {m} {n} ∘ pb₂) inb₂)
+    (≈-trans (+ₘ-cong (≈-trans (assoc (in₁ {m} {n}) pb₁ inb₂)
+                               (≈-trans (∘-cong₂ {f = in₁ {m} {n}} BPP.zero-1)
+                                        (CME.comp-bilinear-ε₂ (in₁ {m} {n}))))
+                      (≈-trans (assoc (in₂ {m} {n}) pb₂ inb₂)
+                               (≈-trans (∘-cong₂ {f = in₂ {m} {n}} BPP.id-2) id-right)))
+             (+ₘ-lunit (in₂ {m} {n})))
 
   pair-congᴴ : ∀ {Z X Y : SemiMod.Semimodule} {f f' : Z ⇒ X} {g g' : Z ⇒ Y} →
                f ≈ f' → g ≈ g' → ⟨ f , g ⟩ ≈ ⟨ f' , g' ⟩
@@ -83,57 +82,43 @@ private
                                                                    (CME.comp-bilinear-ε₁ g))))
              (+ₘ-runit f))
 
-  mat-pair-flat : ∀ {m n k} (X : M.Matrix m k) (Y : M.Matrix n k) →
-                  mat ⟨ X , Y ⟩ₘ ≈ ((mat (M.in₁ {m} {n}) ∘ mat X) +ₘ (mat (M.in₂ {m} {n}) ∘ mat Y))
-  mat-pair-flat {m} {n} X Y =
-    ≈-trans (mat-+ (M.in₁ {m} {n} M.∘ X) (M.in₂ {m} {n} M.∘ Y))
-            (+ₘ-cong (mat-comp (M.in₁ {m} {n}) X) (mat-comp (M.in₂ {m} {n}) Y))
-
-  mat-pair : ∀ {m n k} (X : M.Matrix m k) (Y : M.Matrix n k) →
-             mat ⟨ X , Y ⟩ₘ ≈ (join m n ∘ ⟨ mat X , mat Y ⟩)
-  mat-pair {m} {n} X Y =
-    ≈-trans (mat-pair-flat X Y)
-    (≈-sym (≈-trans (CME.comp-bilinear₂ (join m n) (inb₁ ∘ mat X) (inb₂ ∘ mat Y))
-                    (+ₘ-cong (≈-trans (≈-sym (assoc (join m n) inb₁ (mat X))) (∘-cong₁ {g = mat X} (join-inb₁ m n)))
-                             (≈-trans (≈-sym (assoc (join m n) inb₂ (mat Y))) (∘-cong₁ {g = mat Y} (join-inb₂ m n))))))
-
 mutual
   graph : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} → γ , t ⇓ v [ R ] →
           Graph (𝔽 (suc (width-env γ))) (𝔽 (width v))
-  graph {τ = τ} (⇓-var {γ = γ} x) = Rule₀.E (fo-of τ) (mat (var-out x γ))
-  graph {τ = τ} (⇓-unit {γ = γ}) = Rule₀.E (fo-of τ) (mat wctrl)
-  graph {τ = τ} (⇓-lam {γ = γ} {t = t}) = Rule₀.E (fo-of τ) (mat (lam-out γ t))
+  graph {τ = τ} (⇓-var {γ = γ} x) = Rule₀.E (fo-of τ) (var-out x γ)
+  graph {τ = τ} (⇓-unit {γ = γ}) = Rule₀.E (fo-of τ) wctrl
+  graph {τ = τ} (⇓-lam {γ = γ} {t = t}) = Rule₀.E (fo-of τ) (lam-out γ t)
   graph {τ = τ} (⇓-inl {γ = γ} {v = v} D) =
-    Rule₁.E (graph D) I (fo-of τ) (mat (built-out γ (width v))) (mat (M.in₂ {1}))
+    Rule₁.E (graph D) I (fo-of τ) (built-out γ (width v)) (in₂ {1})
   graph {τ = τ} (⇓-inr {γ = γ} {v = v} D) =
-    Rule₁.E (graph D) I (fo-of τ) (mat (built-out γ (width v))) (mat (M.in₂ {1}))
+    Rule₁.E (graph D) I (fo-of τ) (built-out γ (width v)) (in₂ {1})
   graph {τ = τ} (⇓-case-l {γ = γ} {v = v} D₁ D₂) =
     Rule₂.E (graph D₁) (graph D₂) I
-          (mat (branch-inputs γ v) ∘ join (suc (width-env γ)) (suc (width v)))
+          (branch-inputs γ v ∘ join (suc (width-env γ)) (suc (width v)))
           (fo-of τ) εₘ εₘ I
   graph {τ = τ} (⇓-case-r {γ = γ} {v = v} D₁ D₂) =
     Rule₂.E (graph D₁) (graph D₂) I
-          (mat (branch-inputs γ v) ∘ join (suc (width-env γ)) (suc (width v)))
+          (branch-inputs γ v ∘ join (suc (width-env γ)) (suc (width v)))
           (fo-of τ) εₘ εₘ I
   graph {τ = τ} (⇓-pair {γ = γ} {v = v} {u = u} D₁ D₂) =
     Rule₂.E (graph D₁) (graph D₂) I
-          (mat (p₁ {suc (width-env γ)} {width v}) ∘ join (suc (width-env γ)) (width v))
-          (fo-of τ) (mat (built-out γ (width v + width u)))
-          (mat (M.in₂ {1} M.∘ M.in₁ {width v} {width u})) (mat (M.in₂ {1} M.∘ M.in₂ {width v} {width u}))
+          (p₁ {suc (width-env γ)} {width v} ∘ join (suc (width-env γ)) (width v))
+          (fo-of τ) (built-out γ (width v + width u))
+          (in₂ {1} ∘ in₁ {width v} {width u}) (in₂ {1} ∘ in₂ {width v} {width u})
   graph {τ = τ} (⇓-fst {γ = γ} {v = v} {u = u} D) =
-    Rule₁.E (graph D) I (fo-of τ) (mat (elim-out γ v)) (mat (proj-up {width v} {width u} v (p₁ {width v} {width u})))
+    Rule₁.E (graph D) I (fo-of τ) (elim-out γ v) (proj-up {width v} {width u} v (p₁ {width v} {width u}))
   graph {τ = τ} (⇓-snd {γ = γ} {v = v} {u = u} D) =
-    Rule₁.E (graph D) I (fo-of τ) (mat (elim-out γ u)) (mat (proj-up {width v} {width u} u (p₂ {width v} {width u})))
+    Rule₁.E (graph D) I (fo-of τ) (elim-out γ u) (proj-up {width v} {width u} u (p₂ {width v} {width u}))
   graph {τ = τ} (⇓-app {γ = γ} {γ' = γ'} {v = v} D₁ D₂ D₃) =
     Rule₃.E (graph D₁) (graph D₂) (graph D₃) I I
-          (mat (body-inputs γ γ' v) ∘
+          (body-inputs γ γ' v ∘
             (join (suc (width-env γ) + suc (width-env γ')) (width v) ∘
               ⟨ join (suc (width-env γ)) (suc (width-env γ')) ∘ pb₁ , pb₂ ⟩))
           (fo-of τ) εₘ εₘ εₘ I
   graph {τ = τ} (⇓-bop {γ = γ} {ω = ω} {vs = vs} D) =
-    Rule₁.E (graph-s D) I (fo-of τ) (mat wctrl) (mat (op-deps ω .func vs))
+    Rule₁.E (graph-s D) I (fo-of τ) wctrl (op-dep ω vs)
   graph {τ = τ} (⇓-brel {γ = γ} {ω = ω} {vs = vs} D) =
-    Rule₁.E (graph-s D) I (fo-of τ) (mat wctrl) (mat (brel-deps ω vs (rel-pred ω .func vs)))
+    Rule₁.E (graph-s D) I (fo-of τ) wctrl (brel-deps ω vs (rel-pred ω .func vs))
   graph {τ = τ} (⇓-roll {γ = γ} D) = Rule₁.E (graph D) I (fo-of τ) εₘ I
   graph {τ = τ} (⇓-fold {γ = γ} {v = v} D₁ D₂) =
     Rule₂.E (graph D₁) (graph-m D₂) I (join (suc (width-env γ)) (width v)) (fo-of τ) εₘ εₘ I
@@ -143,41 +128,41 @@ mutual
   graph-s {γ = γ} [] = Rule₀.E Bool.true εₘ
   graph-s {γ = γ} (_∷_ {is = is} {v = v} D₁ D₂) =
     Rule₂.E (graph D₁) (graph-s D₂) I
-          (mat (p₁ {suc (width-env γ)} {width (const v)}) ∘ join (suc (width-env γ)) (width (const v)))
+          (p₁ {suc (width-env γ)} {width (const v)} ∘ join (suc (width-env γ)) (width (const v)))
           Bool.true εₘ
-          (mat (M.in₁ {width (const v)} {bases-width is})) (mat (M.in₂ {width (const v)} {bases-width is}))
+          (in₁ {width (const v)} {bases-width is}) (in₂ {width (const v)} {bases-width is})
 
   graph-m : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
             {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {v' : Val (σ' [ σr ])} {F} →
             Map γ s σ' v v' F → Graph (𝔽 (suc (width-env γ) + width v)) (𝔽 (width v'))
   graph-m {γ = γ} {σr = σr} {σ' = σ'} (m-rec {w = w} {w' = w'} D₁ D₂) =
     Rule₂.E (graph-m D₁) (graph D₂) I
-          (mat (rec-inputs γ w') ∘ join (suc (width-env γ) + width w) (width w'))
+          (rec-inputs γ w' ∘ join (suc (width-env γ) + width w) (width w'))
           (fo-of (σ' [ σr ])) εₘ εₘ I
-  graph-m {γ = γ} {σr = σr} {σ' = σ'} (m-unit {v = v}) = Rule₀.E (fo-of (σ' [ σr ])) (mat (map-leaf γ (width v)))
-  graph-m {γ = γ} {σr = σr} {σ' = σ'} (m-base {v = v}) = Rule₀.E (fo-of (σ' [ σr ])) (mat (map-leaf γ (width v)))
-  graph-m {γ = γ} {σr = σr} {σ' = σ'} (m-arrow {v = v}) = Rule₀.E (fo-of (σ' [ σr ])) (mat (map-leaf γ (width v)))
+  graph-m {γ = γ} {σr = σr} {σ' = σ'} (m-unit {v = v}) = Rule₀.E (fo-of (σ' [ σr ])) (map-leaf γ (width v))
+  graph-m {γ = γ} {σr = σr} {σ' = σ'} (m-base {v = v}) = Rule₀.E (fo-of (σ' [ σr ])) (map-leaf γ (width v))
+  graph-m {γ = γ} {σr = σr} {σ' = σ'} (m-arrow {v = v}) = Rule₀.E (fo-of (σ' [ σr ])) (map-leaf γ (width v))
   graph-m {γ = γ} {σr = σr} {σ' = σ'} (m-inl {v = v} {v' = v'} D) =
-    Rule₁.E (graph-m D) (mat (sub-inputs γ (p₂ {1} {width v}))) (fo-of (σ' [ σr ]))
-          (mat (map-built-out γ (width v) (width v'))) (mat (M.in₂ {1}))
+    Rule₁.E (graph-m D) (sub-inputs γ (p₂ {1} {width v})) (fo-of (σ' [ σr ]))
+          (map-built-out γ (width v) (width v')) (in₂ {1})
   graph-m {γ = γ} {σr = σr} {σ' = σ'} (m-inr {v = v} {v' = v'} D) =
-    Rule₁.E (graph-m D) (mat (sub-inputs γ (p₂ {1} {width v}))) (fo-of (σ' [ σr ]))
-          (mat (map-built-out γ (width v) (width v'))) (mat (M.in₂ {1}))
+    Rule₁.E (graph-m D) (sub-inputs γ (p₂ {1} {width v})) (fo-of (σ' [ σr ]))
+          (map-built-out γ (width v) (width v')) (in₂ {1})
   graph-m {γ = γ} {σr = σr} {σ' = σ'} (m-pair {v = v} {v' = v'} {u = u} {u' = u'} D₁ D₂) =
     Rule₂.E (graph-m D₁) (graph-m D₂)
-          (mat (sub-inputs γ (p₁ {width v} {width u} M.∘ p₂ {1} {width v + width u})))
-          (mat (sub-inputs γ (p₂ {width v} {width u} M.∘ p₂ {1} {width v + width u})) ∘
-            (mat (p₁ {suc (width-env γ) + suc (width v + width u)} {width v'}) ∘
+          (sub-inputs γ (p₁ {width v} {width u} ∘ p₂ {1} {width v + width u}))
+          (sub-inputs γ (p₂ {width v} {width u} ∘ p₂ {1} {width v + width u}) ∘
+            (p₁ {suc (width-env γ) + suc (width v + width u)} {width v'} ∘
               join (suc (width-env γ) + suc (width v + width u)) (width v')))
-          (fo-of (σ' [ σr ])) (mat (map-built-out γ (width v + width u) (width v' + width u')))
-          (mat (M.in₂ {1} M.∘ M.in₁ {width v'} {width u'})) (mat (M.in₂ {1} M.∘ M.in₂ {width v'} {width u'}))
+          (fo-of (σ' [ σr ])) (map-built-out γ (width v + width u) (width v' + width u'))
+          (in₂ {1} ∘ in₁ {width v'} {width u'}) (in₂ {1} ∘ in₂ {width v'} {width u'})
   graph-m {γ = γ} {τ₀ = τ₀} {σr = σr} {σ' = σ'} (m-mu {τ' = τ'} {w = w} {w' = w'} D) =
-    Rule₁.E (graph-m D) (mat (sub-inputs γ (ccast (sym (width-subst (unfold₁-inst τ' (μ τ₀)) w)) M.I)))
-          (fo-of (σ' [ σr ])) εₘ (mat (rcast (sym (width-subst (unfold₁-inst τ' σr) w')) M.I))
+    Rule₁.E (graph-m D) (sub-inputs γ (Category.≡-to-⇒ SemiMod.cat (cong 𝔽 (width-subst (unfold₁-inst τ' (μ τ₀)) w))))
+          (fo-of (σ' [ σr ])) εₘ (Category.≡-to-⇒ SemiMod.cat (cong 𝔽 (sym (width-subst (unfold₁-inst τ' σr) w'))))
 
 private
   join-pair : ∀ {a b} {Z : SemiMod.Semimodule} (f : Z ⇒ 𝔽 a) (g : Z ⇒ 𝔽 b) →
-              (join a b ∘ ⟨ f , g ⟩) ≈ ((mat (M.in₁ {a} {b}) ∘ f) +ₘ (mat (M.in₂ {a} {b}) ∘ g))
+              (join a b ∘ ⟨ f , g ⟩) ≈ ((in₁ {a} {b} ∘ f) +ₘ (in₂ {a} {b} ∘ g))
   join-pair {a} {b} f g =
     ≈-trans (CME.comp-bilinear₂ (join a b) (inb₁ ∘ f) (inb₂ ∘ g))
             (+ₘ-cong (≈-trans (≈-sym (assoc (join a b) inb₁ f)) (∘-cong₁ {g = f} (join-inb₁ a b)))
@@ -217,12 +202,6 @@ private
                                                         (≈-trans id-right e₂))))))
       (+ₘ-lunit (U ∘ (ins ∘ ⟨ ⟨ I , R₁ ⟩ , R₂ ⟩)))
 
-  ignore-root : ∀ {Xm M₂ N₁ : SemiMod.Semimodule} (A : Xm ⇒ M₂) (X : Xm ⇒ N₁) →
-                ((A ∘ pb₁) ∘ ⟨ I , X ⟩) ≈ A
-  ignore-root A X =
-    ≈-trans (assoc A pb₁ ⟨ I , X ⟩)
-            (≈-trans (∘-cong₂ {f = A} (pair-pb₁ I X)) id-right)
-
   two-roots : ∀ {Xm M₁ M₂ N N₁ N₂ : SemiMod.Semimodule} (out : Xm ⇒ N) (r₁ : Xm ⇒ M₁) (ins₂ : (Xm ⊕ᵥ N₁) ⇒ M₂)
               (u₁ : N₁ ⇒ N) (u₂ : N₂ ⇒ N)
               (c₁ : M₁ ⇒ N₁) (c₂ : M₂ ⇒ N₂) {X₁ : Xm ⇒ N₁} {X₂ : Xm ⇒ N₂} →
@@ -235,23 +214,21 @@ private
       (+ₘ-assoc {f = out} {g = u₁ ∘ X₁} {h = u₂ ∘ X₂})
 
   proj-join : ∀ a b (X : 𝔽 a ⇒ 𝔽 b) →
-              ((mat (M.p₁ {a} {b}) ∘ join a b) ∘ ⟨ I , X ⟩) ≈ I
+              ((p₁ {a} {b} ∘ join a b) ∘ ⟨ I , X ⟩) ≈ I
   proj-join a b X =
-    ≈-trans (assoc (mat (M.p₁ {a} {b})) (join a b) ⟨ I , X ⟩)
-    (≈-trans (∘-cong₂ {f = mat (M.p₁ {a} {b})}
+    ≈-trans (assoc (p₁ {a} {b}) (join a b) ⟨ I , X ⟩)
+    (≈-trans (∘-cong₂ {f = p₁ {a} {b}}
                (≈-trans (join-pair I X) (+ₘ-cong id-right ≈-refl)))
-    (≈-trans (CME.comp-bilinear₂ (mat (M.p₁ {a} {b})) (mat (M.in₁ {a} {b})) (mat (M.in₂ {a} {b}) ∘ X))
-    (≈-trans (+ₘ-cong (≈-trans (≈-sym (mat-comp (M.p₁ {a} {b}) (M.in₁ {a} {b})))
-                               (≈-trans (mat-cong (M.id-1 a b)) mat-I))
-                      (≈-trans (≈-sym (assoc (mat (M.p₁ {a} {b})) (mat (M.in₂ {a} {b})) X))
-                      (≈-trans (∘-cong₁ {g = X} (≈-trans (≈-sym (mat-comp (M.p₁ {a} {b}) (M.in₂ {a} {b})))
-                                                          (≈-trans (mat-cong (M.zero-1 a b)) mat-ε)))
+    (≈-trans (CME.comp-bilinear₂ (p₁ {a} {b}) (in₁ {a} {b}) (in₂ {a} {b} ∘ X))
+    (≈-trans (+ₘ-cong (FB.id-1 {a} {b})
+                      (≈-trans (≈-sym (assoc (p₁ {a} {b}) (in₂ {a} {b}) X))
+                      (≈-trans (∘-cong₁ {g = X} (FB.zero-1 {a} {b}))
                                (CME.comp-bilinear-ε₁ X))))
              (+ₘ-runit I))))
 
   inputs-only : ∀ {a b N₂ : ℕ} (c₂ : 𝔽 a ⇒ 𝔽 N₂) (X : 𝔽 a ⇒ 𝔽 b)
                 {R : 𝔽 a ⇒ 𝔽 N₂} → c₂ ≈ R →
-                (c₂ ∘ ((mat (M.p₁ {a} {b}) ∘ join a b) ∘ ⟨ I , X ⟩)) ≈ R
+                (c₂ ∘ ((p₁ {a} {b} ∘ join a b) ∘ ⟨ I , X ⟩)) ≈ R
   inputs-only {a} {b} c₂ X e =
     ≈-trans (∘-cong₂ {f = c₂} (proj-join a b X)) (≈-trans id-right e)
 
@@ -273,133 +250,94 @@ private
     ≈-trans (CME.comp-bilinear₁ (inb₁ ∘ f) (inb₂ ∘ g) h)
             (+ₘ-cong (assoc inb₁ f h) (assoc inb₂ g h))
 
-  glue-out-up : ∀ {k m n} (out : M.Matrix n k) (up : M.Matrix n m) (R : M.Matrix m k) →
-                mat (out M.+ₘ (up M.∘ R)) ≈ (mat out +ₘ (mat up ∘ mat R))
-  glue-out-up out up R = ≈-trans (mat-+ out (up M.∘ R)) (+ₘ-cong ≈-refl (mat-comp up R))
+  up-pair : ∀ {a b m} {Z : SemiMod.Semimodule} (u : 𝔽 (a + b) ⇒ 𝔽 m) (f : Z ⇒ 𝔽 a) (g : Z ⇒ 𝔽 b) →
+            (((u ∘ in₁ {a} {b}) ∘ f) +ₘ ((u ∘ in₂ {a} {b}) ∘ g)) ≈
+            (u ∘ ((in₁ {a} {b} ∘ f) +ₘ (in₂ {a} {b} ∘ g)))
+  up-pair {a} {b} u f g =
+    ≈-sym (≈-trans (CME.comp-bilinear₂ u (in₁ {a} {b} ∘ f) (in₂ {a} {b} ∘ g))
+                   (+ₘ-cong (≈-sym (assoc u (in₁ {a} {b}) f)) (≈-sym (assoc u (in₂ {a} {b}) g))))
 
-  glue-seq : ∀ {a b k n} (Tm : M.Matrix n k) (bi : M.Matrix k (a + b)) (Rm : M.Matrix b a) →
-             mat (Tm M.∘ (bi M.∘ ⟨ M.I , Rm ⟩ₘ)) ≈ (mat Tm ∘ ((mat bi ∘ join a b) ∘ ⟨ I , mat Rm ⟩))
-  glue-seq {a} {b} Tm bi Rm =
-    ≈-trans (mat-comp Tm (bi M.∘ ⟨ M.I , Rm ⟩ₘ))
-    (∘-cong₂ {f = mat Tm}
-      (≈-trans (mat-comp bi ⟨ M.I , Rm ⟩ₘ)
-      (≈-trans (∘-cong₂ {f = mat bi}
-                 (≈-trans (mat-pair M.I Rm)
-                          (∘-cong₂ {f = join a b} (pair-congᴴ mat-I (≈-refl {f = mat Rm})))))
-               (≈-sym (assoc (mat bi) (join a b) ⟨ I , mat Rm ⟩)))))
+  seam : ∀ {a b} {M' : SemiMod.Semimodule} (bi : 𝔽 (a + b) ⇒ M') (X : 𝔽 a ⇒ 𝔽 b) →
+         ((bi ∘ join a b) ∘ ⟨ I , X ⟩) ≈ (bi ∘ ((in₁ {a} {b} ∘ I) +ₘ (in₂ {a} {b} ∘ X)))
+  seam {a} {b} bi X =
+    ≈-trans (assoc bi (join a b) ⟨ I , X ⟩) (∘-cong₂ {f = bi} (join-pair I X))
 
-  glue-fold : ∀ {a b n} (Fm : M.Matrix n (a + b)) (Rm : M.Matrix b a) →
-              mat (Fm M.∘ ⟨ M.I , Rm ⟩ₘ) ≈ (mat Fm ∘ (join a b ∘ ⟨ I , mat Rm ⟩))
-  glue-fold {a} {b} Fm Rm =
-    ≈-trans (mat-comp Fm ⟨ M.I , Rm ⟩ₘ)
-      (∘-cong₂ {f = mat Fm}
-        (≈-trans (mat-pair M.I Rm) (∘-cong₂ {f = join a b} (pair-congᴴ mat-I (≈-refl {f = mat Rm})))))
-
-  glue-app : ∀ {a b c k n} (Um : M.Matrix n k) (bi : M.Matrix k ((a + b) + c))
-             (Rm : M.Matrix b a) (Tm : M.Matrix c a) →
-             mat (Um M.∘ (bi M.∘ ⟨ ⟨ M.I , Rm ⟩ₘ , Tm ⟩ₘ)) ≈
-             (mat Um ∘ ((mat bi ∘ (join (a + b) c ∘ ⟨ join a b ∘ pb₁ , pb₂ ⟩)) ∘ ⟨ ⟨ I , mat Rm ⟩ , mat Tm ⟩))
-  glue-app {a} {b} {c} Um bi Rm Tm =
-    ≈-trans (mat-comp Um (bi M.∘ ⟨ ⟨ M.I , Rm ⟩ₘ , Tm ⟩ₘ))
-    (∘-cong₂ {f = mat Um}
-      (≈-trans (mat-comp bi ⟨ ⟨ M.I , Rm ⟩ₘ , Tm ⟩ₘ)
-      (≈-trans (∘-cong₂ {f = mat bi}
-                 (≈-trans (mat-pair ⟨ M.I , Rm ⟩ₘ Tm)
-                 (≈-trans (∘-cong₂ {f = join (a + b) c}
-                            (pair-congᴴ (≈-trans (mat-pair M.I Rm)
-                                                 (∘-cong₂ {f = join a b} (pair-congᴴ mat-I (≈-refl {f = mat Rm}))))
-                                        (≈-refl {f = mat Tm})))
-                          (∘-cong₂ {f = join (a + b) c}
-                            (≈-sym (≈-trans (pair-∘ (join a b ∘ pb₁) pb₂ ⟨ ⟨ I , mat Rm ⟩ , mat Tm ⟩)
-                                   (pair-congᴴ (≈-trans (assoc (join a b) pb₁ ⟨ ⟨ I , mat Rm ⟩ , mat Tm ⟩)
-                                                        (∘-cong₂ {f = join a b} (pair-pb₁ ⟨ I , mat Rm ⟩ (mat Tm))))
-                                               (pair-pb₂ ⟨ I , mat Rm ⟩ (mat Tm)))))))))
-               (≈-trans (∘-cong₂ {f = mat bi}
-                          (≈-sym (assoc (join (a + b) c) ⟨ join a b ∘ pb₁ , pb₂ ⟩ ⟨ ⟨ I , mat Rm ⟩ , mat Tm ⟩)))
-                        (≈-sym (assoc (mat bi) (join (a + b) c ∘ ⟨ join a b ∘ pb₁ , pb₂ ⟩) ⟨ ⟨ I , mat Rm ⟩ , mat Tm ⟩))))))
-
-  glue-pair-out : ∀ {k a b w} (bo : M.Matrix w k) (Rm : M.Matrix a k) (Tm : M.Matrix b k)
-                  (j : M.Matrix w (a + b)) →
-                  mat (bo M.+ₘ (j M.∘ ⟨ Rm , Tm ⟩ₘ)) ≈
-                  (mat bo +ₘ (((mat j ∘ mat (M.in₁ {a} {b})) ∘ mat Rm) +ₘ ((mat j ∘ mat (M.in₂ {a} {b})) ∘ mat Tm)))
-  glue-pair-out {k} {a} {b} bo Rm Tm j =
-    ≈-trans (mat-+ bo (j M.∘ ⟨ Rm , Tm ⟩ₘ))
-    (+ₘ-cong ≈-refl
-      (≈-trans (mat-comp j ⟨ Rm , Tm ⟩ₘ)
-      (≈-trans (∘-cong₂ {f = mat j} (mat-pair-flat Rm Tm))
-      (≈-trans (CME.comp-bilinear₂ (mat j) (mat (M.in₁ {a} {b}) ∘ mat Rm) (mat (M.in₂ {a} {b}) ∘ mat Tm))
-               (+ₘ-cong (≈-sym (assoc (mat j) (mat (M.in₁ {a} {b})) (mat Rm)))
-                        (≈-sym (assoc (mat j) (mat (M.in₂ {a} {b})) (mat Tm))))))))
+  seam-app : ∀ {a b c} {M' : SemiMod.Semimodule} (bi : 𝔽 ((a + b) + c) ⇒ M')
+             (X : 𝔽 a ⇒ 𝔽 b) (Y : 𝔽 a ⇒ 𝔽 c) →
+             ((bi ∘ (join (a + b) c ∘ ⟨ join a b ∘ pb₁ , pb₂ ⟩)) ∘ ⟨ ⟨ I , X ⟩ , Y ⟩) ≈
+             (bi ∘ ((in₁ {a + b} {c} ∘ ((in₁ {a} {b} ∘ I) +ₘ (in₂ {a} {b} ∘ X))) +ₘ (in₂ {a + b} {c} ∘ Y)))
+  seam-app {a} {b} {c} bi X Y =
+    ≈-trans (assoc bi (join (a + b) c ∘ ⟨ join a b ∘ pb₁ , pb₂ ⟩) ⟨ ⟨ I , X ⟩ , Y ⟩)
+    (∘-cong₂ {f = bi}
+      (≈-trans (assoc (join (a + b) c) ⟨ join a b ∘ pb₁ , pb₂ ⟩ ⟨ ⟨ I , X ⟩ , Y ⟩)
+      (≈-trans (∘-cong₂ {f = join (a + b) c}
+                 (≈-trans (pair-∘ (join a b ∘ pb₁) pb₂ ⟨ ⟨ I , X ⟩ , Y ⟩)
+                          (pair-congᴴ (≈-trans (assoc (join a b) pb₁ ⟨ ⟨ I , X ⟩ , Y ⟩)
+                                               (≈-trans (∘-cong₂ {f = join a b} (pair-pb₁ ⟨ I , X ⟩ Y))
+                                                        (join-pair I X)))
+                                      (pair-pb₂ ⟨ I , X ⟩ Y))))
+               (join-pair ((in₁ {a} {b} ∘ I) +ₘ (in₂ {a} {b} ∘ X)) Y))))
 
   ignore-rootF : ∀ {a b} {M₂ : SemiMod.Semimodule} (A : 𝔽 a ⇒ M₂) (X : 𝔽 a ⇒ 𝔽 b) →
-                 ((A ∘ (mat (M.p₁ {a} {b}) ∘ join a b)) ∘ ⟨ I , X ⟩) ≈ A
+                 ((A ∘ (p₁ {a} {b} ∘ join a b)) ∘ ⟨ I , X ⟩) ≈ A
   ignore-rootF {a} {b} A X =
-    ≈-trans (assoc A (mat (M.p₁ {a} {b}) ∘ join a b) ⟨ I , X ⟩)
+    ≈-trans (assoc A (p₁ {a} {b} ∘ join a b) ⟨ I , X ⟩)
             (≈-trans (∘-cong₂ {f = A} (proj-join a b X)) id-right)
 
 mutual
-  agree : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ]) → collapse (graph D) ≈ mat R
-  agree {τ = τ} (⇓-var {γ = γ} x) = Rule₀.agree (fo-of τ) (mat (var-out x γ))
-  agree {τ = τ} (⇓-unit {γ = γ}) = Rule₀.agree (fo-of τ) (mat wctrl)
-  agree {τ = τ} (⇓-lam {γ = γ} {t = t}) = Rule₀.agree (fo-of τ) (mat (lam-out γ t))
+  agree : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ]) → collapse (graph D) ≈ R
+  agree {τ = τ} (⇓-var {γ = γ} x) = Rule₀.agree (fo-of τ) (var-out x γ)
+  agree {τ = τ} (⇓-unit {γ = γ}) = Rule₀.agree (fo-of τ) wctrl
+  agree {τ = τ} (⇓-lam {γ = γ} {t = t}) = Rule₀.agree (fo-of τ) (lam-out γ t)
   agree {τ = τ} (⇓-inl {γ = γ} {v = v} {R = R} D) =
-    ≈-trans (Rule₁.agree (graph D) I (fo-of τ) (mat (built-out γ (width v))) (mat (M.in₂ {1})))
-    (≈-trans (one (mat (built-out γ (width v))) (mat (M.in₂ {1})) (agree D))
-             (≈-sym (glue-out-up (built-out γ (width v)) (M.in₂ {1}) R)))
+    ≈-trans (Rule₁.agree (graph D) I (fo-of τ) (built-out γ (width v)) (in₂ {1}))
+            (one (built-out γ (width v)) (in₂ {1}) (agree D))
   agree {τ = τ} (⇓-inr {γ = γ} {v = v} {R = R} D) =
-    ≈-trans (Rule₁.agree (graph D) I (fo-of τ) (mat (built-out γ (width v))) (mat (M.in₂ {1})))
-    (≈-trans (one (mat (built-out γ (width v))) (mat (M.in₂ {1})) (agree D))
-             (≈-sym (glue-out-up (built-out γ (width v)) (M.in₂ {1}) R)))
+    ≈-trans (Rule₁.agree (graph D) I (fo-of τ) (built-out γ (width v)) (in₂ {1}))
+            (one (built-out γ (width v)) (in₂ {1}) (agree D))
   agree {τ = τ} (⇓-case-l {γ = γ} {v = v} {R = R} {T = T} D₁ D₂) =
     ≈-trans (Rule₂.agree (graph D₁) (graph D₂) I
-                       (mat (branch-inputs γ v) ∘ join (suc (width-env γ)) (suc (width v)))
+                       (branch-inputs γ v ∘ join (suc (width-env γ)) (suc (width v)))
                        (fo-of τ) εₘ εₘ I)
-    (≈-trans (seq (mat (branch-inputs γ v) ∘ join (suc (width-env γ)) (suc (width v))) (agree D₁) (agree D₂))
-             (≈-sym (glue-seq T (branch-inputs γ v) R)))
+    (≈-trans (seq (branch-inputs γ v ∘ join (suc (width-env γ)) (suc (width v))) (agree D₁) (agree D₂))
+             (∘-cong₂ {f = T} (seam (branch-inputs γ v) R)))
   agree {τ = τ} (⇓-case-r {γ = γ} {v = v} {R = R} {T = T} D₁ D₂) =
     ≈-trans (Rule₂.agree (graph D₁) (graph D₂) I
-                       (mat (branch-inputs γ v) ∘ join (suc (width-env γ)) (suc (width v)))
+                       (branch-inputs γ v ∘ join (suc (width-env γ)) (suc (width v)))
                        (fo-of τ) εₘ εₘ I)
-    (≈-trans (seq (mat (branch-inputs γ v) ∘ join (suc (width-env γ)) (suc (width v))) (agree D₁) (agree D₂))
-             (≈-sym (glue-seq T (branch-inputs γ v) R)))
+    (≈-trans (seq (branch-inputs γ v ∘ join (suc (width-env γ)) (suc (width v))) (agree D₁) (agree D₂))
+             (∘-cong₂ {f = T} (seam (branch-inputs γ v) R)))
   agree {τ = τ} (⇓-pair {γ = γ} {v = v} {u = u} {R = R} {T = T} D₁ D₂) =
-    ≈-trans (Rule₂.agree (graph D₁) (graph D₂) I insH (fo-of τ) (mat (built-out γ (width v + width u))) u₁ u₂)
-    (≈-trans (two-roots (mat (built-out γ (width v + width u))) I insH u₁ u₂
+    ≈-trans (Rule₂.agree (graph D₁) (graph D₂) I insH (fo-of τ) (built-out γ (width v + width u)) u₁ u₂)
+    (≈-trans (two-roots (built-out γ (width v + width u)) I insH u₁ u₂
                         (collapse (graph D₁)) (collapse (graph D₂))
                         (≈-trans id-right (agree D₁))
                         (inputs-only (collapse (graph D₂)) (collapse (graph D₁) ∘ I) (agree D₂)))
-    (≈-trans (+ₘ-cong (≈-refl {f = mat (built-out γ (width v + width u))})
-                      (+ₘ-cong (∘-cong₁ {g = mat R} (mat-comp (M.in₂ {1}) (M.in₁ {width v} {width u})))
-                               (∘-cong₁ {g = mat T} (mat-comp (M.in₂ {1}) (M.in₂ {width v} {width u})))))
-             (≈-sym (glue-pair-out (built-out γ (width v + width u)) R T (M.in₂ {1})))))
+             (+ₘ-cong (≈-refl {f = built-out γ (width v + width u)}) (up-pair (in₂ {1}) R T)))
     where
-    insH = mat (p₁ {suc (width-env γ)} {width v}) ∘ join (suc (width-env γ)) (width v)
-    u₁ = mat (M.in₂ {1} M.∘ M.in₁ {width v} {width u})
-    u₂ = mat (M.in₂ {1} M.∘ M.in₂ {width v} {width u})
+    insH = p₁ {suc (width-env γ)} {width v} ∘ join (suc (width-env γ)) (width v)
+    u₁ = in₂ {1} ∘ in₁ {width v} {width u}
+    u₂ = in₂ {1} ∘ in₂ {width v} {width u}
   agree {τ = τ} (⇓-fst {γ = γ} {v = v} {u = u} {R = R} D) =
-    ≈-trans (Rule₁.agree (graph D) I (fo-of τ) (mat (elim-out γ v)) (mat (proj-up {width v} {width u} v (p₁ {width v} {width u}))))
-    (≈-trans (one (mat (elim-out γ v)) (mat (proj-up {width v} {width u} v (p₁ {width v} {width u}))) (agree D))
-             (≈-sym (glue-out-up (elim-out γ v) (proj-up {width v} {width u} v (p₁ {width v} {width u})) R)))
+    ≈-trans (Rule₁.agree (graph D) I (fo-of τ) (elim-out γ v) (proj-up {width v} {width u} v (p₁ {width v} {width u})))
+            (one (elim-out γ v) (proj-up {width v} {width u} v (p₁ {width v} {width u})) (agree D))
   agree {τ = τ} (⇓-snd {γ = γ} {v = v} {u = u} {R = R} D) =
-    ≈-trans (Rule₁.agree (graph D) I (fo-of τ) (mat (elim-out γ u)) (mat (proj-up {width v} {width u} u (p₂ {width v} {width u}))))
-    (≈-trans (one (mat (elim-out γ u)) (mat (proj-up {width v} {width u} u (p₂ {width v} {width u}))) (agree D))
-             (≈-sym (glue-out-up (elim-out γ u) (proj-up {width v} {width u} u (p₂ {width v} {width u})) R)))
+    ≈-trans (Rule₁.agree (graph D) I (fo-of τ) (elim-out γ u) (proj-up {width v} {width u} u (p₂ {width v} {width u})))
+            (one (elim-out γ u) (proj-up {width v} {width u} u (p₂ {width v} {width u})) (agree D))
   agree {τ = τ} (⇓-app {γ = γ} {γ' = γ'} {v = v} {R = R} {T = T} {U = U} D₁ D₂ D₃) =
     ≈-trans (Rule₃.agree (graph D₁) (graph D₂) (graph D₃) I I insH (fo-of τ) εₘ εₘ εₘ I)
     (≈-trans (seq3 insH (agree D₁) (agree D₂) (agree D₃))
-             (≈-sym (glue-app U (body-inputs γ γ' v) R T)))
+             (∘-cong₂ {f = U} (seam-app (body-inputs γ γ' v) R T)))
     where
-    insH = mat (body-inputs γ γ' v) ∘
+    insH = body-inputs γ γ' v ∘
              (join (suc (width-env γ) + suc (width-env γ')) (width v) ∘
                ⟨ join (suc (width-env γ)) (suc (width-env γ')) ∘ pb₁ , pb₂ ⟩)
   agree {τ = τ} (⇓-bop {γ = γ} {ω = ω} {vs = vs} {R = R} D) =
-    ≈-trans (Rule₁.agree (graph-s D) I (fo-of τ) (mat wctrl) (mat (op-deps ω .func vs)))
-    (≈-trans (one (mat wctrl) (mat (op-deps ω .func vs)) (agree-s D))
-             (≈-sym (glue-out-up wctrl (op-deps ω .func vs) R)))
+    ≈-trans (Rule₁.agree (graph-s D) I (fo-of τ) wctrl (op-dep ω vs))
+            (one wctrl (op-dep ω vs) (agree-s D))
   agree {τ = τ} (⇓-brel {γ = γ} {ω = ω} {vs = vs} {R = R} D) =
-    ≈-trans (Rule₁.agree (graph-s D) I (fo-of τ) (mat wctrl) (mat (brel-deps ω vs (rel-pred ω .func vs))))
-    (≈-trans (one (mat wctrl) (mat (brel-deps ω vs (rel-pred ω .func vs))) (agree-s D))
-             (≈-sym (glue-out-up wctrl (brel-deps ω vs (rel-pred ω .func vs)) R)))
+    ≈-trans (Rule₁.agree (graph-s D) I (fo-of τ) wctrl (brel-deps ω vs (rel-pred ω .func vs)))
+            (one wctrl (brel-deps ω vs (rel-pred ω .func vs)) (agree-s D))
   agree {τ = τ} (⇓-roll {γ = γ} {R = R} D) =
     ≈-trans (Rule₁.agree (graph D) I (fo-of τ) εₘ I)
     (≈-trans (+ₘ-lunit (I ∘ (collapse (graph D) ∘ I)))
@@ -407,85 +345,67 @@ mutual
   agree {τ = τ} (⇓-fold {γ = γ} {v = v} {R = R} {F = F} D₁ D₂) =
     ≈-trans (Rule₂.agree (graph D₁) (graph-m D₂) I (join (suc (width-env γ)) (width v)) (fo-of τ) εₘ εₘ I)
     (≈-trans (seq (join (suc (width-env γ)) (width v)) (agree D₁) (agree-m D₂))
-             (≈-sym (≈-trans (glue-fold F R) ≈-refl)))
+             (∘-cong₂ {f = F} (join-pair I R)))
 
   agree-s : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
-            (D : γ , Ms ⇓s vs [ R ]) → collapse (graph-s D) ≈ mat R
-  agree-s {γ = γ} [] = ≈-trans (Rule₀.agree Bool.true εₘ) (≈-sym mat-ε)
+            (D : γ , Ms ⇓s vs [ R ]) → collapse (graph-s D) ≈ R
+  agree-s {γ = γ} [] = Rule₀.agree Bool.true εₘ
   agree-s {γ = γ} (_∷_ {is = is} {v = v} {R = R} {Rs = Rs} D₁ D₂) =
     ≈-trans (Rule₂.agree (graph D₁) (graph-s D₂) I insH Bool.true εₘ
-                       (mat (M.in₁ {width (const v)} {bases-width is})) (mat (M.in₂ {width (const v)} {bases-width is})))
+                       (in₁ {width (const v)} {bases-width is}) (in₂ {width (const v)} {bases-width is}))
     (≈-trans (two-roots εₘ I insH
-                        (mat (M.in₁ {width (const v)} {bases-width is})) (mat (M.in₂ {width (const v)} {bases-width is}))
+                        (in₁ {width (const v)} {bases-width is}) (in₂ {width (const v)} {bases-width is})
                         (collapse (graph D₁)) (collapse (graph-s D₂))
                         (≈-trans id-right (agree D₁))
                         (inputs-only (collapse (graph-s D₂)) (collapse (graph D₁) ∘ I) (agree-s D₂)))
-    (≈-trans (+ₘ-lunit ((mat (M.in₁ {width (const v)} {bases-width is}) ∘ mat R) +ₘ
-                        (mat (M.in₂ {width (const v)} {bases-width is}) ∘ mat Rs)))
-             (≈-sym (mat-pair-flat R Rs))))
+             (+ₘ-lunit ((in₁ {width (const v)} {bases-width is} ∘ R) +ₘ
+                        (in₂ {width (const v)} {bases-width is} ∘ Rs))))
     where
-    insH = mat (p₁ {suc (width-env γ)} {width (const v)}) ∘ join (suc (width-env γ)) (width (const v))
+    insH = p₁ {suc (width-env γ)} {width (const v)} ∘ join (suc (width-env γ)) (width (const v))
 
   agree-m : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
             {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {v' : Val (σ' [ σr ])} {F}
-            (D : Map γ s σ' v v' F) → collapse (graph-m D) ≈ mat F
+            (D : Map γ s σ' v v' F) → collapse (graph-m D) ≈ F
   agree-m {γ = γ} {σr = σr} {σ' = σ'} (m-rec {w = w} {w' = w'} {F = F} {T = T} D₁ D₂) =
     ≈-trans (Rule₂.agree (graph-m D₁) (graph D₂) I insH (fo-of (σ' [ σr ])) εₘ εₘ I)
     (≈-trans (seq insH (agree-m D₁) (agree D₂))
-             (≈-sym (glue-seq T (rec-inputs γ w') F)))
+             (∘-cong₂ {f = T} (seam (rec-inputs γ w') F)))
     where
-    insH = mat (rec-inputs γ w') ∘ join (suc (width-env γ) + width w) (width w')
-  agree-m {γ = γ} {σr = σr} {σ' = σ'} (m-unit {v = v}) = Rule₀.agree (fo-of (σ' [ σr ])) (mat (map-leaf γ (width v)))
-  agree-m {γ = γ} {σr = σr} {σ' = σ'} (m-base {v = v}) = Rule₀.agree (fo-of (σ' [ σr ])) (mat (map-leaf γ (width v)))
-  agree-m {γ = γ} {σr = σr} {σ' = σ'} (m-arrow {v = v}) = Rule₀.agree (fo-of (σ' [ σr ])) (mat (map-leaf γ (width v)))
+    insH = rec-inputs γ w' ∘ join (suc (width-env γ) + width w) (width w')
+  agree-m {γ = γ} {σr = σr} {σ' = σ'} (m-unit {v = v}) = Rule₀.agree (fo-of (σ' [ σr ])) (map-leaf γ (width v))
+  agree-m {γ = γ} {σr = σr} {σ' = σ'} (m-base {v = v}) = Rule₀.agree (fo-of (σ' [ σr ])) (map-leaf γ (width v))
+  agree-m {γ = γ} {σr = σr} {σ' = σ'} (m-arrow {v = v}) = Rule₀.agree (fo-of (σ' [ σr ])) (map-leaf γ (width v))
   agree-m {γ = γ} {σr = σr} {σ' = σ'} (m-inl {v = v} {v' = v'} {F = F} D) =
-    ≈-trans (Rule₁.agree (graph-m D) (mat (sub-inputs γ (p₂ {1} {width v}))) (fo-of (σ' [ σr ]))
-                       (mat (map-built-out γ (width v) (width v'))) (mat (M.in₂ {1})))
-    (≈-trans (one-inputs (mat (map-built-out γ (width v) (width v'))) (mat (M.in₂ {1})) (mat (sub-inputs γ (p₂ {1} {width v})))
-                         (agree-m D))
-             (≈-sym (≈-trans (mat-+ (map-built-out γ (width v) (width v')) (M.in₂ {1} M.∘ (F M.∘ sub-inputs γ (p₂ {1} {width v}))))
-                             (+ₘ-cong ≈-refl (≈-trans (mat-comp (M.in₂ {1}) (F M.∘ sub-inputs γ (p₂ {1} {width v})))
-                                                      (∘-cong₂ {f = mat (M.in₂ {1})} (mat-comp F (sub-inputs γ (p₂ {1} {width v})))))))))
+    ≈-trans (Rule₁.agree (graph-m D) (sub-inputs γ (p₂ {1} {width v})) (fo-of (σ' [ σr ]))
+                       (map-built-out γ (width v) (width v')) (in₂ {1}))
+            (one-inputs (map-built-out γ (width v) (width v')) (in₂ {1}) (sub-inputs γ (p₂ {1} {width v}))
+                        (agree-m D))
   agree-m {γ = γ} {σr = σr} {σ' = σ'} (m-inr {v = v} {v' = v'} {F = F} D) =
-    ≈-trans (Rule₁.agree (graph-m D) (mat (sub-inputs γ (p₂ {1} {width v}))) (fo-of (σ' [ σr ]))
-                       (mat (map-built-out γ (width v) (width v'))) (mat (M.in₂ {1})))
-    (≈-trans (one-inputs (mat (map-built-out γ (width v) (width v'))) (mat (M.in₂ {1})) (mat (sub-inputs γ (p₂ {1} {width v})))
-                         (agree-m D))
-             (≈-sym (≈-trans (mat-+ (map-built-out γ (width v) (width v')) (M.in₂ {1} M.∘ (F M.∘ sub-inputs γ (p₂ {1} {width v}))))
-                             (+ₘ-cong ≈-refl (≈-trans (mat-comp (M.in₂ {1}) (F M.∘ sub-inputs γ (p₂ {1} {width v})))
-                                                      (∘-cong₂ {f = mat (M.in₂ {1})} (mat-comp F (sub-inputs γ (p₂ {1} {width v})))))))))
+    ≈-trans (Rule₁.agree (graph-m D) (sub-inputs γ (p₂ {1} {width v})) (fo-of (σ' [ σr ]))
+                       (map-built-out γ (width v) (width v')) (in₂ {1}))
+            (one-inputs (map-built-out γ (width v) (width v')) (in₂ {1}) (sub-inputs γ (p₂ {1} {width v}))
+                        (agree-m D))
   agree-m {γ = γ} {σr = σr} {σ' = σ'} (m-pair {v = v} {v' = v'} {u = u} {u' = u'} {F = F} {G = G} D₁ D₂) =
     ≈-trans (Rule₂.agree (graph-m D₁) (graph-m D₂) ins₁H ins₂H
-                       (fo-of (σ' [ σr ])) (mat (map-built-out γ (width v + width u) (width v' + width u')))
+                       (fo-of (σ' [ σr ])) (map-built-out γ (width v + width u) (width v' + width u'))
                        u₁ u₂)
-    (≈-trans (two-roots (mat (map-built-out γ (width v + width u) (width v' + width u'))) ins₁H ins₂H u₁ u₂
+    (≈-trans (two-roots (map-built-out γ (width v + width u) (width v' + width u')) ins₁H ins₂H u₁ u₂
                         (collapse (graph-m D₁)) (collapse (graph-m D₂))
                         (∘-cong₁ {g = ins₁H} (agree-m D₁))
                         (≈-trans (∘-cong₂ {f = collapse (graph-m D₂)} (ignore-rootF ins₂core (collapse (graph-m D₁) ∘ ins₁H)))
                                  (∘-cong₁ {g = ins₂core} (agree-m D₂))))
-    (≈-trans (+ₘ-cong (≈-refl {f = mat (map-built-out γ (width v + width u) (width v' + width u'))})
-                      (+ₘ-cong (≈-trans (∘-cong₁ {g = mat F ∘ ins₁H} (mat-comp (M.in₂ {1}) (M.in₁ {width v'} {width u'})))
-                                        (∘-cong₂ {f = mat (M.in₂ {1}) ∘ mat (M.in₁ {width v'} {width u'})} (≈-sym (mat-comp F (sub-inputs γ (p₁ {width v} {width u} M.∘ p₂ {1} {width v + width u}))))))
-                               (≈-trans (∘-cong₁ {g = mat G ∘ ins₂core} (mat-comp (M.in₂ {1}) (M.in₂ {width v'} {width u'})))
-                                        (∘-cong₂ {f = mat (M.in₂ {1}) ∘ mat (M.in₂ {width v'} {width u'})} (≈-sym (mat-comp G (sub-inputs γ (p₂ {width v} {width u} M.∘ p₂ {1} {width v + width u}))))))))
-             (≈-sym (glue-pair-out (map-built-out γ (width v + width u) (width v' + width u'))
-                                   (F M.∘ sub-inputs γ (p₁ {width v} {width u} M.∘ p₂ {1} {width v + width u}))
-                                   (G M.∘ sub-inputs γ (p₂ {width v} {width u} M.∘ p₂ {1} {width v + width u}))
-                                   (M.in₂ {1})))))
+             (+ₘ-cong (≈-refl {f = map-built-out γ (width v + width u) (width v' + width u')})
+                      (up-pair (in₂ {1}) (F ∘ ins₁H) (G ∘ ins₂core))))
     where
-    ins₁H = mat (sub-inputs γ (p₁ {width v} {width u} M.∘ p₂ {1} {width v + width u}))
-    ins₂core = mat (sub-inputs γ (p₂ {width v} {width u} M.∘ p₂ {1} {width v + width u}))
-    u₁ = mat (M.in₂ {1} M.∘ M.in₁ {width v'} {width u'})
-    u₂ = mat (M.in₂ {1} M.∘ M.in₂ {width v'} {width u'})
+    ins₁H = sub-inputs γ (p₁ {width v} {width u} ∘ p₂ {1} {width v + width u})
+    ins₂core = sub-inputs γ (p₂ {width v} {width u} ∘ p₂ {1} {width v + width u})
+    u₁ = in₂ {1} ∘ in₁ {width v'} {width u'}
+    u₂ = in₂ {1} ∘ in₂ {width v'} {width u'}
     ins₂H = ins₂core ∘
-              (mat (p₁ {suc (width-env γ) + suc (width v + width u)} {width v'}) ∘
+              (p₁ {suc (width-env γ) + suc (width v + width u)} {width v'} ∘
                 join (suc (width-env γ) + suc (width v + width u)) (width v'))
   agree-m {γ = γ} {τ₀ = τ₀} {σr = σr} {σ' = σ'} (m-mu {τ' = τ'} {w = w} {w' = w'} {F = F} D) =
-    ≈-trans (Rule₁.agree (graph-m D) (mat (sub-inputs γ (ccast (sym (width-subst (unfold₁-inst τ' (μ τ₀)) w)) M.I)))
-                       (fo-of (σ' [ σr ])) εₘ (mat (rcast (sym (width-subst (unfold₁-inst τ' σr) w')) M.I)))
-    (≈-trans (mu (mat (rcast (sym (width-subst (unfold₁-inst τ' σr) w')) M.I))
-                 (mat (sub-inputs γ (ccast (sym (width-subst (unfold₁-inst τ' (μ τ₀)) w)) M.I))) (agree-m D))
-             (≈-sym (≈-trans (mat-comp (rcast (sym (width-subst (unfold₁-inst τ' σr) w')) M.I)
-                                       (F M.∘ sub-inputs γ (ccast (sym (width-subst (unfold₁-inst τ' (μ τ₀)) w)) M.I)))
-                             (∘-cong₂ {f = mat (rcast (sym (width-subst (unfold₁-inst τ' σr) w')) M.I)}
-                                      (mat-comp F (sub-inputs γ (ccast (sym (width-subst (unfold₁-inst τ' (μ τ₀)) w)) M.I)))))))
+    ≈-trans (Rule₁.agree (graph-m D) (sub-inputs γ (Category.≡-to-⇒ SemiMod.cat (cong 𝔽 (width-subst (unfold₁-inst τ' (μ τ₀)) w))))
+                       (fo-of (σ' [ σr ])) εₘ (Category.≡-to-⇒ SemiMod.cat (cong 𝔽 (sym (width-subst (unfold₁-inst τ' σr) w')))))
+            (mu (Category.≡-to-⇒ SemiMod.cat (cong 𝔽 (sym (width-subst (unfold₁-inst τ' σr) w'))))
+                (sub-inputs γ (Category.≡-to-⇒ SemiMod.cat (cong 𝔽 (width-subst (unfold₁-inst τ' (μ τ₀)) w)))) (agree-m D))
