@@ -28,6 +28,9 @@ open import language-operational.evaluation Sig three.semiring interpretation th
 open import interaction.graph three.semiring (λ x → three.∨-idem {x})
 open import interaction.labelling Sig three.semiring interpretation three.C (λ x → three.∨-idem {x})
 open import interaction.evaluated Sig three.semiring interpretation three.C (λ x → three.∨-idem {x})
+open import interaction.moves three.semiring (λ x → three.∨-idem {x}) three.≡-of-≈ three.ε?
+open import matrix-embedding three.semiring using (𝔽)
+open import Relation.Binary.PropositionalEquality using (_≡_)
 open import example.runs (nonzero three.semiring) three.semiring three.C
   using (Run; map-run; filter-run; env; term)
 open import example.render.tokens using (show-val; show-env)
@@ -147,11 +150,14 @@ module render-run (r : Run) where
   open Evaluated (env r) (term r)
 
   dot : String
-  dot = go dependence labels
+  dot = go dependence labels widths free
     where
-    go : ∀ {m n} (G : Graph m n) → Labelling (Graph.shape G) (Graph.width G) → String
-    go G lab = emit (foldl (elim wdf) edges₀ hid-ix)
+    go : ∀ {X Y} (G : Graph X Y) → Labelling (Graph.shape G) (Graph.object G) →
+         (wdv : V G → ℕ) → (∀ v → vertex-object G v ≡ 𝔽 (wdv v)) → String
+    go G lab wdv freev = emit (foldl (elim wdf) edges₀ hid-ix)
       where
+      open Interaction G wdv freev using (entry)
+
       fo-vs : List (V G)
       fo-vs = map (λ p → inj₂ (inj₁ p)) (FO G)
 
@@ -165,7 +171,7 @@ module render-run (r : Run) where
       nf = length fo-vs
 
       ws : List ℕ
-      ws = map (vertex-width G) all-vs
+      ws = map wdv all-vs
 
       wdf : ℕ → ℕ
       wdf i = nth 0 ws i
@@ -179,7 +185,7 @@ module render-run (r : Run) where
         where
         cols : List (ℕ × V G) → List Edge
         cols []             = []
-        cols ((j , y) ∷ js) = keep i j (ll-of (gr G x y)) ++L cols js
+        cols ((j , y) ∷ js) = keep i j (ll-of (entry x y (gr G x y))) ++L cols js
 
       edges₀ : List Edge
       edges₀ = rows (number 0 all-vs)

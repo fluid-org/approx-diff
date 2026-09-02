@@ -19,6 +19,7 @@ module Dep = signature.example.interpretation (nonzero three.semiring) three.sem
 
 open import language-syntax Sig using (_⊢_; zero; succ; base; var; inl; case; bop; emp) renaming (_,_ to _▸_)
 open import language-operational.evaluation Sig three.semiring Dep.interpretation three.C
+open import matrix-embedding three.semiring using (𝔽)
 open import interaction.evaluated Sig three.semiring Dep.interpretation three.C (λ x → three.∨-idem {x})
 open import interaction.graph three.semiring (λ x → three.∨-idem {x})
 open import interaction.dependence-graph Sig three.semiring Dep.interpretation three.C (λ x → three.∨-idem {x})
@@ -32,12 +33,12 @@ module rewiring where
   t₀ : (emp ▸ base number) ⊢ base number
   t₀ = case (inl (var zero)) (var zero) (var zero)
 
-  open Evaluated γ₀ t₀ using (dependence)
+  open Evaluated γ₀ t₀ using (dependence; widths; free)
 
-  G : Graph (suc (width-env γ₀)) _
+  G : Graph (𝔽 (suc (width-env γ₀))) _
   G = dependence
 
-  open Interaction G
+  open Interaction G widths free
 
   scrut : Vertex (Graph.shape G)
   scrut = inj₁ (inj₂ root)
@@ -58,24 +59,24 @@ module rewiring where
   K₁ = reveal-at scrut K₀
 
   -- Everything hidden: the scalar reaches the root as value flow, surviving the control point.
-  init-dep : visible-graph K₀ env rt zero (suc zero) ≡ three.D
+  init-dep : entry env rt (visible-graph K₀ env rt) zero (suc zero) ≡ three.D
   init-dep = refl
 
   -- Scrutinee revealed: value flow in and out of the revealed vertex.
-  reveal-in : visible-graph K₁ env (at scrut) (suc zero) (suc zero) ≡ three.D
+  reveal-in : entry env (at scrut) (visible-graph K₁ env (at scrut)) (suc zero) (suc zero) ≡ three.D
   reveal-in = refl
 
-  reveal-out : visible-graph K₁ (at scrut) rt zero (suc zero) ≡ three.D
+  reveal-out : entry (at scrut) rt (visible-graph K₁ (at scrut) rt) zero (suc zero) ≡ three.D
   reveal-out = refl
 
-  reveal-no-direct : visible-graph K₁ env rt zero (suc zero) ≡ three.O
+  reveal-no-direct : entry env rt (visible-graph K₁ env rt) zero (suc zero) ≡ three.O
   reveal-no-direct = refl
 
   -- The scrutinee's tag position gates the root: control, not value flow.
-  reveal-ctrl : visible-graph K₁ (at scrut) rt zero zero ≡ three.C
+  reveal-ctrl : entry (at scrut) rt (visible-graph K₁ (at scrut) rt) zero zero ≡ three.C
   reveal-ctrl = refl
 
-  collapse-agrees : collapse G zero (suc zero) ≡ three.D
+  collapse-agrees : entry env rt (collapse G) zero (suc zero) ≡ three.D
   collapse-agrees = refl
 
 -- An intermediate with a route past it: y · (x + y) at (x, y) = (0, 1). With everything hidden both
@@ -89,12 +90,12 @@ module intermediate where
   t₀ : ((emp ▸ base number) ▸ base number) ⊢ base number
   t₀ = bop mult (bop add (var zero ∷ var (succ zero) ∷ []) ∷ var zero ∷ [])
 
-  open Evaluated γ₀ t₀ using (dependence)
+  open Evaluated γ₀ t₀ using (dependence; widths; free)
 
-  G : Graph (suc (width-env γ₀)) _
+  G : Graph (𝔽 (suc (width-env γ₀))) _
   G = dependence
 
-  open Interaction G
+  open Interaction G widths free
 
   sum : Vertex (Graph.shape G)
   sum = inj₁ (inj₁ (inj₂ root))
@@ -118,23 +119,23 @@ module intermediate where
   K₁ : Config G
   K₁ = reveal-at sum K₀
 
-  hidden-x : visible-graph K₀ env rt zero x ≡ three.D
+  hidden-x : entry env rt (visible-graph K₀ env rt) zero x ≡ three.D
   hidden-x = refl
 
-  hidden-y : visible-graph K₀ env rt zero y ≡ three.D
+  hidden-y : entry env rt (visible-graph K₀ env rt) zero y ≡ three.D
   hidden-y = refl
 
-  sum-from-x : visible-graph K₁ env (at sum) zero x ≡ three.D
+  sum-from-x : entry env (at sum) (visible-graph K₁ env (at sum)) zero x ≡ three.D
   sum-from-x = refl
 
-  sum-from-y : visible-graph K₁ env (at sum) zero y ≡ three.D
+  sum-from-y : entry env (at sum) (visible-graph K₁ env (at sum)) zero y ≡ three.D
   sum-from-y = refl
 
-  sum-to-root : visible-graph K₁ (at sum) rt zero zero ≡ three.D
+  sum-to-root : entry (at sum) rt (visible-graph K₁ (at sum) rt) zero zero ≡ three.D
   sum-to-root = refl
 
-  bypass-y : visible-graph K₁ env rt zero y ≡ three.D
+  bypass-y : entry env rt (visible-graph K₁ env rt) zero y ≡ three.D
   bypass-y = refl
 
-  no-bypass-x : visible-graph K₁ env rt zero x ≡ three.O
+  no-bypass-x : entry env rt (visible-graph K₁ env rt) zero x ≡ three.O
   no-bypass-x = refl
