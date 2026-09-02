@@ -56,7 +56,8 @@ module Fam⟨𝒟⟩μ = model.Fam⟨𝒟⟩μ
 open Fam⟨𝒟⟩μ public using (Obj; Mor; idx; fam; fm; idxf; famf; Section; Lf; elimF;
                           strong-Lf-map; strong-Lf-map-transf; _≃_; module _≃_; preserves-section;
                           module preserves-section; module Fam-P; module Fam-cat)
-open HasStrongCoproducts Fam⟨𝒟⟩μ.strongCoproducts public using (copair) renaming (in₁ to cin₁; in₂ to cin₂)
+module Fam-CP = HasStrongCoproducts Fam⟨𝒟⟩μ.strongCoproducts
+open Fam-CP public using (copair)
 module ΠP = HasSetoidProducts model.SPmod
 
 open preserves-section public using (at)
