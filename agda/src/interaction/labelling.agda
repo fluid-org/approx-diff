@@ -4,7 +4,7 @@ open import Data.List using (List) renaming (_∷_ to _∷ₗ_; [] to []ₗ)
 open import Data.Nat using (ℕ; suc; _+_)
 open import Data.Product using (Σ; Σ-syntax; _,_)
 open import Data.Sum using (inj₁; inj₂; [_,_])
-open import Level using (0ℓ)
+open import Level using (0ℓ; _⊔_) renaming (suc to lsuc)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl)
 open import prop-setoid using (Setoid)
 open import commutative-semiring using (CommutativeSemiring)
@@ -25,6 +25,7 @@ open import language-syntax Sig hiding (_[_]) renaming (_,_ to _▸_)
 open import language-operational.evaluation Sig S ℐ ctrl-weight
 open import interaction.graph S +-idem
 open import interaction.dependence-graph Sig S ℐ ctrl-weight +-idem
+open import matrix-embedding S using (𝔽)
 
 data Node : Set ℓ where
   val  : ∀ {τ : type 0} → Val τ → Node
@@ -34,34 +35,34 @@ node-width : Node → ℕ
 node-width (val v)       = width v
 node-width (vals {is} _) = bases-width is
 
-record Labelling (s : Shape) (w : Vertex s → ℕ) : Set ℓ where
-  field at : (p : Vertex s) → Σ[ x ∈ Node ] node-width x ≡ w p
+record Labelling (s : Shape) (o : Vertex s → SemiMod.Semimodule) : Set (ℓ ⊔ lsuc 0ℓ) where
+  field at : (p : Vertex s) → Σ[ x ∈ Node ] 𝔽 (node-width x) ≡ o p
 
 open Labelling public
 
-lab₀ : ∀ {w} → Labelling (node []ₗ) w
+lab₀ : ∀ {o} → Labelling (node []ₗ) o
 lab₀ .at ()
 
-lab₁ : ∀ {s w n₀} → Labelling s w → (x : Node) → node-width x ≡ n₀ →
-       Labelling (node (s ∷ₗ []ₗ)) [ w , (λ _ → n₀) ]
+lab₁ : ∀ {s o} {N₀ : SemiMod.Semimodule} → Labelling s o → (x : Node) → 𝔽 (node-width x) ≡ N₀ →
+       Labelling (node (s ∷ₗ []ₗ)) [ o , (λ _ → N₀) ]
 lab₁ f x e .at (inj₁ p)    = f .at p
 lab₁ f x e .at (inj₂ root) = x , e
 
-lab₂ : ∀ {s₁ w₁ n₁ s₂ w₂ n₂} →
-       Labelling s₁ w₁ → (x₁ : Node) → node-width x₁ ≡ n₁ →
-       Labelling s₂ w₂ → (x₂ : Node) → node-width x₂ ≡ n₂ →
-       Labelling (node (s₁ ∷ₗ s₂ ∷ₗ []ₗ)) [ [ w₁ , (λ _ → n₁) ] , [ w₂ , (λ _ → n₂) ] ]
+lab₂ : ∀ {s₁ o₁ s₂ o₂} {N₁ N₂ : SemiMod.Semimodule} →
+       Labelling s₁ o₁ → (x₁ : Node) → 𝔽 (node-width x₁) ≡ N₁ →
+       Labelling s₂ o₂ → (x₂ : Node) → 𝔽 (node-width x₂) ≡ N₂ →
+       Labelling (node (s₁ ∷ₗ s₂ ∷ₗ []ₗ)) [ [ o₁ , (λ _ → N₁) ] , [ o₂ , (λ _ → N₂) ] ]
 lab₂ f₁ x₁ e₁ f₂ x₂ e₂ .at (inj₁ (inj₁ p))    = f₁ .at p
 lab₂ f₁ x₁ e₁ f₂ x₂ e₂ .at (inj₁ (inj₂ root)) = x₁ , e₁
 lab₂ f₁ x₁ e₁ f₂ x₂ e₂ .at (inj₂ (inj₁ p))    = f₂ .at p
 lab₂ f₁ x₁ e₁ f₂ x₂ e₂ .at (inj₂ (inj₂ root)) = x₂ , e₂
 
-lab₃ : ∀ {s₁ w₁ n₁ s₂ w₂ n₂ s₃ w₃ n₃} →
-       Labelling s₁ w₁ → (x₁ : Node) → node-width x₁ ≡ n₁ →
-       Labelling s₂ w₂ → (x₂ : Node) → node-width x₂ ≡ n₂ →
-       Labelling s₃ w₃ → (x₃ : Node) → node-width x₃ ≡ n₃ →
+lab₃ : ∀ {s₁ o₁ s₂ o₂ s₃ o₃} {N₁ N₂ N₃ : SemiMod.Semimodule} →
+       Labelling s₁ o₁ → (x₁ : Node) → 𝔽 (node-width x₁) ≡ N₁ →
+       Labelling s₂ o₂ → (x₂ : Node) → 𝔽 (node-width x₂) ≡ N₂ →
+       Labelling s₃ o₃ → (x₃ : Node) → 𝔽 (node-width x₃) ≡ N₃ →
        Labelling (node (s₁ ∷ₗ s₂ ∷ₗ s₃ ∷ₗ []ₗ))
-                 [ [ w₁ , (λ _ → n₁) ] , [ [ w₂ , (λ _ → n₂) ] , [ w₃ , (λ _ → n₃) ] ] ]
+                 [ [ o₁ , (λ _ → N₁) ] , [ [ o₂ , (λ _ → N₂) ] , [ o₃ , (λ _ → N₃) ] ] ]
 lab₃ f₁ x₁ e₁ f₂ x₂ e₂ f₃ x₃ e₃ .at (inj₁ (inj₁ p))           = f₁ .at p
 lab₃ f₁ x₁ e₁ f₂ x₂ e₂ f₃ x₃ e₃ .at (inj₁ (inj₂ root))        = x₁ , e₁
 lab₃ f₁ x₁ e₁ f₂ x₂ e₂ f₃ x₃ e₃ .at (inj₂ (inj₁ (inj₁ p)))    = f₂ .at p
@@ -71,7 +72,7 @@ lab₃ f₁ x₁ e₁ f₂ x₂ e₂ f₃ x₃ e₃ .at (inj₂ (inj₂ (inj₂ 
 
 mutual
   label : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ]) →
-          Labelling (Graph.shape (graph D)) (Graph.width (graph D))
+          Labelling (Graph.shape (graph D)) (Graph.object (graph D))
   label (⇓-var x) = lab₀
   label ⇓-unit = lab₀
   label ⇓-lam = lab₀
@@ -94,13 +95,13 @@ mutual
     lab₂ (label D₁) (val v) refl (label-m D₂) (val u) refl
 
   label-s : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
-            (D : γ , Ms ⇓s vs [ R ]) → Labelling (Graph.shape (graph-s D)) (Graph.width (graph-s D))
+            (D : γ , Ms ⇓s vs [ R ]) → Labelling (Graph.shape (graph-s D)) (Graph.object (graph-s D))
   label-s [] = lab₀
   label-s (_∷_ {is = is} {v = v} {vs = vs} D₁ D₂) =
     lab₂ (label D₁) (val (const v)) refl (label-s D₂) (vals {is} vs) refl
 
   label-m : ∀ {Γ} {γ : Env Γ} {τ₀ σr s σ' v v' F} (D : Map γ {τ₀} {σr} s σ' v v' F) →
-            Labelling (Graph.shape (graph-m D)) (Graph.width (graph-m D))
+            Labelling (Graph.shape (graph-m D)) (Graph.object (graph-m D))
   label-m (m-rec {w' = w'} {u = u} D₁ D₂) =
     lab₂ (label-m D₁) (val w') refl (label D₂) (val u) refl
   label-m m-unit = lab₀
