@@ -4,8 +4,8 @@
 module example.render.dep-graph where
 
 open import IO
-open import IO.Finite using (writeFile)
-open import Data.List using (List; []; _∷_; map; concat; foldl; length)
+open import IO.Finite using (writeFile; putStrLn)
+open import Data.List using (List; []; _∷_; map; concat; foldl; length; take)
   renaming (_++_ to _++L_)
 open import Data.List.Relation.Unary.All using ([]; _∷_)
 open import Data.Bool using (Bool; true; false; if_then_else_)
@@ -37,6 +37,18 @@ open import interaction.moves three.semiring (λ x → three.∨-idem {x}) three
 open import example.runs (nonzero three.semiring) three.semiring three.C
   using (Run; map-run; filter-run; env; term)
 open import example.render.tokens using (show-val; show-env)
+import semimodule
+
+private module SM = semimodule three.semiring
+
+{-# FOREIGN GHC import qualified Debug.Trace #-}
+{-# FOREIGN GHC import qualified Data.Text #-}
+
+postulate
+  trace : {A : Set} → String → A → A
+  trace-eq : ∀ (M : SM.Semimodule) s x → SM.Semimodule._≈_ M (trace s x) x
+
+{-# COMPILE GHC trace = \_ s x -> Debug.Trace.trace (Data.Text.unpack s) x #-}
 
 private
   module M3 = matrix.Mat three.semiring
@@ -133,6 +145,35 @@ module render-eval {Γ τ} (γ : Env Γ) (t : Γ ⊢ τ) where
   dot : String
   dot = dot-at full
 
+  private
+    show3 : Three → String
+    show3 O = "O"
+    show3 C = "C"
+    show3 D = "D"
+
+    tid : (M : SM.Semimodule) → String → M SM.⇒ M
+    tid M s = record
+      { *→* = record
+        { func = trace s
+        ; func-resp-≈ = λ e → MM.trans (trace-eq M s _) (MM.trans e (MM.sym (trace-eq M s _)))
+        }
+      ; preserve-ze = trace-eq M s _
+      ; preserve-+ = MM.trans (trace-eq M s _) (MM.sym (MM.+-cong (trace-eq M s _) (trace-eq M s _)))
+      ; preserve-· = MM.trans (trace-eq M s _) (MM.sym (MM.·-cong SM.S.refl (trace-eq M s _)))
+      }
+      where module MM = SM.Semimodule M
+
+    tgr : ℕ → Relation (vertex-object dependence) → Relation (vertex-object dependence)
+    tgr k G x y = SM._∘_ (G x y)
+      (tid (vertex-object dependence x)
+           (ℕ-Show.show k ++ "|" ++ label-of x ++ "→" ++ label-of y))
+
+  probe : ℕ → String
+  probe k = show3 (ll-join (ll-of (entry (inj₁ input) (inj₂ (inj₂ root))
+    (hide-all (vertex-object dependence) (tgr k (fo-graph dependence))
+              (map (λ p → inj₂ (inj₁ p)) (take k (FO dependence)))
+              (inj₁ input) (inj₂ (inj₂ root))))))
+
 private
   module map-fig    = render-eval (env map-run) (term map-run)
   module filter-fig = render-eval (env filter-run) (term filter-run)
@@ -155,6 +196,10 @@ private
   int-dot = int-fig.dot-at (int-fig.reveal-at sum-vertex int-fig.initial)
 
 main : Main
-main = run (writeFile "dot/map-three.dot" map-fig.dot >>
-            writeFile "dot/filter-three.dot" filter-fig.dot >>
-            writeFile "dot/intermediate-three.dot" int-dot)
+main = run (putStrLn (map-fig.probe 0) >>
+            putStrLn (map-fig.probe 2) >>
+            putStrLn (map-fig.probe 4) >>
+            putStrLn (map-fig.probe 6) >>
+            putStrLn (map-fig.probe 8) >>
+            putStrLn (map-fig.probe 10) >>
+            putStrLn (map-fig.probe 12))
