@@ -129,10 +129,14 @@ ctrl-scale .preserve-ze i = CS.ε-annihilₗ
 ctrl-scale .preserve-+ i = CS.·-+-distribᵣ
 ctrl-scale .preserve-· i = CS.·-assoc
 
--- Everywhere-one column: unit section at width without value structure.
+-- Everywhere-one column: unit section at width without value structure, built directly rather
+-- than by iterated pairing.
 ones : ∀ {n} → 𝔽 1 ⇒ 𝔽 n
-ones {zero}  = εₘ
-ones {suc n} = ⟨ I {1} , ones {n} ⟩
+ones .*→* .func v _ = v zero
+ones .*→* .func-resp-≈ e _ = e zero
+ones .preserve-ze _ = CS.refl
+ones .preserve-+  _ = CS.refl
+ones .preserve-·  _ = CS.refl
 
 -- The positions of a value that carry control dependence: what a terminal rule or an eliminator
 -- writes the control input to, scaled by the control weight at use sites. Every position of a

@@ -300,9 +300,7 @@ ap-pairₕ {j} {m} {n} f g y i =
           (concat-pad (f .func y) (g .func y) i)
 
 ap-ones : ∀ {n} (z : ∣ 𝔽 1 ∣) (k : Fin n) → ones {n} .func z k ≈s z zero
-ap-ones {zero}  z ()
-ap-ones {suc n} z zero    = ap-pairₕ (I {1}) (ones {n}) z zero
-ap-ones {suc n} z (suc k) = ≈-trans (ap-pairₕ (I {1}) (ones {n}) z (suc k)) (ap-ones {n} z k)
+ap-ones z k = ≈-refl
 
 ap-p₁₁ : ∀ {m} (o : ∣ 𝔽 (suc m) ∣) (k : Fin 1) → ap (M.p₁ {1} {m}) o k ≈s o zero
 ap-p₁₁ {m} o zero = app-p₁ {1} {m} o zero
