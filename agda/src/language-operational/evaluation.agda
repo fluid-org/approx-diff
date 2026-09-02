@@ -189,7 +189,7 @@ built-out : ∀ {Γ} (γ : Env Γ) (n : ℕ) → 𝔽 (suc (width-env γ)) ⇒ �
 built-out γ n = in₁ {1} {n} ∘ wctrl
 
 elim-out : ∀ {Γ τ} (γ : Env Γ) (w : Val τ) → 𝔽 (suc (width-env γ)) ⇒ 𝔽 (width w)
-elim-out γ w = (unit-section w ∘ ctrl-scale) ∘ wctrl
+elim-out γ w = unit-section w ∘ wctrl
 
 lam-out : ∀ {Γ σ τ} (γ : Env Γ) (t : Γ ▸ σ ⊢ τ) → 𝔽 (suc (width-env γ)) ⇒ 𝔽 (width (clo γ t))
 lam-out γ t = ctrl-scale ⊕ I {width-env γ}

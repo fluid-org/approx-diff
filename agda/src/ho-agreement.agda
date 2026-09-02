@@ -957,25 +957,32 @@ private
   proj-op : ∀ {Γ τ'} {γ : Env Γ} (wv : Val τ') {m n} (P : 𝔽 (m + n) ⇒ 𝔽 (width wv))
             (R' : 𝔽 (suc (width-env γ)) ⇒ 𝔽 (suc (m + n))) s x k →
             (elim-out γ wv +m (proj-up {m} {n} wv P ∘ R')) .func (inputs γ s x) k
-            ≈s ((unit-section wv ∘ ctrl-scale) .func (λ _ → (ctrl ·ₛ s) +ₛ R' .func (inputs γ s x) zero) k +ₛ
+            ≈s ((unit-section wv ∘ ctrl-scale) .func (λ _ → s +ₛ R' .func (inputs γ s x) zero) k +ₛ
                 P .func (λ l → R' .func (inputs γ s x) (suc l)) k)
   proj-op {γ = γ} wv {m} {n} P R' s x k =
-    ≈-trans (+-cong ((unit-section wv ∘ ctrl-scale) .func-resp-≈ (λ l → ap-wctrl {width-env γ} {1} (inputs γ s x) l) k)
+    ≈-trans (+-cong (unit-section wv .func-resp-≈ (λ l → ap-wctrl {width-env γ} {1} (inputs γ s x) l) k)
                      (+-cong (P .func-resp-≈ (λ l → ap-p₂₁ {m + n} o' l) k)
                              ((unit-section wv ∘ ctrl-scale) .func-resp-≈ (λ l → ap-p₁₁ {m + n} o' l) k)))
     (≈-trans (+-cong ≈-refl +-comm)
     (≈-trans (≈-sym +-assoc)
-             (+-cong (≈-sym ((unit-section wv ∘ ctrl-scale) .preserve-+ {λ _ → ctrl ·ₛ s} {λ _ → o' zero} k)) ≈-refl)))
-    where o' = R' .func (inputs γ s x)
+             (+-cong merge ≈-refl)))
+    where
+    o' = R' .func (inputs γ s x)
+    merge : (unit-section wv .func (λ _ → ctrl ·ₛ s) k +ₛ
+             (unit-section wv ∘ ctrl-scale) .func (λ _ → o' zero) k)
+            ≈s (unit-section wv ∘ ctrl-scale) .func (λ _ → s +ₛ o' zero) k
+    merge =
+      ≈-trans (≈-sym (unit-section wv .preserve-+ {λ _ → ctrl ·ₛ s} {λ _ → o' zero ·ₛ ctrl} k))
+              (unit-section wv .func-resp-≈ (λ _ → ≈-trans (+-cong ·-comm ≈-refl) (≈-sym S.·-+-distribᵣ)) k)
 
 private
   proj-den : ∀ τ' (i : Ix τ') s a₀ o'₀ (comp G m : ∣ Fib τ' i ∣) →
              o'₀ ≈s ((ctrl ·ₛ s) +ₛ a₀) →
              Fib._≈_ τ' i comp (Fib._+_ τ' i (ctrl-dep-at τ' i s) m) →
              Fib._≈_ τ' i G (Fib._+_ τ' i m (ctrl-dep-at τ' i a₀)) →
-             Fib._≈_ τ' i (Fib._+_ τ' i (ctrl-dep-at τ' i ((ctrl ·ₛ s) +ₛ o'₀)) comp) (Fib._+_ τ' i (ctrl-dep-at τ' i s) G)
+             Fib._≈_ τ' i (Fib._+_ τ' i (ctrl-dep-at τ' i (s +ₛ o'₀)) comp) (Fib._+_ τ' i (ctrl-dep-at τ' i s) G)
   proj-den τ' i s a₀ o'₀ comp G m eo ecomp eG =
-    Fib.trans τ' i (Fib.+-cong τ' i (ctrl-dep-split τ' i s a₀ eo) ecomp)
+    Fib.trans τ' i (Fib.+-cong τ' i (ctrl-dep-split′ τ' i s a₀ eo) ecomp)
     (Fib.trans τ' i (Fib.trans τ' i (Fib.+-interchange τ' i) (Fib.+-cong τ' i (Fib.⊑-refl τ' i) (Fib.+-comm τ' i)))
       (Fib.+-cong τ' i (Fib.refl τ' i) (Fib.sym τ' i eG)))
 
@@ -1344,7 +1351,7 @@ fundamental {Γ = Γ} {τ = σ} {γ = γ} (⇓-fst {τ₂ = τ} {t = t} {v = v} 
     (proj-den σ i s a₀ (R' .func (inputs γ s x) zero) (proj₁ (proj₂ (Fib._+_ (σ [×] τ) ij (ctrl-dep-at (σ [×] τ) ij s) (⟦ t ⟧tm .famf .transf gi .func g))))
        (⟦ fst {τ₂ = τ} t ⟧tm .famf .transf gi .func g) (proj₁ (proj₂ (⟦ t ⟧tm .famf .transf gi .func g)))
        o'₀ (Fib.+-cong σ i (proj₁ (proj₂ (ctrl-dep-pair {σ} {τ} i (proj₂ ij) s))) (Fib.refl σ i)) G-form)
-    (ctrl-add σ (ValRel-at-bound σ (proj₁ (fundamental-val D rγ))) ((ctrl ·ₛ s) +ₛ R' .func (inputs γ s x) zero)
+    (ctrl-add σ (ValRel-at-bound σ (proj₁ (fundamental-val D rγ))) (s +ₛ R' .func (inputs γ s x) zero)
       (DepRel-at-bound σ (proj₁ (fundamental-val D rγ)) (proj₁ (proj₂ (fundamental D rγ s x g rel)))))
   where
   ij = ⟦ t ⟧tm .idxf .sfunc gi
@@ -1360,7 +1367,7 @@ fundamental {Γ = Γ} {τ = τ} {γ = γ} (⇓-snd {τ₁ = σ} {t = t} {v = v} 
     (proj-den τ j s a₀ (R' .func (inputs γ s x) zero) (proj₂ (proj₂ (Fib._+_ (σ [×] τ) ij (ctrl-dep-at (σ [×] τ) ij s) (⟦ t ⟧tm .famf .transf gi .func g))))
        (⟦ snd {τ₁ = σ} t ⟧tm .famf .transf gi .func g) (proj₂ (proj₂ (⟦ t ⟧tm .famf .transf gi .func g)))
        o'₀ (Fib.+-cong τ j (proj₂ (proj₂ (ctrl-dep-pair {σ} {τ} (proj₁ ij) j s))) (Fib.refl τ j)) G-form)
-    (ctrl-add τ (ValRel-at-bound τ (proj₂ (fundamental-val D rγ))) ((ctrl ·ₛ s) +ₛ R' .func (inputs γ s x) zero)
+    (ctrl-add τ (ValRel-at-bound τ (proj₂ (fundamental-val D rγ))) (s +ₛ R' .func (inputs γ s x) zero)
       (DepRel-at-bound τ (proj₂ (fundamental-val D rγ)) (proj₂ (proj₂ (fundamental D rγ s x g rel)))))
   where
   ij = ⟦ t ⟧tm .idxf .sfunc gi
