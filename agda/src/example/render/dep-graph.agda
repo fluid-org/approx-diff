@@ -111,8 +111,8 @@ module render-eval {Γ τ} (γ : Env Γ) (t : Γ ⊢ τ) where
     node-line : ℕ × V dependence → String
     node-line (i , x) = "  n" ++ ℕ-Show.show i ++ " [shape=box, fontsize=11, label=\"" ++ label-of x ++ "\"];\n"
 
-  reduced : V dependence → V dependence → List (V dependence) → LL
-  reduced a b hid = ll-of (hide-in-evaluation-order dependence widths free hid a b)
+  visible-edge : V dependence → V dependence → List (V dependence) → LL
+  visible-edge a b hid = ll-of (hide-in-evaluation-order dependence widths free hid a b)
 
   dot-at : Config dependence → String
   dot-at K = "digraph G {\n  rankdir=LR;\n" ++ cat (map node-line nvs) ++ edge-lines (rows nvs) ++ "}\n"
@@ -130,7 +130,7 @@ module render-eval {Γ τ} (γ : Env Γ) (t : Γ ⊢ τ) where
       where
       cols : List (ℕ × V dependence) → List Edge
       cols []             = []
-      cols ((j , y) ∷ js) = keep i j (reduced x y hid) ++L cols js
+      cols ((j , y) ∷ js) = keep i j (visible-edge x y hid) ++L cols js
 
   full : Config dependence
   full = foldl (λ K p → reveal-at p K) initial (FO dependence)
