@@ -51,6 +51,20 @@ private
     drop-ctrl : ∀ {m n} → M3.Matrix m (Nat.suc n) → Mat
     drop-ctrl R = rows (λ q p → R q (suc p))
 
+  -- Which outputs are related through some shared input.
+  related : String → Run → String
+  related name r = grid name (out-toks r) (out-toks r) (go (hide-in-evaluation-order dependence widths free
+                     (map (λ v → inj₂ (inj₁ v)) (vertices (Graph.shape dependence)))
+                     (inj₁ input) (inj₂ (inj₂ root)))) none none
+    where
+    open Evaluated (env r) (term r)
+
+    go : ∀ {m n} → M3.Matrix m (Nat.suc n) → Mat
+    go {m} {n} R = rows (drop M3.∘ (drop M3.ᵀ))
+      where
+      drop : M3.Matrix m n
+      drop q p = R q (suc p)
+
   run-grid : String → Run → Sel → Sel → String
   run-grid name r isel osel = grid name (in-toks r) (out-toks r) (op-rows r) isel osel
 
@@ -86,7 +100,9 @@ tables =
   ("rose"          , plain "rose"          rose-run)    ∷
   ("score"         , plain "score"         score-run)   ∷
   ("map-backward"        , bwd "map (backward slice)"          map-run           2) ∷
-  ("adjacent-sums-forward" , fwd "adjacent-sums (forward slice)" adjacent-sums-run 2) ∷ []
+  ("adjacent-sums-forward" , fwd "adjacent-sums (forward slice)" adjacent-sums-run 2) ∷
+  ("mavg-related"          , related "mavg (related outputs)"          mavg-run) ∷
+  ("adjacent-sums-related" , related "adjacent-sums (related outputs)" adjacent-sums-run) ∷ []
   -- merge and merge-forward disabled: hide-in-evaluation-order diverges on merge's graph (#48
   -- closure width growth); restore once that subtask lands.
 
