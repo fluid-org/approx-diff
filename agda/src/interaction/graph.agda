@@ -77,17 +77,17 @@ pb₂ {X} {Y} = BP.p₂ {X} {Y}
 data Input : Set where
   input : Input
 
-data Shape : Set where
-  node : List Shape → Shape
+data DerivationShape : Set where
+  node : List DerivationShape → DerivationShape
 
 data Root : Set where
   root : Root
 
 mutual
-  Vertex : Shape → Set
+  Vertex : DerivationShape → Set
   Vertex (node ss) = Vertices ss
 
-  Vertices : List Shape → Set
+  Vertices : List DerivationShape → Set
   Vertices []           = ⊥
   Vertices (s ∷ [])     = Vertex s ⊎ Root
   Vertices (s ∷ t ∷ ss) = (Vertex s ⊎ Root) ⊎ Vertices (t ∷ ss)
@@ -106,10 +106,10 @@ mutual
 -- The vertices of a shape, each premise's result first, then its interior, then the premises after
 -- it. This fixes the order in which they are hidden.
 mutual
-  vertices : (s : Shape) → List (Vertex s)
+  vertices : (s : DerivationShape) → List (Vertex s)
   vertices (node ss) = vertices-of ss
 
-  vertices-of : (ss : List Shape) → List (Vertices ss)
+  vertices-of : (ss : List DerivationShape) → List (Vertices ss)
   vertices-of []           = []
   vertices-of (s ∷ [])     = inj₂ root ∷ map inj₁ (vertices s)
   vertices-of (s ∷ t ∷ ss) = map inj₁ (inj₂ root ∷ map inj₁ (vertices s)) ++ map inj₂ (vertices-of (t ∷ ss))
@@ -124,10 +124,10 @@ private
                   (AllP.map⁺ (universal (λ _ → AllP.map⁺ (universal (λ _ ()) ys)) xs))
 
 mutual
-  distinct : (s : Shape) → AllPairs _≢_ (vertices s)
+  distinct : (s : DerivationShape) → AllPairs _≢_ (vertices s)
   distinct (node ss) = distinct-of ss
 
-  distinct-of : (ss : List Shape) → AllPairs _≢_ (vertices-of ss)
+  distinct-of : (ss : List DerivationShape) → AllPairs _≢_ (vertices-of ss)
   distinct-of []           = []
   distinct-of (s ∷ [])     =
     AllP.map⁺ (universal (λ _ ()) (vertices s))
@@ -161,22 +161,22 @@ sum-<-order o₁ o₂ .IsStrictOrder.asym (inj₁ p) (inj₂ q) a ()
 sum-<-order o₁ o₂ .IsStrictOrder.asym (inj₂ p) (inj₁ q) () b
 sum-<-order o₁ o₂ .IsStrictOrder.asym (inj₂ p) (inj₂ q) a b = o₂ .IsStrictOrder.asym p q a b
 
--- The completion order: a premise's interior before its result, and every premise before those
+-- The evaluation order: a premise's interior before its result, and every premise before those
 -- after it. The shape is explicit, since it cannot be recovered from a vertex.
 mutual
-  lt : (s : Shape) → Vertex s → Vertex s → Set
+  lt : (s : DerivationShape) → Vertex s → Vertex s → Set
   lt (node ss) = lts ss
 
-  lts : (ss : List Shape) → Vertices ss → Vertices ss → Set
+  lts : (ss : List DerivationShape) → Vertices ss → Vertices ss → Set
   lts []           ()
   lts (s ∷ [])     = sum-< (lt s) (λ _ _ → ⊥)
   lts (s ∷ t ∷ ss) = sum-< (sum-< (lt s) (λ _ _ → ⊥)) (lts (t ∷ ss))
 
 mutual
-  lt-order : (s : Shape) → IsStrictOrder (lt s)
+  lt-order : (s : DerivationShape) → IsStrictOrder (lt s)
   lt-order (node ss) = lts-order ss
 
-  lts-order : (ss : List Shape) → IsStrictOrder (lts ss)
+  lts-order : (ss : List DerivationShape) → IsStrictOrder (lts ss)
   lts-order []           .IsStrictOrder.trans ()
   lts-order []           .IsStrictOrder.asym ()
   lts-order (s ∷ [])     = sum-<-order (lt-order s) none-order
@@ -184,12 +184,12 @@ mutual
 
 record Graph (X Y : Semimodule) : Set₁ where
   field
-    shape   : Shape
+    shape   : DerivationShape
     object  : Vertex shape → Semimodule
     fo      : Vertex shape → Bool
     into    : (q : Vertex shape) → X ⇒ object q
     inside  : (p q : Vertex shape) → object p ⇒ object q
-    -- Every non-zero relation between interior vertices runs strictly forward in the completion
+    -- Every non-zero relation between interior vertices runs strictly forward in the evaluation
     -- order. The inputs and the root need no condition, being below and above everything.
     <-inside : ∀ p q → lt shape p q ⊎ Prf (inside p q ≈ εₘ)
     fo-root : Bool

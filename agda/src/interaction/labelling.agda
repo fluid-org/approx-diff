@@ -35,7 +35,7 @@ node-width : Node → ℕ
 node-width (val v)       = width v
 node-width (vals {is} _) = bases-width is
 
-record Labelling (s : Shape) (o : Vertex s → SemiMod.Semimodule) : Set (ℓ ⊔ lsuc 0ℓ) where
+record Labelling (s : DerivationShape) (o : Vertex s → SemiMod.Semimodule) : Set (ℓ ⊔ lsuc 0ℓ) where
   field at : (p : Vertex s) → Σ[ x ∈ Node ] 𝔽 (node-width x) ≡ o p
 
 open Labelling public
