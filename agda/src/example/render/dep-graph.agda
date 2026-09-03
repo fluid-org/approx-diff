@@ -5,18 +5,18 @@ module example.render.dep-graph where
 
 open import IO
 open import IO.Finite using (writeFile; putStrLn)
-open import Data.List using (List; []; _∷_; map; concat; foldl; length; take)
+open import Data.List using (List; []; _∷_; map; concat; foldl; foldr; upTo; reverse; filterᵇ)
   renaming (_++_ to _++L_)
 open import Data.List.Relation.Unary.All using ([]; _∷_)
-open import Data.Bool using (Bool; true; false; if_then_else_)
-open import Data.Nat using (ℕ; zero; suc; _+_)
+open import Data.Bool using (Bool; true; false; not; if_then_else_)
+open import Relation.Nullary.Decidable using (⌊_⌋)
+open import Data.Nat using (ℕ; zero; suc)
 import Data.Nat.Show as ℕ-Show
 open import Data.Product using (_×_; _,_; proj₁; proj₂)
 open import Data.Rational using (ℚ; 0ℚ; 1ℚ)
 open import Data.String using (String; _++_)
 open import Data.Sum using (inj₁; inj₂)
 open import Data.Vec using (toList; tabulate)
-open import Relation.Binary.PropositionalEquality using (_≡_)
 import matrix
 import three
 open three using (Three; O; C; D)
@@ -37,18 +37,6 @@ open import interaction.moves three.semiring (λ x → three.∨-idem {x}) three
 open import example.runs (nonzero three.semiring) three.semiring three.C
   using (Run; map-run; filter-run; env; term)
 open import example.render.tokens using (show-val; show-env)
-import semimodule
-
-private module SM = semimodule three.semiring
-
-{-# FOREIGN GHC import qualified Debug.Trace #-}
-{-# FOREIGN GHC import qualified Data.Text #-}
-
-postulate
-  trace : {A : Set} → String → A → A
-  trace-eq : ∀ (M : SM.Semimodule) s x → SM.Semimodule._≈_ M (trace s x) x
-
-{-# COMPILE GHC trace = \_ s x -> Debug.Trace.trace (Data.Text.unpack s) x #-}
 
 private
   module M3 = matrix.Mat three.semiring
@@ -107,7 +95,8 @@ private
   cat (s ∷ ss) = s ++ cat ss
 
 -- The visible graph of a configuration: the environment, the visible intermediates, and the root,
--- with edges read off the summaries and the retained first-order edges.
+-- with each edge the reduced relation between two of them after hiding the rest, computed by one
+-- dependency-order sweep over the raw graph.
 module render-eval {Γ τ} (γ : Env Γ) (t : Γ ⊢ τ) where
 
   open Evaluated γ t public
@@ -122,20 +111,58 @@ module render-eval {Γ τ} (γ : Env Γ) (t : Γ ⊢ τ) where
     node-line : ℕ × V dependence → String
     node-line (i , x) = "  n" ++ ℕ-Show.show i ++ " [shape=box, fontsize=11, label=\"" ++ label-of x ++ "\"];\n"
 
+  private
+    ixd : ∀ {a} {A : Set a} → A → ℕ → List A → A
+    ixd d _       []       = d
+    ixd d zero    (x ∷ _)  = x
+    ixd d (suc n) (_ ∷ xs) = ixd d n xs
+
+    mat-add : ℕ → ℕ → LL → LL → LL
+    mat-add r c A B =
+      map (λ i → map (λ j → ixd O j (ixd [] i A) three.⊔ ixd O j (ixd [] i B)) (upTo c)) (upTo r)
+
+    mat-mul : ℕ → ℕ → ℕ → LL → LL → LL
+    mat-mul r m c A B =
+      map (λ i → map (λ j → join-list (map (λ t → ixd O t (ixd [] i A) three.⊓ ixd O j (ixd [] t B))
+                                           (upTo m)))
+                     (upTo c))
+          (upTo r)
+
+  reduced : V dependence → V dependence → List (V dependence) → LL
+  reduced a b hid = pushc b accs (exr a b)
+    where
+    ord : List (V dependence)
+    ord = reverse hid
+    exr : V dependence → V dependence → LL
+    exr u v = ll-of (entry u v (gr dependence u v))
+    pushc : V dependence → List (V dependence × LL) → LL → LL
+    pushc v acc seed =
+      foldr (λ ua m → mat-add (widths v) (widths a)
+                        (mat-mul (widths v) (widths (proj₁ ua)) (widths a) (exr (proj₁ ua) v) (proj₂ ua))
+                        m)
+            seed acc
+    stepc : List (V dependence × LL) → V dependence → List (V dependence × LL)
+    stepc acc v = acc ++L ((v , pushc v acc (exr a v)) ∷ [])
+    accs : List (V dependence × LL)
+    accs = foldl stepc [] ord
+
   dot-at : Config dependence → String
   dot-at K = "digraph G {\n  rankdir=LR;\n" ++ cat (map node-line nvs) ++ edge-lines es ++ "}\n"
     where
+    bnd : List (V dependence)
+    bnd = (inj₁ input ∷ []) ++L map (λ p → inj₂ (inj₁ p)) (K .visible) ++L (inj₂ (inj₂ root) ∷ [])
     nvs : List (ℕ × V dependence)
-    nvs = enumerate 0 ((inj₁ input ∷ []) ++L map (λ p → inj₂ (inj₁ p)) (K .visible) ++L (inj₂ (inj₂ root) ∷ []))
-
+    nvs = enumerate 0 bnd
+    hid : List (V dependence)
+    hid = map (λ p → inj₂ (inj₁ p))
+              (filterᵇ (λ q → not ⌊ q ∈? K .visible ⌋) (vertices (Graph.shape dependence)))
     rows : List (ℕ × V dependence) → List Edge
     rows []             = []
     rows ((i , x) ∷ is) = cols nvs ++L rows is
       where
       cols : List (ℕ × V dependence) → List Edge
       cols []             = []
-      cols ((j , y) ∷ js) = keep i j (ll-of (entry x y (visible-graph K x y))) ++L cols js
-
+      cols ((j , y) ∷ js) = keep i j (reduced x y hid) ++L cols js
     es : List Edge
     es = rows nvs
 
@@ -144,35 +171,6 @@ module render-eval {Γ τ} (γ : Env Γ) (t : Γ ⊢ τ) where
 
   dot : String
   dot = dot-at full
-
-  private
-    show3 : Three → String
-    show3 O = "O"
-    show3 C = "C"
-    show3 D = "D"
-
-    tid : (M : SM.Semimodule) → String → M SM.⇒ M
-    tid M s = record
-      { *→* = record
-        { func = trace s
-        ; func-resp-≈ = λ e → MM.trans (trace-eq M s _) (MM.trans e (MM.sym (trace-eq M s _)))
-        }
-      ; preserve-ze = trace-eq M s _
-      ; preserve-+ = MM.trans (trace-eq M s _) (MM.sym (MM.+-cong (trace-eq M s _) (trace-eq M s _)))
-      ; preserve-· = MM.trans (trace-eq M s _) (MM.sym (MM.·-cong SM.S.refl (trace-eq M s _)))
-      }
-      where module MM = SM.Semimodule M
-
-    tgr : ℕ → Relation (vertex-object dependence) → Relation (vertex-object dependence)
-    tgr k G x y = SM._∘_ (G x y)
-      (tid (vertex-object dependence x)
-           (ℕ-Show.show k ++ "|" ++ label-of x ++ "→" ++ label-of y))
-
-  probe : ℕ → String
-  probe k = show3 (ll-join (ll-of (entry (inj₁ input) (inj₂ (inj₂ root))
-    (hide-all (vertex-object dependence) (tgr k (fo-graph dependence))
-              (map (λ p → inj₂ (inj₁ p)) (take k (FO dependence)))
-              (inj₁ input) (inj₂ (inj₂ root))))))
 
 private
   module map-fig    = render-eval (env map-run) (term map-run)
@@ -196,10 +194,6 @@ private
   int-dot = int-fig.dot-at (int-fig.reveal-at sum-vertex int-fig.initial)
 
 main : Main
-main = run (putStrLn (map-fig.probe 0) >>
-            putStrLn (map-fig.probe 2) >>
-            putStrLn (map-fig.probe 4) >>
-            putStrLn (map-fig.probe 6) >>
-            putStrLn (map-fig.probe 8) >>
-            putStrLn (map-fig.probe 10) >>
-            putStrLn (map-fig.probe 12))
+main = run (writeFile "dot/intermediate-three.dot" int-dot >>
+            writeFile "dot/filter-three.dot" (filter-fig.dot-at filter-fig.initial) >>
+            writeFile "dot/map-three.dot" (map-fig.dot-at map-fig.initial))

@@ -1,53 +1,6 @@
 digraph G {
   rankdir=LR;
-  node [shape=circle, fontsize=11];
-  subgraph cluster_input {
-    color=none;
-    i0 [label="2"];
-    i1 [label="∷"];
-    i3 [label="1"];
-    i4 [label="∷"];
-    i6 [label="2"];
-    i7 [label="∷"];
-    i9 [label="3"];
-    i10 [label="[]"];
-    i1 -> i3 [color=gray, arrowhead=none];
-    i1 -> i4 [color=gray, arrowhead=none];
-    i4 -> i6 [color=gray, arrowhead=none];
-    i4 -> i7 [color=gray, arrowhead=none];
-    i7 -> i9 [color=gray, arrowhead=none];
-    i7 -> i10 [color=gray, arrowhead=none];
-    ilab [label="input", shape=plaintext];
-    i9 -> ilab [style=invis];
-    i10 -> ilab [style=invis];
-  }
-  subgraph cluster_output {
-    color=none;
-    o0 [label="∷"];
-    o2 [label="2"];
-    o3 [label="[]"];
-    o0 -> o2 [color=gray, arrowhead=none];
-    o0 -> o3 [color=gray, arrowhead=none];
-    olab [label="output", shape=plaintext];
-    o2 -> olab [style=invis];
-    o3 -> olab [style=invis];
-  }
-  i0 -> o0 [color=black, style=dashed, constraint=false];
-  i1 -> o0 [color=black, style=dashed, constraint=false];
-  i3 -> o0 [color=black, style=dashed, constraint=false];
-  i4 -> o0 [color=black, style=dashed, constraint=false];
-  i6 -> o0 [color=black, style=dashed, constraint=false];
-  i0 -> o2 [color=black, style=dashed, constraint=false];
-  i1 -> o2 [color=black, style=dashed, constraint=false];
-  i3 -> o2 [color=black, style=dashed, constraint=false];
-  i4 -> o2 [color=black, style=dashed, constraint=false];
-  i6 -> o2 [color=blue, constraint=false];
-  i0 -> o3 [color=black, style=dashed, constraint=false];
-  i1 -> o3 [color=black, style=dashed, constraint=false];
-  i3 -> o3 [color=black, style=dashed, constraint=false];
-  i4 -> o3 [color=black, style=dashed, constraint=false];
-  i6 -> o3 [color=black, style=dashed, constraint=false];
-  i7 -> o3 [color=black, style=dashed, constraint=false];
-  i9 -> o3 [color=black, style=dashed, constraint=false];
-  i10 -> o3 [color=black, style=dashed, constraint=false];
+  n0 [shape=box, fontsize=11, label="2; [1, 2, 3]"];
+  n1 [shape=box, fontsize=11, label="[2]"];
+  n0 -> n1 [style=dashed];
 }
