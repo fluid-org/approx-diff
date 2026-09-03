@@ -2,28 +2,32 @@
 
 open import Data.Bool using (Bool; true; not)
 open import Data.Empty using (⊥; ⊥-elim)
-open import Data.Fin using (Fin)
-open import Data.List using (List; []; _∷_; _++_; map; foldl; filterᵇ)
+open import Data.Fin using (Fin; toℕ)
+open import Data.List using (List; []; _∷_; _++_; map; foldl; filterᵇ; upTo)
 open import Data.List.Properties using (map-++; map-∘; foldl-++)
 open import Data.List.Relation.Unary.All using (All; []; _∷_; universal) renaming (map to All-map)
 open import Data.List.Relation.Unary.AllPairs using (AllPairs; []; _∷_) renaming (map to AllPairs-map)
 import Data.List.Relation.Unary.All.Properties as AllP
 import Data.List.Relation.Unary.AllPairs.Properties as AllPairsP
+open import Data.Nat using (ℕ; zero; suc)
+open import Data.Product using (_×_; _,_)
 open import Data.Sum using (_⊎_; inj₁; inj₂; [_,_])
+open import Data.Vec using (toList; tabulate)
 import Data.List.Relation.Binary.Permutation.Propositional as ↭
 open ↭ using (_↭_)
 open import Data.Unit using (tt) renaming (⊤ to Unit)
 
 open import Relation.Binary.Definitions using (DecidableEquality)
-open import Relation.Binary.PropositionalEquality using (_≡_; _≢_)
+open import Relation.Binary.PropositionalEquality using (_≡_; _≢_; subst₂)
   renaming (refl to ≡-refl; sym to ≡-sym; trans to ≡-trans; cong to ≡-cong; cong₂ to ≡-cong₂)
 open import Relation.Nullary.Decidable using (yes)
 import Data.Sum.Properties as SumP
 open import Level using (0ℓ)
-open import prop using (Prf; ⟪_⟫; _∧_; _,_; proj₁; proj₂)
+open import prop using (Prf; ⟪_⟫; _∧_; _,_; proj₁; proj₂; ∃ₛ)
 open import prop-setoid using (Setoid)
 open import commutative-semiring using (CommutativeSemiring)
 open import basics using (IsStrictOrder)
+import matrix
 import semimodule
 
 -- A dependence graph as a value rather than a family indexed by a derivation: a graph is a set of
@@ -39,8 +43,10 @@ open import categories using (Category)
 open Category SemiMod.cat
   using (_⇒_; _∘_; _≈_; ∘-cong; ∘-cong₁; ∘-cong₂; assoc; id-left; id-right; ≈-refl; ≈-sym; ≈-trans; ≡-to-≈)
 open import cmon-enriched using (CMonEnriched; Biproduct)
+open import matrix-embedding S using (𝔽; 𝔽F-full)
 private
   module CM = CMonEnriched SemiMod.cmon-enriched
+  module M = matrix.Mat S
 
 infixl 21 _+ₘ_
 _+ₘ_ : ∀ {X Y : Semimodule} → X ⇒ Y → X ⇒ Y → X ⇒ Y
@@ -546,6 +552,61 @@ module _ {X Y : Semimodule} (B : Graph X Y) where
 
   fo-forward : Fwd fo-graph
   fo-forward = fwd-hide-all (map (λ q → inj₂ (inj₁ q)) fo-hidden) gr-forward
+
+-- Hiding in evaluation order: with the hidden vertices listed so that every nonzero edge among
+-- them runs forward, one traversal materialises for each vertex the relation reaching it from the
+-- source through the vertices before it, as a stored table. Each raw edge is read once, where
+-- hide-all rewrites the whole relation at each hidden vertex.
+module _ {X Y : Semimodule} (B : Graph X Y) (wd : V B → ℕ)
+         (free : ∀ v → vertex-object B v ≡ 𝔽 (wd v)) where
+
+  private
+    Table : Set
+    Table = List (List Semiring.Carrier)
+
+    nth : {C : Set} → C → ℕ → List C → C
+    nth d _       []       = d
+    nth d zero    (x ∷ _)  = x
+    nth d (suc n) (_ ∷ xs) = nth d n xs
+
+    entry : ∀ (x y : V B) → vertex-object B x ⇒ vertex-object B y → M.Matrix (wd y) (wd x)
+    entry x y f = ∃ₛ.fst (𝔽F-full (subst₂ _⇒_ (free x) (free y) f))
+
+    to-table : ∀ {m n} → M.Matrix m n → Table
+    to-table R = toList (tabulate λ i → toList (tabulate λ j → R i j))
+
+    edge : (u v : V B) → Table
+    edge u v = to-table (entry u v (gr B u v))
+
+    sum : List Semiring.Carrier → Semiring.Carrier
+    sum []       = Semiring.ε
+    sum (x ∷ xs) = x Semiring.+ sum xs
+
+    add : ℕ → ℕ → Table → Table → Table
+    add r c T U =
+      map (λ i → map (λ j → nth Semiring.ε j (nth [] i T) Semiring.+ nth Semiring.ε j (nth [] i U)) (upTo c))
+          (upTo r)
+
+    mul : ℕ → ℕ → ℕ → Table → Table → Table
+    mul r m c T U =
+      map (λ i → map (λ j → sum (map (λ t → nth Semiring.ε t (nth [] i T) Semiring.· nth Semiring.ε j (nth [] t U))
+                                     (upTo m)))
+                     (upTo c))
+          (upTo r)
+
+    through : (a v : V B) → List (V B × Table) → Table
+    through a v []             = edge a v
+    through a v ((u , T) ∷ us) = add (wd v) (wd a) (mul (wd v) (wd u) (wd a) (edge u v) T) (through a v us)
+
+    summaries : (a : V B) → List (V B × Table) → List (V B) → List (V B × Table)
+    summaries a acc []       = acc
+    summaries a acc (v ∷ vs) = summaries a (acc ++ (v , through a v acc) ∷ []) vs
+
+  hide-in-evaluation-order : List (V B) → (a b : V B) → M.Matrix (wd b) (wd a)
+  hide-in-evaluation-order hid a b = look (through a b (summaries a [] hid))
+    where
+    look : Table → M.Matrix (wd b) (wd a)
+    look T i j = nth Semiring.ε (toℕ j) (nth [] (toℕ i) T)
 
 private
   distrib-root : ∀ {W N K L : Semimodule} (P : N ⇒ W) (Xm : K ⇒ N) (Ym : L ⇒ N) (Zm : K ⇒ L) →

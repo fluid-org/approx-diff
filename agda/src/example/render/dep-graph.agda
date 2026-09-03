@@ -5,14 +5,14 @@ module example.render.dep-graph where
 
 open import IO
 open import IO.Finite using (writeFile; putStrLn)
-open import Data.List using (List; []; _∷_; map; concat; foldl; foldr; upTo; filterᵇ)
+open import Data.List using (List; []; _∷_; map; concat; foldl; filterᵇ)
   renaming (_++_ to _++L_)
 open import Data.List.Relation.Unary.All using ([]; _∷_)
 open import Data.Bool using (Bool; true; false; not; if_then_else_)
 open import Relation.Nullary.Decidable using (⌊_⌋)
-open import Data.Nat using (ℕ; zero; suc)
+open import Data.Nat using (ℕ; suc)
 import Data.Nat.Show as ℕ-Show
-open import Data.Product using (_×_; _,_; proj₁; proj₂)
+open import Data.Product using (_×_; _,_; proj₁)
 open import Data.Rational using (ℚ; 0ℚ; 1ℚ)
 open import Data.String using (String; _++_)
 open import Data.Sum using (inj₁; inj₂)
@@ -111,41 +111,8 @@ module render-eval {Γ τ} (γ : Env Γ) (t : Γ ⊢ τ) where
     node-line : ℕ × V dependence → String
     node-line (i , x) = "  n" ++ ℕ-Show.show i ++ " [shape=box, fontsize=11, label=\"" ++ label-of x ++ "\"];\n"
 
-  private
-    ixd : ∀ {a} {A : Set a} → A → ℕ → List A → A
-    ixd d _       []       = d
-    ixd d zero    (x ∷ _)  = x
-    ixd d (suc n) (_ ∷ xs) = ixd d n xs
-
-    mat-add : ℕ → ℕ → LL → LL → LL
-    mat-add r c A B =
-      map (λ i → map (λ j → ixd O j (ixd [] i A) three.⊔ ixd O j (ixd [] i B)) (upTo c)) (upTo r)
-
-    mat-mul : ℕ → ℕ → ℕ → LL → LL → LL
-    mat-mul r m c A B =
-      map (λ i → map (λ j → join-list (map (λ t → ixd O t (ixd [] i A) three.⊓ ixd O j (ixd [] t B))
-                                           (upTo m)))
-                     (upTo c))
-          (upTo r)
-
   reduced : V dependence → V dependence → List (V dependence) → LL
-  reduced a b hid = pushc b accs (exr a b)
-    where
-    exr : V dependence → V dependence → LL
-    exr u v = ll-of (entry u v (gr dependence u v))
-
-    pushc : V dependence → List (V dependence × LL) → LL → LL
-    pushc v acc seed =
-      foldr (λ ua m → mat-add (widths v) (widths a)
-                        (mat-mul (widths v) (widths (proj₁ ua)) (widths a) (exr (proj₁ ua) v) (proj₂ ua))
-                        m)
-            seed acc
-
-    stepc : List (V dependence × LL) → V dependence → List (V dependence × LL)
-    stepc acc v = acc ++L ((v , pushc v acc (exr a v)) ∷ [])
-
-    accs : List (V dependence × LL)
-    accs = foldl stepc [] hid
+  reduced a b hid = ll-of (hide-in-evaluation-order dependence widths free hid a b)
 
   dot-at : Config dependence → String
   dot-at K = "digraph G {\n  rankdir=LR;\n" ++ cat (map node-line nvs) ++ edge-lines (rows nvs) ++ "}\n"
