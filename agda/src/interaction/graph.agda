@@ -28,6 +28,8 @@ open import prop-setoid using (Setoid)
 open import commutative-semiring using (CommutativeSemiring)
 open import basics using (IsStrictOrder)
 import matrix
+import Data.Nat.Show as ℕ-Show
+open import Data.String using (String) renaming (_++_ to _++ₛ_)
 import semimodule
 
 -- A dependence graph as a value rather than a family indexed by a derivation: a graph is a set of
@@ -556,9 +558,12 @@ module _ {X Y : Semimodule} (B : Graph X Y) where
 -- Hiding in evaluation order: with the hidden vertices listed so that every nonzero edge among
 -- them runs forward, one traversal materialises for each vertex the relation reaching it from the
 -- source through the vertices before it, as a stored table. Each raw edge is read once, where
--- hide-all rewrites the whole relation at each hidden vertex.
-module _ {X Y : Semimodule} (B : Graph X Y) (wd : V B → ℕ)
-         (free : ∀ v → vertex-object B v ≡ 𝔽 (wd v)) where
+-- hide-all rewrites the whole relation at each hidden vertex. The tick hook marks each edge
+-- tabulation and each vertex summary, firing when the value is demanded; hide-in-evaluation-order
+-- below specialises it to the identity.
+module Instrumented {X Y : Semimodule} (B : Graph X Y) (wd : V B → ℕ)
+                    (free : ∀ v → vertex-object B v ≡ 𝔽 (wd v))
+                    (tick : {A : Set} → String → A → A) where
 
   private
     Table : Set
@@ -576,7 +581,7 @@ module _ {X Y : Semimodule} (B : Graph X Y) (wd : V B → ℕ)
     to-table R = toList (tabulate λ i → toList (tabulate λ j → R i j))
 
     edge : (u v : V B) → Table
-    edge u v = to-table (entry u v (gr B u v))
+    edge u v = tick "edge" (to-table (entry u v (gr B u v)))
 
     sum : List Semiring.Carrier → Semiring.Carrier
     sum []       = Semiring.ε
@@ -598,15 +603,22 @@ module _ {X Y : Semimodule} (B : Graph X Y) (wd : V B → ℕ)
     through a v []             = edge a v
     through a v ((u , T) ∷ us) = add (wd v) (wd a) (mul (wd v) (wd u) (wd a) (edge u v) T) (through a v us)
 
-    summaries : (a : V B) → List (V B × Table) → List (V B) → List (V B × Table)
-    summaries a acc []       = acc
-    summaries a acc (v ∷ vs) = summaries a (acc ++ (v , through a v acc) ∷ []) vs
+    summaries : ℕ → (a : V B) → List (V B × Table) → List (V B) → List (V B × Table)
+    summaries k a acc []       = acc
+    summaries k a acc (v ∷ vs) =
+      summaries (suc k) a (acc ++ (v , tick ("summary " ++ₛ ℕ-Show.show k) (through a v acc)) ∷ []) vs
 
   hide-in-evaluation-order : List (V B) → (a b : V B) → M.Matrix (wd b) (wd a)
-  hide-in-evaluation-order hid a b = look (through a b (summaries a [] hid))
+  hide-in-evaluation-order hid a b = look (through a b (summaries 0 a [] hid))
     where
     look : Table → M.Matrix (wd b) (wd a)
     look T i j = nth Semiring.ε (toℕ j) (nth [] (toℕ i) T)
+
+module _ {X Y : Semimodule} (B : Graph X Y) (wd : V B → ℕ)
+         (free : ∀ v → vertex-object B v ≡ 𝔽 (wd v)) where
+
+  hide-in-evaluation-order : List (V B) → (a b : V B) → M.Matrix (wd b) (wd a)
+  hide-in-evaluation-order = Instrumented.hide-in-evaluation-order B wd free (λ _ x → x)
 
 private
   distrib-root : ∀ {W N K L : Semimodule} (P : N ⇒ W) (Xm : K ⇒ N) (Ym : L ⇒ N) (Zm : K ⇒ L) →
