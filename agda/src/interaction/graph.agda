@@ -103,16 +103,17 @@ mutual
   _≟s_ {s ∷ []}     = SumP.≡-dec (_≟_ {s}) root-≟
   _≟s_ {s ∷ t ∷ ss} = SumP.≡-dec (SumP.≡-dec (_≟_ {s}) root-≟) (_≟s_ {t ∷ ss})
 
--- The vertices of a shape, each premise's result first, then its interior, then the premises after
--- it. This fixes the order in which they are hidden.
+-- The vertices of a shape in evaluation order: each premise's interior, then its result, then the
+-- premises after it.
 mutual
   vertices : (s : DerivationShape) → List (Vertex s)
   vertices (node ss) = vertices-of ss
 
   vertices-of : (ss : List DerivationShape) → List (Vertices ss)
   vertices-of []           = []
-  vertices-of (s ∷ [])     = inj₂ root ∷ map inj₁ (vertices s)
-  vertices-of (s ∷ t ∷ ss) = map inj₁ (inj₂ root ∷ map inj₁ (vertices s)) ++ map inj₂ (vertices-of (t ∷ ss))
+  vertices-of (s ∷ [])     = map inj₁ (vertices s) ++ (inj₂ root ∷ [])
+  vertices-of (s ∷ t ∷ ss) =
+    map inj₁ (map inj₁ (vertices s) ++ (inj₂ root ∷ [])) ++ map inj₂ (vertices-of (t ∷ ss))
 
 private
   sum-distinct : {A B : Set} {xs : List A} {ys : List B} →
@@ -129,13 +130,14 @@ mutual
 
   distinct-of : (ss : List DerivationShape) → AllPairs _≢_ (vertices-of ss)
   distinct-of []           = []
-  distinct-of (s ∷ [])     =
-    AllP.map⁺ (universal (λ _ ()) (vertices s))
-    ∷ AllPairsP.map⁺ (AllPairs-map (λ h e → h (SumP.inj₁-injective e)) (distinct s))
-  distinct-of (s ∷ t ∷ ss) =
-    sum-distinct (AllP.map⁺ (universal (λ _ ()) (vertices s))
-                  ∷ AllPairsP.map⁺ (AllPairs-map (λ h e → h (SumP.inj₁-injective e)) (distinct s)))
-                 (distinct-of (t ∷ ss))
+  distinct-of (s ∷ [])     = distinct-one s
+  distinct-of (s ∷ t ∷ ss) = sum-distinct (distinct-one s) (distinct-of (t ∷ ss))
+
+  distinct-one : (s : DerivationShape) → AllPairs _≢_ (map inj₁ (vertices s) ++ (inj₂ root ∷ []))
+  distinct-one s =
+    AllPairsP.++⁺ (AllPairsP.map⁺ (AllPairs-map (λ h e → h (SumP.inj₁-injective e)) (distinct s)))
+                  ([] ∷ [])
+                  (AllP.map⁺ (universal (λ _ → (λ ()) ∷ []) (vertices s)))
 
 sum-< : {A B : Set} → (A → A → Set) → (B → B → Set) → A ⊎ B → A ⊎ B → Set
 sum-< R S (inj₁ p) (inj₁ q) = R p q
@@ -451,6 +453,18 @@ module Ordered {V : Set} (vertex-object : V → Semimodule) (_<_ : V → V → S
             (hide-all-perm (fwd-hide a (fwd-hide b fwd)) p x y)
   hide-all-perm fwd (↭.trans p q) x y = ≈-trans (hide-all-perm fwd p x y) (hide-all-perm fwd q x y)
 
+-- The vertices of a shape with each premise's result before its interior: the schedule by which the
+-- agreement proofs hide a premise's graph.
+mutual
+  vertices-result-first : (s : DerivationShape) → List (Vertex s)
+  vertices-result-first (node ss) = vertices-of-result-first ss
+
+  vertices-of-result-first : (ss : List DerivationShape) → List (Vertices ss)
+  vertices-of-result-first []           = []
+  vertices-of-result-first (s ∷ [])     = inj₂ root ∷ map inj₁ (vertices-result-first s)
+  vertices-of-result-first (s ∷ t ∷ ss) =
+    map inj₁ (inj₂ root ∷ map inj₁ (vertices-result-first s)) ++ map inj₂ (vertices-of-result-first (t ∷ ss))
+
 module _ {X Y : Semimodule} (B : Graph X Y) where
   open Graph B
 
@@ -488,7 +502,7 @@ module _ {X Y : Semimodule} (B : Graph X Y) where
   <⁺-inside (inj₂ _) q        = inj₂ ⟪ ≈-refl ⟫
 
   paths⁺ : List Path⁺
-  paths⁺ = inj₂ root ∷ map inj₁ (vertices shape)
+  paths⁺ = inj₂ root ∷ map inj₁ (vertices-result-first shape)
 
   V : Set
   V = Input ⊎ Path⁺
@@ -502,7 +516,7 @@ module _ {X Y : Semimodule} (B : Graph X Y) where
   gr _        (inj₁ _) = εₘ
 
   collapse : X ⇒ Y
-  collapse = hide-all vertex-object gr (map (λ q → inj₂ (inj₁ q)) (vertices shape)) (inj₁ input) (inj₂ (inj₂ root))
+  collapse = hide-all vertex-object gr (map (λ q → inj₂ (inj₁ q)) (vertices-result-first shape)) (inj₁ input) (inj₂ (inj₂ root))
 
   FO : List (Vertex shape)
   FO = filterᵇ fo (vertices shape)
@@ -566,8 +580,8 @@ module _ {X Y : Semimodule} (B : Graph X Y) where
                 ≈ collapse B
   hide-paths⁺ =
     ≈-trans (≡-to-≈ (≡-cong (λ l → hide-all (vertex-object B) (gr B) l (inj₁ input) (inj₂ (inj₂ root)))
-                            (≡-cong (inj₂ (inj₂ root) ∷_) (≡-sym (map-∘ {g = inj₂} {f = inj₁} (vertices (Graph.shape B)))))))
-            (hide-all-cong (vertex-object B) (map (λ q → inj₂ (inj₁ q)) (vertices (Graph.shape B)))
+                            (≡-cong (inj₂ (inj₂ root) ∷_) (≡-sym (map-∘ {g = inj₂} {f = inj₁} (vertices-result-first (Graph.shape B)))))))
+            (hide-all-cong (vertex-object B) (map (λ q → inj₂ (inj₁ q)) (vertices-result-first (Graph.shape B)))
                            (hide-sink (vertex-object B) (gr B) (inj₂ (inj₂ root)) root-row)
                            (inj₁ input) (inj₂ (inj₂ root)))
 
@@ -694,13 +708,13 @@ module HidePremise
     H⁰ = prem (gr B)
 
     G : Relation object'
-    G = hide-all object' (hide object' G₀ (blk (inj₂ root))) (map (λ w → blk (inj₁ w)) (vertices (Graph.shape B)))
+    G = hide-all object' (hide object' G₀ (blk (inj₂ root))) (map (λ w → blk (inj₁ w)) (vertices-result-first (Graph.shape B)))
 
     H : St
-    H = steps (step H⁰ (inj₂ root)) (map inj₁ (vertices (Graph.shape B)))
+    H = steps (step H⁰ (inj₂ root)) (map inj₁ (vertices-result-first (Graph.shape B)))
 
     done : Start G₀ H⁰ → Agrees G H
-    done start = agrees-hide-all (vertices (Graph.shape B)) (agrees-start start)
+    done start = agrees-hide-all (vertices-result-first (Graph.shape B)) (agrees-start start)
 
     κ : H .into (inj₂ root) ≡ prem (hide-all (vertex-object B) (gr B) (map inj₂ (paths⁺ B))) .into (inj₂ root)
     κ = ≡-cong (λ H' → H' .into (inj₂ root)) (folds prem inj₂ (hide (vertex-object B)) prem-step (paths⁺ B) (gr B))
@@ -851,7 +865,7 @@ module Rule₁
 
     plumb : collapse E ≡ hidden.G (inj₁ input) er
     plumb = ≡-cong (λ l → hide-all (vertex-object E) (gr E) l (inj₁ input) er)
-                   (≡-cong (b (inj₂ root) ∷_) (≡-sym (map-∘ {g = b} {f = inj₁} (vertices (Graph.shape B)))))
+                   (≡-cong (b (inj₂ root) ∷_) (≡-sym (map-∘ {g = b} {f = inj₁} (vertices-result-first (Graph.shape B)))))
 
   agree : collapse E ≈ (out-root +ₘ (up-root ∘ (collapse B ∘ inputs)))
   agree =
@@ -879,8 +893,8 @@ module Rule₂
     from-root₁ : Y₁ ⇒ X₂
     from-root₁ = inputs₂ ∘ inb₂ {X} {Y₁}
 
-    ps₁ = vertices (Graph.shape B₁)
-    ps₂ = vertices (Graph.shape B₂)
+    ps₁ = vertices-result-first (Graph.shape B₁)
+    ps₂ = vertices-result-first (Graph.shape B₂)
 
   E : Graph X Y
   E .Graph.shape = node (Graph.shape B₁ ∷ Graph.shape B₂ ∷ [])
@@ -997,7 +1011,7 @@ module Rule₂
     start₂ .S₂.off-start _ p = fixed₁ .IntoHidden.edge (inj₁ p) (inj₂ root)
     start₂ .S₂.sink q = ≈-refl {f = εₘ}
 
-    lst : map (λ q → inj₂ {A = Input} (inj₁ q)) (vertices (Graph.shape E))
+    lst : map (λ q → inj₂ {A = Input} (inj₁ q)) (vertices-result-first (Graph.shape E))
           ≡ (b1 (inj₂ root) ∷ map (λ w → b1 (inj₁ w)) ps₁)
             ++ (b2 (inj₂ root) ∷ map (λ w → b2 (inj₁ w)) ps₂)
     lst =
@@ -1047,9 +1061,9 @@ module Rule₃
     from-root₂ : Y₂ ⇒ X₃
     from-root₂ = inputs₃ ∘ inb₂ {X ⊕ᵥ Y₁} {Y₂}
 
-    ps₁ = vertices (Graph.shape B₁)
-    ps₂ = vertices (Graph.shape B₂)
-    ps₃ = vertices (Graph.shape B₃)
+    ps₁ = vertices-result-first (Graph.shape B₁)
+    ps₂ = vertices-result-first (Graph.shape B₂)
+    ps₃ = vertices-result-first (Graph.shape B₃)
 
     e₁₃ : (p : Path⁺ B₁) (q : Path⁺ B₃) → object⁺ B₁ p ⇒ object⁺ B₃ q
     e₁₃ (inj₁ _) q = εₘ
@@ -1281,7 +1295,7 @@ module Rule₃
     l₂ = b2 (inj₂ root) ∷ map (λ w → b2 (inj₁ w)) ps₂
     l₃ = b3 (inj₂ root) ∷ map (λ w → b3 (inj₁ w)) ps₃
 
-    lst : map (λ q → inj₂ {A = Input} (inj₁ q)) (vertices (Graph.shape E)) ≡ l₁ ++ (l₂ ++ l₃)
+    lst : map (λ q → inj₂ {A = Input} (inj₁ q)) (vertices-result-first (Graph.shape E)) ≡ l₁ ++ (l₂ ++ l₃)
     lst =
       ≡-trans (map-++ (λ q → inj₂ (inj₁ q)) (map inj₁ (paths⁺ B₁))
                       (map inj₂ (map inj₁ (paths⁺ B₂) ++ map inj₂ (paths⁺ B₃))))

@@ -5,7 +5,7 @@ module example.render.dep-graph where
 
 open import IO
 open import IO.Finite using (writeFile; putStrLn)
-open import Data.List using (List; []; _∷_; map; concat; foldl; foldr; upTo; reverse; filterᵇ)
+open import Data.List using (List; []; _∷_; map; concat; foldl; foldr; upTo; filterᵇ)
   renaming (_++_ to _++L_)
 open import Data.List.Relation.Unary.All using ([]; _∷_)
 open import Data.Bool using (Bool; true; false; not; if_then_else_)
@@ -96,7 +96,7 @@ private
 
 -- The visible graph of a configuration: the environment, the visible intermediates, and the root,
 -- with each edge the reduced relation between two of them after hiding the rest, computed by one
--- dependency-order sweep over the raw graph.
+-- traversal of the raw graph in evaluation order.
 module render-eval {Γ τ} (γ : Env Γ) (t : Γ ⊢ τ) where
 
   open Evaluated γ t public
@@ -145,7 +145,7 @@ module render-eval {Γ τ} (γ : Env Γ) (t : Γ ⊢ τ) where
     stepc acc v = acc ++L ((v , pushc v acc (exr a v)) ∷ [])
 
     accs : List (V dependence × LL)
-    accs = foldl stepc [] (reverse hid)
+    accs = foldl stepc [] hid
 
   dot-at : Config dependence → String
   dot-at K = "digraph G {\n  rankdir=LR;\n" ++ cat (map node-line nvs) ++ edge-lines (rows nvs) ++ "}\n"
