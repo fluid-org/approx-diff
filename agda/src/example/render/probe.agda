@@ -1,13 +1,14 @@
 {-# OPTIONS --prop --postfix-projections --guardedness #-}
 
--- Cost probe for hide-in-evaluation-order: scale numbers for one example, then the traced
--- computation with tick marks on stderr. Run from approx-diff repository root.
+-- Cost probes for hide-in-evaluation-order, reporting through the trace postulate on stderr so a
+-- killed run loses nothing. Scale survey across examples, then scaling curve on merge prefixes.
+-- Run from approx-diff repository root.
 module example.render.probe where
 
 open import IO
 open import IO.Finite using (putStrLn)
-open import Data.List using (List; []; _∷_; map; length; concat)
-open import Data.Nat using (ℕ; _+_; _*_)
+open import Data.List using (List; []; _∷_; map; length; concat; take)
+open import Data.Nat using (ℕ; zero; suc; _+_; _*_; _⊔_)
 import Data.Nat.Show as ℕ-Show
 open import Data.String using (String; _++_)
 open import Data.Sum using (inj₁; inj₂)
@@ -21,7 +22,7 @@ open import signature.example.interpretation (nonzero three.semiring) three.semi
 open import interaction.graph three.semiring (λ x → three.∨-idem {x})
 open import interaction.evaluated Sig three.semiring interpretation three.C (λ x → three.∨-idem {x})
 open import example.runs (nonzero three.semiring) three.semiring three.C
-  using (Run; merge-run; env; term)
+  using (Run; query-run; map-run; filter-run; merge-run; env; term)
 
 {-# FOREIGN GHC import qualified Debug.Trace #-}
 {-# FOREIGN GHC import qualified Data.Text #-}
@@ -30,6 +31,9 @@ postulate trace : {A : Set} → String → A → A
 
 private
   module M3 = matrix.Mat three.semiring
+
+  show : ℕ → String
+  show = ℕ-Show.show
 
   show3 : Three → String
   show3 O = "O"
@@ -47,25 +51,55 @@ private
   sum []       = 0
   sum (n ∷ ns) = n + sum ns
 
-  -- Basis reads over ordered pairs: each pair (u, v) with u before v costs wd u * wd v.
-  volume : List ℕ → ℕ
-  volume []       = 0
-  volume (w ∷ ws) = w * sum ws + volume ws
+  max : List ℕ → ℕ
+  max []       = 0
+  max (n ∷ ns) = n ⊔ max ns
 
-  module pm where
-    open Evaluated (env merge-run) (term merge-run) public
+  count : (ℕ → ℕ) → List ℕ → ℕ
+  count f ns = sum (map f ns)
+
+  is0 is1 is2 big : ℕ → ℕ
+  is0 zero = 1
+  is0 _    = 0
+  is1 (suc zero) = 1
+  is1 _          = 0
+  is2 (suc (suc zero)) = 1
+  is2 _                = 0
+  big (suc (suc (suc _))) = 1
+  big _                   = 0
+
+  module scale (name : String) (r : Run) where
+    open Evaluated (env r) (term r)
 
     hid : List (V dependence)
     hid = map (λ v → inj₂ (inj₁ v)) (vertices (Graph.shape dependence))
 
-main : Main
-main = run (putStrLn ("vertices: " ++ ℕ-Show.show (length pm.hid)) >>
-            putStrLn ("total width: " ++ ℕ-Show.show (sum ws)) >>
-            putStrLn ("pair read volume: " ++ ℕ-Show.show (volume ws)) >>
-            putStrLn ("result: " ++ show3 (join R)))
-  where
-  ws : List ℕ
-  ws = map pm.widths pm.hid
+    ws : List ℕ
+    ws = map widths hid
 
-  R = Instrumented.hide-in-evaluation-order pm.dependence pm.widths pm.free trace
-        pm.hid (inj₁ input) (inj₂ (inj₂ root))
+    line : String
+    line = name ++ ": " ++ show (length hid) ++ " vertices, width sum " ++ show (sum ws)
+           ++ ", max " ++ show (max ws)
+           ++ ", widths 0/1/2/3+: " ++ show (count is0 ws) ++ "/" ++ show (count is1 ws)
+           ++ "/" ++ show (count is2 ws) ++ "/" ++ show (count big ws)
+
+  module bench where
+    open Evaluated (env merge-run) (term merge-run)
+
+    hid : List (V dependence)
+    hid = map (λ v → inj₂ (inj₁ v)) (vertices (Graph.shape dependence))
+
+    at : ℕ → String
+    at k = show3 (join (hide-in-evaluation-order dependence widths free (take k hid)
+                          (inj₁ input) (inj₂ (inj₂ root))))
+
+  survey : String
+  survey = scale.line "query" query-run ++ "\n" ++ scale.line "map" map-run ++ "\n"
+           ++ scale.line "filter" filter-run ++ "\n" ++ scale.line "merge" merge-run
+
+  curve : List ℕ → ℕ
+  curve []       = 0
+  curve (k ∷ ks) = trace ("k=" ++ show k ++ " -> " ++ bench.at k) (curve ks)
+
+main : Main
+main = run (putStrLn (trace survey (show (curve (100 ∷ 200 ∷ 400 ∷ 800 ∷ [])))))
