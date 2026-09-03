@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# Compile the example.render.latex program and run it; the binary writes
-# test-baselines/matrices.tex via Agda IO.
+# Compile the example.render.latex program and run it; the binary writes one file per table
+# under test-baselines/matrices via Agda IO.
 
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-mkdir -p test-baselines
+mkdir -p test-baselines/matrices
 
 run=${AGDA_WATCH_DIR:-$HOME/.claude/run}
 mkdir -p "$run"
@@ -25,7 +25,7 @@ trap 'rm -f "$pidfile"' EXIT
 status=0
 GHCRTS="${DUMP_GHCRTS:--M1G -s}" agda/_build/latex || status=$?
 if [ "$status" -ne 0 ]; then
-  git checkout -- test-baselines/matrices.tex
+  git checkout -- test-baselines/matrices
   # Agda regenerates Haskell only for modules whose interfaces changed, and the result can be
   # inconsistent with the older object code; the binary then aborts with a GHC internal error.
   if [ "$status" -eq 134 ]; then
@@ -35,4 +35,4 @@ if [ "$status" -ne 0 ]; then
   exit "$status"
 fi
 
-echo "wrote test-baselines/matrices.tex"
+echo "wrote test-baselines/matrices/"
