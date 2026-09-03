@@ -131,31 +131,32 @@ module render-eval {Γ τ} (γ : Env Γ) (t : Γ ⊢ τ) where
   reduced : V dependence → V dependence → List (V dependence) → LL
   reduced a b hid = pushc b accs (exr a b)
     where
-    ord : List (V dependence)
-    ord = reverse hid
     exr : V dependence → V dependence → LL
     exr u v = ll-of (entry u v (gr dependence u v))
+
     pushc : V dependence → List (V dependence × LL) → LL → LL
     pushc v acc seed =
       foldr (λ ua m → mat-add (widths v) (widths a)
                         (mat-mul (widths v) (widths (proj₁ ua)) (widths a) (exr (proj₁ ua) v) (proj₂ ua))
                         m)
             seed acc
+
     stepc : List (V dependence × LL) → V dependence → List (V dependence × LL)
     stepc acc v = acc ++L ((v , pushc v acc (exr a v)) ∷ [])
+
     accs : List (V dependence × LL)
-    accs = foldl stepc [] ord
+    accs = foldl stepc [] (reverse hid)
 
   dot-at : Config dependence → String
-  dot-at K = "digraph G {\n  rankdir=LR;\n" ++ cat (map node-line nvs) ++ edge-lines es ++ "}\n"
+  dot-at K = "digraph G {\n  rankdir=LR;\n" ++ cat (map node-line nvs) ++ edge-lines (rows nvs) ++ "}\n"
     where
-    bnd : List (V dependence)
-    bnd = (inj₁ input ∷ []) ++L map (λ p → inj₂ (inj₁ p)) (K .visible) ++L (inj₂ (inj₂ root) ∷ [])
     nvs : List (ℕ × V dependence)
-    nvs = enumerate 0 bnd
+    nvs = enumerate 0 ((inj₁ input ∷ []) ++L map (λ p → inj₂ (inj₁ p)) (K .visible) ++L (inj₂ (inj₂ root) ∷ []))
+
     hid : List (V dependence)
     hid = map (λ p → inj₂ (inj₁ p))
               (filterᵇ (λ q → not ⌊ q ∈? K .visible ⌋) (vertices (Graph.shape dependence)))
+
     rows : List (ℕ × V dependence) → List Edge
     rows []             = []
     rows ((i , x) ∷ is) = cols nvs ++L rows is
@@ -163,8 +164,6 @@ module render-eval {Γ τ} (γ : Env Γ) (t : Γ ⊢ τ) where
       cols : List (ℕ × V dependence) → List Edge
       cols []             = []
       cols ((j , y) ∷ js) = keep i j (reduced x y hid) ++L cols js
-    es : List Edge
-    es = rows nvs
 
   full : Config dependence
   full = foldl (λ K p → reveal-at p K) initial (FO dependence)
