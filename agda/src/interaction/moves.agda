@@ -14,9 +14,10 @@ open import Data.List.Relation.Binary.Pointwise using ([]; _∷_)
 open import Data.List.Relation.Binary.Subset.Propositional using (_⊆_)
 open import Data.List.Membership.Propositional.Properties
   using (∈-++⁺ˡ; ∈-++⁺ʳ; ∈-concat⁻; ∈-concat⁺′; ∈-map⁺; ∈-filter⁻)
-open import Data.List.Relation.Unary.All using (All; []; _∷_; universal)
+open import Data.List.Relation.Unary.All as All using (All; []; _∷_; universal)
   renaming (map to All-map; tabulate to All-tabulate; lookup to All-lookup)
-open import Data.List.Relation.Unary.AllPairs using (AllPairs; []; _∷_) renaming (map to AllPairs-map)
+open import Data.List.Relation.Unary.AllPairs as AllPairs using (AllPairs; []; _∷_)
+  renaming (map to AllPairs-map)
 open import Data.List.Relation.Unary.Any using (Any; any?; here; there; tail) renaming (map to Any-map)
 open import Data.Nat using (ℕ; _≤_; z≤n; s≤s)
 open import Data.Nat.ListAction using (sum)
@@ -316,8 +317,8 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
     tp = L.partition (adjacent-in? G w) rs
     apart-w : All (Apart G (w ∷ concat (proj₁ tp))) (proj₂ tp)
     apart-w =
-      All-zip (λ {C'} hf hc → AllP.¬Any⇒All¬ C' hf ∷ AllP.concat⁺ hc)
-              (part₂-¬ (adjacent-in? G w) rs) (proj₂ (proj₂ pa))
+      All.zipWith (λ {C'} (hf , hc) → AllP.¬Any⇒All¬ C' hf ∷ AllP.concat⁺ hc)
+                  (part₂-¬ (adjacent-in? G w) rs , proj₂ (proj₂ pa))
 
   regions-separated : (G : Relation (vertex-object 𝒢)) (ws : List (Path)) → AllPairs (Apart G) (regions G ws)
   regions-separated G []       = []
@@ -441,8 +442,7 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
     R-E = restrict (fo-graph 𝒢) E
     inert' = AllP.map⁺ (AllP.concat⁺ (All-map
               (λ {C'} (ap , ds) →
-                All-zip (λ {q} ha hm → summary-zero {C = C} q hm ha)
-                        ap ds)
+                All.zipWith (λ {q} (ha , hm) → summary-zero {C = C} q hm ha) (ap , ds))
               shead))
 
   blocks-⊆ : (Css : List (List (Path))) → All (_⊆ concat Css) Css
@@ -596,7 +596,7 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
 
       seps : AllPairs (λ C C' → Apart G C' C × Distinct C C') Cs
       seps = AllPairs-map (λ {C} {C'} (ap , d) → (apart-sym G {C} {C'} ap , d))
-                          (AllPairs-zip (separated S) (summarised-distinct K S))
+                          (AllPairs.zip (separated S , summarised-distinct K S))
 
       restrict-O : restrict G (hidden-set K) x y ≈ εₘ
       restrict-O = when-O (x ∈ᵥ? hidden-set K ⊎-dec y ∈ᵥ? hidden-set K) (G x y)
