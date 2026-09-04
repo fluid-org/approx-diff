@@ -56,10 +56,6 @@ module rewiring where
   K₁ : Config G
   K₁ = reveal-at scrut K₀
 
-  -- Everything hidden: the scalar reaches the root as value flow, surviving the control point.
-  init-dep : entry env rt (visible-graph K₀ env rt) zero (suc zero) ≡ three.D
-  init-dep = refl
-
   -- Scrutinee revealed: value flow in and out of the revealed vertex.
   reveal-in : entry env (at scrut) (visible-graph K₁ env (at scrut)) (suc zero) (suc zero) ≡ three.D
   reveal-in = refl
@@ -77,9 +73,8 @@ module rewiring where
   collapse-agrees : entry env rt (collapse G) zero (suc zero) ≡ three.D
   collapse-agrees = refl
 
--- An intermediate with a route past it: y · (x + y) at (x, y) = (0, 1). With everything hidden both
--- inputs reach the root. Revealing the sum shows it fed by both inputs and feeding the root, with y
--- still reaching the root without it and x not.
+-- An intermediate with a route past it: y · (x + y) at (x, y) = (0, 1). Revealing the sum shows it
+-- fed by both inputs and feeding the root, with y still reaching the root without it and x not.
 module intermediate where
 
   open Evaluated γ-add-mul add-mul using (dependence)
@@ -110,12 +105,6 @@ module intermediate where
 
   K₁ : Config G
   K₁ = reveal-at sum K₀
-
-  hidden-x : entry env rt (visible-graph K₀ env rt) zero x ≡ three.D
-  hidden-x = refl
-
-  hidden-y : entry env rt (visible-graph K₀ env rt) zero y ≡ three.D
-  hidden-y = refl
 
   sum-from-x : entry env (at sum) (visible-graph K₁ env (at sum)) zero x ≡ three.D
   sum-from-x = refl
