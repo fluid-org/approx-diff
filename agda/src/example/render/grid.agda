@@ -13,8 +13,8 @@ import three
 open three using (Three; O; C; D; _⊓_; _⊔_)
 
 -- A label, the number of positions it covers, and the offset where they start.
-Tok : Set
-Tok = String × ℕ × ℕ
+Label : Set
+Label = String × ℕ × ℕ
 
 Sel : Set
 Sel = ℕ → Three
@@ -43,20 +43,20 @@ private
   span f o zero    = O
   span f o (suc k) = f o ⊔ span f (suc o) k
 
-  width-of : List Tok → ℕ
+  width-of : List Label → ℕ
   width-of []                 = 0
   width-of ((_ , n , _) ∷ ts) = n + width-of ts
 
-  sel-of : Sel → Tok → Three
+  sel-of : Sel → Label → Three
   sel-of s (_ , n , o) = span s o n
 
-  block : Mat → Tok → Tok → Three
+  block : Mat → Label → Label → Three
   block M (_ , qn , qo) (_ , pn , po) = span (λ q → span (entry M q) po pn) qo qn
 
-  reach-in : Mat → ℕ → Sel → Tok → Three
+  reach-in : Mat → ℕ → Sel → Label → Three
   reach-in M h osel (_ , pn , po) = span (λ p → span (λ q → osel q ⊓ entry M q p) 0 h) po pn
 
-  reach-out : Mat → ℕ → Sel → Tok → Three
+  reach-out : Mat → ℕ → Sel → Label → Three
   reach-out M w isel (_ , qn , qo) = span (λ q → span (λ p → isel p ⊓ entry M q p) 0 w) qo qn
 
   mark : Three → String
@@ -87,37 +87,37 @@ private
   amp (x ∷ [])     = x
   amp (x ∷ y ∷ xs) = x ++ " & " ++ amp (y ∷ xs)
 
-  cell : Mat → Sel → Sel → Tok → Tok → String
+  cell : Mat → Sel → Sel → Label → Label → String
   cell M isel osel t u =
     band (sel-of osel t ⊔ sel-of isel u) ++ "\\gcell{$" ++ mark (block M t u) ++ "$}"
 
-  row-of : Mat → ℕ → List Tok → Sel → Sel → Tok → String
-  row-of M w itoks isel osel t =
-    amp (map (cell M isel osel t) itoks) ++ " & "
+  row-of : Mat → ℕ → List Label → Sel → Sel → Label → String
+  row-of M w ilabels isel osel t =
+    amp (map (cell M isel osel t) ilabels) ++ " & "
     ++ label-cell (sel-of osel t) (reach-out M w isel t) (proj₁ t) ++ " \\\\\n"
 
 -- The positions of the token at the given index, selected at full weight.
-sel-tok : List Tok → ℕ → Sel
-sel-tok []                 _       _ = O
-sel-tok ((_ , n , o) ∷ _)  zero    p = span (λ i → if-eq i p) o n
+sel-label : List Label → ℕ → Sel
+sel-label []                 _       _ = O
+sel-label ((_ , n , o) ∷ _)  zero    p = span (λ i → if-eq i p) o n
   where
   if-eq : ℕ → ℕ → Three
   if-eq zero    zero    = D
   if-eq (suc i) (suc j) = if-eq i j
   if-eq _       _       = O
-sel-tok (_ ∷ ts)           (suc k) p = sel-tok ts k p
+sel-label (_ ∷ ts)           (suc k) p = sel-label ts k p
 
-grid : String → List Tok → List Tok → Mat → Sel → Sel → String
-grid name itoks otoks M isel osel =
+grid : String → List Label → List Label → Mat → Sel → Sel → String
+grid name ilabels olabels M isel osel =
   "\\run{" ++ name ++ "}\n{\\scriptsize\\setlength{\\tabcolsep}{1.5pt}%\n\\begin{tabular}{"
-  ++ crep (count itoks) ++ "|l}\n"
-  ++ amp (map (λ t → label-cell (sel-of isel t) (reach-in M h osel t) (proj₁ t)) itoks)
+  ++ crep (count ilabels) ++ "|l}\n"
+  ++ amp (map (λ t → label-cell (sel-of isel t) (reach-in M h osel t) (proj₁ t)) ilabels)
   ++ " & \\\\ \\hline\n"
-  ++ cat (map (row-of M w itoks isel osel) otoks)
+  ++ cat (map (row-of M w ilabels isel osel) olabels)
   ++ "\\end{tabular}}\n"
   where
-  w = width-of itoks
-  h = width-of otoks
-  count : List Tok → ℕ
+  w = width-of ilabels
+  h = width-of olabels
+  count : List Label → ℕ
   count []       = 0
   count (_ ∷ ts) = suc (count ts)

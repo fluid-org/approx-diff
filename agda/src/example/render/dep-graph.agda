@@ -36,7 +36,8 @@ open import interaction.evaluated Sig three.semiring interpretation three.C (λ 
 open import interaction.moves three.semiring (λ x → three.∨-idem {x}) three.≡-of-≈ three.ε?
 open import example.runs (nonzero three.semiring) three.semiring three.C
   using (Run; map-run; filter-run; env; term)
-open import example.render.tokens using (show-val; show-env)
+open import example.render.value-labels (nonzero three.semiring) three.semiring three.C
+  using (show-val; show-env)
 
 private
   module M3 = matrix.Mat three.semiring

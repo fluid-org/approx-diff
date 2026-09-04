@@ -25,8 +25,9 @@ open import example.runs (nonzero three.semiring) three.semiring three.C
   using (Run; query-run; const-run; length-run; fold0-run; case0-run; tag-run; case-l-run;
          case-r-run; test-run; map-run; adjacent-sums-run; filter-run; cond-run; eq-run;
          mult-run; mavg-run; total-run; sum-mul-run; rose-run; score-run; env; term; model-output)
-open import example.render.grid using (Tok; Mat; Sel; none; sel-tok; grid)
-open import example.render.tokens using (val-toks; env-toks)
+open import example.render.grid using (Label; Mat; Sel; none; sel-label; grid)
+open import example.render.value-labels (nonzero three.semiring) three.semiring three.C
+  using (val-labels; env-labels)
 
 private
   module M3 = matrix.Mat three.semiring
@@ -34,9 +35,9 @@ private
   rows : ∀ {m n} → M3.Matrix m n → Mat
   rows M = toList (tabulate (λ q → toList (tabulate (M q))))
 
-  in-toks out-toks : Run → List Tok
-  in-toks  r = env-toks (env r)
-  out-toks r = val-toks 0 (model-output r)
+  in-labels out-labels : Run → List Label
+  in-labels  r = env-labels (env r)
+  out-labels r = val-labels 0 (model-output r)
 
   -- The dependence matrix of a run's degenerate configuration: every intermediate hidden, in
   -- evaluation order, with the control column of the environment vertex dropped.
@@ -53,7 +54,7 @@ private
 
   -- Which outputs are related through some shared input.
   related : String → Run → String
-  related name r = grid name (out-toks r) (out-toks r) (go (hide-in-evaluation-order dependence widths free
+  related name r = grid name (out-labels r) (out-labels r) (go (hide-in-evaluation-order dependence widths free
                      (map (λ v → inj₂ (inj₁ v)) (vertices (Graph.shape dependence)))
                      (inj₁ input) (inj₂ (inj₂ root)))) none none
     where
@@ -66,16 +67,16 @@ private
       drop q p = R q (suc p)
 
   run-grid : String → Run → Sel → Sel → String
-  run-grid name r isel osel = grid name (in-toks r) (out-toks r) (op-rows r) isel osel
+  run-grid name r isel osel = grid name (in-labels r) (out-labels r) (op-rows r) isel osel
 
   plain : String → Run → String
   plain name r = run-grid name r none none
 
   fwd : String → Run → ℕ → String
-  fwd name r i = run-grid name r (sel-tok (in-toks r) i) none
+  fwd name r i = run-grid name r (sel-label (in-labels r) i) none
 
   bwd : String → Run → ℕ → String
-  bwd name r i = run-grid name r none (sel-tok (out-toks r) i)
+  bwd name r i = run-grid name r none (sel-label (out-labels r) i)
 
 tables : List (String × String)
 tables =
