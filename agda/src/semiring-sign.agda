@@ -8,7 +8,10 @@ module semiring-sign where
 
 open import Level using (0ℓ)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; trans; cong₂)
-open import prop using (LiftS; liftS)
+open import Relation.Nullary.Decidable using (Dec; yes; no)
+open import Data.Empty using () renaming (⊥ to ⊥ₛ)
+open import prop.set-elim using (⊥-elim)
+open import prop using (LiftS; liftS) renaming (⊥ to ⊥ₚ)
 open import prop-setoid using (Setoid; IsEquivalence)
 open import commutative-monoid using (CommutativeMonoid)
 open import commutative-semiring using (CommutativeSemiring)
@@ -190,3 +193,43 @@ semiring .CommutativeSemiring.additive = additive
 semiring .CommutativeSemiring.multiplicative = multiplicative
 semiring .CommutativeSemiring.·-+-distribₗ {x} {y} {z} = liftS (distribˢ x y z)
 semiring .CommutativeSemiring.ε-annihilₗ = liftS refl
+
+private
+  module S = CommutativeSemiring semiring
+
+  -- A non-empty Prop cannot be eliminated into Set, so refutation routes through Prop ⊥.
+  refute : {A : Set} → (A → ⊥ₛ) → LiftS 0ℓ A → ⊥ₚ {0ℓ}
+  refute ¬x (liftS x) = ⊥-elim (¬x x)
+
+  ⊥-elimₛ : ∀ {a} {A : Set a} → ⊥ₚ {0ℓ} → A
+  ⊥-elimₛ ()
+
++ˢ-idem : ∀ x → (x S.+ x) S.≈ x
++ˢ-idem pos = liftS refl
++ˢ-idem zer = liftS refl
++ˢ-idem neg = liftS refl
++ˢ-idem unk = liftS refl
+
+≡-of-≈ : ∀ {x y : Sign} → x S.≈ y → x ≡ y
+≡-of-≈ {pos} {pos} _ = refl
+≡-of-≈ {zer} {zer} _ = refl
+≡-of-≈ {neg} {neg} _ = refl
+≡-of-≈ {unk} {unk} _ = refl
+≡-of-≈ {pos} {zer} e = ⊥-elimₛ (refute (λ ()) e)
+≡-of-≈ {pos} {neg} e = ⊥-elimₛ (refute (λ ()) e)
+≡-of-≈ {pos} {unk} e = ⊥-elimₛ (refute (λ ()) e)
+≡-of-≈ {zer} {pos} e = ⊥-elimₛ (refute (λ ()) e)
+≡-of-≈ {zer} {neg} e = ⊥-elimₛ (refute (λ ()) e)
+≡-of-≈ {zer} {unk} e = ⊥-elimₛ (refute (λ ()) e)
+≡-of-≈ {neg} {pos} e = ⊥-elimₛ (refute (λ ()) e)
+≡-of-≈ {neg} {zer} e = ⊥-elimₛ (refute (λ ()) e)
+≡-of-≈ {neg} {unk} e = ⊥-elimₛ (refute (λ ()) e)
+≡-of-≈ {unk} {pos} e = ⊥-elimₛ (refute (λ ()) e)
+≡-of-≈ {unk} {zer} e = ⊥-elimₛ (refute (λ ()) e)
+≡-of-≈ {unk} {neg} e = ⊥-elimₛ (refute (λ ()) e)
+
+ε? : (x : Sign) → Dec (x ≡ zer)
+ε? pos = no (λ ())
+ε? zer = yes refl
+ε? neg = no (λ ())
+ε? unk = no (λ ())
