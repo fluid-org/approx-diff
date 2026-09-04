@@ -96,9 +96,9 @@ private
 
     -- One table per nonzero visible-graph edge between the environment, the revealed vertices
     -- and the root.
-    staged : List (Vertex (Graph.shape dependence)) → (V dependence → String) → String →
+    tables : List (Vertex (Graph.shape dependence)) → (V dependence → String) → String →
              List (String × String)
-    staged ps nm name = concat (map (λ u → concat (map (edge u) endpoints)) endpoints)
+    tables ps nm name = concat (map (λ u → concat (map (edge u) endpoints)) endpoints)
       where
       K : Config dependence
       K = foldr reveal-at initial ps
@@ -157,8 +157,8 @@ private
     fragment = signed-table "score (signed)" (axes.env-labels (runs.env runs.score-run))
               (axes.val-labels 0 value) score-rows
 
-tables : List (String × String)
-tables =
+all-tables : List (String × String)
+all-tables =
   ("query"         , render.plain query-run         "query")      ∷
   ("const"         , render.plain const-run         "const")      ∷
   ("length"        , render.plain length-run        "length")     ∷
@@ -185,10 +185,10 @@ tables =
   ("adjacent-sums-related" , render.related-outputs adjacent-sums-run "adjacent-sums (related outputs)") ∷
   ("intermediate"          , render.plain intermediate-run "intermediate") ∷
   ("score-signed"          , signed.fragment) ∷ []
-  ++ₗ render.staged intermediate-run (sum-vertex ∷ []) vertex-name "intermediate"
+  ++ₗ render.tables intermediate-run (sum-vertex ∷ []) vertex-name "intermediate"
   -- merge and merge-forward disabled: hide-in-evaluation-order diverges on merge's graph (#48
   -- closure width growth); restore once that subtask lands.
 
 main : Main
 main = run (foldr (λ t io → writeFile ("test-baselines/matrices/" ++ proj₁ t ++ ".tex") (proj₂ t) >> io)
-                  (pure tt) tables)
+                  (pure tt) all-tables)
