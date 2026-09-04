@@ -1,7 +1,5 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
--- Interaction tests over the three-chain: what a Boolean run reports as reached, the three-chain
--- run separates into value flow and control.
 module example.interaction where
 
 open import Data.Fin using (Fin; zero; suc)
