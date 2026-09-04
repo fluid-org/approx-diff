@@ -5,7 +5,6 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-script/gen-relations.sh >/dev/null
 script/gen-dot.sh >/dev/null
 script/gen-latex.sh >/dev/null
 
