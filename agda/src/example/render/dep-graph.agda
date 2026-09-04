@@ -134,7 +134,7 @@ module render-eval {Γ τ} (γ : Env Γ) (t : Γ ⊢ τ) where
       cols ((j , y) ∷ js) = keep i j (visible-edge x y hid) ++L cols js
 
   full : Config dependence
-  full = foldl (λ K p → reveal-at p K) initial (FO dependence)
+  full = foldl (λ K p → reveal-at summary p K) initial (FO dependence)
 
   dot : String
   dot = dot-at full
@@ -158,7 +158,7 @@ private
   sum-vertex = inj₁ (inj₁ (inj₂ root))
 
   int-dot : String
-  int-dot = int-fig.dot-at (int-fig.reveal-at sum-vertex int-fig.initial)
+  int-dot = int-fig.dot-at (int-fig.reveal-at int-fig.summary sum-vertex int-fig.initial)
 
 main : Main
 main = run (writeFile "dot/intermediate-three.dot" int-dot >>
