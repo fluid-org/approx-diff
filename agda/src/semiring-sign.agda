@@ -9,9 +9,7 @@ module semiring-sign where
 open import Level using (0ℓ)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; trans; cong₂)
 open import Relation.Nullary.Decidable using (Dec; yes; no)
-open import Data.Empty using () renaming (⊥ to ⊥ₛ)
-open import prop.set-elim using (⊥-elim)
-open import prop using (LiftS; liftS) renaming (⊥ to ⊥ₚ)
+open import prop using (LiftS; liftS; refute; ⊥-elimₛ)
 open import prop-setoid using (Setoid; IsEquivalence)
 open import commutative-monoid using (CommutativeMonoid)
 open import commutative-semiring using (CommutativeSemiring)
@@ -196,13 +194,6 @@ semiring .CommutativeSemiring.ε-annihilₗ = liftS refl
 
 private
   module S = CommutativeSemiring semiring
-
-  -- A non-empty Prop cannot be eliminated into Set, so refutation routes through Prop ⊥.
-  refute : {A : Set} → (A → ⊥ₛ) → LiftS 0ℓ A → ⊥ₚ {0ℓ}
-  refute ¬x (liftS x) = ⊥-elim (¬x x)
-
-  ⊥-elimₛ : ∀ {a} {A : Set a} → ⊥ₚ {0ℓ} → A
-  ⊥-elimₛ ()
 
 +ˢ-idem : ∀ x → (x S.+ x) S.≈ x
 +ˢ-idem pos = liftS refl

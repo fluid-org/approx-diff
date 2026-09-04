@@ -3,6 +3,7 @@
 module prop where
 
 open import Level
+open import Data.Empty using () renaming (⊥ to ⊥ₛ)
 open import Data.Sum using (_⊎_; inj₁; inj₂)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl)
 
@@ -15,6 +16,9 @@ data ⊥ {ℓ} : Prop ℓ where
 ⊥-elim : ∀ {ℓ ℓ'} {A : Prop ℓ'} → ⊥ {ℓ} → A
 ⊥-elim ()
 
+⊥-elimₛ : ∀ {ℓ a} {A : Set a} → ⊥ {ℓ} → A
+⊥-elimₛ ()
+
 record ⊤ {ℓ} : Prop ℓ where
   constructor tt
 
@@ -26,6 +30,10 @@ open LiftP public
 
 data LiftS {a} ℓ (A : Set a) : Prop (a ⊔ ℓ) where
   liftS : A → LiftS ℓ A
+
+refute : ∀ {a ℓ ℓ'} {A : Set a} → (A → ⊥ₛ) → LiftS ℓ A → ⊥ {ℓ'}
+refute ¬x (liftS x) with ¬x x
+... | ()
 
 record _∧_ {a b} (P : Prop a) (Q : Prop b) : Prop (a ⊔ b) where
   constructor _,_
