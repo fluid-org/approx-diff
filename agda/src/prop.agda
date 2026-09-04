@@ -31,7 +31,7 @@ open LiftP public
 data LiftS {a} ℓ (A : Set a) : Prop (a ⊔ ℓ) where
   liftS : A → LiftS ℓ A
 
-refute : ∀ {a ℓ ℓ'} {A : Set a} → (A → ⊥ₛ) → LiftS ℓ A → ⊥ {ℓ'}
+refute : ∀ {a ℓ} {A : Set a} → (A → ⊥ₛ) → LiftS ℓ A → ⊥ {0ℓ}
 refute ¬x (liftS x) with ¬x x
 ... | ()
 
