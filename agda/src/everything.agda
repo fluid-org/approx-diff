@@ -29,6 +29,5 @@ import interaction.labelling
 import interaction.moves
 
 -- Tests.
-import example.interaction
 import example.render.latex
 import example.render.dep-graph

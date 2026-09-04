@@ -37,7 +37,7 @@ open import interaction.moves three.semiring (λ x → three.∨-idem {x}) three
 open import example.runs (nonzero three.semiring) three.semiring three.C
   using (Run; query-run; const-run; length-run; fold0-run; case0-run; tag-run; case-l-run;
          case-r-run; test-run; map-run; adjacent-sums-run; filter-run; cond-run; eq-run;
-         mult-run; add-mul-run; mavg-run; total-run; sum-mul-run; rose-run; score-run; env; term)
+         mult-run; add-mul-run; case-inl-run; mavg-run; total-run; sum-mul-run; rose-run; score-run; env; term)
 open import example.render.table using (Label; Mat; SignedMat; none; sel-label; table; signed-table)
 open import example.render.value-labels (nonzero three.semiring) three.semiring three.C
   using (val-labels; env-labels; vals-labels)
@@ -79,9 +79,14 @@ private
       vertex-labels (inj₂ (inj₁ p)) = node-labels 0 (proj₁ (labels .at p))
       vertex-labels (inj₂ (inj₂ _)) = o-labels
 
-      edge-rows : (u v : V dependence) → M3.Matrix (wd v) (wd u) → Mat
-      edge-rows (inj₁ input) _ M = rows (drop-ctrl M)
-      edge-rows (inj₂ _)     _ M = rows M
+      -- Width of a vertex as presented: the environment loses its control column.
+      pwd : V dependence → ℕ
+      pwd (inj₁ _) = Nat.pred (wd (inj₁ input))
+      pwd (inj₂ v) = wd (inj₂ v)
+
+      presented : (u v : V dependence) → M3.Matrix (wd v) (wd u) → M3.Matrix (wd v) (pwd u)
+      presented (inj₁ input) _ M = drop-ctrl M
+      presented (inj₂ _)     _ M = M
 
     plain : String → String
     plain name = table name i-labels o-labels (rows (drop-ctrl R)) none none
@@ -105,25 +110,35 @@ private
       endpoints : List (V dependence)
       endpoints = inj₁ input ∷ (map (λ p → inj₂ (inj₁ p)) (K .visible) ++ₗ (inj₂ (inj₂ root) ∷ []))
       edge : V dependence → V dependence → List (String × String)
-      edge u v = go (entry u v (visible-graph K u v))
+      edge u v = go (presented u v (entry u v (visible-graph K u v)))
         where
-        go : M3.Matrix (wd v) (wd u) → List (String × String)
+        go : M3.Matrix (wd v) (pwd u) → List (String × String)
         go M with NonZero? M
         ... | no  _ = []
         ... | yes _ =
           (name ++ "-" ++ nm u ++ "-" ++ nm v ,
            table (name ++ " (" ++ nm u ++ " to " ++ nm v ++ ")") (vertex-labels u) (vertex-labels v)
-                 (edge-rows u v M) none none) ∷ []
+                 (rows M) none none) ∷ []
 
   add-mul-graph = Evaluated.dependence (env add-mul-run) (term add-mul-run)
 
   sum-vertex : Vertex (Graph.shape add-mul-graph)
   sum-vertex = inj₁ (inj₁ (inj₂ root))
 
-  vertex-name : V add-mul-graph → String
-  vertex-name (inj₁ _)        = "env"
-  vertex-name (inj₂ (inj₁ _)) = "sum"
-  vertex-name (inj₂ (inj₂ _)) = "root"
+  add-mul-name : V add-mul-graph → String
+  add-mul-name (inj₁ _)        = "env"
+  add-mul-name (inj₂ (inj₁ _)) = "sum"
+  add-mul-name (inj₂ (inj₂ _)) = "root"
+
+  case-inl-graph = Evaluated.dependence (env case-inl-run) (term case-inl-run)
+
+  scrutinee-vertex : Vertex (Graph.shape case-inl-graph)
+  scrutinee-vertex = inj₁ (inj₂ root)
+
+  case-inl-name : V case-inl-graph → String
+  case-inl-name (inj₁ _)        = "env"
+  case-inl-name (inj₂ (inj₁ _)) = "scrutinee"
+  case-inl-name (inj₂ (inj₂ _)) = "root"
 
   module signed where
     private
@@ -183,9 +198,11 @@ all-tables =
   ("adjacent-sums-forward" , render.fwd adjacent-sums-run "adjacent-sums (forward slice)" 2) ∷
   ("mavg-related"          , render.related-outputs mavg-run "mavg (related outputs)") ∷
   ("adjacent-sums-related" , render.related-outputs adjacent-sums-run "adjacent-sums (related outputs)") ∷
-  ("add-mul"               , render.plain add-mul-run     "add-mul") ∷
+  ("add-mul"               , render.plain add-mul-run     "add-mul")  ∷
+  ("case-inl"              , render.plain case-inl-run    "case-inl") ∷
   ("score-signed"          , signed.fragment) ∷ []
-  ++ₗ render.tables add-mul-run (sum-vertex ∷ []) vertex-name "add-mul"
+  ++ₗ render.tables add-mul-run (sum-vertex ∷ []) add-mul-name "add-mul"
+  ++ₗ render.tables case-inl-run (scrutinee-vertex ∷ []) case-inl-name "case-inl"
   -- merge and merge-forward disabled: hide-in-evaluation-order diverges on merge's graph (#48
   -- closure width growth); restore once that subtask lands.
 

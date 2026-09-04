@@ -44,6 +44,9 @@ mult-run = run mult-ex γ-mult
 add-mul-run : Run
 add-mul-run = run add-mul γ-add-mul
 
+case-inl-run : Run
+case-inl-run = run case-inl γ-case-inl
+
 score-run : Run
 score-run = run (score (- 1ℚ)) γ-score
 

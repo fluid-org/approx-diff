@@ -13,4 +13,10 @@ if ! git diff --exit-code --stat -- test-baselines dot; then
   exit 1
 fi
 
+untracked=$(git ls-files --others --exclude-standard -- test-baselines dot)
+if [ -n "$untracked" ]; then
+  printf 'Error: untracked artefacts:\n%s\n' "$untracked" >&2
+  exit 1
+fi
+
 echo "Artefacts agree with the baselines."

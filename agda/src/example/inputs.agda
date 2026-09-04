@@ -89,6 +89,9 @@ private
 γ-mult : Env (emp , base number [×] base number)
 γ-mult = emp · pair (const 1ℚ) (const 0ℚ)
 
+γ-case-inl : Env (emp , base number)
+γ-case-inl = emp · const 1ℚ
+
 -- (x, y) = (0, 1): x reaches the root only through the sum, y also directly.
 γ-add-mul : Env (emp , base number , base number)
 γ-add-mul = emp · const 0ℚ · const 1ℚ

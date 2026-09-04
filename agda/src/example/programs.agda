@@ -154,6 +154,10 @@ case-term = case (var zero) (var (succ (succ zero))) (bop (lit 0ℚ) [])
 mult-ex : emp , base number [×] base number ⊢ base number
 mult-ex = bop mult (fst (var zero) ∷ snd (var zero) ∷ [])
 
+-- Revealing the scrutinee separates value flow at its payload from control at its tag.
+case-inl : emp , base number ⊢ base number
+case-inl = case (inl (var zero)) (var zero) (var zero)
+
 -- y · (x + y): the sum an intermediate with a route past it through y.
 add-mul : emp , base number , base number ⊢ base number
 add-mul = bop mult (bop add (var zero ∷ var (succ zero) ∷ []) ∷ var zero ∷ [])
