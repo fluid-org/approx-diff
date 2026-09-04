@@ -41,8 +41,8 @@ test-run   = run test-term γ-test
 mult-run : Run
 mult-run = run mult-ex γ-mult
 
-intermediate-run : Run
-intermediate-run = run intermediate-term γ-intermediate
+add-mul-run : Run
+add-mul-run = run add-mul γ-add-mul
 
 score-run : Run
 score-run = run (score (- 1ℚ)) γ-score

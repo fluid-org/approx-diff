@@ -37,7 +37,7 @@ open import interaction.moves three.semiring (λ x → three.∨-idem {x}) three
 open import example.runs (nonzero three.semiring) three.semiring three.C
   using (Run; query-run; const-run; length-run; fold0-run; case0-run; tag-run; case-l-run;
          case-r-run; test-run; map-run; adjacent-sums-run; filter-run; cond-run; eq-run;
-         mult-run; intermediate-run; mavg-run; total-run; sum-mul-run; rose-run; score-run; env; term)
+         mult-run; add-mul-run; mavg-run; total-run; sum-mul-run; rose-run; score-run; env; term)
 open import example.render.table using (Label; Mat; SignedMat; none; sel-label; table; signed-table)
 open import example.render.value-labels (nonzero three.semiring) three.semiring three.C
   using (val-labels; env-labels; vals-labels)
@@ -115,12 +115,12 @@ private
            table (name ++ " (" ++ nm u ++ " to " ++ nm v ++ ")") (vertex-labels u) (vertex-labels v)
                  (edge-rows u v M) none none) ∷ []
 
-  intermediate-graph = Evaluated.dependence (env intermediate-run) (term intermediate-run)
+  add-mul-graph = Evaluated.dependence (env add-mul-run) (term add-mul-run)
 
-  sum-vertex : Vertex (Graph.shape intermediate-graph)
+  sum-vertex : Vertex (Graph.shape add-mul-graph)
   sum-vertex = inj₁ (inj₁ (inj₂ root))
 
-  vertex-name : V intermediate-graph → String
+  vertex-name : V add-mul-graph → String
   vertex-name (inj₁ _)        = "env"
   vertex-name (inj₂ (inj₁ _)) = "sum"
   vertex-name (inj₂ (inj₂ _)) = "root"
@@ -183,9 +183,9 @@ all-tables =
   ("adjacent-sums-forward" , render.fwd adjacent-sums-run "adjacent-sums (forward slice)" 2) ∷
   ("mavg-related"          , render.related-outputs mavg-run "mavg (related outputs)") ∷
   ("adjacent-sums-related" , render.related-outputs adjacent-sums-run "adjacent-sums (related outputs)") ∷
-  ("intermediate"          , render.plain intermediate-run "intermediate") ∷
+  ("add-mul"               , render.plain add-mul-run     "add-mul") ∷
   ("score-signed"          , signed.fragment) ∷ []
-  ++ₗ render.tables intermediate-run (sum-vertex ∷ []) vertex-name "intermediate"
+  ++ₗ render.tables add-mul-run (sum-vertex ∷ []) vertex-name "add-mul"
   -- merge and merge-forward disabled: hide-in-evaluation-order diverges on merge's graph (#48
   -- closure width growth); restore once that subtask lands.
 

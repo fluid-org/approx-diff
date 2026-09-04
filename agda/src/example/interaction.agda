@@ -22,8 +22,8 @@ open import interaction.evaluated Sig three.semiring Dep.interpretation three.C 
 open import interaction.graph three.semiring (λ x → three.∨-idem {x})
 open import interaction.dependence-graph Sig three.semiring Dep.interpretation three.C (λ x → three.∨-idem {x})
 open import interaction.moves three.semiring (λ x → three.∨-idem {x}) three.≡-of-≈ three.ε?
-open import example.programs using (intermediate-term)
-open import example.inputs (nonzero three.semiring) three.semiring three.C using (γ-intermediate)
+open import example.programs using (add-mul)
+open import example.inputs (nonzero three.semiring) three.semiring three.C using (γ-add-mul)
 
 module rewiring where
 
@@ -84,9 +84,9 @@ module rewiring where
 -- still reaching the root without it and x not.
 module intermediate where
 
-  open Evaluated γ-intermediate intermediate-term using (dependence)
+  open Evaluated γ-add-mul add-mul using (dependence)
 
-  G : Graph (suc (width-env γ-intermediate)) _
+  G : Graph (suc (width-env γ-add-mul)) _
   G = dependence
 
   open Interaction G
@@ -103,7 +103,7 @@ module intermediate where
   rt : V G
   rt = inj₂ (inj₂ root)
 
-  x y : Fin (suc (width-env γ-intermediate))
+  x y : Fin (suc (width-env γ-add-mul))
   x = suc zero
   y = suc (suc zero)
 
