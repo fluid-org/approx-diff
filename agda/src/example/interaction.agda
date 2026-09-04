@@ -6,23 +6,24 @@ module example.interaction where
 
 open import Data.Fin using (Fin; zero; suc)
 open import Data.Nat using (suc)
-open import Data.Rational using (ℚ; 0ℚ; 1ℚ)
+open import Data.Rational using (ℚ; 1ℚ)
 open import Data.Sum using (inj₁; inj₂)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl)
-open import Data.List.Relation.Unary.All using ([]; _∷_)
 import three
 
-open import signature.example ℚ using (Sig; number; add; mult)
+open import signature.example ℚ using (Sig; number)
 open import semiring-Q using (nonzero)
 import signature.example.interpretation
 module Dep = signature.example.interpretation (nonzero three.semiring) three.semiring
 
-open import language-syntax Sig using (_⊢_; zero; succ; base; var; inl; case; bop; emp) renaming (_,_ to _▸_)
+open import language-syntax Sig using (_⊢_; zero; base; var; inl; case; emp) renaming (_,_ to _▸_)
 open import language-operational.evaluation Sig three.semiring Dep.interpretation three.C
 open import interaction.evaluated Sig three.semiring Dep.interpretation three.C (λ x → three.∨-idem {x})
 open import interaction.graph three.semiring (λ x → three.∨-idem {x})
 open import interaction.dependence-graph Sig three.semiring Dep.interpretation three.C (λ x → three.∨-idem {x})
 open import interaction.moves three.semiring (λ x → three.∨-idem {x}) three.≡-of-≈ three.ε?
+open import example.programs using (intermediate-term)
+open import example.inputs (nonzero three.semiring) three.semiring three.C using (γ-intermediate)
 
 module rewiring where
 
@@ -83,15 +84,9 @@ module rewiring where
 -- still reaching the root without it and x not.
 module intermediate where
 
-  γ₀ : Env (emp ▸ base number ▸ base number)
-  γ₀ = emp · const 0ℚ · const 1ℚ
+  open Evaluated γ-intermediate intermediate-term using (dependence)
 
-  t₀ : ((emp ▸ base number) ▸ base number) ⊢ base number
-  t₀ = bop mult (bop add (var zero ∷ var (succ zero) ∷ []) ∷ var zero ∷ [])
-
-  open Evaluated γ₀ t₀ using (dependence)
-
-  G : Graph (suc (width-env γ₀)) _
+  G : Graph (suc (width-env γ-intermediate)) _
   G = dependence
 
   open Interaction G
@@ -108,7 +103,7 @@ module intermediate where
   rt : V G
   rt = inj₂ (inj₂ root)
 
-  x y : Fin (suc (width-env γ₀))
+  x y : Fin (suc (width-env γ-intermediate))
   x = suc zero
   y = suc (suc zero)
 

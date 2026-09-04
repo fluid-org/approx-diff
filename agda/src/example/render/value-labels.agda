@@ -16,6 +16,8 @@ open import Data.String using (String; _++_)
 open import Data.Unit using (⊤)
 import Data.Vec as Vec
 open import signature.example.interpretation as-weight S using (Sig; interpretation)
+open import signature.interpretation using (Interpretation)
+open Interpretation interpretation using (sort-vals; sort-width)
 open import language-operational.evaluation Sig S interpretation ctrl-weight using (Val; Env)
 open import example.render.constants as-weight S using (show-const)
 open import example.render.table using (Label)
@@ -103,3 +105,9 @@ val-labels off v = labels off (shape-of (λ {s} c → shw {s} c) v)
 
 env-labels : ∀ {Γ} → Env Γ → List Label
 env-labels γ = labels-env 0 (shape-env-of (λ {s} c → shw {s} c) γ)
+
+vals-labels : ∀ {is} → ℕ → sort-vals is → List Label
+vals-labels {[]}          _   _        = []
+vals-labels {s ∷ []}      off (c , _)  = (shw {s} c , sort-width s , off) ∷ []
+vals-labels {s ∷ s' ∷ ss} off (c , cs) =
+  (shw {s} c , sort-width s , off) ∷ (";" , 0 , 0) ∷ vals-labels {s' ∷ ss} (off + sort-width s) cs

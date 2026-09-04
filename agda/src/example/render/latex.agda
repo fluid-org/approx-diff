@@ -6,7 +6,7 @@ module example.render.latex where
 open import IO
 open import IO.Finite using (writeFile)
 open import Data.Fin using (suc)
-open import Data.List using (List; []; _∷_; map; foldr)
+open import Data.List using (List; []; _∷_; map; foldr; concat) renaming (_++_ to _++ₗ_)
 open import Data.Nat using (ℕ)
 import Data.Nat as Nat
 open import Data.Product using (_×_; _,_; proj₁; proj₂)
@@ -15,6 +15,7 @@ open import Data.Unit.Polymorphic using (⊤; tt)
 open import Data.Rational using (ℚ)
 open import Data.String using (String; _++_)
 open import Data.Vec using (toList; tabulate)
+open import Relation.Nullary using (yes; no)
 import example.render.value-labels
 import example.runs
 import interaction.evaluated
@@ -29,19 +30,27 @@ open import signature.example.interpretation (nonzero three.semiring) three.semi
   using (Sig; interpretation)
 open import interaction.graph three.semiring (λ x → three.∨-idem {x})
 open import interaction.evaluated Sig three.semiring interpretation three.C (λ x → three.∨-idem {x})
+open import interaction.labelling Sig three.semiring interpretation three.C (λ x → three.∨-idem {x})
+  using (Node; val; vals; at)
+open import interaction.moves three.semiring (λ x → three.∨-idem {x}) three.≡-of-≈ three.ε?
+  using (module Interaction; Config; visible; NonZero?)
 open import example.runs (nonzero three.semiring) three.semiring three.C
   using (Run; query-run; const-run; length-run; fold0-run; case0-run; tag-run; case-l-run;
          case-r-run; test-run; map-run; adjacent-sums-run; filter-run; cond-run; eq-run;
-         mult-run; mavg-run; total-run; sum-mul-run; rose-run; score-run; env; term)
+         mult-run; intermediate-run; mavg-run; total-run; sum-mul-run; rose-run; score-run; env; term)
 open import example.render.table using (Label; Mat; SignedMat; none; sel-label; table; signed-table)
 open import example.render.value-labels (nonzero three.semiring) three.semiring three.C
-  using (val-labels; env-labels)
+  using (val-labels; env-labels; vals-labels)
 
 private
   module M3 = matrix.Mat three.semiring
 
   rows : ∀ {m n} → M3.Matrix m n → Mat
   rows M = toList (tabulate (λ q → toList (tabulate (M q))))
+
+  node-labels : ℕ → Node → List Label
+  node-labels off (val v)        = val-labels off v
+  node-labels off (vals {is} vs) = vals-labels {is} off vs
 
   module render (r : Run) where
     private
@@ -60,6 +69,20 @@ private
       drop-ctrl : ∀ {m n} → M3.Matrix m (Nat.suc n) → M3.Matrix m n
       drop-ctrl M q p = M q (suc p)
 
+      open Interaction dependence using (entry; initial; reveal-at; visible-graph)
+
+      wd : V dependence → ℕ
+      wd = vertex-width dependence
+
+      vertex-labels : V dependence → List Label
+      vertex-labels (inj₁ _)        = i-labels
+      vertex-labels (inj₂ (inj₁ p)) = node-labels 0 (proj₁ (labels .at p))
+      vertex-labels (inj₂ (inj₂ _)) = o-labels
+
+      edge-rows : (u v : V dependence) → M3.Matrix (wd v) (wd u) → Mat
+      edge-rows (inj₁ input) _ M = rows (drop-ctrl M)
+      edge-rows (inj₂ _)     _ M = rows M
+
     plain : String → String
     plain name = table name i-labels o-labels (rows (drop-ctrl R)) none none
 
@@ -70,6 +93,37 @@ private
     related-outputs : String → String
     related-outputs name = table name o-labels o-labels (rows (D M3.∘ (D M3.ᵀ))) none none
       where D = drop-ctrl R
+
+    -- One table per nonzero visible-graph edge between the environment, the revealed vertices
+    -- and the root.
+    staged : List (Vertex (Graph.shape dependence)) → (V dependence → String) → String →
+             List (String × String)
+    staged ps nm name = concat (map (λ u → concat (map (edge u) endpoints)) endpoints)
+      where
+      K : Config dependence
+      K = foldr reveal-at initial ps
+      endpoints : List (V dependence)
+      endpoints = inj₁ input ∷ (map (λ p → inj₂ (inj₁ p)) (K .visible) ++ₗ (inj₂ (inj₂ root) ∷ []))
+      edge : V dependence → V dependence → List (String × String)
+      edge u v = go (entry u v (visible-graph K u v))
+        where
+        go : M3.Matrix (wd v) (wd u) → List (String × String)
+        go M with NonZero? M
+        ... | no  _ = []
+        ... | yes _ =
+          (name ++ "-" ++ nm u ++ "-" ++ nm v ,
+           table (name ++ " (" ++ nm u ++ " to " ++ nm v ++ ")") (vertex-labels u) (vertex-labels v)
+                 (edge-rows u v M) none none) ∷ []
+
+  intermediate-graph = Evaluated.dependence (env intermediate-run) (term intermediate-run)
+
+  sum-vertex : Vertex (Graph.shape intermediate-graph)
+  sum-vertex = inj₁ (inj₁ (inj₂ root))
+
+  vertex-name : V intermediate-graph → String
+  vertex-name (inj₁ _)        = "env"
+  vertex-name (inj₂ (inj₁ _)) = "sum"
+  vertex-name (inj₂ (inj₂ _)) = "root"
 
   module signed where
     private
@@ -129,7 +183,9 @@ tables =
   ("adjacent-sums-forward" , render.fwd adjacent-sums-run "adjacent-sums (forward slice)" 2) ∷
   ("mavg-related"          , render.related-outputs mavg-run "mavg (related outputs)") ∷
   ("adjacent-sums-related" , render.related-outputs adjacent-sums-run "adjacent-sums (related outputs)") ∷
+  ("intermediate"          , render.plain intermediate-run "intermediate") ∷
   ("score-signed"          , signed.fragment) ∷ []
+  ++ₗ render.staged intermediate-run (sum-vertex ∷ []) vertex-name "intermediate"
   -- merge and merge-forward disabled: hide-in-evaluation-order diverges on merge's graph (#48
   -- closure width growth); restore once that subtask lands.
 

@@ -89,6 +89,10 @@ private
 γ-mult : Env (emp , base number [×] base number)
 γ-mult = emp · pair (const 1ℚ) (const 0ℚ)
 
+-- (x, y) = (0, 1): x reaches the root only through the sum, y also directly.
+γ-intermediate : Env (emp , base number , base number)
+γ-intermediate = emp · const 0ℚ · const 1ℚ
+
 γ-score : Env (emp , Grid)
 γ-score = emp · pair (row 1 2 1) (pair (row 3 5 4) (row 1 7 1))
   where

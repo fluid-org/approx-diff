@@ -154,6 +154,10 @@ case-term = case (var zero) (var (succ (succ zero))) (bop (lit 0ℚ) [])
 mult-ex : emp , base number [×] base number ⊢ base number
 mult-ex = bop mult (fst (var zero) ∷ snd (var zero) ∷ [])
 
+-- y · (x + y): the sum an intermediate with a route past it through y.
+intermediate-term : emp , base number , base number ⊢ base number
+intermediate-term = bop mult (bop add (var zero ∷ var (succ zero) ∷ []) ∷ var zero ∷ [])
+
 -- Moving average with window two over four inputs; adjacent outputs share an input, and
 -- non-adjacent outputs share none. h is the constant 1/2, supplied as a literal.
 mavg-body : ∀ {Γ} → ℚ → Γ ⊢ base number [×] (base number [×] (base number [×] base number))
