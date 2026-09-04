@@ -649,8 +649,8 @@ module _ {m n : ℕ} (B : Graph m n) where
 -- hide-all rewrites the whole relation at each hidden vertex. The tick hook marks each edge
 -- tabulation and each vertex summary, firing when the value is demanded; hide-in-evaluation-order
 -- below specialises it to the identity.
-module Tabulated {m n : ℕ} (B : Graph m n)
-                    (tick : {A : Set} → String → A → A) where
+module Tabulated {m n : ℕ} (B : Graph m n) (G : Relation (vertex-object B))
+                 (tick : {A : Set} → String → A → A) where
 
   private
     wd : V B → ℕ
@@ -672,7 +672,7 @@ module Tabulated {m n : ℕ} (B : Graph m n)
     to-table R = toList (tabulate λ i → toList (tabulate λ j → R i j))
 
     edge : (u v : V B) → Table
-    edge u v = tick "edge" (to-table (entry u v (edges B u v)))
+    edge u v = tick "edge" (to-table (entry u v (G u v)))
 
     sum : List Semiring.Carrier → Semiring.Carrier
     sum []       = Semiring.ε
@@ -709,7 +709,7 @@ module _ {m n : ℕ} (B : Graph m n) where
 
   hide-in-evaluation-order : List (V B) → (a b : V B) →
                              M.Matrix (vertex-width B b) (vertex-width B a)
-  hide-in-evaluation-order = Tabulated.hide-in-evaluation-order B (λ _ x → x)
+  hide-in-evaluation-order = Tabulated.hide-in-evaluation-order B (edges B) (λ _ x → x)
 
 private
   distrib-root : ∀ {W N K L : Semimodule} (P : N ⇒ W) (Xm : K ⇒ N) (Ym : L ⇒ N) (Zm : K ⇒ L) →
