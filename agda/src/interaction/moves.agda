@@ -68,9 +68,6 @@ private
   ≈-of-≡ : ∀ {x y} → x ≡ y → x S.≈ y
   ≈-of-≡ ≡-refl = S.refl
 
-  εₛ : S.Carrier
-  εₛ = S.ε
-
   foldr-base : ∀ {P Q : SemiMod.Semimodule} (b : P ⇒ Q) (ts : List (P ⇒ Q)) →
                foldr _+ₘ_ b ts ≈ (b +ₘ foldr _+ₘ_ εₘ ts)
   foldr-base b []       = ≈-sym (+ₘ-runit b)
@@ -143,7 +140,7 @@ module Interaction {m n : ℕ} (B : Graph m n) where
   entry x y f = ∃ₛ.fst (𝔽F-full f)
 
   entry-ε : ∀ (x y : V B) (f : vertex-object B x ⇒ vertex-object B y) →
-            (∀ i j → entry x y f i j ≡ εₛ) → f ≈ εₘ
+            (∀ i j → entry x y f i j ≡ S.ε) → f ≈ εₘ
   entry-ε x y f h =
     ≈-trans (≈-sym (∃ₛ.snd (𝔽F-full f)))
     (≈-trans (mat-cong (λ i j → ≈-of-≡ (h i j))) mat-ε)
@@ -270,7 +267,6 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
 
     at : Path → V 𝒢
     at p = inj₂ (inj₁ p)
-
 
   restrict-forward : {G : Relation (vertex-object 𝒢)} (C : List (Path)) → Fwd 𝒢 G → Fwd 𝒢 (restrict G C)
   restrict-forward {G} C fwd x y with x ∈ᵥ? C ⊎-dec y ∈ᵥ? C

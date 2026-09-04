@@ -267,11 +267,10 @@ absorb₁ f g = ≈-trans (+ₘ-cong ≈-refl (CM.comp-bilinear-ε₁ g)) (+ₘ-
 absorb₂ : ∀ {X Y Z : Semimodule} (f : X ⇒ Y) (g : Z ⇒ Y) → (f +ₘ (g ∘ εₘ)) ≈ f
 absorb₂ f g = ≈-trans (+ₘ-cong ≈-refl (CM.comp-bilinear-ε₂ g)) (+ₘ-runit f)
 
-private
-  open SemiMod.Semimodule using ()
-  open import prop-setoid using () renaming (_≃m_ to _≈s_)
-  open SemiMod._⇒_ using (func; func-resp-≈)
-  open SemiMod._≈m_
+open SemiMod.Semimodule using ()
+open import prop-setoid using () renaming (_≃m_ to _≈s_)
+open SemiMod._⇒_ using (func; func-resp-≈)
+open SemiMod._≈m_
 
 +ₘ-idem : ∀ {X Y : Semimodule} (f : X ⇒ Y) → (f +ₘ f) ≈ f
 +ₘ-idem {X} {Y} f .*≈* ._≈s_.func-eq {x} {x'} x≈x' =
@@ -649,7 +648,7 @@ module _ {m n : ℕ} (B : Graph m n) where
   private
     module O = Ordered vertex-object _<ᵥ_ <ᵥ-order
 
-  open O public using (Fwd; fwd-hide; fwd-hide-all; hide-all-perm)
+  open O public using (Fwd; hide-all-perm)
 
   edges-forward : Fwd edges
   edges-forward (inj₁ _) (inj₂ q) = inj₁ tt
@@ -658,7 +657,7 @@ module _ {m n : ℕ} (B : Graph m n) where
   edges-forward (inj₂ p) (inj₁ _) = inj₂ ⟪ ≈-refl ⟫
 
   fo-forward : Fwd fo-graph
-  fo-forward = fwd-hide-all (map (λ q → inj₂ (inj₁ q)) fo-hidden) edges-forward
+  fo-forward = O.fwd-hide-all (map (λ q → inj₂ (inj₁ q)) fo-hidden) edges-forward
 
 -- Hiding in evaluation order: with the hidden vertices listed so that every nonzero edge among
 -- them runs forward, one traversal materialises for each vertex the relation reaching it from the
@@ -761,13 +760,13 @@ module _ {m n : ℕ} (B : Graph m n) (G : Relation (vertex-object B)) where
 
     look-add : ∀ {r c} (t u : T.Table) (i : Fin r) (j : Fin c) →
                T.look (T.add r c t u) i j ≡ (T.look t i j Semiring.+ T.look u i j)
-    look-add {r} {c} t u i j =
+    look-add t u i j =
       ≡-trans (≡-cong (T.nth Semiring.ε (toℕ j)) (nth-applyUpTo [] _ (λ k → k) i))
               (nth-applyUpTo Semiring.ε _ (λ k → k) j)
 
     look-mul : ∀ {r s c} (t u : T.Table) (i : Fin r) (j : Fin c) →
                T.look (T.mul r s c t u) i j ≡ M._∘_ (T.look {r} {s} t) (T.look {s} {c} u) i j
-    look-mul {r} {s} {c} t u i j =
+    look-mul {s = s} t u i j =
       ≡-trans (≡-cong (T.nth Semiring.ε (toℕ j)) (nth-applyUpTo [] _ (λ k → k) i))
               (≡-trans (nth-applyUpTo Semiring.ε _ (λ k → k) j)
                        (sum-Σ (λ k → T.nth Semiring.ε k (T.nth [] (toℕ i) t) Semiring.·

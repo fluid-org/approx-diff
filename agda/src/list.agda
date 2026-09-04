@@ -471,7 +471,7 @@ module Sort {a b} {A : Set a} {_<_ : A → A → Set b}
 
   private
     insert-All : ∀ {p} {P : A → Set p} {x ys} → P x → All P ys → All P (insert x ys)
-    insert-All {x = x} {ys = []}     px []        = px ∷ []
+    insert-All {ys = []}     px []        = px ∷ []
     insert-All {x = x} {ys = y ∷ ys} px (py ∷ ps) with x <? y
     ... | yes _ = px ∷ py ∷ ps
     ... | no  _ = py ∷ insert-All px ps
