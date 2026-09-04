@@ -18,7 +18,7 @@ import Data.Vec as Vec
 open import signature.example.interpretation as-weight S using (Sig; interpretation)
 open import language-operational.evaluation Sig S interpretation ctrl-weight using (Val; Env)
 open import example.render.constants as-weight S using (show-const)
-open import example.render.grid using (Label)
+open import example.render.table using (Label)
 import example.render.annotated-value as AV
 open AV Sig S interpretation ctrl-weight
   using (AVal; node; Tag; width; shape-of; shape-env-of)

@@ -3,7 +3,7 @@
 -- Matrices as LaTeX tables: one column per input constructor, one row per output constructor, each
 -- entry the sum over those constructors' positions. A selection is a weight vector on either axis,
 -- so the result of one table's slice can be the selection of the next.
-module example.render.grid where
+module example.render.table where
 
 open import Data.List using (List; []; _∷_; map)
 open import Data.Nat using (ℕ; zero; suc; _+_)
@@ -134,8 +134,8 @@ sel-label ((_ , n , o) ∷ _)  zero    p = span (λ i → if-eq i p) o n
   if-eq _       _       = O
 sel-label (_ ∷ ts)           (suc k) p = sel-label ts k p
 
-grid : String → List Label → List Label → Mat → Sel → Sel → String
-grid name ilabels olabels M isel osel =
+table : String → List Label → List Label → Mat → Sel → Sel → String
+table name ilabels olabels M isel osel =
   "\\run{" ++ name ++ "}\n{\\scriptsize\\setlength{\\tabcolsep}{1.5pt}%\n\\begin{tabular}{"
   ++ crep (count ilabels) ++ "|l}\n"
   ++ amp (map (λ t → label-cell (sel-of isel t) (reach-in M h osel t) (proj₁ t)) ilabels)
@@ -146,8 +146,8 @@ grid name ilabels olabels M isel osel =
   w = width-of ilabels
   h = width-of olabels
 
-signed-grid : String → List Label → List Label → SignedMat → String
-signed-grid name ilabels olabels M =
+signed-table : String → List Label → List Label → SignedMat → String
+signed-table name ilabels olabels M =
   "\\run{" ++ name ++ "}\n{\\scriptsize\\setlength{\\tabcolsep}{1.5pt}%\n\\begin{tabular}{"
   ++ crep (count ilabels) ++ "|l}\n"
   ++ amp (map (λ u → "$" ++ proj₁ u ++ "$") ilabels) ++ " & \\\\ \\hline\n"

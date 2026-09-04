@@ -33,7 +33,7 @@ open import example.runs (nonzero three.semiring) three.semiring three.C
   using (Run; query-run; const-run; length-run; fold0-run; case0-run; tag-run; case-l-run;
          case-r-run; test-run; map-run; adjacent-sums-run; filter-run; cond-run; eq-run;
          mult-run; mavg-run; total-run; sum-mul-run; rose-run; score-run; env; term; model-output)
-open import example.render.grid using (Label; Mat; SignedMat; Sel; none; sel-label; grid; signed-grid)
+open import example.render.table using (Label; Mat; SignedMat; Sel; none; sel-label; table; signed-table)
 open import example.render.value-labels (nonzero three.semiring) three.semiring three.C
   using (val-labels; env-labels)
 
@@ -62,7 +62,7 @@ private
 
   -- Which outputs are related through some shared input.
   related : String → Run → String
-  related name r = grid name (out-labels r) (out-labels r) (go (hide-in-evaluation-order dependence widths free
+  related name r = table name (out-labels r) (out-labels r) (go (hide-in-evaluation-order dependence widths free
                      (map (λ v → inj₂ (inj₁ v)) (vertices (Graph.shape dependence)))
                      (inj₁ input) (inj₂ (inj₂ root)))) none none
     where
@@ -74,17 +74,17 @@ private
       drop : M3.Matrix m n
       drop q p = R q (suc p)
 
-  run-grid : String → Run → Sel → Sel → String
-  run-grid name r isel osel = grid name (in-labels r) (out-labels r) (op-rows r) isel osel
+  run-table : String → Run → Sel → Sel → String
+  run-table name r isel osel = table name (in-labels r) (out-labels r) (op-rows r) isel osel
 
   plain : String → Run → String
-  plain name r = run-grid name r none none
+  plain name r = run-table name r none none
 
   fwd : String → Run → ℕ → String
-  fwd name r i = run-grid name r (sel-label (in-labels r) i) none
+  fwd name r i = run-table name r (sel-label (in-labels r) i) none
 
   bwd : String → Run → ℕ → String
-  bwd name r i = run-grid name r none (sel-label (out-labels r) i)
+  bwd name r i = run-table name r none (sel-label (out-labels r) i)
 
   module signed where
     private
@@ -114,8 +114,8 @@ private
         drop-ctrl : ∀ {m n} → mat.Matrix m (Nat.suc n) → SignedMat
         drop-ctrl R = toList (tabulate (λ q → toList (tabulate (λ p → R q (suc p)))))
 
-    table : String
-    table = signed-grid "score (signed)" (axes.env-labels (runs.env runs.score-run))
+    fragment : String
+    fragment = signed-table "score (signed)" (axes.env-labels (runs.env runs.score-run))
               (axes.val-labels 0 (runs.model-output runs.score-run)) score-rows
 
 tables : List (String × String)
@@ -144,7 +144,7 @@ tables =
   ("adjacent-sums-forward" , fwd "adjacent-sums (forward slice)" adjacent-sums-run 2) ∷
   ("mavg-related"          , related "mavg (related outputs)"          mavg-run) ∷
   ("adjacent-sums-related" , related "adjacent-sums (related outputs)" adjacent-sums-run) ∷
-  ("score-signed"          , signed.table) ∷ []
+  ("score-signed"          , signed.fragment) ∷ []
   -- merge and merge-forward disabled: hide-in-evaluation-order diverges on merge's graph (#48
   -- closure width growth); restore once that subtask lands.
 
