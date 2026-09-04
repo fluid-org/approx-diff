@@ -77,10 +77,10 @@ private
   mark O = ""
 
   sup : sign.Sign → String
-  sup sign.pos = ""
-  sup sign.zer = "^{0}"
-  sup sign.neg = "^{-}"
-  sup sign.unk = "^{?}"
+  sup sign.pos = "\\sgn{+}"
+  sup sign.zer = "\\sgn{0}"
+  sup sign.neg = "\\sgn{-}"
+  sup sign.unk = "\\sgn{?}"
 
   signed-mark : sign.Sign × Three → String
   signed-mark (_ , O) = ""
