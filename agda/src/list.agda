@@ -33,8 +33,6 @@ open import Relation.Nullary.Decidable using (Dec; does; ¬?; yes; no; dec-false
 open import Relation.Unary.Properties using (∁?)
 open import Relation.Binary.PropositionalEquality using (_≡_; _≢_; subst; subst₂)
   renaming (refl to ≡-refl; sym to ≡-sym; trans to ≡-trans; cong to ≡-cong; cong₂ to ≡-cong₂)
-open import Level using (_⊔_)
-open import basics using (IsStrictOrder)
 
 ++-swap : ∀ {a} {A : Set a} (xs ys zs : List A) → xs ++ (ys ++ zs) ↭ ys ++ (xs ++ zs)
 ++-swap xs ys zs =
@@ -422,51 +420,3 @@ map-partition₂ h P? []       = ≡-refl
 map-partition₂ h P? (x ∷ xs) with P? (h x)
 ... | yes _ = map-partition₂ h P? xs
 ... | no  _ = ≡-cong (h x ∷_) (map-partition₂ h P? xs)
-
--- Insertion sort by a decidable strict order, into weakly ascending order: no later element lies
--- below an earlier one. Only transitivity and asymmetry are used, so the order may be partial;
--- duplicates and incomparable elements keep their input order.
-module Sort {a b} {A : Set a} {_<_ : A → A → Set b}
-            (o : IsStrictOrder _<_) (_<?_ : ∀ x y → Dec (x < y)) where
-
-  open IsStrictOrder o using (trans; asym)
-
-  insert : A → List A → List A
-  insert x []       = x ∷ []
-  insert x (y ∷ ys) with x <? y
-  ... | yes _ = x ∷ y ∷ ys
-  ... | no  _ = y ∷ insert x ys
-
-  sort : List A → List A
-  sort []       = []
-  sort (x ∷ xs) = insert x (sort xs)
-
-  Ascending : List A → Set (a ⊔ b)
-  Ascending = AllPairs (λ x y → ¬ (y < x))
-
-  insert-↭ : ∀ x ys → insert x ys ↭ (x ∷ ys)
-  insert-↭ x []       = ↭-refl
-  insert-↭ x (y ∷ ys) with x <? y
-  ... | yes _ = ↭-refl
-  ... | no  _ = ↭-trans (↭.prep y (insert-↭ x ys)) (↭.swap y x ↭-refl)
-
-  sort-↭ : ∀ xs → sort xs ↭ xs
-  sort-↭ []       = ↭-refl
-  sort-↭ (x ∷ xs) = ↭-trans (insert-↭ x (sort xs)) (↭.prep x (sort-↭ xs))
-
-  private
-    insert-All : ∀ {p} {P : A → Set p} {x ys} → P x → All P ys → All P (insert x ys)
-    insert-All {ys = []}     px []        = px ∷ []
-    insert-All {x = x} {ys = y ∷ ys} px (py ∷ ps) with x <? y
-    ... | yes _ = px ∷ py ∷ ps
-    ... | no  _ = py ∷ insert-All px ps
-
-  insert-ascending : ∀ x {ys} → Ascending ys → Ascending (insert x ys)
-  insert-ascending x {[]}     []         = [] ∷ []
-  insert-ascending x {y ∷ ys} (hy ∷ hys) with x <? y
-  ... | yes l = (asym x y l ∷ All-map (λ {z} ¬zy zx → ¬zy (trans z x y zx l)) hy) ∷ hy ∷ hys
-  ... | no ¬l = insert-All ¬l hy ∷ insert-ascending x hys
-
-  sort-ascending : ∀ xs → Ascending (sort xs)
-  sort-ascending []       = []
-  sort-ascending (x ∷ xs) = insert-ascending x (sort-ascending xs)

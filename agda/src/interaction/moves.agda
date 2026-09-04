@@ -33,6 +33,10 @@ import Data.List.Relation.Binary.Permutation.Homogeneous as H
 import Data.List.Relation.Binary.Permutation.Propositional as ↭
 open ↭ using (_↭_; ↭-refl; ↭-sym; ↭-trans; ↭-reflexive)
 import Data.List.Relation.Unary.All.Properties as AllP
+import Data.List.Relation.Unary.Linked.Properties as LinkedP
+import Data.List.Sort.Base as SortBase
+import Data.List.Sort.MergeSort as MergeSort
+import Relation.Binary.Properties.StrictTotalOrder as StrictTotalOrderP
 import Data.List.Relation.Unary.AllPairs.Properties as AllPairsP
 import Data.List.Relation.Unary.Any.Properties as AnyPr
 import Data.Fin.Properties as FinP
@@ -41,6 +45,7 @@ import matrix
 open import prop-setoid using (Setoid)
 open import commutative-semiring using (CommutativeSemiring)
 open import list
+open import basics using (IsStrictOrder)
 import prop.set-elim as set-elim
 
 -- Configurations of the interaction: a visible set of vertices together with one hidden region per
@@ -275,13 +280,22 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
   ... | no  _ = inj₂ ⟪ ≈-refl ⟫
 
   private
-    open Sort (lt-order shape) (lt? shape) using (sort; sort-↭; sort-ascending; Ascending)
+    module Vertex≤ = StrictTotalOrderP (vertex-order shape)
+    module MS = MergeSort Vertex≤.decTotalOrder
+    open SortBase.SortingAlgorithm MS.mergeSort using (sort; sort-↭; sort-↗)
+    open IsStrictOrder (lt-order shape) using (asym; irrefl)
 
-    ascending-forward : {G : Relation (vertex-object 𝒢)} → Fwd 𝒢 G → {C : List Path} → Ascending C →
-                        AllPairs (λ v u → Prf (G u v ≈ εₘ)) (map at C)
-    ascending-forward fwd hs =
+    sorted-forward : {G : Relation (vertex-object 𝒢)} → Fwd 𝒢 G → {C : List Path} →
+                     AllPairs Vertex≤._≤_ C →
+                     AllPairs (λ v u → Prf (G u v ≈ εₘ)) (map at C)
+    sorted-forward fwd hs =
       AllPairsP.map⁺
-        (AllPairs-map (λ {q} {q'} h → [ (λ l → ⊥-elim (h l)) , (λ e → e) ]′ (fwd (at q') (at q))) hs)
+        (AllPairs-map (λ {q} {q'} le → [ (λ l → ⊥-elim (no-back le l)) , (λ e → e) ]′ (fwd (at q') (at q)))
+                      hs)
+      where
+      no-back : ∀ {q q'} → Vertex≤._≤_ q q' → lt shape q' q → ⊥
+      no-back (inj₁ l)      l' = asym _ _ l l'
+      no-back (inj₂ ≡-refl) l' = irrefl _ l'
 
   -- The summary of a hidden region computed by the tabulated pass, with the region sorted into
   -- evaluation order so that every nonzero edge among its vertices runs forward.
@@ -293,7 +307,7 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
   tabulated-summary-agrees : ∀ C x y → tabulated-summary C x y ≈ summary C x y
   tabulated-summary-agrees C x y =
     ≈-trans (tabulated-hide-all 𝒢 (restrict (fo-graph 𝒢) C) (map at (sort C)) x y
-              (ascending-forward fwd (sort-ascending C)))
+              (sorted-forward fwd (LinkedP.Linked⇒AllPairs Vertex≤.trans (sort-↗ C))))
             (hide-all-perm 𝒢 fwd (map⁺ at (sort-↭ C)) x y)
     where fwd = restrict-forward C (fo-forward 𝒢)
 
