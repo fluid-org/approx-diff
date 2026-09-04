@@ -384,6 +384,83 @@ module Hide (V : Set) (w : V → Semimodule) where
                           (absorbˡ (G z r') (G r r' ∘ G z r)))) ⟫)
       as
 
+  Tables : V → List V → Set
+  Tables x = All (λ u → w x ⇒ w u)
+
+  through : Gr → (x y : V) {us : List V} → Tables x us → w x ⇒ w y
+  through G x y []               = G x y
+  through G x y {u ∷ _} (T ∷ Ts) = (G u y ∘ T) +ₘ through G x y Ts
+
+  summaries : Gr → (x : V) {us : List V} → Tables x us → (vs : List V) → Tables x vs
+  summaries G x Ts []       = []
+  summaries G x Ts (v ∷ vs) = Tv ∷ summaries G x (AllP.++⁺ Ts (Tv ∷ [])) vs
+    where
+    Tv = through G x v Ts
+
+  through-snoc : ∀ {G x y us} (Ts : Tables x us) {v} (T : w x ⇒ w v) →
+                 through G x y (AllP.++⁺ Ts (T ∷ [])) ≈ (through G x y Ts +ₘ (G v y ∘ T))
+  through-snoc []        T = +ₘ-comm
+  through-snoc (T' ∷ Ts) T = ≈-trans (+ₘ-cong ≈-refl (through-snoc Ts T)) (≈-sym +ₘ-assoc)
+
+  private
+    through-empty : ∀ {G x y us} (Ts : Tables x us) → through G x y (AllP.++⁺ Ts []) ≈ through G x y Ts
+    through-empty []       = ≈-refl
+    through-empty (T ∷ Ts) = +ₘ-cong ≈-refl (through-empty Ts)
+
+    through-assoc : ∀ {G x y us vs} (Ts : Tables x us) {v} (T : w x ⇒ w v) (Us : Tables x vs) →
+                    through G x y (AllP.++⁺ (AllP.++⁺ Ts (T ∷ [])) Us) ≈
+                    through G x y (AllP.++⁺ Ts (T ∷ Us))
+    through-assoc []        T Us = ≈-refl
+    through-assoc (T' ∷ Ts) T Us = +ₘ-cong ≈-refl (through-assoc Ts T Us)
+
+    Zeros : ∀ {x us} → Tables x us → Set
+    Zeros []       = Unit
+    Zeros (T ∷ Ts) = Prf (T ≈ εₘ) × Zeros Ts
+
+    zeros-snoc : ∀ {x us v} (Ts : Tables x us) {T : w x ⇒ w v} →
+                 Zeros Ts → Prf (T ≈ εₘ) → Zeros (AllP.++⁺ Ts (T ∷ []))
+    zeros-snoc []        _         z = z , tt
+    zeros-snoc (T' ∷ Ts) (z' , zs) z = z' , zeros-snoc Ts zs z
+
+    through-zeros : ∀ {G : Gr} {x y us} (Ts : Tables x us) → Zeros Ts → through G x y Ts ≈ G x y
+    through-zeros []                         _            = ≈-refl
+    through-zeros {G} {x} {y} (_∷_ {u} T Ts) (⟪ z ⟫ , zs) =
+      ≈-trans (+ₘ-cong (≈-trans {g = G u y ∘ εₘ {w x} {w u}} (∘-cong₂ {f = G u y} z)
+                                (CM.comp-bilinear-ε₂ {X = w x} (G u y)))
+                       (through-zeros Ts zs))
+              (+ₘ-lunit (G x y))
+
+    fold-tables : ∀ rest {us} {G G' : Gr} (Tab : ∀ v → Tables v us) →
+                  (∀ x y → G' x y ≈ through G x y (Tab x)) →
+                  All (λ v → Zeros (Tab v)) rest →
+                  AllPairs (λ v u → Prf (G u v ≈ εₘ)) rest →
+                  ∀ x y → foldl h G' rest x y ≈ through G x y (AllP.++⁺ (Tab x) (summaries G x (Tab x) rest))
+    fold-tables []         Tab agree _         _             x y =
+      ≈-trans (agree x y) (≈-sym (through-empty (Tab x)))
+    fold-tables (v ∷ rest) {us} {G} {G'} Tab agree (zv ∷ zs) (ev ∷ pairs) x y =
+      ≈-trans (fold-tables rest Tab' agree' (zip zs ev) pairs x y)
+              (through-assoc (Tab x) (through G x v (Tab x)) (summaries G x (Tab' x) rest))
+      where
+      Tab' : ∀ u → Tables u (us ++ v ∷ [])
+      Tab' u = AllP.++⁺ (Tab u) (through G u v (Tab u) ∷ [])
+
+      agree' : ∀ x' y' → h G' v x' y' ≈ through G x' y' (Tab' x')
+      agree' x' y' =
+        ≈-trans (+ₘ-cong (agree x' y')
+                         (∘-cong (≈-trans (agree v y') (through-zeros (Tab v) zv)) (agree x' v)))
+                (≈-sym (through-snoc (Tab x') (through G x' v (Tab x'))))
+
+      zip : ∀ {vs} → All (λ u → Zeros (Tab u)) vs → All (λ u → Prf (G u v ≈ εₘ)) vs →
+            All (λ u → Zeros (Tab' u)) vs
+      zip []                  []           = []
+      zip (_∷_ {u} z zs') (⟪ e ⟫ ∷ es) =
+        zeros-snoc (Tab u) z ⟪ ≈-trans (through-zeros (Tab u) z) e ⟫ ∷ zip zs' es
+
+  fold-through : ∀ {G : Gr} rs → AllPairs (λ v u → Prf (G u v ≈ εₘ)) rs →
+                 ∀ x y → foldl h G rs x y ≈ through G x y (summaries G x [] rs)
+  fold-through rs pairs = fold-tables rs (λ _ → []) (λ _ _ → ≈-refl) (universal (λ _ → tt) rs) pairs
+
+
 module Ordered {V : Set} (vertex-object : V → Semimodule) (_<_ : V → V → Set) (o : IsStrictOrder _<_) where
 
   open IsStrictOrder o using (trans; asym)
