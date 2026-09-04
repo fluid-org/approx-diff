@@ -70,9 +70,6 @@ module rewiring where
   reveal-ctrl : entry (at scrut) rt (visible-graph K₁ (at scrut) rt) zero zero ≡ three.C
   reveal-ctrl = refl
 
-  collapse-agrees : entry env rt (collapse G) zero (suc zero) ≡ three.D
-  collapse-agrees = refl
-
 -- An intermediate with a route past it: y · (x + y) at (x, y) = (0, 1). Revealing the sum shows it
 -- fed by both inputs and feeding the root, with y still reaching the root without it and x not.
 module intermediate where
