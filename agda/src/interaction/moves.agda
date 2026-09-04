@@ -152,15 +152,18 @@ private
 -- A configuration: the visible set, and one pair per hidden region of a set of vertices and a
 -- graph. No invariant is imposed; that the pairs are the regions of the hidden set with their
 -- summaries is a property the moves preserve.
-record Config {X Y : SemiMod.Semimodule} (B : Graph X Y) : Set₁ where
+record Config {m n : ℕ} (B : Graph m n) : Set₁ where
   field
     visible : List (Vertex (Graph.shape B))
     hidden  : List (List (Vertex (Graph.shape B)) × Relation (vertex-object B))
 
 open Config public
 
-module Interaction {X Y : SemiMod.Semimodule} (B : Graph X Y)
-                   (wd : V B → ℕ) (free : ∀ v → vertex-object B v ≡ 𝔽 (wd v)) where
+module Interaction {m n : ℕ} (B : Graph m n) where
+
+  private
+    wd : V B → ℕ
+    wd = vertex-width B
 
   private
     at : Vertex (Graph.shape B) → V B
@@ -172,19 +175,13 @@ module Interaction {X Y : SemiMod.Semimodule} (B : Graph X Y)
   p ≢? q = ¬? (_≟_ {Graph.shape B} p q)
 
   entry : ∀ (x y : V B) → (vertex-object B x ⇒ vertex-object B y) → M.Matrix (wd y) (wd x)
-  entry x y f = ∃ₛ.fst (𝔽F-full (subst₂ _⇒_ (free x) (free y) f))
-
-  private
-    unsubst-ε : ∀ {V₁ V₂ W₁ W₂ : SemiMod.Semimodule} (e₁ : V₁ ≡ W₁) (e₂ : V₂ ≡ W₂) (f : V₁ ⇒ V₂) →
-                subst₂ _⇒_ e₁ e₂ f ≈ εₘ → f ≈ εₘ
-    unsubst-ε ≡-refl ≡-refl f h = h
+  entry x y f = ∃ₛ.fst (𝔽F-full f)
 
   entry-ε : ∀ (x y : V B) (f : vertex-object B x ⇒ vertex-object B y) →
             (∀ i j → entry x y f i j ≡ εₛ) → f ≈ εₘ
   entry-ε x y f h =
-    unsubst-ε (free x) (free y) f
-      (≈-trans (≈-sym (∃ₛ.snd (𝔽F-full (subst₂ _⇒_ (free x) (free y) f))))
-      (≈-trans (mat-cong (λ i j → ≈-of-≡ (h i j))) mat-ε))
+    ≈-trans (≈-sym (∃ₛ.snd (𝔽F-full f)))
+    (≈-trans (mat-cong (λ i j → ≈-of-≡ (h i j))) mat-ε)
 
   Adjacent : Relation (vertex-object B) → V B → V B → Set
   Adjacent G x y = NonZero (entry x y (G x y)) ⊎ NonZero (entry y x (G y x))
@@ -294,14 +291,13 @@ module Interaction {X Y : SemiMod.Semimodule} (B : Graph X Y)
   reveal-at p K .visible = p ∷ K .visible
   reveal-at p K .hidden  = concat (map (split-region p) (K .hidden))
 
-module _ {X Y : SemiMod.Semimodule} (𝒢 : Graph X Y)
-         (wd : V 𝒢 → ℕ) (free : ∀ v → vertex-object 𝒢 v ≡ 𝔽 (wd v)) where
+module _ {m n : ℕ} (𝒢 : Graph m n) where
 
   open Graph 𝒢 using (shape)
 
   Path : Set
   Path = Vertex shape
-  open Interaction 𝒢 wd free
+  open Interaction 𝒢
 
   private
     module Hide-𝒢 = Hide (V 𝒢) (vertex-object 𝒢)

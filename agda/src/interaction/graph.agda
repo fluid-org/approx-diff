@@ -192,19 +192,24 @@ mutual
   lts-order (s ∷ [])     = sum-<-order (lt-order s) none-order
   lts-order (s ∷ t ∷ ss) = sum-<-order (sum-<-order (lt-order s) none-order) (lts-order (t ∷ ss))
 
-record Graph (X Y : Semimodule) : Set₁ where
+record Graph (m n : ℕ) : Set₁ where
   field
     shape   : DerivationShape
-    object  : Vertex shape → Semimodule
+    width   : Vertex shape → ℕ
     fo      : Vertex shape → Bool
-    into    : (q : Vertex shape) → X ⇒ object q
+
+  object : Vertex shape → Semimodule
+  object v = 𝔽 (width v)
+
+  field
+    into    : (q : Vertex shape) → 𝔽 m ⇒ object q
     inside  : (p q : Vertex shape) → object p ⇒ object q
     -- Every non-zero relation between interior vertices runs strictly forward in the evaluation
     -- order. The inputs and the root need no condition, being below and above everything.
     <-inside : ∀ p q → lt shape p q ⊎ Prf (inside p q ≈ εₘ)
     fo-root : Bool
-    out     : X ⇒ Y
-    up      : (p : Vertex shape) → object p ⇒ Y
+    out     : 𝔽 m ⇒ 𝔽 n
+    up      : (p : Vertex shape) → object p ⇒ 𝔽 n
 
 Relation : {V : Set} → (V → Semimodule) → Set
 Relation {V} vertex-object = (x y : V) → vertex-object x ⇒ vertex-object y
@@ -473,23 +478,26 @@ mutual
   vertices-of-result-first (s ∷ t ∷ ss) =
     map inj₁ (inj₂ root ∷ map inj₁ (vertices-result-first s)) ++ map inj₂ (vertices-of-result-first (t ∷ ss))
 
-module _ {X Y : Semimodule} (B : Graph X Y) where
+module _ {m n : ℕ} (B : Graph m n) where
   open Graph B
 
   Path⁺ : Set
   Path⁺ = Vertex shape ⊎ Root
 
+  width⁺ : Path⁺ → ℕ
+  width⁺ = [ width , (λ _ → n) ]
+
   object⁺ : Path⁺ → Semimodule
-  object⁺ = [ object , (λ _ → Y) ]
+  object⁺ q = 𝔽 (width⁺ q)
 
   fo⁺ : Path⁺ → Bool
   fo⁺ = [ fo , (λ _ → fo-root) ]
 
-  into⁺ : (q : Path⁺) → X ⇒ object⁺ q
+  into⁺ : (q : Path⁺) → 𝔽 m ⇒ object⁺ q
   into⁺ (inj₁ q) = into q
   into⁺ (inj₂ _) = out
 
-  up-root⁺ : ∀ {K : Semimodule} → Y ⇒ K → (q : Path⁺) → object⁺ q ⇒ K
+  up-root⁺ : ∀ {K : Semimodule} → 𝔽 n ⇒ K → (q : Path⁺) → object⁺ q ⇒ K
   up-root⁺ u (inj₁ _) = εₘ
   up-root⁺ u (inj₂ _) = u
 
@@ -515,15 +523,18 @@ module _ {X Y : Semimodule} (B : Graph X Y) where
   V : Set
   V = Input ⊎ Path⁺
 
+  vertex-width : V → ℕ
+  vertex-width = [ (λ _ → m) , width⁺ ]
+
   vertex-object : V → Semimodule
-  vertex-object = [ (λ _ → X) , object⁺ ]
+  vertex-object v = 𝔽 (vertex-width v)
 
   gr : Relation vertex-object
   gr (inj₁ _) (inj₂ q) = into⁺ q
   gr (inj₂ p) (inj₂ q) = inside⁺ p q
   gr _        (inj₁ _) = εₘ
 
-  collapse : X ⇒ Y
+  collapse : 𝔽 m ⇒ 𝔽 n
   collapse = hide-all vertex-object gr (map (λ q → inj₂ (inj₁ q)) (vertices-result-first shape)) (inj₁ input) (inj₂ (inj₂ root))
 
   FO : List (Vertex shape)
@@ -561,9 +572,12 @@ module _ {X Y : Semimodule} (B : Graph X Y) where
 -- hide-all rewrites the whole relation at each hidden vertex. The tick hook marks each edge
 -- tabulation and each vertex summary, firing when the value is demanded; hide-in-evaluation-order
 -- below specialises it to the identity.
-module Instrumented {X Y : Semimodule} (B : Graph X Y) (wd : V B → ℕ)
-                    (free : ∀ v → vertex-object B v ≡ 𝔽 (wd v))
+module Instrumented {m n : ℕ} (B : Graph m n)
                     (tick : {A : Set} → String → A → A) where
+
+  private
+    wd : V B → ℕ
+    wd = vertex-width B
 
   private
     Table : Set
@@ -575,7 +589,7 @@ module Instrumented {X Y : Semimodule} (B : Graph X Y) (wd : V B → ℕ)
     nth d (suc n) (_ ∷ xs) = nth d n xs
 
     entry : ∀ (x y : V B) → vertex-object B x ⇒ vertex-object B y → M.Matrix (wd y) (wd x)
-    entry x y f = ∃ₛ.fst (𝔽F-full (subst₂ _⇒_ (free x) (free y) f))
+    entry x y f = ∃ₛ.fst (𝔽F-full f)
 
     to-table : ∀ {m n} → M.Matrix m n → Table
     to-table R = toList (tabulate λ i → toList (tabulate λ j → R i j))
@@ -614,11 +628,11 @@ module Instrumented {X Y : Semimodule} (B : Graph X Y) (wd : V B → ℕ)
     look : Table → M.Matrix (wd b) (wd a)
     look T i j = nth Semiring.ε (toℕ j) (nth [] (toℕ i) T)
 
-module _ {X Y : Semimodule} (B : Graph X Y) (wd : V B → ℕ)
-         (free : ∀ v → vertex-object B v ≡ 𝔽 (wd v)) where
+module _ {m n : ℕ} (B : Graph m n) where
 
-  hide-in-evaluation-order : List (V B) → (a b : V B) → M.Matrix (wd b) (wd a)
-  hide-in-evaluation-order = Instrumented.hide-in-evaluation-order B wd free (λ _ x → x)
+  hide-in-evaluation-order : List (V B) → (a b : V B) →
+                             M.Matrix (vertex-width B b) (vertex-width B a)
+  hide-in-evaluation-order = Instrumented.hide-in-evaluation-order B (λ _ x → x)
 
 private
   distrib-root : ∀ {W N K L : Semimodule} (P : N ⇒ W) (Xm : K ⇒ N) (Ym : L ⇒ N) (Zm : K ⇒ L) →
@@ -643,7 +657,7 @@ private
 -- Hiding one premise's vertices, one at a time, inside the conclusion's graph. The state records
 -- the premise's own relations as they accumulate; Φ carries the premise's input columns to the
 -- conclusion's, which for a premise evaluated in a substituted environment is not the identity.
-module _ {X Y : Semimodule} (B : Graph X Y) where
+module _ {m n : ℕ} (B : Graph m n) where
 
   root-row : ∀ y → gr B (inj₂ (inj₂ root)) y ≈ εₘ
   root-row (inj₁ _) = ≈-refl {f = εₘ}
@@ -659,7 +673,7 @@ module _ {X Y : Semimodule} (B : Graph X Y) where
                            (inj₁ input) (inj₂ (inj₂ root)))
 
 module HidePremise
-  {XB YB : Semimodule} (B : Graph XB YB)
+  {mB nB : ℕ} (B : Graph mB nB)
   {V : Set} (object' : V → Semimodule)
   (inp : V)
   (blk : Path⁺ B → V)
@@ -874,13 +888,13 @@ module NoEdgeOutOfHidden
   fixed-hide-all f (w ∷ ws) k = fixed-hide-all f ws (fixed-hide (f w) k)
 
 module Rule₀
-  {X Y : Semimodule} (fo-root : Bool)
-  (out-root : X ⇒ Y)
+  {m n : ℕ} (fo-root : Bool)
+  (out-root : 𝔽 m ⇒ 𝔽 n)
   where
 
-  E : Graph X Y
+  E : Graph m n
   E .Graph.shape = node []
-  E .Graph.object ()
+  E .Graph.width ()
   E .Graph.fo ()
   E .Graph.<-inside ()
   E .Graph.fo-root = fo-root
@@ -893,18 +907,18 @@ module Rule₀
   agree = ≈-refl {f = out-root}
 
 module Rule₁
-  {X : Semimodule}
-  {XB YB : Semimodule} (B : Graph XB YB)
-  {Y : Semimodule}
-  (inputs : X ⇒ XB)
+  {m : ℕ}
+  {mB nB : ℕ} (B : Graph mB nB)
+  {n : ℕ}
+  (inputs : 𝔽 m ⇒ 𝔽 mB)
   (fo-root : Bool)
-  (out-root : X ⇒ Y)
-  (up-root : YB ⇒ Y)
+  (out-root : 𝔽 m ⇒ 𝔽 n)
+  (up-root : 𝔽 nB ⇒ 𝔽 n)
   where
 
-  E : Graph X Y
+  E : Graph m n
   E .Graph.shape = node (Graph.shape B ∷ [])
-  E .Graph.object = object⁺ B
+  E .Graph.width = width⁺ B
   E .Graph.fo = fo⁺ B
   E .Graph.into q = into⁺ B q ∘ inputs
   E .Graph.inside = inside⁺ B
@@ -947,31 +961,31 @@ module Rule₁
                      (+ₘ-cong ≈-refl (∘-cong₂ {f = up-root} (∘-cong₁ {g = inputs} (≈-trans (≡-to-≈ hidden.κ) (hide-paths⁺ B))))))
 
 module Rule₂
-  {X : Semimodule}
-  {X₁ Y₁ : Semimodule} (B₁ : Graph X₁ Y₁)
-  {X₂ Y₂ : Semimodule} (B₂ : Graph X₂ Y₂)
-  {Y : Semimodule}
-  (inputs₁ : X ⇒ X₁)
-  (inputs₂ : (X ⊕ᵥ Y₁) ⇒ X₂)
+  {m : ℕ}
+  {m₁ n₁ : ℕ} (B₁ : Graph m₁ n₁)
+  {m₂ n₂ : ℕ} (B₂ : Graph m₂ n₂)
+  {n : ℕ}
+  (inputs₁ : 𝔽 m ⇒ 𝔽 m₁)
+  (inputs₂ : (𝔽 m ⊕ᵥ 𝔽 n₁) ⇒ 𝔽 m₂)
   (fo-root : Bool)
-  (out-root : X ⇒ Y)
-  (up₁ : Y₁ ⇒ Y)
-  (up₂ : Y₂ ⇒ Y)
+  (out-root : 𝔽 m ⇒ 𝔽 n)
+  (up₁ : 𝔽 n₁ ⇒ 𝔽 n)
+  (up₂ : 𝔽 n₂ ⇒ 𝔽 n)
   where
 
   private
-    from-inputs₂ : X ⇒ X₂
-    from-inputs₂ = inputs₂ ∘ inb₁ {X} {Y₁}
+    from-inputs₂ : (𝔽 m) ⇒ (𝔽 m₂)
+    from-inputs₂ = inputs₂ ∘ inb₁ {(𝔽 m)} {(𝔽 n₁)}
 
-    from-root₁ : Y₁ ⇒ X₂
-    from-root₁ = inputs₂ ∘ inb₂ {X} {Y₁}
+    from-root₁ : (𝔽 n₁) ⇒ (𝔽 m₂)
+    from-root₁ = inputs₂ ∘ inb₂ {(𝔽 m)} {(𝔽 n₁)}
 
     ps₁ = vertices-result-first (Graph.shape B₁)
     ps₂ = vertices-result-first (Graph.shape B₂)
 
-  E : Graph X Y
+  E : Graph m n
   E .Graph.shape = node (Graph.shape B₁ ∷ Graph.shape B₂ ∷ [])
-  E .Graph.object = [ object⁺ B₁ , object⁺ B₂ ]
+  E .Graph.width = [ width⁺ B₁ , width⁺ B₂ ]
   E .Graph.fo = [ fo⁺ B₁ , fo⁺ B₂ ]
   E .Graph.into (inj₁ q) = into⁺ B₁ q ∘ inputs₁
   E .Graph.into (inj₂ q) = into⁺ B₂ q ∘ from-inputs₂
@@ -1008,11 +1022,11 @@ module Rule₂
     tgt₁ (inj₁ q) = b2 q
     tgt₁ (inj₂ _) = er
 
-    P₁ : (t : Path⁺ B₂ ⊎ Root) → Y₁ ⇒ vertex-object E (tgt₁ t)
+    P₁ : (t : Path⁺ B₂ ⊎ Root) → (𝔽 n₁) ⇒ vertex-object E (tgt₁ t)
     P₁ (inj₁ q) = into⁺ B₂ q ∘ from-root₁
     P₁ (inj₂ _) = up₁
 
-    K₁ : (t : Path⁺ B₂ ⊎ Root) → X ⇒ vertex-object E (tgt₁ t)
+    K₁ : (t : Path⁺ B₂ ⊎ Root) → (𝔽 m) ⇒ vertex-object E (tgt₁ t)
     K₁ (inj₁ q) = into⁺ B₂ q ∘ from-inputs₂
     K₁ (inj₂ _) = out-root
 
@@ -1038,11 +1052,11 @@ module Rule₂
     done₁ = hidden₁.done start₁
     κ₁ = ≈-trans (≡-to-≈ hidden₁.κ) (hide-paths⁺ B₁)
 
-  Φ₂ : X ⇒ X₂
+  Φ₂ : (𝔽 m) ⇒ (𝔽 m₂)
   Φ₂ = inputs₂ ∘ ⟨ I , collapse B₁ ∘ inputs₁ ⟩
 
   private
-    Φ₂' : X ⇒ X₂
+    Φ₂' : (𝔽 m) ⇒ (𝔽 m₂)
     Φ₂' = from-inputs₂ +ₘ (from-root₁ ∘ (collapse B₁ ∘ inputs₁))
 
     Φ₂-split : Φ₂' ≈ Φ₂
@@ -1109,30 +1123,30 @@ module Rule₂
                      (+ₘ-cong ≈-refl (∘-cong₂ {f = up₂} (∘-cong (≈-trans (≡-to-≈ hidden₂.κ) (hide-paths⁺ B₂)) Φ₂-split))))
 
 module Rule₃
-  {X : Semimodule}
-  {X₁ Y₁ : Semimodule} (B₁ : Graph X₁ Y₁)
-  {X₂ Y₂ : Semimodule} (B₂ : Graph X₂ Y₂)
-  {X₃ Y₃ : Semimodule} (B₃ : Graph X₃ Y₃)
-  {Y : Semimodule}
-  (inputs₁ : X ⇒ X₁)
-  (inputs₂ : X ⇒ X₂)
-  (inputs₃ : ((X ⊕ᵥ Y₁) ⊕ᵥ Y₂) ⇒ X₃)
+  {m : ℕ}
+  {m₁ n₁ : ℕ} (B₁ : Graph m₁ n₁)
+  {m₂ n₂ : ℕ} (B₂ : Graph m₂ n₂)
+  {m₃ n₃ : ℕ} (B₃ : Graph m₃ n₃)
+  {n : ℕ}
+  (inputs₁ : 𝔽 m ⇒ 𝔽 m₁)
+  (inputs₂ : 𝔽 m ⇒ 𝔽 m₂)
+  (inputs₃ : ((𝔽 m ⊕ᵥ 𝔽 n₁) ⊕ᵥ 𝔽 n₂) ⇒ 𝔽 m₃)
   (fo-root : Bool)
-  (out-root : X ⇒ Y)
-  (up₁ : Y₁ ⇒ Y)
-  (up₂ : Y₂ ⇒ Y)
-  (up₃ : Y₃ ⇒ Y)
+  (out-root : 𝔽 m ⇒ 𝔽 n)
+  (up₁ : 𝔽 n₁ ⇒ 𝔽 n)
+  (up₂ : 𝔽 n₂ ⇒ 𝔽 n)
+  (up₃ : 𝔽 n₃ ⇒ 𝔽 n)
   where
 
   private
-    from-inputs₃ : X ⇒ X₃
-    from-inputs₃ = (inputs₃ ∘ inb₁ {X ⊕ᵥ Y₁} {Y₂}) ∘ inb₁ {X} {Y₁}
+    from-inputs₃ : (𝔽 m) ⇒ (𝔽 m₃)
+    from-inputs₃ = (inputs₃ ∘ inb₁ {(𝔽 m) ⊕ᵥ (𝔽 n₁)} {(𝔽 n₂)}) ∘ inb₁ {(𝔽 m)} {(𝔽 n₁)}
 
-    from-root₁ : Y₁ ⇒ X₃
-    from-root₁ = (inputs₃ ∘ inb₁ {X ⊕ᵥ Y₁} {Y₂}) ∘ inb₂ {X} {Y₁}
+    from-root₁ : (𝔽 n₁) ⇒ (𝔽 m₃)
+    from-root₁ = (inputs₃ ∘ inb₁ {(𝔽 m) ⊕ᵥ (𝔽 n₁)} {(𝔽 n₂)}) ∘ inb₂ {(𝔽 m)} {(𝔽 n₁)}
 
-    from-root₂ : Y₂ ⇒ X₃
-    from-root₂ = inputs₃ ∘ inb₂ {X ⊕ᵥ Y₁} {Y₂}
+    from-root₂ : (𝔽 n₂) ⇒ (𝔽 m₃)
+    from-root₂ = inputs₃ ∘ inb₂ {(𝔽 m) ⊕ᵥ (𝔽 n₁)} {(𝔽 n₂)}
 
     ps₁ = vertices-result-first (Graph.shape B₁)
     ps₂ = vertices-result-first (Graph.shape B₂)
@@ -1146,9 +1160,9 @@ module Rule₃
     e₂₃ (inj₁ _) q = εₘ
     e₂₃ (inj₂ _) q = into⁺ B₃ q ∘ from-root₂
 
-  E : Graph X Y
+  E : Graph m n
   E .Graph.shape = node (Graph.shape B₁ ∷ Graph.shape B₂ ∷ Graph.shape B₃ ∷ [])
-  E .Graph.object = [ object⁺ B₁ , [ object⁺ B₂ , object⁺ B₃ ] ]
+  E .Graph.width = [ width⁺ B₁ , [ width⁺ B₂ , width⁺ B₃ ] ]
   E .Graph.fo = [ fo⁺ B₁ , [ fo⁺ B₂ , fo⁺ B₃ ] ]
   E .Graph.into (inj₁ q)        = into⁺ B₁ q ∘ inputs₁
   E .Graph.into (inj₂ (inj₁ q)) = into⁺ B₂ q ∘ inputs₂
@@ -1201,17 +1215,17 @@ module Rule₃
     tgt (inj₁ q) = b3 q
     tgt (inj₂ _) = er
 
-    c₁ : X ⇒ Y₁
+    c₁ : (𝔽 m) ⇒ (𝔽 n₁)
     c₁ = collapse B₁ ∘ inputs₁
 
-    c₂ : X ⇒ Y₂
+    c₂ : (𝔽 m) ⇒ (𝔽 n₂)
     c₂ = collapse B₂ ∘ inputs₂
 
-    P₁ : (t : Path⁺ B₃ ⊎ Root) → Y₁ ⇒ vertex-object E (tgt t)
+    P₁ : (t : Path⁺ B₃ ⊎ Root) → (𝔽 n₁) ⇒ vertex-object E (tgt t)
     P₁ (inj₁ q) = into⁺ B₃ q ∘ from-root₁
     P₁ (inj₂ _) = up₁
 
-    K₁ : (t : Path⁺ B₃ ⊎ Root) → X ⇒ vertex-object E (tgt t)
+    K₁ : (t : Path⁺ B₃ ⊎ Root) → (𝔽 m) ⇒ vertex-object E (tgt t)
     K₁ (inj₁ q) = into⁺ B₃ q ∘ from-inputs₃
     K₁ (inj₂ _) = out-root
 
@@ -1266,14 +1280,14 @@ module Rule₃
       k₀ .IntoHidden₂.edge s (inj₂ (inj₂ _)) = ≈-refl {f = up-root⁺ B₂ up₂ s}
       k₀ .IntoHidden₂.no-edge s w = ≈-refl {f = εₘ}
 
-    Φ₃₁ : X ⇒ X₃
+    Φ₃₁ : (𝔽 m) ⇒ (𝔽 m₃)
     Φ₃₁ = from-inputs₃ +ₘ (from-root₁ ∘ c₁)
 
-    P₂ : (t : Path⁺ B₃ ⊎ Root) → Y₂ ⇒ vertex-object E (tgt t)
+    P₂ : (t : Path⁺ B₃ ⊎ Root) → (𝔽 n₂) ⇒ vertex-object E (tgt t)
     P₂ (inj₁ q) = into⁺ B₃ q ∘ from-root₂
     P₂ (inj₂ _) = up₂
 
-    K₂ : (t : Path⁺ B₃ ⊎ Root) → X ⇒ vertex-object E (tgt t)
+    K₂ : (t : Path⁺ B₃ ⊎ Root) → (𝔽 m) ⇒ vertex-object E (tgt t)
     K₂ (inj₁ q) = into⁺ B₃ q ∘ Φ₃₁
     K₂ (inj₂ _) = out-root +ₘ (up₁ ∘ c₁)
 
@@ -1327,17 +1341,17 @@ module Rule₃
       k₀ .IntoHidden₃.no-edge s (inj₁ w) = ≈-refl {f = εₘ}
       k₀ .IntoHidden₃.no-edge s (inj₂ w) = ≈-refl {f = εₘ}
 
-  Φ₃ : X ⇒ X₃
+  Φ₃ : (𝔽 m) ⇒ (𝔽 m₃)
   Φ₃ = inputs₃ ∘ ⟨ ⟨ I , c₁ ⟩ , c₂ ⟩
 
   private
-    Φ₃' : X ⇒ X₃
+    Φ₃' : (𝔽 m) ⇒ (𝔽 m₃)
     Φ₃' = Φ₃₁ +ₘ (from-root₂ ∘ c₂)
 
     Φ₃-split : Φ₃' ≈ Φ₃
     Φ₃-split =
       ≈-sym (≈-trans (∘-pair inputs₃ ⟨ I , c₁ ⟩ c₂)
-                     (+ₘ-cong (≈-trans (∘-pair (inputs₃ ∘ inb₁ {X ⊕ᵥ Y₁} {Y₂}) I c₁)
+                     (+ₘ-cong (≈-trans (∘-pair (inputs₃ ∘ inb₁ {(𝔽 m) ⊕ᵥ (𝔽 n₁)} {(𝔽 n₂)}) I c₁)
                                          (+ₘ-cong (id-right {f = from-inputs₃}) (≈-refl {f = from-root₁ ∘ c₁})))
                                 (≈-refl {f = from-root₂ ∘ c₂})))
 

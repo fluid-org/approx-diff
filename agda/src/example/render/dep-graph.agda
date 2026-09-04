@@ -101,7 +101,7 @@ private
 module render-eval {Γ τ} (γ : Env Γ) (t : Γ ⊢ τ) where
 
   open Evaluated γ t public
-  open Interaction dependence widths free public
+  open Interaction dependence public
 
   private
     label-of : V dependence → String
@@ -113,7 +113,7 @@ module render-eval {Γ τ} (γ : Env Γ) (t : Γ ⊢ τ) where
     node-line (i , x) = "  n" ++ ℕ-Show.show i ++ " [shape=box, fontsize=11, label=\"" ++ label-of x ++ "\"];\n"
 
   visible-edge : V dependence → V dependence → List (V dependence) → LL
-  visible-edge a b hid = ll-of (hide-in-evaluation-order dependence widths free hid a b)
+  visible-edge a b hid = ll-of (hide-in-evaluation-order dependence hid a b)
 
   dot-at : Config dependence → String
   dot-at K = "digraph G {\n  rankdir=LR;\n" ++ cat (map node-line nvs) ++ edge-lines (rows nvs) ++ "}\n"

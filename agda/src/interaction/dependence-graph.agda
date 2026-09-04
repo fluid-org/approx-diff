@@ -84,7 +84,7 @@ private
 
 mutual
   graph : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} → γ , t ⇓ v [ R ] →
-          Graph (𝔽 (suc (width-env γ))) (𝔽 (width v))
+          Graph (suc (width-env γ)) (width v)
   graph {τ = τ} (⇓-var {γ = γ} x) = Rule₀.E (fo-of τ) (var-out x γ)
   graph {τ = τ} (⇓-unit {γ = γ}) = Rule₀.E (fo-of τ) wctrl
   graph {τ = τ} (⇓-lam {γ = γ} {t = t}) = Rule₀.E (fo-of τ) (lam-out γ t)
@@ -124,7 +124,7 @@ mutual
     Rule₂.E (graph D₁) (graph-m D₂) I (join (suc (width-env γ)) (width v)) (fo-of τ) εₘ εₘ I
 
   graph-s : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R} →
-            γ , Ms ⇓s vs [ R ] → Graph (𝔽 (suc (width-env γ))) (𝔽 (bases-width is))
+            γ , Ms ⇓s vs [ R ] → Graph (suc (width-env γ)) (bases-width is)
   graph-s {γ = γ} [] = Rule₀.E Bool.true εₘ
   graph-s {γ = γ} (_∷_ {is = is} {v = v} D₁ D₂) =
     Rule₂.E (graph D₁) (graph-s D₂) I
@@ -134,7 +134,7 @@ mutual
 
   graph-m : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
             {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {v' : Val (σ' [ σr ])} {F} →
-            Map γ s σ' v v' F → Graph (𝔽 (suc (width-env γ) + width v)) (𝔽 (width v'))
+            Map γ s σ' v v' F → Graph (suc (width-env γ) + width v) (width v')
   graph-m {γ = γ} {σr = σr} {σ' = σ'} (m-rec {w = w} {w' = w'} D₁ D₂) =
     Rule₂.E (graph-m D₁) (graph D₂) I
           (rec-inputs γ w' ∘ join (suc (width-env γ) + width w) (width w'))

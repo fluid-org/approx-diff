@@ -52,7 +52,7 @@ private
       o-labels = val-labels 0 value
 
       -- Dependence matrix of the degenerate configuration.
-      R = hide-in-evaluation-order dependence widths free
+      R = hide-in-evaluation-order dependence
             (map (λ v → inj₂ (inj₁ v)) (vertices (Graph.shape dependence)))
             (inj₁ input) (inj₂ (inj₂ root))
 
@@ -89,10 +89,10 @@ private
       module mat = matrix.Mat (sign.semiring ⊗S three.semiring)
 
       open evaluated.Evaluated (runs.env runs.score-run) (runs.term runs.score-run)
-        using (dependence; widths; free; value)
+        using (dependence; value)
 
       score-rows : SignedMat
-      score-rows = drop-ctrl (graph.hide-in-evaluation-order dependence widths free
+      score-rows = drop-ctrl (graph.hide-in-evaluation-order dependence
                      (map (λ v → inj₂ (inj₁ v)) (graph.vertices (graph.Graph.shape dependence)))
                      (inj₁ graph.input) (inj₂ (inj₂ graph.root)))
         where

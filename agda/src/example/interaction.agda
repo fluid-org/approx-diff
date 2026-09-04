@@ -19,7 +19,6 @@ module Dep = signature.example.interpretation (nonzero three.semiring) three.sem
 
 open import language-syntax Sig using (_⊢_; zero; succ; base; var; inl; case; bop; emp) renaming (_,_ to _▸_)
 open import language-operational.evaluation Sig three.semiring Dep.interpretation three.C
-open import matrix-embedding three.semiring using (𝔽)
 open import interaction.evaluated Sig three.semiring Dep.interpretation three.C (λ x → three.∨-idem {x})
 open import interaction.graph three.semiring (λ x → three.∨-idem {x})
 open import interaction.dependence-graph Sig three.semiring Dep.interpretation three.C (λ x → three.∨-idem {x})
@@ -33,12 +32,12 @@ module rewiring where
   t₀ : (emp ▸ base number) ⊢ base number
   t₀ = case (inl (var zero)) (var zero) (var zero)
 
-  open Evaluated γ₀ t₀ using (dependence; widths; free)
+  open Evaluated γ₀ t₀ using (dependence)
 
-  G : Graph (𝔽 (suc (width-env γ₀))) _
+  G : Graph (suc (width-env γ₀)) _
   G = dependence
 
-  open Interaction G widths free
+  open Interaction G
 
   scrut : Vertex (Graph.shape G)
   scrut = inj₁ (inj₂ root)
@@ -90,12 +89,12 @@ module intermediate where
   t₀ : ((emp ▸ base number) ▸ base number) ⊢ base number
   t₀ = bop mult (bop add (var zero ∷ var (succ zero) ∷ []) ∷ var zero ∷ [])
 
-  open Evaluated γ₀ t₀ using (dependence; widths; free)
+  open Evaluated γ₀ t₀ using (dependence)
 
-  G : Graph (𝔽 (suc (width-env γ₀))) _
+  G : Graph (suc (width-env γ₀)) _
   G = dependence
 
-  open Interaction G widths free
+  open Interaction G
 
   sum : Vertex (Graph.shape G)
   sum = inj₁ (inj₁ (inj₂ root))

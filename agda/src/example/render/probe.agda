@@ -75,7 +75,7 @@ private
     hid = map (λ v → inj₂ (inj₁ v)) (vertices (Graph.shape dependence))
 
     ws : List ℕ
-    ws = map widths hid
+    ws = map (vertex-width dependence) hid
 
     line : String
     line = name ++ ": " ++ show (length hid) ++ " vertices, width sum " ++ show (sum ws)
@@ -90,7 +90,7 @@ private
     hid = map (λ v → inj₂ (inj₁ v)) (vertices (Graph.shape dependence))
 
     at : ℕ → String
-    at k = show3 (join (hide-in-evaluation-order dependence widths free (take k hid)
+    at k = show3 (join (hide-in-evaluation-order dependence (take k hid)
                           (inj₁ input) (inj₂ (inj₂ root))))
 
   survey : String
