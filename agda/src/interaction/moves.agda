@@ -277,6 +277,29 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
   ... | yes _ = fwd x y
   ... | no  _ = inj₂ ⟪ ≈-refl ⟫
 
+  private
+    open Sort (lt-order shape) (lt? shape) using (sort; sort-↭; sort-ascending; Ascending)
+
+    ascending-forward : {G : Relation (vertex-object 𝒢)} → Fwd 𝒢 G → {C : List Path} → Ascending C →
+                        AllPairs (λ v u → Prf (G u v ≈ εₘ)) (map at C)
+    ascending-forward fwd hs =
+      AllPairsP.map⁺
+        (AllPairs-map (λ {q} {q'} h → [ (λ l → ⊥-elim (h l)) , (λ e → e) ]′ (fwd (at q') (at q))) hs)
+
+  -- The summary of a hidden region computed by the tabulated pass, with the region sorted into
+  -- evaluation order so that every nonzero edge among its vertices runs forward.
+  tabulated-summary : Summarisation
+  tabulated-summary C a b =
+    mat (Tabulated.hide-in-evaluation-order 𝒢 (restrict (fo-graph 𝒢) C) (λ _ x → x)
+           (map at (sort C)) a b)
+
+  tabulated-summary-agrees : ∀ C x y → tabulated-summary C x y ≈ summary C x y
+  tabulated-summary-agrees C x y =
+    ≈-trans (tabulated-hide-all 𝒢 (restrict (fo-graph 𝒢) C) (map at (sort C)) x y
+              (ascending-forward fwd (sort-ascending C)))
+            (hide-all-perm 𝒢 fwd (map⁺ at (sort-↭ C)) x y)
+    where fwd = restrict-forward C (fo-forward 𝒢)
+
   adjacent-sym : (G : Relation (vertex-object 𝒢)) {x y : V 𝒢} → Adjacent G x y → Adjacent G y x
   adjacent-sym G = [ inj₂ , inj₁ ]′
 

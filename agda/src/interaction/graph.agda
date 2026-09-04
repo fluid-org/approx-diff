@@ -20,7 +20,7 @@ open import Data.Unit using (tt) renaming (⊤ to Unit)
 open import Relation.Binary.Definitions using (DecidableEquality)
 open import Relation.Binary.PropositionalEquality using (_≡_; _≢_; subst₂)
   renaming (refl to ≡-refl; sym to ≡-sym; trans to ≡-trans; cong to ≡-cong; cong₂ to ≡-cong₂)
-open import Relation.Nullary.Decidable using (yes)
+open import Relation.Nullary.Decidable using (Dec; yes; no)
 import Data.Sum.Properties as SumP
 open import Level using (0ℓ)
 open import prop using (Prf; ⟪_⟫; _∧_; _,_; proj₁; proj₂; ∃ₛ)
@@ -191,6 +191,23 @@ mutual
   lts-order []           .IsStrictOrder.asym ()
   lts-order (s ∷ [])     = sum-<-order (lt-order s) none-order
   lts-order (s ∷ t ∷ ss) = sum-<-order (sum-<-order (lt-order s) none-order) (lts-order (t ∷ ss))
+
+sum-<? : {A B : Set} {R : A → A → Set} {S : B → B → Set} →
+         (∀ p q → Dec (R p q)) → (∀ p q → Dec (S p q)) →
+         ∀ p q → Dec (sum-< R S p q)
+sum-<? r? s? (inj₁ p) (inj₁ q) = r? p q
+sum-<? r? s? (inj₁ _) (inj₂ _) = yes tt
+sum-<? r? s? (inj₂ _) (inj₁ _) = no (λ ())
+sum-<? r? s? (inj₂ p) (inj₂ q) = s? p q
+
+mutual
+  lt? : (s : DerivationShape) → ∀ p q → Dec (lt s p q)
+  lt? (node ss) = lts? ss
+
+  lts? : (ss : List DerivationShape) → ∀ p q → Dec (lts ss p q)
+  lts? []           ()
+  lts? (s ∷ [])     = sum-<? (lt? s) (λ _ _ → no (λ ()))
+  lts? (s ∷ t ∷ ss) = sum-<? (sum-<? (lt? s) (λ _ _ → no (λ ()))) (lts? (t ∷ ss))
 
 record Graph (m n : ℕ) : Set₁ where
   field
