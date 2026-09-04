@@ -833,6 +833,16 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
           (regions-perm (fo-graph 𝒢) (↭-sym (regions-concat (fo-graph 𝒢) (FO 𝒢))))
   initial-summarised .summaries = AllP.map⁺ (universal (λ C x y → ⟪ ≈-refl ⟫) (regions (fo-graph 𝒢) (FO 𝒢)))
 
+  -- From the inputs to the root, the visible graph of the initial configuration is the collapse of
+  -- the underlying graph: reading the stored region summaries computes the same dependence as
+  -- hiding every interior vertex.
+  initial-collapse : visible-graph initial (inj₁ input) (inj₂ (inj₂ root)) ≈ collapse 𝒢
+  initial-collapse =
+    ≈-trans (summaries-assemble initial initial-summarised (inj₁ input) (inj₂ (inj₂ root)) (λ ()) (λ ()))
+            (≈-trans (hide-all-perm 𝒢 (fo-forward 𝒢) (map⁺ at (initial-summarised .partition))
+                       (inj₁ input) (inj₂ (inj₂ root)))
+                     (fo-collapse 𝒢))
+
   hide-at-summarised : (summarise : Summarisation) →
                        (∀ C x y → summarise C x y ≈ summary C x y) →
                        (p : Vertex shape) (K : Config 𝒢) (S : Summarised K) →

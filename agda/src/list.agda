@@ -4,8 +4,9 @@
 -- at both levels.
 module list where
 
+open import Data.Bool using (Bool; true; false; not)
 open import Data.Empty using (⊥; ⊥-elim)
-open import Data.List using (List; []; _∷_; _++_; length; map; concat; filter; partition)
+open import Data.List using (List; []; _∷_; _++_; length; map; concat; filter; filterᵇ; partition)
 open import Data.Nat.ListAction using (sum)
 open import Data.List.Properties using (++-assoc; length-++; filter-all; filter-accept; filter-reject;
                                         partition-defn)
@@ -58,6 +59,16 @@ Any-filter⁻ : ∀ {a p q} {A : Set a} {P : A → Set p} {Q : A → Set q}
               (P? : (x : A) → Dec (P x)) (xs : List A) →
               Any Q (filter P? xs) → Any (λ x → Q x × P x) xs
 Any-filter⁻ P? xs m = AnyP.filter⁻ P? (Any-All m (AllP.all-filter P? xs))
+
+-- Splitting a list by a Boolean predicate: the rejected elements followed by the accepted ones
+-- permute to the original list.
+filterᵇ-split : ∀ {a} {A : Set a} (p : A → Bool) (xs : List A) →
+                (filterᵇ (λ x → not (p x)) xs ++ filterᵇ p xs) ↭ xs
+filterᵇ-split p []       = ↭-refl
+filterᵇ-split p (x ∷ xs) with p x
+... | true  = ↭-trans (shift x (filterᵇ (λ y → not (p y)) xs) (filterᵇ p xs))
+                      (↭.prep x (filterᵇ-split p xs))
+... | false = ↭.prep x (filterᵇ-split p xs)
 
 Any-contra : ∀ {a p b} {A : Set a} {P : A → Set p} {B : Set b} {xs : List A} →
              (∀ {x} → P x → ⊥) → Any P xs → B

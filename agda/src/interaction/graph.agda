@@ -4,7 +4,7 @@ open import Data.Bool using (Bool; true; not)
 open import Data.Empty using (⊥; ⊥-elim)
 open import Data.Fin using (Fin; toℕ; zero; suc)
 open import Data.List using (List; []; _∷_; _++_; map; foldl; filterᵇ; upTo; applyUpTo)
-open import Data.List.Properties using (map-++; map-∘; foldl-++)
+open import Data.List.Properties using (++-identityʳ; map-++; map-∘; foldl-++)
 open import Data.List.Relation.Unary.All using (All; []; _∷_; universal) renaming (map to All-map)
 open import Data.List.Relation.Unary.AllPairs using (AllPairs; []; _∷_) renaming (map to AllPairs-map)
 import Data.List.Relation.Unary.All.Properties as AllP
@@ -14,7 +14,9 @@ open import Data.Product using (_×_; _,_)
 open import Data.Sum using (_⊎_; inj₁; inj₂; [_,_])
 open import Data.Vec using (toList; tabulate)
 import Data.List.Relation.Binary.Permutation.Propositional as ↭
-open ↭ using (_↭_)
+open ↭ using (_↭_; ↭-refl; ↭-trans; ↭-reflexive)
+import Data.List.Relation.Binary.Permutation.Propositional.Properties as PermutationP
+open PermutationP using (map⁺; ++⁺)
 open import Data.Unit using (tt) renaming (⊤ to Unit)
 
 open import Relation.Binary
@@ -29,6 +31,7 @@ open import prop using (Prf; ⟪_⟫; _∧_; _,_; proj₁; proj₂; ∃ₛ)
 open import prop-setoid using (Setoid)
 open import commutative-semiring using (CommutativeSemiring)
 open import basics using (IsStrictOrder)
+open import list using (filterᵇ-split)
 import matrix
 import Data.Nat.Show as ℕ-Show
 open import Data.String using (String) renaming (_++_ to _++ₛ_)
@@ -600,6 +603,26 @@ mutual
   vertices-of-result-first (s ∷ t ∷ ss) =
     map inj₁ (inj₂ root ∷ map inj₁ (vertices-result-first s)) ++ map inj₂ (vertices-of-result-first (t ∷ ss))
 
+-- The result-first enumeration is a permutation of the canonical one.
+mutual
+  vertices-perm : (s : DerivationShape) → vertices s ↭ vertices-result-first s
+  vertices-perm (node ss) = vertices-of-perm ss
+
+  vertices-of-perm : (ss : List DerivationShape) → vertices-of ss ↭ vertices-of-result-first ss
+  vertices-of-perm []           = ↭-refl
+  vertices-of-perm (s ∷ [])     = vertices-one-perm s
+  vertices-of-perm (s ∷ t ∷ ss) =
+    ++⁺ (map⁺ inj₁ (vertices-one-perm s)) (map⁺ inj₂ (vertices-of-perm (t ∷ ss)))
+
+  vertices-one-perm : (s : DerivationShape) →
+                      (map inj₁ (vertices s) ++ (inj₂ root ∷ [])) ↭
+                      (inj₂ root ∷ map inj₁ (vertices-result-first s))
+  vertices-one-perm s =
+    ↭-trans (PermutationP.shift (inj₂ root) (map inj₁ (vertices s)) [])
+            (↭.prep (inj₂ root)
+              (↭-trans (↭-reflexive (++-identityʳ (map inj₁ (vertices s))))
+                       (map⁺ inj₁ (vertices-perm s))))
+
 module _ {m n : ℕ} (B : Graph m n) where
   open Graph B
 
@@ -687,6 +710,27 @@ module _ {m n : ℕ} (B : Graph m n) where
 
   fo-forward : Fwd fo-graph
   fo-forward = O.fwd-hide-all (map (λ q → inj₂ (inj₁ q)) fo-hidden) edges-forward
+
+  -- Hiding the remaining vertices of the first-order graph collapses the graph: the two stages
+  -- together hide every interior vertex exactly once, and reordering into result-first order is
+  -- sound because every nonzero edge of the raw graph runs forward.
+  fo-collapse : hide-all vertex-object fo-graph (map (λ q → inj₂ (inj₁ q)) FO)
+                  (inj₁ input) (inj₂ (inj₂ root))
+                ≈ collapse
+  fo-collapse =
+    ≈-trans (≡-to-≈ (≡-cong (λ G → G (inj₁ input) (inj₂ (inj₂ root))) two-stage))
+            (hide-all-perm edges-forward (map⁺ (λ q → inj₂ (inj₁ q)) interior-perm)
+               (inj₁ input) (inj₂ (inj₂ root)))
+    where
+    two-stage : hide-all vertex-object fo-graph (map (λ q → inj₂ (inj₁ q)) FO)
+                ≡ hide-all vertex-object edges (map (λ q → inj₂ (inj₁ q)) (fo-hidden ++ FO))
+    two-stage =
+      ≡-trans (≡-sym (foldl-++ (hide vertex-object) edges (map (λ q → inj₂ (inj₁ q)) fo-hidden)
+                               (map (λ q → inj₂ (inj₁ q)) FO)))
+              (≡-cong (hide-all vertex-object edges) (≡-sym (map-++ (λ q → inj₂ (inj₁ q)) fo-hidden FO)))
+
+    interior-perm : (fo-hidden ++ FO) ↭ vertices-result-first shape
+    interior-perm = ↭-trans (filterᵇ-split fo (vertices shape)) (vertices-perm shape)
 
 -- Hiding in evaluation order: with the hidden vertices listed so that every nonzero edge among
 -- them runs forward, one traversal materialises for each vertex the relation reaching it from the
