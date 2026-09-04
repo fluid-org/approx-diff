@@ -99,7 +99,7 @@ private
   label-cell O O l = "$" ++ l ++ "$"
   label-cell O D l = "\\cellcolor{blue!10}$" ++ l ++ "$"
   label-cell O C l = "\\cellcolor{blue!10}$\\posC{" ++ l ++ "}$"
-  label-cell _ _ l = "\\cellcolor{blue!25}$" ++ l ++ "$"
+  label-cell _ _ l = "\\cellcolor{blue!10}$" ++ l ++ "$"
 
   crep : ℕ → String
   crep zero    = ""
