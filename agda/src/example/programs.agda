@@ -1,8 +1,6 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
--- The example programs, over rational literals, with the first-order witnesses of their contexts
--- and result types where the dependency examples read them. Syntax only, so that every model and
--- the operational semantics are compared on the same programs.
+-- Syntax only: every model and the operational semantics read the same terms.
 module example.programs where
 
 import Data.Fin as Fin
@@ -23,9 +21,6 @@ sum = lam (foldr (bop (lit 0ℚ) []) (bop add (var zero ∷ var (succ zero) ∷ 
 
 ------------------------------------------------------------------------------
 -- Programs over a list of labelled numbers.
-
-query-ctxt-fo : first-order-ctxt (emp , list (base string [×] base number))
-query-ctxt-fo = emp , μ (unit [+] ((base string [×] base number) [×] var Fin.zero))
 
 -- The running example: add up the numbers carrying a given label,
 --   sum [ snd e | e <- xs, equal-label l (fst e) ].
@@ -75,18 +70,8 @@ total l = app sum
     price "a" = fst (snd (var (succ zero)))
     price _       = snd (snd (var (succ zero)))
 
-total-ctxt-fo : first-order-ctxt (emp , (list (base string [×] base number)) [×] (base number [×] base number))
-total-ctxt-fo =
-  emp , (μ (unit [+] ((base string [×] base number) [×] var Fin.zero)) [×] (base number [×] base number))
-
 ------------------------------------------------------------------------------
 -- Programs over a list of numbers.
-
-numlist-fo : first-order (list (base number))
-numlist-fo = μ (unit [+] (base number [×] var Fin.zero))
-
-map-ctxt-fo : first-order-ctxt (emp , list (base number))
-map-ctxt-fo = emp , numlist-fo
 
 -- Each output cell should record the input spine above it and its own scalar, nothing later.
 map-term : (emp , list (base number)) ⊢ list (base number)
@@ -96,9 +81,6 @@ map-term =
 
 -- Membership by numeric equality: the target is compared with each element, so it gates every step
 -- without its value reaching the output.
-filter-ctxt-fo : first-order-ctxt (emp , base number , list (base number))
-filter-ctxt-fo = (emp , first-order.base number) , numlist-fo
-
 filter-term : (emp , base number , list (base number)) ⊢ list (base number)
 filter-term =
   from var zero collect
@@ -136,23 +118,14 @@ merge-term =
                      (app (var (succ (succ (succ zero)))) (cons (var (succ zero)) (fst (var zero))))))
     (var zero)))
 
-merge-ctxt-fo : first-order-ctxt (emp , list (base number) [×] list (base number))
-merge-ctxt-fo = emp , (numlist-fo [×] numlist-fo)
-
 sum-mul : emp , list (base number) [×] base number ⊢ base number
 sum-mul = bop mult (app sum (fst (var zero)) ∷ snd (var zero) ∷ [])
-
-sum-mul-ctxt-fo : first-order-ctxt (emp , list (base number) [×] base number)
-sum-mul-ctxt-fo = emp , (numlist-fo [×] base number)
 
 ------------------------------------------------------------------------------
 -- Programs over numbers and booleans.
 
 -- Data and control interacting through a numeric test: the tested number reaches the output only
 -- through the equality, the other reaches it as value flow.
-cond-ctxt-fo : first-order-ctxt (emp , base number , base number)
-cond-ctxt-fo = emp , base number , base number
-
 cond-term : (emp , base number , base number) ⊢ base number
 cond-term =
   if brel equal-number ((var (succ zero)) ∷ ((bop (lit 0ℚ) []) ∷ []))
@@ -161,17 +134,11 @@ cond-term =
 
 -- The test's own outcome: the compared numbers reach the boolean directly, and only a consumer of
 -- that boolean turns the dependence into control.
-eq-ctxt-fo : first-order-ctxt (emp , base number)
-eq-ctxt-fo = emp , first-order.base number
-
 eq-term : (emp , base number) ⊢ (unit [+] unit)
 eq-term = brel equal-number ((var zero) ∷ ((bop (lit 0ℚ) []) ∷ []))
 
 -- Control dependence through a test: matching on a numeric equality must depend on the scalar the
 -- test read, through the root of the test's boolean.
-test-ctxt-fo : first-order-ctxt (emp , base number)
-test-ctxt-fo = emp , base number
-
 test-term : (emp , base number) ⊢ base number
 test-term =
   case (brel equal-number (var zero ∷ (bop (lit 0ℚ) [] ∷ [])))
@@ -181,14 +148,8 @@ test-term =
 case-ctxt : ctxt
 case-ctxt = (emp , base number) , (unit [+] unit)
 
-case-ctxt-fo : first-order-ctxt case-ctxt
-case-ctxt-fo = (emp , base number) , (unit [+] unit)
-
 case-term : case-ctxt ⊢ base number
 case-term = case (var zero) (var (succ (succ zero))) (bop (lit 0ℚ) [])
-
-mult-ctxt-fo : first-order-ctxt (emp , base number [×] base number)
-mult-ctxt-fo = emp , base number [×] base number
 
 mult-ex : emp , base number [×] base number ⊢ base number
 mult-ex = bop mult (fst (var zero) ∷ snd (var zero) ∷ [])
@@ -210,9 +171,6 @@ mavg : ℚ → emp , base number [×] (base number [×] (base number [×] base n
            ⊢ base number [×] (base number [×] base number)
 mavg h = mavg-body h (var zero)
 
-mavg-ctxt-fo : first-order-ctxt (emp , base number [×] (base number [×] (base number [×] base number)))
-mavg-ctxt-fo = emp , base number [×] (base number [×] (base number [×] base number))
-
 -- 3x3 grid scorer for the signed-saliency reading: a centre-surround linear filter (centre
 -- positive, corners negative) plus two adjacent-cell interaction products. Unlike the linear
 -- mavg, the products make the Jacobian, and hence the saliency, depend on the input. `neg` is
@@ -221,10 +179,6 @@ mavg-ctxt-fo = emp , base number [×] (base number [×] (base number [×] base n
 Row Grid : type 0
 Row  = base number [×] (base number [×] base number)
 Grid = Row [×] (Row [×] Row)
-
-score-ctxt-fo : first-order-ctxt (emp , Grid)
-score-ctxt-fo = emp , (row [×] (row [×] row))
-  where row = base number [×] (base number [×] base number)
 
 score : ℚ → emp , Grid ⊢ base number
 score neg =
@@ -269,9 +223,3 @@ rose-sum = lam (fold (bop add (fst (var zero) ∷ app sum (snd (var zero)) ∷ [
 
 rose-query : emp , rose ⊢ base number
 rose-query = app rose-sum (var zero)
-
-rose-fo : first-order rose
-rose-fo = μ (base number [×] μ (unit [+] (var (Fin.suc Fin.zero) [×] var Fin.zero)))
-
-rose-ctxt-fo : first-order-ctxt (emp , rose)
-rose-ctxt-fo = emp , rose-fo

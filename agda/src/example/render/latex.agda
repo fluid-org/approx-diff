@@ -32,8 +32,8 @@ open import interaction.evaluated Sig three.semiring interpretation three.C (λ 
 open import example.runs (nonzero three.semiring) three.semiring three.C
   using (Run; query-run; const-run; length-run; fold0-run; case0-run; tag-run; case-l-run;
          case-r-run; test-run; map-run; adjacent-sums-run; filter-run; cond-run; eq-run;
-         mult-run; mavg-run; total-run; sum-mul-run; rose-run; score-run; env; term; model-output)
-open import example.render.table using (Label; Mat; SignedMat; Sel; none; sel-label; table; signed-table)
+         mult-run; mavg-run; total-run; sum-mul-run; rose-run; score-run; env; term)
+open import example.render.table using (Label; Mat; SignedMat; none; sel-label; table; signed-table)
 open import example.render.value-labels (nonzero three.semiring) three.semiring three.C
   using (val-labels; env-labels)
 
@@ -43,48 +43,33 @@ private
   rows : ∀ {m n} → M3.Matrix m n → Mat
   rows M = toList (tabulate (λ q → toList (tabulate (M q))))
 
-  in-labels out-labels : Run → List Label
-  in-labels  r = env-labels (env r)
-  out-labels r = val-labels 0 (model-output r)
+  module render (r : Run) where
+    private
+      open Evaluated (env r) (term r)
 
-  -- The dependence matrix of a run's degenerate configuration: every intermediate hidden, in
-  -- evaluation order, with the control column of the environment vertex dropped.
-  op-rows : Run → Mat
-  op-rows r = drop-ctrl (hide-in-evaluation-order dependence widths free
-                           (map (λ v → inj₂ (inj₁ v)) (vertices (Graph.shape dependence)))
-                           (inj₁ input) (inj₂ (inj₂ root)))
-    where
-    open Evaluated (env r) (term r)
+      i-labels o-labels : List Label
+      i-labels = env-labels (env r)
+      o-labels = val-labels 0 value
 
-    -- Argument taken as a value so its internal table is computed once, not per entry read.
-    drop-ctrl : ∀ {m n} → M3.Matrix m (Nat.suc n) → Mat
-    drop-ctrl R = rows (λ q p → R q (suc p))
+      -- Dependence matrix of the degenerate configuration.
+      R = hide-in-evaluation-order dependence widths free
+            (map (λ v → inj₂ (inj₁ v)) (vertices (Graph.shape dependence)))
+            (inj₁ input) (inj₂ (inj₂ root))
 
-  -- Which outputs are related through some shared input.
-  related : String → Run → String
-  related name r = table name (out-labels r) (out-labels r) (go (hide-in-evaluation-order dependence widths free
-                     (map (λ v → inj₂ (inj₁ v)) (vertices (Graph.shape dependence)))
-                     (inj₁ input) (inj₂ (inj₂ root)))) none none
-    where
-    open Evaluated (env r) (term r)
+      -- Control column of the environment vertex dropped.
+      drop-ctrl : ∀ {m n} → M3.Matrix m (Nat.suc n) → M3.Matrix m n
+      drop-ctrl M q p = M q (suc p)
 
-    go : ∀ {m n} → M3.Matrix m (Nat.suc n) → Mat
-    go {m} {n} R = rows (drop M3.∘ (drop M3.ᵀ))
-      where
-      drop : M3.Matrix m n
-      drop q p = R q (suc p)
+    plain : String → String
+    plain name = table name i-labels o-labels (rows (drop-ctrl R)) none none
 
-  run-table : String → Run → Sel → Sel → String
-  run-table name r isel osel = table name (in-labels r) (out-labels r) (op-rows r) isel osel
+    fwd bwd : String → ℕ → String
+    fwd name i = table name i-labels o-labels (rows (drop-ctrl R)) (sel-label i-labels i) none
+    bwd name i = table name i-labels o-labels (rows (drop-ctrl R)) none (sel-label o-labels i)
 
-  plain : String → Run → String
-  plain name r = run-table name r none none
-
-  fwd : String → Run → ℕ → String
-  fwd name r i = run-table name r (sel-label (in-labels r) i) none
-
-  bwd : String → Run → ℕ → String
-  bwd name r i = run-table name r none (sel-label (out-labels r) i)
+    related-outputs : String → String
+    related-outputs name = table name o-labels o-labels (rows (D M3.∘ (D M3.ᵀ))) none none
+      where D = drop-ctrl R
 
   module signed where
     private
@@ -104,7 +89,7 @@ private
       module mat = matrix.Mat (sign.semiring ⊗S three.semiring)
 
       open evaluated.Evaluated (runs.env runs.score-run) (runs.term runs.score-run)
-        using (dependence; widths; free)
+        using (dependence; widths; free; value)
 
       score-rows : SignedMat
       score-rows = drop-ctrl (graph.hide-in-evaluation-order dependence widths free
@@ -116,34 +101,34 @@ private
 
     fragment : String
     fragment = signed-table "score (signed)" (axes.env-labels (runs.env runs.score-run))
-              (axes.val-labels 0 (runs.model-output runs.score-run)) score-rows
+              (axes.val-labels 0 value) score-rows
 
 tables : List (String × String)
 tables =
-  ("query"         , plain "query"         query-run)   ∷
-  ("const"         , plain "const"         const-run)   ∷
-  ("length"        , plain "length"        length-run)  ∷
-  ("fold0"         , plain "fold0"         fold0-run)   ∷
-  ("case0"         , plain "case0"         case0-run)   ∷
-  ("tag"           , plain "tag"           tag-run)     ∷
-  ("case-left"     , plain "case-left"     case-l-run)  ∷
-  ("case-right"    , plain "case-right"    case-r-run)  ∷
-  ("test"          , plain "test"          test-run)    ∷
-  ("map"           , plain "map"           map-run)     ∷
-  ("adjacent-sums" , plain "adjacent-sums" adjacent-sums-run) ∷
-  ("filter"        , plain "filter"        filter-run)  ∷
-  ("cond"          , plain "cond"          cond-run)    ∷
-  ("eq"            , plain "eq"            eq-run)      ∷
-  ("mult"          , plain "mult"          mult-run)    ∷
-  ("mavg"          , plain "mavg"          mavg-run)    ∷
-  ("total"         , plain "total"         total-run)   ∷
-  ("sum-mul"       , plain "sum-mul"       sum-mul-run) ∷
-  ("rose"          , plain "rose"          rose-run)    ∷
-  ("score"         , plain "score"         score-run)   ∷
-  ("map-backward"        , bwd "map (backward slice)"          map-run           2) ∷
-  ("adjacent-sums-forward" , fwd "adjacent-sums (forward slice)" adjacent-sums-run 2) ∷
-  ("mavg-related"          , related "mavg (related outputs)"          mavg-run) ∷
-  ("adjacent-sums-related" , related "adjacent-sums (related outputs)" adjacent-sums-run) ∷
+  ("query"         , render.plain query-run         "query")      ∷
+  ("const"         , render.plain const-run         "const")      ∷
+  ("length"        , render.plain length-run        "length")     ∷
+  ("fold0"         , render.plain fold0-run         "fold0")      ∷
+  ("case0"         , render.plain case0-run         "case0")      ∷
+  ("tag"           , render.plain tag-run           "tag")        ∷
+  ("case-left"     , render.plain case-l-run        "case-left")  ∷
+  ("case-right"    , render.plain case-r-run        "case-right") ∷
+  ("test"          , render.plain test-run          "test")       ∷
+  ("map"           , render.plain map-run           "map")        ∷
+  ("adjacent-sums" , render.plain adjacent-sums-run "adjacent-sums") ∷
+  ("filter"        , render.plain filter-run        "filter")     ∷
+  ("cond"          , render.plain cond-run          "cond")       ∷
+  ("eq"            , render.plain eq-run            "eq")         ∷
+  ("mult"          , render.plain mult-run          "mult")       ∷
+  ("mavg"          , render.plain mavg-run          "mavg")       ∷
+  ("total"         , render.plain total-run         "total")      ∷
+  ("sum-mul"       , render.plain sum-mul-run       "sum-mul")    ∷
+  ("rose"          , render.plain rose-run          "rose")       ∷
+  ("score"         , render.plain score-run         "score")      ∷
+  ("map-backward"        , render.bwd map-run "map (backward slice)" 2) ∷
+  ("adjacent-sums-forward" , render.fwd adjacent-sums-run "adjacent-sums (forward slice)" 2) ∷
+  ("mavg-related"          , render.related-outputs mavg-run "mavg (related outputs)") ∷
+  ("adjacent-sums-related" , render.related-outputs adjacent-sums-run "adjacent-sums (related outputs)") ∷
   ("score-signed"          , signed.fragment) ∷ []
   -- merge and merge-forward disabled: hide-in-evaluation-order diverges on merge's graph (#48
   -- closure width growth); restore once that subtask lands.
