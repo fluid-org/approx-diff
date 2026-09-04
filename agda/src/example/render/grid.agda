@@ -9,6 +9,7 @@ open import Data.List using (List; []; _∷_; map)
 open import Data.Nat using (ℕ; zero; suc; _+_)
 open import Data.Product using (_×_; _,_; proj₁)
 open import Data.String using (String; _++_)
+import semiring-sign as sign
 import three
 open three using (Three; O; C; D; _⊓_; _⊔_)
 
@@ -22,26 +23,40 @@ Sel = ℕ → Three
 Mat : Set
 Mat = List (List Three)
 
+SignedMat : Set
+SignedMat = List (List (sign.Sign × Three))
+
 none : Sel
 none _ = O
 
 private
-  at : List Three → ℕ → Three
-  at []       _       = O
-  at (a ∷ _)  zero    = a
-  at (_ ∷ as) (suc n) = at as n
+  module cells {X : Set} (εX : X) (_⊕_ : X → X → X) where
+    at : List X → ℕ → X
+    at []       _       = εX
+    at (a ∷ _)  zero    = a
+    at (_ ∷ as) (suc n) = at as n
 
-  nth : ℕ → Mat → List Three
-  nth _       []       = []
-  nth zero    (r ∷ _)  = r
-  nth (suc n) (_ ∷ rs) = nth n rs
+    nth : ℕ → List (List X) → List X
+    nth _       []       = []
+    nth zero    (r ∷ _)  = r
+    nth (suc n) (_ ∷ rs) = nth n rs
 
-  entry : Mat → ℕ → ℕ → Three
-  entry M q p = at (nth q M) p
+    entry : List (List X) → ℕ → ℕ → X
+    entry M q p = at (nth q M) p
 
-  span : (ℕ → Three) → ℕ → ℕ → Three
-  span f o zero    = O
-  span f o (suc k) = f o ⊔ span f (suc o) k
+    span : (ℕ → X) → ℕ → ℕ → X
+    span f o zero    = εX
+    span f o (suc k) = f o ⊕ span f (suc o) k
+
+    block : List (List X) → Label → Label → X
+    block M (_ , qn , qo) (_ , pn , po) = span (λ q → span (entry M q) po pn) qo qn
+
+  open cells O _⊔_
+
+  _⊕±_ : sign.Sign × Three → sign.Sign × Three → sign.Sign × Three
+  (s₁ , t₁) ⊕± (s₂ , t₂) = s₁ sign.+ˢ s₂ , t₁ ⊔ t₂
+
+  module signed-cells = cells (sign.zer , O) _⊕±_
 
   width-of : List Label → ℕ
   width-of []                 = 0
@@ -49,9 +64,6 @@ private
 
   sel-of : Sel → Label → Three
   sel-of s (_ , n , o) = span s o n
-
-  block : Mat → Label → Label → Three
-  block M (_ , qn , qo) (_ , pn , po) = span (λ q → span (entry M q) po pn) qo qn
 
   reach-in : Mat → ℕ → Sel → Label → Three
   reach-in M h osel (_ , pn , po) = span (λ p → span (λ q → osel q ⊓ entry M q p) 0 h) po pn
@@ -63,6 +75,21 @@ private
   mark D = "\\posD{\\bullet}"
   mark C = "\\posC{\\circ}"
   mark O = ""
+
+  sup : sign.Sign → String
+  sup sign.pos = ""
+  sup sign.zer = "^{0}"
+  sup sign.neg = "^{-}"
+  sup sign.unk = "^{?}"
+
+  signed-mark : sign.Sign × Three → String
+  signed-mark (_ , O) = ""
+  signed-mark (_ , C) = "\\posC{\\circ}"
+  signed-mark (s , D) = "\\posD{\\bullet}" ++ sup s
+
+  count : List Label → ℕ
+  count []       = 0
+  count (_ ∷ ts) = suc (count ts)
 
   band : Three → String
   band O = ""
@@ -118,6 +145,15 @@ grid name ilabels olabels M isel osel =
   where
   w = width-of ilabels
   h = width-of olabels
-  count : List Label → ℕ
-  count []       = 0
-  count (_ ∷ ts) = suc (count ts)
+
+signed-grid : String → List Label → List Label → SignedMat → String
+signed-grid name ilabels olabels M =
+  "\\run{" ++ name ++ "}\n{\\scriptsize\\setlength{\\tabcolsep}{1.5pt}%\n\\begin{tabular}{"
+  ++ crep (count ilabels) ++ "|l}\n"
+  ++ amp (map (λ u → "$" ++ proj₁ u ++ "$") ilabels) ++ " & \\\\ \\hline\n"
+  ++ cat (map row olabels)
+  ++ "\\end{tabular}}\n"
+  where
+  row : Label → String
+  row t = amp (map (λ u → "\\gcell{$" ++ signed-mark (signed-cells.block M t u) ++ "$}") ilabels)
+          ++ " & $" ++ proj₁ t ++ "$ \\\\\n"

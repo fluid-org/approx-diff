@@ -12,11 +12,19 @@ import Data.Nat as Nat
 open import Data.Product using (_×_; _,_; proj₁; proj₂)
 open import Data.Sum using (inj₁; inj₂)
 open import Data.Unit.Polymorphic using (⊤; tt)
+open import Data.Rational using (ℚ)
 open import Data.String using (String; _++_)
 open import Data.Vec using (toList; tabulate)
+import example.render.value-labels
+import example.runs
+import interaction.evaluated
+import interaction.graph
 import matrix
+import semiring-sign as sign
+import signature.example.interpretation
 import three
 open import semiring-Q using (nonzero)
+open import commutative-semiring-product using (_⊗S_; ⊗-idem)
 open import signature.example.interpretation (nonzero three.semiring) three.semiring
   using (Sig; interpretation)
 open import interaction.graph three.semiring (λ x → three.∨-idem {x})
@@ -25,7 +33,7 @@ open import example.runs (nonzero three.semiring) three.semiring three.C
   using (Run; query-run; const-run; length-run; fold0-run; case0-run; tag-run; case-l-run;
          case-r-run; test-run; map-run; adjacent-sums-run; filter-run; cond-run; eq-run;
          mult-run; mavg-run; total-run; sum-mul-run; rose-run; score-run; env; term; model-output)
-open import example.render.grid using (Label; Mat; Sel; none; sel-label; grid)
+open import example.render.grid using (Label; Mat; SignedMat; Sel; none; sel-label; grid; signed-grid)
 open import example.render.value-labels (nonzero three.semiring) three.semiring three.C
   using (val-labels; env-labels)
 
@@ -78,6 +86,38 @@ private
   bwd : String → Run → ℕ → String
   bwd name r i = run-grid name r none (sel-label (out-labels r) i)
 
+  module signed where
+    private
+      signed-weight : ℚ → sign.Sign × three.Three
+      signed-weight q = sign.sign-of q , nonzero three.semiring q
+
+      module runs = example.runs signed-weight (sign.semiring ⊗S three.semiring) (sign.unk , three.C)
+      module graph = interaction.graph (sign.semiring ⊗S three.semiring)
+                       (⊗-idem sign.semiring three.semiring sign.+ˢ-idem (λ x → three.∨-idem {x}))
+      module sig-interp = signature.example.interpretation signed-weight
+                            (sign.semiring ⊗S three.semiring)
+      module evaluated = interaction.evaluated sig-interp.Sig (sign.semiring ⊗S three.semiring)
+                           sig-interp.interpretation (sign.unk , three.C)
+                           (⊗-idem sign.semiring three.semiring sign.+ˢ-idem (λ x → three.∨-idem {x}))
+      module axes = example.render.value-labels signed-weight (sign.semiring ⊗S three.semiring)
+                      (sign.unk , three.C)
+      module mat = matrix.Mat (sign.semiring ⊗S three.semiring)
+
+      open evaluated.Evaluated (runs.env runs.score-run) (runs.term runs.score-run)
+        using (dependence; widths; free)
+
+      score-rows : SignedMat
+      score-rows = drop-ctrl (graph.hide-in-evaluation-order dependence widths free
+                     (map (λ v → inj₂ (inj₁ v)) (graph.vertices (graph.Graph.shape dependence)))
+                     (inj₁ graph.input) (inj₂ (inj₂ graph.root)))
+        where
+        drop-ctrl : ∀ {m n} → mat.Matrix m (Nat.suc n) → SignedMat
+        drop-ctrl R = toList (tabulate (λ q → toList (tabulate (λ p → R q (suc p)))))
+
+    table : String
+    table = signed-grid "score (signed)" (axes.env-labels (runs.env runs.score-run))
+              (axes.val-labels 0 (runs.model-output runs.score-run)) score-rows
+
 tables : List (String × String)
 tables =
   ("query"         , plain "query"         query-run)   ∷
@@ -103,7 +143,8 @@ tables =
   ("map-backward"        , bwd "map (backward slice)"          map-run           2) ∷
   ("adjacent-sums-forward" , fwd "adjacent-sums (forward slice)" adjacent-sums-run 2) ∷
   ("mavg-related"          , related "mavg (related outputs)"          mavg-run) ∷
-  ("adjacent-sums-related" , related "adjacent-sums (related outputs)" adjacent-sums-run) ∷ []
+  ("adjacent-sums-related" , related "adjacent-sums (related outputs)" adjacent-sums-run) ∷
+  ("score-signed"          , signed.table) ∷ []
   -- merge and merge-forward disabled: hide-in-evaluation-order diverges on merge's graph (#48
   -- closure width growth); restore once that subtask lands.
 
