@@ -88,7 +88,11 @@ private
 module render-eval {Γ τ} (γ : Env Γ) (t : Γ ⊢ τ) where
 
   open Evaluated γ t public
-  open Interaction dependence (tabulated-first-order dependence (first-order-tables dependence)) public
+
+  first-order = tabulated-first-order dependence (λ _ x → x) (first-order-tables dependence (λ _ x → x))
+  summarise   = tabulated-summary dependence (λ _ x → x) first-order
+
+  open Interaction dependence first-order public
 
   private
     label-of : V dependence → String
@@ -133,8 +137,7 @@ module render-eval {Γ τ} (γ : Env Γ) (t : Γ ⊢ τ) where
       cols ((j , gy , y) ∷ js) = keep i j (visible-edge gx gy) ++L cols js
 
   full : Config dependence
-  full = foldl (λ K p → reveal-at (tabulated-summary dependence (tabulated-first-order dependence (first-order-tables dependence))) p K)
-             (initial (tabulated-summary dependence (tabulated-first-order dependence (first-order-tables dependence)))) (FO dependence)
+  full = foldl (λ K p → reveal-at summarise p K) (initial summarise) (FO dependence)
 
   dot : String
   dot = dot-at full
@@ -158,14 +161,12 @@ private
   sum-vertex = into here ε
 
   int-dot : String
-  int-dot = int-fig.dot-at (int-fig.reveal-at (tabulated-summary int-fig.dependence (tabulated-first-order int-fig.dependence (first-order-tables int-fig.dependence))) sum-vertex
-              (int-fig.initial (tabulated-summary int-fig.dependence (tabulated-first-order int-fig.dependence (first-order-tables int-fig.dependence)))))
+  int-dot = int-fig.dot-at (int-fig.reveal-at int-fig.summarise sum-vertex
+              (int-fig.initial int-fig.summarise))
 
 main : Main
 main = run (writeFile "dot/intermediate-three.dot" int-dot >>
             writeFile "dot/filter-three.dot"
-              (filter-fig.dot-at
-                (filter-fig.initial (tabulated-summary filter-fig.dependence (tabulated-first-order filter-fig.dependence (first-order-tables filter-fig.dependence))))) >>
+              (filter-fig.dot-at (filter-fig.initial filter-fig.summarise)) >>
             writeFile "dot/map-three.dot"
-              (map-fig.dot-at
-                (map-fig.initial (tabulated-summary map-fig.dependence (tabulated-first-order map-fig.dependence (first-order-tables map-fig.dependence))))))
+              (map-fig.dot-at (map-fig.initial map-fig.summarise)))

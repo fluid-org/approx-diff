@@ -109,13 +109,13 @@ private
     -- and the root.
     tables : List (Path D) → (V dependence → String) → String →
              List (String × String)
-    tables ps nm name = from-store (first-order-tables dependence)
+    tables ps nm name = from-store (first-order-tables dependence (λ _ x → x))
       where
       from-store : Tables dependence → List (String × String)
       from-store ts = at-config (foldr (I.reveal-at summarise) (I.initial summarise) ps)
         where
-        first-order = tabulated-first-order dependence ts
-        summarise = tabulated-summary dependence first-order
+        first-order = tabulated-first-order dependence (λ _ x → x) ts
+        summarise = tabulated-summary dependence (λ _ x → x) first-order
         module I = Interaction dependence first-order
         at-config : Config dependence → List (String × String)
         at-config K = concat (map (λ u → concat (map (edge u) endpoints)) endpoints)

@@ -50,9 +50,9 @@ private
   open Evaluated (env filter-sum-run) (term filter-sum-run)
 
   ts : Tables dependence
-  ts = first-order-tables dependence
+  ts = first-order-tables dependence (λ _ x → x)
 
-  fo = tabulated-first-order dependence ts
+  fo = tabulated-first-order dependence (λ _ x → x) ts
 
   open Interaction dependence fo using (entry)
 
