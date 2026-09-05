@@ -923,9 +923,13 @@ read-table T i j with table-at T i j
 module _ {m : ℕ} {D : Derivation} (B : Graph m D) where
 
   read-edge : Tabulation → (x y : V B) → vertex-object B x ⇒ vertex-object B y
-  read-edge T x y with table-at T (index-of B x) (index-of B y)
-  ... | just t  = mat (M.look {vertex-width B y} {vertex-width B x} t)
-  ... | nothing = εₘ
+  read-edge T x y = go (position T (index-of B x)) (position T (index-of B y))
+    where
+    go : Maybe ℕ → Maybe ℕ → vertex-object B x ⇒ vertex-object B y
+    go (just p) (just q) with table-at T p q
+    ... | just t  = mat (M.look {vertex-width B y} {vertex-width B x} t)
+    ... | nothing = εₘ
+    go _ _ = εₘ
 
 -- Hiding in evaluation order over a tabulation: the summaries computation of Tabulated, but
 -- reading stored tables by position and skipping absent edges. The tick hook marks each vertex

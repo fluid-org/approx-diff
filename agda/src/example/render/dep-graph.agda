@@ -89,7 +89,7 @@ module render-eval {Γ τ} (γ : Env Γ) (t : Γ ⊢ τ) where
 
   open Evaluated γ t public
 
-  first-order = tabulated-first-order dependence (λ _ x → x) (first-order-tables dependence (λ _ x → x))
+  first-order = first-order-edges dependence (λ _ x → x)
   summarise   = tabulated-summary dependence (λ _ x → x) first-order
 
   open Interaction dependence first-order public

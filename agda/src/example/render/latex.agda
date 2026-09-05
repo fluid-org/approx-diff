@@ -34,8 +34,7 @@ open import interaction.evaluated Sig three.semiring interpretation three.C (λ 
 open import interaction.labelling Sig three.semiring interpretation three.C (λ x → three.∨-idem {x})
   using (Node; val; at)
 open import interaction.moves three.semiring (λ x → three.∨-idem {x}) three.≡-of-≈ three.ε?
-  using (module Interaction; Config; visible; NonZero?; tabulated-summary;
-         Tables; first-order-tables; tabulated-first-order)
+  using (module Interaction; Config; visible; NonZero?; tabulated-summary; first-order-edges)
 open import example.runs (nonzero three.semiring) three.semiring three.C
   using (Run; filter-sum-run; const-run; length-run; fold0-run; case0-run; tag-run; case-l-run;
          case-r-run; test-run; map-run; adjacent-sums-run; filter-run; cond-run; eq-run;
@@ -109,29 +108,26 @@ private
     -- and the root.
     tables : List (Path D) → (V dependence → String) → String →
              List (String × String)
-    tables ps nm name = from-store (first-order-tables dependence (λ _ x → x))
+    tables ps nm name = at-config (foldr (I.reveal-at summarise) (I.initial summarise) ps)
       where
-      from-store : Tables dependence → List (String × String)
-      from-store ts = at-config (foldr (I.reveal-at summarise) (I.initial summarise) ps)
+      first-order = first-order-edges dependence (λ _ x → x)
+      summarise = tabulated-summary dependence (λ _ x → x) first-order
+      module I = Interaction dependence first-order
+      at-config : Config dependence → List (String × String)
+      at-config K = concat (map (λ u → concat (map (edge u) endpoints)) endpoints)
         where
-        first-order = tabulated-first-order dependence (λ _ x → x) ts
-        summarise = tabulated-summary dependence (λ _ x → x) first-order
-        module I = Interaction dependence first-order
-        at-config : Config dependence → List (String × String)
-        at-config K = concat (map (λ u → concat (map (edge u) endpoints)) endpoints)
+        endpoints : List (V dependence)
+        endpoints = inj₁ input ∷ (map inj₂ (K .visible) ++ₗ (inj₂ ε ∷ []))
+        edge : V dependence → V dependence → List (String × String)
+        edge u v = emit (presented u v (entry u v (I.visible-graph K u v)))
           where
-          endpoints : List (V dependence)
-          endpoints = inj₁ input ∷ (map inj₂ (K .visible) ++ₗ (inj₂ ε ∷ []))
-          edge : V dependence → V dependence → List (String × String)
-          edge u v = emit (presented u v (entry u v (I.visible-graph K u v)))
-            where
-            emit : M3.Matrix (wd v) (pwd u) → List (String × String)
-            emit M with NonZero? M
-            ... | no  _ = []
-            ... | yes _ =
-              (name ++ "-" ++ nm u ++ "-" ++ nm v ,
-               table (name ++ " (" ++ nm u ++ " to " ++ nm v ++ ")") (vertex-labels u) (vertex-labels v)
-                     (M3.to-table M) none none) ∷ []
+          emit : M3.Matrix (wd v) (pwd u) → List (String × String)
+          emit M with NonZero? M
+          ... | no  _ = []
+          ... | yes _ =
+            (name ++ "-" ++ nm u ++ "-" ++ nm v ,
+             table (name ++ " (" ++ nm u ++ " to " ++ nm v ++ ")") (vertex-labels u) (vertex-labels v)
+                   (M3.to-table M) none none) ∷ []
 
   filter-sum-graph = Evaluated.dependence (env filter-sum-run) (term filter-sum-run)
 

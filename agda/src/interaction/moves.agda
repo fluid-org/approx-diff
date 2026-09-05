@@ -401,6 +401,13 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
                 (LinkedP.Linked⇒AllPairs Vertex≤.trans (sort-↗ (fo-hidden 𝒢)))) x y)
             (hide-all-perm 𝒢 (edge-labels-forward 𝒢) (map⁺ at (sort-↭ (fo-hidden 𝒢))) x y)
 
+  first-order-graph : (tick : {A : Set} → String → A → A) → Tabulation
+  first-order-graph tick =
+    TabulatedHide.hide-graph (tabulation 𝒢 ε? tick) tick ε? (map (index-of 𝒢) hid-first-order)
+
+  first-order-edges : (tick : {A : Set} → String → A → A) → EdgeLabels (vertex-object 𝒢)
+  first-order-edges tick = read-edge 𝒢 (first-order-graph tick)
+
   -- The summary of a hidden region as a reader over its stored tables, the region sorted into
   -- evaluation order so that every nonzero edge among its vertices runs forward.
   tabulated-summary : (tick : {A : Set} → String → A → A) → EdgeLabels (vertex-object 𝒢) → Summary
