@@ -52,22 +52,22 @@ lab₀ .at ()
 lab₁ : ∀ {s w} {k : ℕ} → Labelling s w → (x : Node) → node-width x ≡ k →
        Labelling (node (s ∷ₗ []ₗ)) [ w , (λ _ → k) ]
 lab₁ f x e .at (inj₁ p)    = f .at p
-lab₁ f x e .at (inj₂ root) = x , e
+lab₁ f x e .at (inj₂ output) = x , e
 
 lab₂ : ∀ {s₁ w₁ s₂ w₂} {k₁ k₂ : ℕ} →
        Labelling s₁ w₁ → (x₁ : Node) → node-width x₁ ≡ k₁ →
        Labelling s₂ w₂ → (x₂ : Node) → node-width x₂ ≡ k₂ →
        Labelling (node (s₁ ∷ₗ s₂ ∷ₗ []ₗ)) [ [ w₁ , (λ _ → k₁) ] , [ w₂ , (λ _ → k₂) ] ]
 lab₂ f₁ x₁ e₁ f₂ x₂ e₂ .at (inj₁ (inj₁ p))    = f₁ .at p
-lab₂ f₁ x₁ e₁ f₂ x₂ e₂ .at (inj₁ (inj₂ root)) = x₁ , e₁
+lab₂ f₁ x₁ e₁ f₂ x₂ e₂ .at (inj₁ (inj₂ output)) = x₁ , e₁
 lab₂ f₁ x₁ e₁ f₂ x₂ e₂ .at (inj₂ (inj₁ p))    = f₂ .at p
-lab₂ f₁ x₁ e₁ f₂ x₂ e₂ .at (inj₂ (inj₂ root)) = x₂ , e₂
+lab₂ f₁ x₁ e₁ f₂ x₂ e₂ .at (inj₂ (inj₂ output)) = x₂ , e₂
 
 lab₊ : ∀ {s w t ts wts} {k : ℕ} → Labelling s w → (x : Node) → node-width x ≡ k →
        Labelling (node (t ∷ₗ ts)) wts →
        Labelling (node (s ∷ₗ t ∷ₗ ts)) [ [ w , (λ _ → k) ] , wts ]
 lab₊ f x e g .at (inj₁ (inj₁ p))    = f .at p
-lab₊ f x e g .at (inj₁ (inj₂ root)) = x , e
+lab₊ f x e g .at (inj₁ (inj₂ output)) = x , e
 lab₊ f x e g .at (inj₂ q)           = g .at q
 
 lab₃ : ∀ {s₁ w₁ s₂ w₂ s₃ w₃} {k₁ k₂ k₃ : ℕ} →
@@ -77,11 +77,11 @@ lab₃ : ∀ {s₁ w₁ s₂ w₂ s₃ w₃} {k₁ k₂ k₃ : ℕ} →
        Labelling (node (s₁ ∷ₗ s₂ ∷ₗ s₃ ∷ₗ []ₗ))
                  [ [ w₁ , (λ _ → k₁) ] , [ [ w₂ , (λ _ → k₂) ] , [ w₃ , (λ _ → k₃) ] ] ]
 lab₃ f₁ x₁ e₁ f₂ x₂ e₂ f₃ x₃ e₃ .at (inj₁ (inj₁ p))           = f₁ .at p
-lab₃ f₁ x₁ e₁ f₂ x₂ e₂ f₃ x₃ e₃ .at (inj₁ (inj₂ root))        = x₁ , e₁
+lab₃ f₁ x₁ e₁ f₂ x₂ e₂ f₃ x₃ e₃ .at (inj₁ (inj₂ output))        = x₁ , e₁
 lab₃ f₁ x₁ e₁ f₂ x₂ e₂ f₃ x₃ e₃ .at (inj₂ (inj₁ (inj₁ p)))    = f₂ .at p
-lab₃ f₁ x₁ e₁ f₂ x₂ e₂ f₃ x₃ e₃ .at (inj₂ (inj₁ (inj₂ root))) = x₂ , e₂
+lab₃ f₁ x₁ e₁ f₂ x₂ e₂ f₃ x₃ e₃ .at (inj₂ (inj₁ (inj₂ output))) = x₂ , e₂
 lab₃ f₁ x₁ e₁ f₂ x₂ e₂ f₃ x₃ e₃ .at (inj₂ (inj₂ (inj₁ p)))    = f₃ .at p
-lab₃ f₁ x₁ e₁ f₂ x₂ e₂ f₃ x₃ e₃ .at (inj₂ (inj₂ (inj₂ root))) = x₃ , e₃
+lab₃ f₁ x₁ e₁ f₂ x₂ e₂ f₃ x₃ e₃ .at (inj₂ (inj₂ (inj₂ output))) = x₃ , e₃
 
 mutual
   label : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ]) →

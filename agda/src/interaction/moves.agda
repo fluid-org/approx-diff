@@ -301,13 +301,13 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
 
   private
     sources : List (V 𝒢)
-    sources = inj₁ input ∷ map at (vertices (Graph.D 𝒢)) ++ (inj₂ (inj₂ root) ∷ [])
+    sources = inj₁ input ∷ map at (vertices (Graph.D 𝒢)) ++ (inj₂ (inj₂ output) ∷ [])
 
     input-≟ : (x y : Input) → Dec (x ≡ y)
     input-≟ input input = yes ≡-refl
 
     _≟ᵥ_ : (x y : V 𝒢) → Dec (x ≡ y)
-    _≟ᵥ_ = SumP.≡-dec input-≟ (SumP.≡-dec (_≟_ {Graph.D 𝒢}) root-≟)
+    _≟ᵥ_ = SumP.≡-dec input-≟ (SumP.≡-dec (_≟_ {Graph.D 𝒢}) output-≟)
 
     hid-first-order : List (V 𝒢)
     hid-first-order = map at (sort (fo-hidden 𝒢))
@@ -384,21 +384,21 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
                 (tabulated-hide-all 𝒢 G hid x y pairs)
 
   Tables : Set
-  Tables = Rows.Store (edges 𝒢) hid-first-order
+  Tables = Rows.Store (edge-labels 𝒢) hid-first-order
 
   first-order-tables : Tables
-  first-order-tables = Rows.store (edges 𝒢) hid-first-order
+  first-order-tables = Rows.store (edge-labels 𝒢) hid-first-order
 
   tabulated-first-order : Tables → EdgeLabels (vertex-object 𝒢)
-  tabulated-first-order = Rows.read (edges 𝒢) hid-first-order
+  tabulated-first-order = Rows.read (edge-labels 𝒢) hid-first-order
 
   tabulated-first-order-agrees : ∀ x y →
                                  tabulated-first-order first-order-tables x y ≈ fo-graph 𝒢 x y
   tabulated-first-order-agrees x y =
-    ≈-trans (Rows.read-agrees (edges 𝒢) hid-first-order
-              (sorted-forward (edges-forward 𝒢)
+    ≈-trans (Rows.read-agrees (edge-labels 𝒢) hid-first-order
+              (sorted-forward (edge-labels-forward 𝒢)
                 (LinkedP.Linked⇒AllPairs Vertex≤.trans (sort-↗ (fo-hidden 𝒢)))) x y)
-            (hide-all-perm 𝒢 (edges-forward 𝒢) (map⁺ at (sort-↭ (fo-hidden 𝒢))) x y)
+            (hide-all-perm 𝒢 (edge-labels-forward 𝒢) (map⁺ at (sort-↭ (fo-hidden 𝒢))) x y)
 
   -- The summary of a hidden region as a reader over its stored tables, the region sorted into
   -- evaluation order so that every nonzero edge among its vertices runs forward.
@@ -945,13 +945,13 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
   -- hiding every interior vertex.
   initial-collapse : (summarise : Summary) →
                      (∀ C x y → summarise C x y ≈ summary C x y) →
-                     visible-graph (initial summarise) (inj₁ input) (inj₂ (inj₂ root)) ≈ collapse 𝒢
+                     visible-graph (initial summarise) (inj₁ input) (inj₂ (inj₂ output)) ≈ collapse 𝒢
   initial-collapse summarise agrees =
     ≈-trans (summaries-assemble (initial summarise) (initial-summarised summarise agrees)
-              (inj₁ input) (inj₂ (inj₂ root)) (λ ()) (λ ()))
+              (inj₁ input) (inj₂ (inj₂ output)) (λ ()) (λ ()))
             (≈-trans (hide-all-perm 𝒢 (fo-forward 𝒢)
                        (map⁺ at (initial-summarised summarise agrees .partition))
-                       (inj₁ input) (inj₂ (inj₂ root)))
+                       (inj₁ input) (inj₂ (inj₂ output)))
                      (fo-collapse 𝒢))
 
   hide-at-summarised : (summarise : Summary) →

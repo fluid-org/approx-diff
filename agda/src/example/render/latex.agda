@@ -60,7 +60,7 @@ private
       -- Dependence matrix of the degenerate configuration.
       R = hide-in-evaluation-order dependence
             (map (λ v → inj₂ (inj₁ v)) (vertices (Graph.D dependence)))
-            (inj₁ input) (inj₂ (inj₂ root))
+            (inj₁ input) (inj₂ (inj₂ output))
 
       -- Control column of the environment vertex dropped.
       drop-ctrl : ∀ {m n} → M3.Matrix m (Nat.suc n) → M3.Matrix m n
@@ -112,7 +112,7 @@ private
         at-config K = concat (map (λ u → concat (map (edge u) endpoints)) endpoints)
           where
           endpoints : List (V dependence)
-          endpoints = inj₁ input ∷ (map (λ p → inj₂ (inj₁ p)) (K .visible) ++ₗ (inj₂ (inj₂ root) ∷ []))
+          endpoints = inj₁ input ∷ (map (λ p → inj₂ (inj₁ p)) (K .visible) ++ₗ (inj₂ (inj₂ output) ∷ []))
           edge : V dependence → V dependence → List (String × String)
           edge u v = emit (presented u v (entry u v (I.visible-graph K u v)))
             where
@@ -128,7 +128,7 @@ private
 
   -- Root of the application's argument premise: the filtered list between the comprehension and sum.
   filtered-vertex : Vertex (Graph.D filter-sum-graph)
-  filtered-vertex = inj₂ (inj₁ (inj₂ root))
+  filtered-vertex = inj₂ (inj₁ (inj₂ output))
 
   filter-sum-name : V filter-sum-graph → String
   filter-sum-name (inj₁ _)        = "env"
@@ -138,7 +138,7 @@ private
   add-mul-graph = Evaluated.dependence (env add-mul-run) (term add-mul-run)
 
   sum-vertex : Vertex (Graph.D add-mul-graph)
-  sum-vertex = inj₁ (inj₂ root)
+  sum-vertex = inj₁ (inj₂ output)
 
   add-mul-name : V add-mul-graph → String
   add-mul-name (inj₁ _)        = "env"
@@ -148,7 +148,7 @@ private
   case-inl-graph = Evaluated.dependence (env case-inl-run) (term case-inl-run)
 
   scrutinee-vertex : Vertex (Graph.D case-inl-graph)
-  scrutinee-vertex = inj₁ (inj₂ root)
+  scrutinee-vertex = inj₁ (inj₂ output)
 
   case-inl-name : V case-inl-graph → String
   case-inl-name (inj₁ _)        = "env"
@@ -178,7 +178,7 @@ private
       score-rows : mat.Table
       score-rows = drop-ctrl (graph.hide-in-evaluation-order dependence
                      (map (λ v → inj₂ (inj₁ v)) (graph.vertices (graph.Graph.D dependence)))
-                     (inj₁ graph.input) (inj₂ (inj₂ graph.root)))
+                     (inj₁ graph.input) (inj₂ (inj₂ graph.output)))
         where
         drop-ctrl : ∀ {m n} → mat.Matrix m (Nat.suc n) → mat.Table
         drop-ctrl R = toList (tabulate (λ q → toList (tabulate (λ p → R q (suc p)))))

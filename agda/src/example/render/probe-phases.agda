@@ -56,8 +56,8 @@ private
 
   env-v root-v filtered-v : V dependence
   env-v      = inj₁ input
-  root-v     = inj₂ (inj₂ root)
-  filtered-v = inj₂ (inj₁ (inj₂ (inj₁ (inj₂ root))))
+  root-v     = inj₂ (inj₂ output)
+  filtered-v = inj₂ (inj₁ (inj₂ (inj₁ (inj₂ output))))
 
   mk : String → Three → String → String
   mk k v r = trace ("phase " ++ k) (show3 v ++ " " ++ r)

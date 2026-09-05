@@ -92,7 +92,7 @@ module render-eval {Γ τ} (γ : Env Γ) (t : Γ ⊢ τ) where
   private
     label-of : V dependence → String
     label-of (inj₁ input)       = show-env γ
-    label-of (inj₂ (inj₂ root)) = show-val value
+    label-of (inj₂ (inj₂ output)) = show-val value
     label-of (inj₂ (inj₁ p))    = node-text (proj₁ (labels .at p))
 
     node-line : ℕ × V dependence → String
@@ -105,7 +105,7 @@ module render-eval {Γ τ} (γ : Env Γ) (t : Γ ⊢ τ) where
   dot-at K = "digraph G {\n  rankdir=LR;\n" ++ cat (map node-line nvs) ++ edge-lines (rows nvs) ++ "}\n"
     where
     nvs : List (ℕ × V dependence)
-    nvs = enumerate 0 ((inj₁ input ∷ []) ++L map (λ p → inj₂ (inj₁ p)) (K .visible) ++L (inj₂ (inj₂ root) ∷ []))
+    nvs = enumerate 0 ((inj₁ input ∷ []) ++L map (λ p → inj₂ (inj₁ p)) (K .visible) ++L (inj₂ (inj₂ output) ∷ []))
 
     hid : List (V dependence)
     hid = map (λ p → inj₂ (inj₁ p))
@@ -142,7 +142,7 @@ private
   module int-fig = render-eval γ-int t-int
 
   sum-vertex : Vertex (Graph.D int-fig.dependence)
-  sum-vertex = inj₁ (inj₂ root)
+  sum-vertex = inj₁ (inj₂ output)
 
   int-dot : String
   int-dot = int-fig.dot-at (int-fig.reveal-at (tabulated-summary int-fig.dependence (tabulated-first-order int-fig.dependence (first-order-tables int-fig.dependence))) sum-vertex

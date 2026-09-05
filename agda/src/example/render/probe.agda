@@ -91,7 +91,7 @@ private
 
     at : ℕ → String
     at k = show3 (join (hide-in-evaluation-order dependence (take k hid)
-                          (inj₁ input) (inj₂ (inj₂ root))))
+                          (inj₁ input) (inj₂ (inj₂ output))))
 
   survey : String
   survey = scale.line "filter-sum" filter-sum-run ++ "\n" ++ scale.line "map" map-run ++ "\n"
