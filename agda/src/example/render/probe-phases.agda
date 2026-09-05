@@ -108,9 +108,11 @@ private
       (mk "5: full hide, edge to root" (ask full-hide root-index)
         (mk "6: partial hide, edge to filtered vertex" (ask partial-hide filtered-index)
           (mk "7: same partial hide, edge to root" (ask partial-hide root-index)
-            (mk "8: first-order graph, two edges" (consult ((env-v , root-v) ∷ (env-v , filtered-v) ∷ []))
-              (mk "9: same two edges, reversed" (consult ((env-v , filtered-v) ∷ (env-v , root-v) ∷ []))
-                "end")))))
+            (mk "8a: first-order graph, self edge" (consult ((env-v , env-v) ∷ []))
+              (mk "8b: edge to root" (consult ((env-v , root-v) ∷ []))
+                (mk "8c: edge to filtered vertex" (consult ((env-v , filtered-v) ∷ []))
+                  (mk "9: root and self edges again" (consult ((env-v , root-v) ∷ (env-v , env-v) ∷ []))
+                    "end")))))))
 
 main : Main
 main = run (putStrLn out)
