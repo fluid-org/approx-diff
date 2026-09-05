@@ -58,9 +58,7 @@ private
       o-labels = val-labels 0 value
 
       -- Dependence matrix of the degenerate configuration.
-      R = hide-in-evaluation-order dependence
-            (map (λ v → inj₂ (inj₁ v)) (vertices D))
-            (inj₁ input) (inj₂ (inj₂ output))
+      R = hide-in-evaluation-order dependence (map inj₂ (vertices D)) (inj₁ input) (inj₂ ε)
 
       -- Control column of the environment vertex dropped.
       drop-ctrl : ∀ {m n} → M3.Matrix m (Nat.suc n) → M3.Matrix m n
@@ -72,9 +70,8 @@ private
       wd = vertex-width dependence
 
       vertex-labels : V dependence → List Label
-      vertex-labels (inj₁ _)        = i-labels
-      vertex-labels (inj₂ (inj₁ p)) = node-labels 0 (proj₁ (labels .at p))
-      vertex-labels (inj₂ (inj₂ _)) = o-labels
+      vertex-labels (inj₁ _) = i-labels
+      vertex-labels (inj₂ p) = node-labels 0 (proj₁ (labels .at p))
 
       -- Width of a vertex as presented: the environment loses its control column.
       pwd : V dependence → ℕ
@@ -98,7 +95,7 @@ private
 
     -- One table per nonzero visible-graph edge between the environment, the revealed vertices
     -- and the root.
-    tables : List (Vertex D) → (V dependence → String) → String →
+    tables : List (Path D) → (V dependence → String) → String →
              List (String × String)
     tables ps nm name = from-store (first-order-tables dependence)
       where
@@ -112,7 +109,7 @@ private
         at-config K = concat (map (λ u → concat (map (edge u) endpoints)) endpoints)
           where
           endpoints : List (V dependence)
-          endpoints = inj₁ input ∷ (map (λ p → inj₂ (inj₁ p)) (K .visible) ++ₗ (inj₂ (inj₂ output) ∷ []))
+          endpoints = inj₁ input ∷ (map inj₂ (K .visible) ++ₗ (inj₂ ε ∷ []))
           edge : V dependence → V dependence → List (String × String)
           edge u v = emit (presented u v (entry u v (I.visible-graph K u v)))
             where
@@ -127,33 +124,33 @@ private
   filter-sum-graph = Evaluated.dependence (env filter-sum-run) (term filter-sum-run)
 
   -- Root of the application's argument premise: the filtered list between the comprehension and sum.
-  filtered-vertex : Vertex (Evaluated.D (env filter-sum-run) (term filter-sum-run))
-  filtered-vertex = inj₂ (inj₁ (inj₂ output))
+  filtered-vertex : Path (Evaluated.D (env filter-sum-run) (term filter-sum-run))
+  filtered-vertex = into (there here) ε
 
   filter-sum-name : V filter-sum-graph → String
-  filter-sum-name (inj₁ _)        = "env"
-  filter-sum-name (inj₂ (inj₁ _)) = "filtered"
-  filter-sum-name (inj₂ (inj₂ _)) = "root"
+  filter-sum-name (inj₁ _)          = "env"
+  filter-sum-name (inj₂ ε)          = "root"
+  filter-sum-name (inj₂ (into _ _)) = "filtered"
 
   add-mul-graph = Evaluated.dependence (env add-mul-run) (term add-mul-run)
 
-  sum-vertex : Vertex (Evaluated.D (env add-mul-run) (term add-mul-run))
-  sum-vertex = inj₁ (inj₂ output)
+  sum-vertex : Path (Evaluated.D (env add-mul-run) (term add-mul-run))
+  sum-vertex = into here ε
 
   add-mul-name : V add-mul-graph → String
-  add-mul-name (inj₁ _)        = "env"
-  add-mul-name (inj₂ (inj₁ _)) = "sum"
-  add-mul-name (inj₂ (inj₂ _)) = "root"
+  add-mul-name (inj₁ _)          = "env"
+  add-mul-name (inj₂ ε)          = "root"
+  add-mul-name (inj₂ (into _ _)) = "sum"
 
   case-inl-graph = Evaluated.dependence (env case-inl-run) (term case-inl-run)
 
-  scrutinee-vertex : Vertex (Evaluated.D (env case-inl-run) (term case-inl-run))
-  scrutinee-vertex = inj₁ (inj₂ output)
+  scrutinee-vertex : Path (Evaluated.D (env case-inl-run) (term case-inl-run))
+  scrutinee-vertex = into here ε
 
   case-inl-name : V case-inl-graph → String
-  case-inl-name (inj₁ _)        = "env"
-  case-inl-name (inj₂ (inj₁ _)) = "scrutinee"
-  case-inl-name (inj₂ (inj₂ _)) = "root"
+  case-inl-name (inj₁ _)          = "env"
+  case-inl-name (inj₂ ε)          = "root"
+  case-inl-name (inj₂ (into _ _)) = "scrutinee"
 
   module signed where
     private
@@ -177,8 +174,8 @@ private
 
       score-rows : mat.Table
       score-rows = drop-ctrl (graph.hide-in-evaluation-order dependence
-                     (map (λ v → inj₂ (inj₁ v)) (graph.vertices D))
-                     (inj₁ graph.input) (inj₂ (inj₂ graph.output)))
+                     (map inj₂ (graph.vertices D))
+                     (inj₁ graph.input) (inj₂ graph.ε))
         where
         drop-ctrl : ∀ {m n} → mat.Matrix m (Nat.suc n) → mat.Table
         drop-ctrl R = toList (tabulate (λ q → toList (tabulate (λ p → R q (suc p)))))

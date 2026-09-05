@@ -72,7 +72,7 @@ private
     open Evaluated (env r) (term r)
 
     hid : List (V dependence)
-    hid = map (λ v → inj₂ (inj₁ v)) (vertices D)
+    hid = map inj₂ (vertices D)
 
     ws : List ℕ
     ws = map (vertex-width dependence) hid
@@ -87,11 +87,11 @@ private
     open Evaluated (env merge-run) (term merge-run)
 
     hid : List (V dependence)
-    hid = map (λ v → inj₂ (inj₁ v)) (vertices D)
+    hid = map inj₂ (vertices D)
 
     at : ℕ → String
     at k = show3 (join (hide-in-evaluation-order dependence (take k hid)
-                          (inj₁ input) (inj₂ (inj₂ output))))
+                          (inj₁ input) (inj₂ ε)))
 
   survey : String
   survey = scale.line "filter-sum" filter-sum-run ++ "\n" ++ scale.line "map" map-run ++ "\n"
