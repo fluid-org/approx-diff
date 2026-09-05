@@ -39,15 +39,12 @@ open import example.runs (nonzero three.semiring) three.semiring three.C
   using (Run; query-run; const-run; length-run; fold0-run; case0-run; tag-run; case-l-run;
          case-r-run; test-run; map-run; adjacent-sums-run; filter-run; cond-run; eq-run;
          mult-run; add-mul-run; case-inl-run; mavg-run; total-run; sum-mul-run; rose-run; score-run; env; term)
-open import example.render.table using (Label; Mat; SignedMat; none; sel-label; table; signed-table)
+open import example.render.table using (Label; none; sel-label; table; signed-table)
 open import example.render.value-labels (nonzero three.semiring) three.semiring three.C
   using (val-labels; env-labels)
 
 private
   module M3 = matrix.Mat three.semiring
-
-  rows : ∀ {m n} → M3.Matrix m n → Mat
-  rows M = toList (tabulate (λ q → toList (tabulate (M q))))
 
   node-labels : ℕ → Node → List Label
   node-labels off (val v) = val-labels off v
@@ -89,14 +86,14 @@ private
       presented (inj₂ _)     _ M = M
 
     plain : String → String
-    plain name = table name i-labels o-labels (rows (drop-ctrl R)) none none
+    plain name = table name i-labels o-labels (M3.to-table (drop-ctrl R)) none none
 
     fwd bwd : String → ℕ → String
-    fwd name i = table name i-labels o-labels (rows (drop-ctrl R)) (sel-label i-labels i) none
-    bwd name i = table name i-labels o-labels (rows (drop-ctrl R)) none (sel-label o-labels i)
+    fwd name i = table name i-labels o-labels (M3.to-table (drop-ctrl R)) (sel-label i-labels i) none
+    bwd name i = table name i-labels o-labels (M3.to-table (drop-ctrl R)) none (sel-label o-labels i)
 
     related-outputs : String → String
-    related-outputs name = table name o-labels o-labels (rows (D M3.∘ (D M3.ᵀ))) none none
+    related-outputs name = table name o-labels o-labels (M3.to-table (D M3.∘ (D M3.ᵀ))) none none
       where D = drop-ctrl R
 
     -- One table per nonzero visible-graph edge between the environment, the revealed vertices
@@ -125,7 +122,7 @@ private
             ... | yes _ =
               (name ++ "-" ++ nm u ++ "-" ++ nm v ,
                table (name ++ " (" ++ nm u ++ " to " ++ nm v ++ ")") (vertex-labels u) (vertex-labels v)
-                     (rows M) none none) ∷ []
+                     (M3.to-table M) none none) ∷ []
 
   query-graph = Evaluated.dependence (env query-run) (term query-run)
 
@@ -178,12 +175,12 @@ private
       open evaluated.Evaluated (runs.env runs.score-run) (runs.term runs.score-run)
         using (dependence; value)
 
-      score-rows : SignedMat
+      score-rows : mat.Table
       score-rows = drop-ctrl (graph.hide-in-evaluation-order dependence
                      (map (λ v → inj₂ (inj₁ v)) (graph.vertices (graph.Graph.shape dependence)))
                      (inj₁ graph.input) (inj₂ (inj₂ graph.root)))
         where
-        drop-ctrl : ∀ {m n} → mat.Matrix m (Nat.suc n) → SignedMat
+        drop-ctrl : ∀ {m n} → mat.Matrix m (Nat.suc n) → mat.Table
         drop-ctrl R = toList (tabulate (λ q → toList (tabulate (λ p → R q (suc p)))))
 
     fragment : String

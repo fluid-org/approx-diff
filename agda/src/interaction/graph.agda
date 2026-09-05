@@ -767,19 +767,10 @@ module Tabulated {m n : ℕ} (B : Graph m n) (G : Relation (vertex-object B))
     wd : V B → ℕ
     wd = vertex-width B
 
-  Table : Set
-  Table = List (List Semiring.Carrier)
-
-  nth : {C : Set} → C → ℕ → List C → C
-  nth d _       []       = d
-  nth d zero    (x ∷ _)  = x
-  nth d (suc n) (_ ∷ xs) = nth d n xs
+  open M public using (Table; nth; to-table; look)
 
   entry : ∀ (x y : V B) → vertex-object B x ⇒ vertex-object B y → M.Matrix (wd y) (wd x)
   entry x y f = ∃ₛ.fst (𝔽F-full f)
-
-  to-table : ∀ {m n} → M.Matrix m n → Table
-  to-table R = toList (tabulate λ i → toList (tabulate λ j → R i j))
 
   edge : (u v : V B) → Table
   edge u v = tick "edge" (to-table (entry u v (G u v)))
@@ -808,9 +799,6 @@ module Tabulated {m n : ℕ} (B : Graph m n) (G : Relation (vertex-object B))
   summaries k a acc []       = acc
   summaries k a acc (v ∷ vs) =
     summaries (suc k) a (acc ++ (v , tick ("summary " ++ₛ ℕ-Show.show k) (through a v acc)) ∷ []) vs
-
-  look : ∀ {r c} → Table → M.Matrix r c
-  look T i j = nth Semiring.ε (toℕ j) (nth [] (toℕ i) T)
 
   hide-in-evaluation-order : List (V B) → (a b : V B) → M.Matrix (wd b) (wd a)
   hide-in-evaluation-order hid a b = look (through a b (summaries 0 a [] hid))

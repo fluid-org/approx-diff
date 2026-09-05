@@ -39,33 +39,27 @@ open import example.render.value-labels (nonzero three.semiring) three.semiring 
 private
   module M3 = matrix.Mat three.semiring
 
-  LL : Set
-  LL = List (List Three)
-
-  ll-of : ∀ {m n} → M3.Matrix m n → LL
-  ll-of M = toList (tabulate λ p → toList (tabulate λ q → M p q))
-
   join-list : List Three → Three
   join-list []       = O
   join-list (t ∷ ts) = t three.⊔ join-list ts
 
-  ll-join : LL → Three
-  ll-join rows = join-list (concat rows)
+  table-join : M3.Table → Three
+  table-join rows = join-list (concat rows)
 
   any-three : List Three → Bool
   any-three []       = false
   any-three (O ∷ ts) = any-three ts
   any-three (t ∷ ts) = true
 
-  ll-any : LL → Bool
-  ll-any []           = false
-  ll-any (row ∷ rows) = if any-three row then true else ll-any rows
+  table-any : M3.Table → Bool
+  table-any []           = false
+  table-any (row ∷ rows) = if any-three row then true else table-any rows
 
   Edge : Set
-  Edge = ℕ × ℕ × LL
+  Edge = ℕ × ℕ × M3.Table
 
-  keep : ℕ → ℕ → LL → List Edge
-  keep i j B = if ll-any B then (i , j , B) ∷ [] else []
+  keep : ℕ → ℕ → M3.Table → List Edge
+  keep i j B = if table-any B then (i , j , B) ∷ [] else []
 
   enumerate : ∀ {a} {A : Set a} → ℕ → List A → List (ℕ × A)
   enumerate _ []       = []
@@ -78,7 +72,7 @@ private
 
   edge-lines : List Edge → String
   edge-lines []                 = ""
-  edge-lines ((i , j , B) ∷ es) = edge-line i j (ll-join B) ++ edge-lines es
+  edge-lines ((i , j , B) ∷ es) = edge-line i j (table-join B) ++ edge-lines es
 
   node-text : Node → String
   node-text (val v) = show-val v
@@ -104,8 +98,8 @@ module render-eval {Γ τ} (γ : Env Γ) (t : Γ ⊢ τ) where
     node-line : ℕ × V dependence → String
     node-line (i , x) = "  n" ++ ℕ-Show.show i ++ " [shape=box, fontsize=11, label=\"" ++ label-of x ++ "\"];\n"
 
-  visible-edge : V dependence → V dependence → List (V dependence) → LL
-  visible-edge a b hid = ll-of (hide-in-evaluation-order dependence hid a b)
+  visible-edge : V dependence → V dependence → List (V dependence) → M3.Table
+  visible-edge a b hid = M3.to-table (hide-in-evaluation-order dependence hid a b)
 
   dot-at : Config dependence → String
   dot-at K = "digraph G {\n  rankdir=LR;\n" ++ cat (map node-line nvs) ++ edge-lines (rows nvs) ++ "}\n"

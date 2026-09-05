@@ -9,9 +9,14 @@ open import Data.List using (List; []; _∷_; map)
 open import Data.Nat using (ℕ; zero; suc; _+_)
 open import Data.Product using (_×_; _,_; proj₁)
 open import Data.String using (String; _++_)
+import matrix
 import semiring-sign as sign
 import three
+open import commutative-semiring-product using (_⊗S_)
 open three using (Three; O; C; D; _⊓_; _⊔_)
+
+module M3 = matrix.Mat three.semiring
+module signed = matrix.Mat (sign.semiring ⊗S three.semiring)
 
 -- A label, the number of positions it covers, and the offset where they start.
 Label : Set
@@ -19,12 +24,6 @@ Label = String × ℕ × ℕ
 
 Sel : Set
 Sel = ℕ → Three
-
-Mat : Set
-Mat = List (List Three)
-
-SignedMat : Set
-SignedMat = List (List (sign.Sign × Three))
 
 none : Sel
 none _ = O
@@ -65,10 +64,10 @@ private
   sel-of : Sel → Label → Three
   sel-of s (_ , n , o) = span s o n
 
-  reach-in : Mat → ℕ → Sel → Label → Three
+  reach-in : M3.Table → ℕ → Sel → Label → Three
   reach-in M h osel (_ , pn , po) = span (λ p → span (λ q → osel q ⊓ entry M q p) 0 h) po pn
 
-  reach-out : Mat → ℕ → Sel → Label → Three
+  reach-out : M3.Table → ℕ → Sel → Label → Three
   reach-out M w isel (_ , qn , qo) = span (λ q → span (λ p → isel p ⊓ entry M q p) 0 w) qo qn
 
   mark : Three → String
@@ -114,11 +113,11 @@ private
   amp (x ∷ [])     = x
   amp (x ∷ y ∷ xs) = x ++ " & " ++ amp (y ∷ xs)
 
-  cell : Mat → Sel → Sel → Label → Label → String
+  cell : M3.Table → Sel → Sel → Label → Label → String
   cell M isel osel t u =
     band (sel-of osel t ⊔ sel-of isel u) ++ "\\gcell{$" ++ mark (block M t u) ++ "$}"
 
-  row-of : Mat → ℕ → List Label → Sel → Sel → Label → String
+  row-of : M3.Table → ℕ → List Label → Sel → Sel → Label → String
   row-of M w ilabels isel osel t =
     amp (map (cell M isel osel t) ilabels) ++ " & "
     ++ label-cell (sel-of osel t) (reach-out M w isel t) (proj₁ t) ++ " \\\\\n"
@@ -134,7 +133,7 @@ sel-label ((_ , n , o) ∷ _)  zero    p = span (λ i → if-eq i p) o n
   if-eq _       _       = O
 sel-label (_ ∷ ts)           (suc k) p = sel-label ts k p
 
-table : String → List Label → List Label → Mat → Sel → Sel → String
+table : String → List Label → List Label → M3.Table → Sel → Sel → String
 table name ilabels olabels M isel osel =
   "\\run{" ++ name ++ "}\n{\\scriptsize\\setlength{\\tabcolsep}{1.5pt}%\n\\begin{tabular}{"
   ++ crep (count ilabels) ++ "|l}\n"
@@ -146,7 +145,7 @@ table name ilabels olabels M isel osel =
   w = width-of ilabels
   h = width-of olabels
 
-signed-table : String → List Label → List Label → SignedMat → String
+signed-table : String → List Label → List Label → signed.Table → String
 signed-table name ilabels olabels M =
   "\\run{" ++ name ++ "}\n{\\scriptsize\\setlength{\\tabcolsep}{1.5pt}%\n\\begin{tabular}{"
   ++ crep (count ilabels) ++ "|l}\n"
