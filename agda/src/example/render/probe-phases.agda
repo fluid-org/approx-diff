@@ -110,6 +110,29 @@ private
   consult-vis K []             = three.O
   consult-vis K ((x , y) ∷ es) = join (IA.entry x y (IA.visible-graph K x y)) three.⊔ consult-vis K es
 
+  endpoints11 : List (V dependence)
+  endpoints11 = env-v ∷ filtered-v ∷ root-v ∷ []
+
+  join! : Three → Three → Three
+  join! three.O y       = y
+  join! three.C three.O = three.C
+  join! three.C three.C = three.C
+  join! three.C three.D = three.D
+  join! three.D three.O = three.D
+  join! three.D three.C = three.D
+  join! three.D three.D = three.D
+
+  extract-all : Config dependence → Three
+  extract-all K = outer endpoints11
+    where
+    inner : V dependence → List (V dependence) → Three
+    inner u []       = three.O
+    inner u (v ∷ vs) = join! (join (trace "extract" (IA.entry u v (IA.visible-graph K u v)))) (inner u vs)
+
+    outer : List (V dependence) → Three
+    outer []       = three.O
+    outer (u ∷ us) = join! (inner u endpoints11) (outer us)
+
   out : String
   out =
     trace ("phase 0: FO " ++ ℕ-Show.show (length (FO dependence))
@@ -126,7 +149,8 @@ private
                         (mk "10c: after reveal, edge to root" (consult-vis K10' ((env-v , root-v) ∷ []))
                           (mk "10d: same edge twice after reveal"
                               (consult-vis K10' ((env-v , root-v) ∷ (env-v , root-v) ∷ []))
-                            "end")))))))))))
+                            (mk "11: renderer sweep of revealed config" (extract-all K10')
+                              "end"))))))))))))
 
 main : Main
 main = run (putStrLn out)
