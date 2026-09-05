@@ -1,9 +1,9 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
-open import Data.Bool using (Bool; true; not; if_then_else_)
+open import Data.Bool using (Bool; true; false; not; if_then_else_)
 open import Data.Empty using (⊥; ⊥-elim)
 open import Data.Fin using (Fin; toℕ; zero; suc)
-open import Data.List using (List; []; _∷_; _++_; map; foldl; filterᵇ; upTo; applyUpTo)
+open import Data.List using (List; []; _∷_; _++_; map; mapMaybe; foldl; filterᵇ; length; upTo; applyUpTo)
 open import Data.Bool.ListAction using (any)
 open import Data.List.Properties using (++-identityʳ; map-++; map-∘; foldl-++)
 open import Data.List.Relation.Unary.All using (All; []; _∷_; universal) renaming (map to All-map)
@@ -858,13 +858,16 @@ module _ {m : ℕ} {D : Derivation} (B : Graph m D) where
                              M.Matrix (vertex-width B b) (vertex-width B a)
   hide-in-evaluation-order = Tabulated.hide-in-evaluation-order B (edge-labels B) (λ _ x → x)
 
--- A graph tabulated once: the relations stored as tables, one row per source vertex with one slot
--- per target, both in evaluation order (the inputs vertex first, the conclusion last). An empty
--- slot is the zero relation, so a read forces only the slot it consults.
+-- A graph tabulated once: the vertices named by their numbers in the underlying derivation graph,
+-- and the relations stored as tables, one row per source vertex with one slot per target, both in
+-- evaluation order (the inputs vertex first, the conclusion last). An empty slot is the zero
+-- relation, so a read forces only the slot it consults. Rows, slots and widths are indexed by
+-- position in the vertex list, not by vertex number.
 record Tabulation : Set where
   field
-    widths : List ℕ
-    edges  : List (List (Maybe M.Table))
+    numbers : List ℕ
+    widths  : List ℕ
+    edges   : List (List (Maybe M.Table))
 
 open Tabulation public using (widths; edges)
 
@@ -907,8 +910,16 @@ module _ {m : ℕ} {D : Derivation} (B : Graph m D)
     row x = map (λ y → slot (TB.edge x y)) (all-vertices B)
 
   tabulation : Tabulation
-  tabulation .Tabulation.widths = map (vertex-width B) (all-vertices B)
-  tabulation .Tabulation.edges  = map row (all-vertices B)
+  tabulation .Tabulation.numbers = upTo (length (all-vertices B))
+  tabulation .Tabulation.widths   = map (vertex-width B) (all-vertices B)
+  tabulation .Tabulation.edges    = map row (all-vertices B)
+
+position : Tabulation → ℕ → Maybe ℕ
+position T i = scan 0 (Tabulation.numbers T)
+  where
+  scan : ℕ → List ℕ → Maybe ℕ
+  scan k []       = nothing
+  scan k (j ∷ js) = if i ≡ᵇ j then just k else scan (suc k) js
 
 table-at : Tabulation → ℕ → ℕ → Maybe M.Table
 table-at T i j = M.nth nothing j (M.nth [] i (T .edges))
@@ -981,29 +992,46 @@ module TabulatedHide (T : Tabulation) (tick : {A : Set} → String → A → A) 
   ... | just t  = t
   ... | nothing = map (λ _ → map (λ _ → Semiring.ε) (upTo (wd a))) (upTo (wd b))
 
-  -- Each surviving row threads one summary list through its slots, so a row's summaries are
-  -- forced at most once however many slots are read.
+  -- The hidden vertices are given by number, not position; one not in the graph is ignored. Each
+  -- surviving row threads one summary list through its slots, so a row's summaries are forced at
+  -- most once however many slots are read. The zero test visits every entry rather than
+  -- short-circuiting, so a stored table is fully evaluated and holds no thunks over the input
+  -- graph.
   hide-graph : ((x : Semiring.Carrier) → Dec (x ≡ Semiring.ε)) → List ℕ → Tabulation
-  hide-graph ε-dec hid .Tabulation.widths = T .widths
-  hide-graph ε-dec hid .Tabulation.edges  = rows 0 (T .edges)
+  hide-graph ε-dec hid = result
     where
-    hidden : ℕ → Bool
-    hidden i = any (i ≡ᵇ_) hid
+    hid-pos survivors : List ℕ
+    hid-pos   = mapMaybe (position T) hid
+    survivors = filterᵇ (λ p → not (any (p ≡ᵇ_) hid-pos)) (upTo (length (T .widths)))
+
+    or! : Bool → Bool → Bool
+    or! false b     = b
+    or! true  false = true
+    or! true  true  = true
+
+    nonzero-row : List Semiring.Carrier → Bool
+    nonzero-row []       = false
+    nonzero-row (x ∷ xs) = or! (not ⌊ ε-dec x ⌋) (nonzero-row xs)
+
+    nonzero-table : M.Table → Bool
+    nonzero-table []       = false
+    nonzero-table (r ∷ rs) = or! (nonzero-row r) (nonzero-table rs)
 
     keep : Maybe M.Table → Maybe M.Table
     keep nothing  = nothing
-    keep (just t) = if any (any (λ x → not ⌊ ε-dec x ⌋)) t then just t else nothing
+    keep (just t) = if nonzero-table t then just t else nothing
 
-    row : ℕ → List (Maybe M.Table) → List (Maybe M.Table)
-    row i = slots (summaries 0 i [] hid) 0
+    row : ℕ → List (Maybe M.Table)
+    row a = slots (summaries 0 a [] hid-pos) survivors
       where
-      slots : List (ℕ × M.Table) → ℕ → List (Maybe M.Table) → List (Maybe M.Table)
-      slots acc j []       = []
-      slots acc j (_ ∷ ss) = (if hidden j then nothing else keep (through i j acc)) ∷ slots acc (suc j) ss
+      slots : List (ℕ × M.Table) → List ℕ → List (Maybe M.Table)
+      slots acc []       = []
+      slots acc (b ∷ bs) = keep (through a b acc) ∷ slots acc bs
 
-    rows : ℕ → List (List (Maybe M.Table)) → List (List (Maybe M.Table))
-    rows i []       = []
-    rows i (r ∷ rs) = (if hidden i then map (λ _ → nothing) r else row i r) ∷ rows (suc i) rs
+    result : Tabulation
+    result .Tabulation.numbers = map (λ p → M.nth 0 p (Tabulation.numbers T)) survivors
+    result .Tabulation.widths  = map wd survivors
+    result .Tabulation.edges   = map row survivors
 
 
 module _ {m : ℕ} {D : Derivation} (B : Graph m D) (G : EdgeLabels (vertex-object B)) where

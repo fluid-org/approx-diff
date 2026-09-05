@@ -8,6 +8,7 @@ module example.render.probe where
 open import IO
 open import IO.Finite using (putStrLn)
 open import Data.List using (List; []; _∷_; map; length; concat; upTo)
+open import Data.Maybe using (just; nothing)
 open import Data.Nat using (ℕ; zero; suc; _+_; _*_; _⊔_)
 import Data.Nat.Show as ℕ-Show
 open import Data.String using (String; _++_)
@@ -92,7 +93,12 @@ private
     join-table t = join-list (concat t)
 
     at : ℕ → String
-    at k = show3 (join-table (TabulatedHide.hide-table T (λ _ x → x) (map suc (upTo k)) 0 root-index))
+    at k = show3 (ask (TabulatedHide.hide-graph T (λ _ x → x) three.ε? (map suc (upTo k))))
+      where
+      ask : Tabulation → Three
+      ask H with position H 0 | position H root-index
+      ... | just p | just q = join-table (read-table H p q)
+      ... | _      | _      = three.O
 
   survey : String
   survey = scale.line "filter-sum" filter-sum-run ++ "\n" ++ scale.line "map" map-run ++ "\n"

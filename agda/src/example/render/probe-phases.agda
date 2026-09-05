@@ -6,8 +6,10 @@ module example.render.probe-phases where
 
 open import IO
 open import IO.Finite using (putStrLn)
-open import Data.List using (List; []; _∷_; map; length; concat; upTo)
-open import Data.Nat using (ℕ; suc)
+open import Data.Bool using (not)
+open import Data.List using (List; []; _∷_; map; length; concat; filterᵇ; upTo)
+open import Data.Maybe using (just; nothing)
+open import Data.Nat using (ℕ; suc; _≡ᵇ_)
 import Data.Nat.Show as ℕ-Show
 open import Data.String using (String; _++_)
 open import Data.Sum using (inj₁; inj₂)
@@ -74,17 +76,27 @@ private
   join-table : M3.Table → Three
   join-table t = join-list (concat t)
 
-  counted-collapse : ℕ → Three
-  counted-collapse tgt =
-    join-table (TabulatedHide.hide-table T5 trace interior-indices 0 tgt)
+  filtered-index : ℕ
+  filtered-index = index-of dependence filtered-v
+
+  full-hide partial-hide : Tabulation
+  full-hide    = TabulatedHide.hide-graph T5 trace three.ε? interior-indices
+  partial-hide = TabulatedHide.hide-graph T5 trace three.ε?
+                   (filterᵇ (λ i → not (i ≡ᵇ filtered-index)) interior-indices)
+
+  ask : Tabulation → ℕ → Three
+  ask H v with position H 0 | position H v
+  ... | just p | just q = join-table (read-table H p q)
+  ... | _      | _      = three.O
 
   out : String
   out =
     trace ("phase 0: FO " ++ ℕ-Show.show (length (FO dependence))
            ++ ", hidden " ++ ℕ-Show.show (length (fo-hidden dependence)))
-      (mk "5: full collapse, edge constructions marked" (counted-collapse root-index)
-        (mk "6: collapse to filtered vertex, same tabulation" (counted-collapse (index-of dependence filtered-v))
-          "end"))
+      (mk "5: full hide, edge to root" (ask full-hide root-index)
+        (mk "6: partial hide, edge to filtered vertex" (ask partial-hide filtered-index)
+          (mk "7: same partial hide, edge to root" (ask partial-hide root-index)
+            "end")))
 
 main : Main
 main = run (putStrLn out)
