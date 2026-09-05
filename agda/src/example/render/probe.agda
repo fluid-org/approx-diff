@@ -72,7 +72,7 @@ private
     open Evaluated (env r) (term r)
 
     hid : List (V dependence)
-    hid = map (λ v → inj₂ (inj₁ v)) (vertices (Graph.shape dependence))
+    hid = map (λ v → inj₂ (inj₁ v)) (vertices (Graph.D dependence))
 
     ws : List ℕ
     ws = map (vertex-width dependence) hid
@@ -87,7 +87,7 @@ private
     open Evaluated (env merge-run) (term merge-run)
 
     hid : List (V dependence)
-    hid = map (λ v → inj₂ (inj₁ v)) (vertices (Graph.shape dependence))
+    hid = map (λ v → inj₂ (inj₁ v)) (vertices (Graph.D dependence))
 
     at : ℕ → String
     at k = show3 (join (hide-in-evaluation-order dependence (take k hid)

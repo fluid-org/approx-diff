@@ -13,7 +13,7 @@ open import signature.interpretation using (Interpretation)
 import sd-semimodule-primitives
 
 -- The value each vertex of a dependence graph produced, its width the vertex's width. A vertex of
--- a rule's shape is, for each premise, either a vertex inside it or that premise's root, so the
+-- a rule's derivation is, for each premise, either a vertex inside it or that premise's root, so the
 -- labelling follows the graph's construction rule by rule.
 module interaction.labelling {ℓ} (Sig : Signature ℓ) {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A)
   (ℐ : Interpretation S Sig) (ctrl-weight : Setoid.Carrier A)
@@ -24,7 +24,7 @@ open Interpretation ℐ
 open _⇒ₛ_ using (func)
 open import Data.List.Relation.Unary.All using () renaming (All to Every)
 open import language-syntax Sig hiding (_[_]) renaming (_,_ to _▸_)
-open import language-operational.evaluation Sig S ℐ ctrl-weight
+open import language-operational.evaluation Sig S ℐ ctrl-weight hiding (Derivation)
 open import interaction.graph S +-idem
 open import interaction.dependence-graph Sig S ℐ ctrl-weight +-idem
 open import matrix-embedding S using (𝔽)
@@ -41,7 +41,7 @@ data Node : Set ℓ where
 node-width : Node → ℕ
 node-width (val v) = width v
 
-record Labelling (s : DerivationShape) (w : Vertex s → ℕ) : Set ℓ where
+record Labelling (s : Derivation) (w : Vertex s → ℕ) : Set ℓ where
   field at : (p : Vertex s) → Σ[ x ∈ Node ] node-width x ≡ w p
 
 open Labelling public
@@ -85,7 +85,7 @@ lab₃ f₁ x₁ e₁ f₂ x₂ e₂ f₃ x₃ e₃ .at (inj₂ (inj₂ (inj₂ 
 
 mutual
   label : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ]) →
-          Labelling (Graph.shape (graph D)) (Graph.width (graph D))
+          Labelling (Graph.D (graph D)) (Graph.width (graph D))
   label (⇓-var x) = lab₀
   label ⇓-unit = lab₀
   label ⇓-lam = lab₀
@@ -109,7 +109,7 @@ mutual
 
   label-premises : ∀ {Γ is n} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
                    (D : γ , Ms ⇓s vs [ R ]) (u : 𝔽 (bases-width is) ⇒ 𝔽 n) →
-                   Labelling (node (Ruleₛ.shapes (premises D u))) (Ruleₛ.widths (premises D u))
+                   Labelling (node (Ruleₛ.Ds (premises D u))) (Ruleₛ.widths (premises D u))
   label-premises [] u = lab₀
   label-premises (_∷_ {v = v} D₁ []) u = lab₁ (label D₁) (val (const v)) refl
   label-premises (_∷_ {is = is} {v = v} D₁ D₂@(_ ∷ _)) u =
@@ -117,7 +117,7 @@ mutual
          (label-premises D₂ (u ∘ in₂ {width (const v)} {bases-width is}))
 
   label-m : ∀ {Γ} {γ : Env Γ} {τ₀ σr s σ' v v' F} (D : Map γ {τ₀} {σr} s σ' v v' F) →
-            Labelling (Graph.shape (graph-m D)) (Graph.width (graph-m D))
+            Labelling (Graph.D (graph-m D)) (Graph.width (graph-m D))
   label-m (m-rec {w' = w'} {u = u} D₁ D₂) =
     lab₂ (label-m D₁) (val w') refl (label D₂) (val u) refl
   label-m m-unit = lab₀

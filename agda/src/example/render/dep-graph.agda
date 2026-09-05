@@ -109,7 +109,7 @@ module render-eval {Γ τ} (γ : Env Γ) (t : Γ ⊢ τ) where
 
     hid : List (V dependence)
     hid = map (λ p → inj₂ (inj₁ p))
-              (filterᵇ (λ q → not ⌊ q ∈? K .visible ⌋) (vertices (Graph.shape dependence)))
+              (filterᵇ (λ q → not ⌊ q ∈? K .visible ⌋) (vertices (Graph.D dependence)))
 
     rows : List (ℕ × V dependence) → List Edge
     rows []             = []
@@ -141,7 +141,7 @@ private
 
   module int-fig = render-eval γ-int t-int
 
-  sum-vertex : Vertex (Graph.shape int-fig.dependence)
+  sum-vertex : Vertex (Graph.D int-fig.dependence)
   sum-vertex = inj₁ (inj₂ root)
 
   int-dot : String

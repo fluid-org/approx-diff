@@ -17,7 +17,7 @@ module interaction.evaluated {ℓ} (Sig : Signature ℓ) {A : Setoid 0ℓ 0ℓ} 
 open import language-syntax Sig renaming (_,_ to _▸_)
 open import language-operational.evaluation Sig S ℐ ctrl-weight
 open import language-operational.totality Sig S ℐ ctrl-weight using (eval)
-open import interaction.graph S +-idem
+open import interaction.graph S +-idem hiding (Derivation)
 open import interaction.dependence-graph Sig S ℐ ctrl-weight +-idem
 open import interaction.labelling Sig S ℐ ctrl-weight +-idem
 
@@ -36,5 +36,5 @@ module Evaluated {Γ τ} (γ : Env Γ) (t : Γ ⊢ τ) where
   dependence : Graph (suc (width-env γ)) (width value)
   dependence = graph derivation
 
-  labels : Labelling (Graph.shape dependence) (Graph.width dependence)
+  labels : Labelling (Graph.D dependence) (Graph.width dependence)
   labels = label derivation

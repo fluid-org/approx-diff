@@ -59,7 +59,7 @@ private
 
       -- Dependence matrix of the degenerate configuration.
       R = hide-in-evaluation-order dependence
-            (map (λ v → inj₂ (inj₁ v)) (vertices (Graph.shape dependence)))
+            (map (λ v → inj₂ (inj₁ v)) (vertices (Graph.D dependence)))
             (inj₁ input) (inj₂ (inj₂ root))
 
       -- Control column of the environment vertex dropped.
@@ -98,7 +98,7 @@ private
 
     -- One table per nonzero visible-graph edge between the environment, the revealed vertices
     -- and the root.
-    tables : List (Vertex (Graph.shape dependence)) → (V dependence → String) → String →
+    tables : List (Vertex (Graph.D dependence)) → (V dependence → String) → String →
              List (String × String)
     tables ps nm name = from-store (first-order-tables dependence)
       where
@@ -127,7 +127,7 @@ private
   query-graph = Evaluated.dependence (env query-run) (term query-run)
 
   -- Root of the application's argument premise: the filtered list between the comprehension and sum.
-  filtered-vertex : Vertex (Graph.shape query-graph)
+  filtered-vertex : Vertex (Graph.D query-graph)
   filtered-vertex = inj₂ (inj₁ (inj₂ root))
 
   query-name : V query-graph → String
@@ -137,7 +137,7 @@ private
 
   add-mul-graph = Evaluated.dependence (env add-mul-run) (term add-mul-run)
 
-  sum-vertex : Vertex (Graph.shape add-mul-graph)
+  sum-vertex : Vertex (Graph.D add-mul-graph)
   sum-vertex = inj₁ (inj₂ root)
 
   add-mul-name : V add-mul-graph → String
@@ -147,7 +147,7 @@ private
 
   case-inl-graph = Evaluated.dependence (env case-inl-run) (term case-inl-run)
 
-  scrutinee-vertex : Vertex (Graph.shape case-inl-graph)
+  scrutinee-vertex : Vertex (Graph.D case-inl-graph)
   scrutinee-vertex = inj₁ (inj₂ root)
 
   case-inl-name : V case-inl-graph → String
@@ -177,7 +177,7 @@ private
 
       score-rows : mat.Table
       score-rows = drop-ctrl (graph.hide-in-evaluation-order dependence
-                     (map (λ v → inj₂ (inj₁ v)) (graph.vertices (graph.Graph.shape dependence)))
+                     (map (λ v → inj₂ (inj₁ v)) (graph.vertices (graph.Graph.D dependence)))
                      (inj₁ graph.input) (inj₂ (inj₂ graph.root)))
         where
         drop-ctrl : ∀ {m n} → mat.Matrix m (Nat.suc n) → mat.Table

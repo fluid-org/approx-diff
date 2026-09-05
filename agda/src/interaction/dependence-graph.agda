@@ -166,14 +166,14 @@ private
             (+ₘ-cong (≈-trans (≈-sym (assoc (join a b) inb₁ f)) (∘-cong₁ {g = f} (join-inb₁ a b)))
                      (≈-trans (≈-sym (assoc (join a b) inb₂ g)) (∘-cong₁ {g = g} (join-inb₂ a b))))
 
-  one : ∀ {Xm N N₀ : SemiMod.Semimodule} (out : Xm ⇒ N) (up : N₀ ⇒ N) {c R' : Xm ⇒ N₀} → c ≈ R' →
-        (out +ₘ (up ∘ (c ∘ I))) ≈ (out +ₘ (up ∘ R'))
-  one out up e = +ₘ-cong (≈-refl {f = out}) (∘-cong₂ {f = up} (≈-trans id-right e))
+  one : ∀ {Xm N N₀ : SemiMod.Semimodule} (input-to-output : Xm ⇒ N) (to-output : N₀ ⇒ N) {c R' : Xm ⇒ N₀} → c ≈ R' →
+        (input-to-output +ₘ (to-output ∘ (c ∘ I))) ≈ (input-to-output +ₘ (to-output ∘ R'))
+  one input-to-output to-output e = +ₘ-cong (≈-refl {f = input-to-output}) (∘-cong₂ {f = to-output} (≈-trans id-right e))
 
-  one-inputs : ∀ {Xm M' N N₀ : SemiMod.Semimodule} (out : Xm ⇒ N) (up : N₀ ⇒ N) (ins : Xm ⇒ M')
+  one-inputs : ∀ {Xm M' N N₀ : SemiMod.Semimodule} (input-to-output : Xm ⇒ N) (to-output : N₀ ⇒ N) (ins : Xm ⇒ M')
                {c R' : M' ⇒ N₀} → c ≈ R' →
-               (out +ₘ (up ∘ (c ∘ ins))) ≈ (out +ₘ (up ∘ (R' ∘ ins)))
-  one-inputs out up ins e = +ₘ-cong (≈-refl {f = out}) (∘-cong₂ {f = up} (∘-cong₁ {g = ins} e))
+               (input-to-output +ₘ (to-output ∘ (c ∘ ins))) ≈ (input-to-output +ₘ (to-output ∘ (R' ∘ ins)))
+  one-inputs input-to-output to-output ins e = +ₘ-cong (≈-refl {f = input-to-output}) (∘-cong₂ {f = to-output} (∘-cong₁ {g = ins} e))
 
   seq : ∀ {Xm M₂ N₁ N₂ : SemiMod.Semimodule} (ins : (Xm ⊕ᵥ N₁) ⇒ M₂) {c₁ R₁ : Xm ⇒ N₁} {c₂ T : M₂ ⇒ N₂} →
         c₁ ≈ R₁ → c₂ ≈ T →
@@ -200,16 +200,16 @@ private
                                                         (≈-trans id-right e₂))))))
       (+ₘ-lunit (U ∘ (ins ∘ ⟨ ⟨ I , R₁ ⟩ , R₂ ⟩)))
 
-  two-roots : ∀ {Xm M₁ M₂ N N₁ N₂ : SemiMod.Semimodule} (out : Xm ⇒ N) (r₁ : Xm ⇒ M₁) (ins₂ : (Xm ⊕ᵥ N₁) ⇒ M₂)
+  two-roots : ∀ {Xm M₁ M₂ N N₁ N₂ : SemiMod.Semimodule} (input-to-output : Xm ⇒ N) (r₁ : Xm ⇒ M₁) (ins₂ : (Xm ⊕ᵥ N₁) ⇒ M₂)
               (u₁ : N₁ ⇒ N) (u₂ : N₂ ⇒ N)
               (c₁ : M₁ ⇒ N₁) (c₂ : M₂ ⇒ N₂) {X₁ : Xm ⇒ N₁} {X₂ : Xm ⇒ N₂} →
               (c₁ ∘ r₁) ≈ X₁ → (c₂ ∘ (ins₂ ∘ ⟨ I , c₁ ∘ r₁ ⟩)) ≈ X₂ →
-              ((out +ₘ (u₁ ∘ (c₁ ∘ r₁))) +ₘ (u₂ ∘ (c₂ ∘ (ins₂ ∘ ⟨ I , c₁ ∘ r₁ ⟩))))
-              ≈ (out +ₘ ((u₁ ∘ X₁) +ₘ (u₂ ∘ X₂)))
-  two-roots out r₁ ins₂ u₁ u₂ c₁ c₂ {X₁ = X₁} {X₂ = X₂} e₁ e₂ =
+              ((input-to-output +ₘ (u₁ ∘ (c₁ ∘ r₁))) +ₘ (u₂ ∘ (c₂ ∘ (ins₂ ∘ ⟨ I , c₁ ∘ r₁ ⟩))))
+              ≈ (input-to-output +ₘ ((u₁ ∘ X₁) +ₘ (u₂ ∘ X₂)))
+  two-roots input-to-output r₁ ins₂ u₁ u₂ c₁ c₂ {X₁ = X₁} {X₂ = X₂} e₁ e₂ =
     ≈-trans
-      (+ₘ-cong (+ₘ-cong (≈-refl {f = out}) (∘-cong₂ {f = u₁} e₁)) (∘-cong₂ {f = u₂} e₂))
-      (+ₘ-assoc {f = out} {g = u₁ ∘ X₁} {h = u₂ ∘ X₂})
+      (+ₘ-cong (+ₘ-cong (≈-refl {f = input-to-output}) (∘-cong₂ {f = u₁} e₁)) (∘-cong₂ {f = u₂} e₂))
+      (+ₘ-assoc {f = input-to-output} {g = u₁ ∘ X₁} {h = u₂ ∘ X₂})
 
   proj-join : ∀ a b (X : 𝔽 a ⇒ 𝔽 b) →
               ((p₁ {a} {b} ∘ join a b) ∘ ⟨ I , X ⟩) ≈ I
