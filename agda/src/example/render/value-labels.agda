@@ -36,7 +36,7 @@ private
   labels-vec : ∀ {k} → ℕ → Vec.Vec (AVal ⊤) k → List Label
 
   labels off (node Tag.unit      _ n _)  = ("()" , n , off) ∷ []
-  labels off (node (Tag.const l) _ n _)  = (l , n , off) ∷ []
+  labels off (node (Tag.const l) _ n _)  = ("\\text{" ++ l ++ "}" , n , off) ∷ []
   labels off (node Tag.inl       _ n cs) = ("\\mathsf{inl}\\," , n , off) ∷ labels-vec (off + n) cs
   labels off (node Tag.inr       _ n cs) = ("\\mathsf{inr}\\," , n , off) ∷ labels-vec (off + n) cs
   labels off (node (Tag.clo _)   _ n _)  = ("\\lambda" , n , off) ∷ []

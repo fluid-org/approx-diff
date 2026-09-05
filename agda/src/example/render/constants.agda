@@ -23,4 +23,4 @@ show-ℚ q with ↧ q
 
 show-const : ∀ {s} → sort-val s → String
 show-const {number} q = show-ℚ q
-show-const {string} s = s
+show-const {string} s = "\"" ++ s ++ "\""
