@@ -93,7 +93,7 @@ private
 module render-eval {Γ τ} (γ : Env Γ) (t : Γ ⊢ τ) where
 
   open Evaluated γ t public
-  open Interaction dependence public
+  open Interaction dependence (fo-graph dependence) public
 
   private
     label-of : V dependence → String
@@ -126,8 +126,8 @@ module render-eval {Γ τ} (γ : Env Γ) (t : Γ ⊢ τ) where
       cols ((j , y) ∷ js) = keep i j (visible-edge x y hid) ++L cols js
 
   full : Config dependence
-  full = foldl (λ K p → reveal-at (tabulated-summary dependence) p K)
-             (initial (tabulated-summary dependence)) (FO dependence)
+  full = foldl (λ K p → reveal-at (tabulated-summary dependence (fo-graph dependence)) p K)
+             (initial (tabulated-summary dependence (fo-graph dependence))) (FO dependence)
 
   dot : String
   dot = dot-at full
@@ -151,10 +151,14 @@ private
   sum-vertex = inj₁ (inj₂ root)
 
   int-dot : String
-  int-dot = int-fig.dot-at (int-fig.reveal-at (tabulated-summary int-fig.dependence) sum-vertex
-              (int-fig.initial (tabulated-summary int-fig.dependence)))
+  int-dot = int-fig.dot-at (int-fig.reveal-at (tabulated-summary int-fig.dependence (fo-graph int-fig.dependence)) sum-vertex
+              (int-fig.initial (tabulated-summary int-fig.dependence (fo-graph int-fig.dependence))))
 
 main : Main
 main = run (writeFile "dot/intermediate-three.dot" int-dot >>
-            writeFile "dot/filter-three.dot" (filter-fig.dot-at (filter-fig.initial (tabulated-summary filter-fig.dependence))) >>
-            writeFile "dot/map-three.dot" (map-fig.dot-at (map-fig.initial (tabulated-summary map-fig.dependence))))
+            writeFile "dot/filter-three.dot"
+              (filter-fig.dot-at
+                (filter-fig.initial (tabulated-summary filter-fig.dependence (fo-graph filter-fig.dependence)))) >>
+            writeFile "dot/map-three.dot"
+              (map-fig.dot-at
+                (map-fig.initial (tabulated-summary map-fig.dependence (fo-graph map-fig.dependence)))))

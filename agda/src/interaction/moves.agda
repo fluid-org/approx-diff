@@ -127,7 +127,7 @@ record Config {m n : ℕ} (B : Graph m n) : Set₁ where
 
 open Config public
 
-module Interaction {m n : ℕ} (B : Graph m n) where
+module Interaction {m n : ℕ} (B : Graph m n) (first-order : Relation (vertex-object B)) where
 
   private
     wd : V B → ℕ
@@ -191,11 +191,11 @@ module Interaction {m n : ℕ} (B : Graph m n) where
   inj₂ (inj₂ _) ∈ᵥ? C = no (λ ())
 
   Adj-p : Vertex (Graph.shape B) → List (Vertex (Graph.shape B)) × Relation (vertex-object B) → Set
-  Adj-p p CH = AdjacentIn (fo-graph B) p (proj₁ CH)
+  Adj-p p CH = AdjacentIn first-order p (proj₁ CH)
 
   adj-p? : (p : Vertex (Graph.shape B))
            (CH : List (Vertex (Graph.shape B)) × Relation (vertex-object B)) → Dec (Adj-p p CH)
-  adj-p? p CH = adjacent-in? (fo-graph B) p (proj₁ CH)
+  adj-p? p CH = adjacent-in? first-order p (proj₁ CH)
 
   restrict : Relation (vertex-object B) → List (Vertex (Graph.shape B)) → Relation (vertex-object B)
   restrict G C x y = when (x ∈ᵥ? C ⊎-dec y ∈ᵥ? C) (G x y)
@@ -204,14 +204,14 @@ module Interaction {m n : ℕ} (B : Graph m n) where
   -- vertices adjacent to it. Restriction first, so direct edges between boundary vertices are not
   -- carried by the summary.
   summary : List (Vertex (Graph.shape B)) → Relation (vertex-object B)
-  summary C = hide-all (vertex-object B) (restrict (fo-graph B) C) (map at C)
+  summary C = hide-all (vertex-object B) (restrict first-order C) (map at C)
 
   Summary : Set
   Summary = List (Vertex (Graph.shape B)) → Relation (vertex-object B)
 
   initial : Summary → Config B
   initial summarise .visible = []
-  initial summarise .hidden  = map (λ C → C , summarise C) (regions (fo-graph B) (FO B))
+  initial summarise .hidden  = map (λ C → C , summarise C) (regions first-order (FO B))
 
   hidden-set : Config B → List (Vertex (Graph.shape B))
   hidden-set K = concat (map proj₁ (K .hidden))
@@ -225,7 +225,7 @@ module Interaction {m n : ℕ} (B : Graph m n) where
   visible-graph : Config B → Relation (vertex-object B)
   visible-graph K x y =
     foldr _+ₘ_
-          (when (¬? (x ∈ᵥ? hs) ×-dec ¬? (y ∈ᵥ? hs)) (fo-graph B x y))
+          (when (¬? (x ∈ᵥ? hs) ×-dec ¬? (y ∈ᵥ? hs)) (first-order x y))
           (map (λ CH → proj₂ CH x y) (K .hidden))
     where hs = hidden-set K
 
@@ -240,12 +240,12 @@ module Interaction {m n : ℕ} (B : Graph m n) where
                  List (Vertex (Graph.shape B)) × Relation (vertex-object B) →
                  List (List (Vertex (Graph.shape B)) × Relation (vertex-object B))
   split-region summarise p (C , H) with p ∈? C
-  ... | yes _ = map (λ C' → C' , summarise C') (regions (fo-graph B) (filter (p ≢?_) C))
+  ... | yes _ = map (λ C' → C' , summarise C') (regions first-order (filter (p ≢?_) C))
   ... | no  _ = (C , H) ∷ []
 
   split-region-∈ : ∀ (summarise : Summary) p C (H : Relation (vertex-object B)) → p ∈ C →
                    split-region summarise p (C , H) ≡
-                   map (λ C' → C' , summarise C') (regions (fo-graph B) (filter (p ≢?_) C))
+                   map (λ C' → C' , summarise C') (regions first-order (filter (p ≢?_) C))
   split-region-∈ summarise p C H h with p ∈? C
   ... | yes _ = ≡-refl
   ... | no ¬k = ⊥-elim (¬k h)
@@ -266,7 +266,7 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
 
   Path : Set
   Path = Vertex shape
-  open Interaction 𝒢
+  open Interaction 𝒢 (fo-graph 𝒢)
 
   private
     module Hide-𝒢 = Hide (V 𝒢) (vertex-object 𝒢)
@@ -299,12 +299,12 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
 
   -- The summary of a hidden region computed by the tabulated pass, with the region sorted into
   -- evaluation order so that every nonzero edge among its vertices runs forward.
-  tabulated-summary : Summary
-  tabulated-summary C a b =
-    mat (Tabulated.hide-in-evaluation-order 𝒢 (restrict (fo-graph 𝒢) C) (λ _ x → x)
+  tabulated-summary : Relation (vertex-object 𝒢) → Summary
+  tabulated-summary first-order C a b =
+    mat (Tabulated.hide-in-evaluation-order 𝒢 (restrict first-order C) (λ _ x → x)
            (map at (sort C)) a b)
 
-  tabulated-summary-agrees : ∀ C x y → tabulated-summary C x y ≈ summary C x y
+  tabulated-summary-agrees : ∀ C x y → tabulated-summary (fo-graph 𝒢) C x y ≈ summary C x y
   tabulated-summary-agrees C x y =
     ≈-trans (tabulated-hide-all 𝒢 (restrict (fo-graph 𝒢) C) (map at (sort C)) x y
               (sorted-forward fwd (LinkedP.Linked⇒AllPairs Vertex≤.trans (sort-↗ C))))
