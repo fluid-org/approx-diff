@@ -6,7 +6,7 @@ module example.render.latex where
 open import IO
 open import IO.Finite using (writeFile)
 open import Data.Fin using (suc)
-open import Data.List using (List; []; _∷_; map; foldr; concat) renaming (_++_ to _++ₗ_)
+open import Data.List using (List; []; _∷_; map; foldr; concat; length; upTo) renaming (_++_ to _++ₗ_)
 open import Data.Nat using (ℕ)
 import Data.Nat as Nat
 open import Data.Product using (_×_; _,_; proj₁; proj₂)
@@ -25,7 +25,7 @@ import semiring-sign as sign
 import signature.example.interpretation
 import three
 open import semiring-Q using (nonzero)
-open import commutative-semiring-product using (_⊗S_; ⊗-idem)
+open import commutative-semiring-product using (_⊗S_; ⊗-idem; ⊗-ε?)
 open import signature.example.interpretation (nonzero three.semiring) three.semiring
   using (Sig; interpretation)
 open import interaction.graph three.semiring (λ x → three.∨-idem {x})
@@ -57,8 +57,12 @@ private
       i-labels = env-labels (env r)
       o-labels = val-labels 0 value
 
+      T = tabulation dependence three.ε? (λ _ x → x)
+
       -- Dependence matrix of the degenerate configuration.
-      R = hide-in-evaluation-order dependence (map inj₂ (vertices D)) (inj₁ input) (inj₂ ε)
+      R = M3.look {vertex-width dependence (inj₂ ε)} {vertex-width dependence (inj₁ input)}
+            (TabulatedHide.hide-table T (λ _ x → x) (map Nat.suc (upTo (length (vertices D))))
+              0 (Nat.suc (length (vertices D))))
 
       -- Control column of the environment vertex dropped.
       drop-ctrl : ∀ {m n} → M3.Matrix m (Nat.suc n) → M3.Matrix m n
@@ -167,15 +171,20 @@ private
                            (⊗-idem sign.semiring three.semiring sign.+ˢ-idem (λ x → three.∨-idem {x}))
       module axes = example.render.value-labels signed-weight (sign.semiring ⊗S three.semiring)
                       (sign.unk , three.C)
+
+      signed-ε? = ⊗-ε? sign.semiring three.semiring sign.ε? three.ε?
       module mat = matrix.Mat (sign.semiring ⊗S three.semiring)
 
       open evaluated.Evaluated (runs.env runs.score-run) (runs.term runs.score-run)
         using (D; dependence; value)
 
       score-rows : mat.Table
-      score-rows = drop-ctrl (graph.hide-in-evaluation-order dependence
-                     (map inj₂ (graph.vertices D))
-                     (inj₁ graph.input) (inj₂ graph.ε))
+      score-rows = drop-ctrl (mat.look {graph.vertex-width dependence (inj₂ graph.ε)}
+                                       {graph.vertex-width dependence (inj₁ graph.input)}
+                     (graph.TabulatedHide.hide-table
+                        (graph.tabulation dependence signed-ε? (λ _ x → x)) (λ _ x → x)
+                        (map Nat.suc (upTo (length (graph.vertices D)))) 0
+                        (Nat.suc (length (graph.vertices D)))))
         where
         drop-ctrl : ∀ {m n} → mat.Matrix m (Nat.suc n) → mat.Table
         drop-ctrl R = toList (tabulate (λ q → toList (tabulate (λ p → R q (suc p)))))

@@ -5,14 +5,14 @@ module example.render.dep-graph where
 
 open import IO
 open import IO.Finite using (writeFile; putStrLn)
-open import Data.List using (List; []; _∷_; map; concat; foldl; filterᵇ)
+open import Data.List using (List; []; _∷_; map; concat; foldl; filterᵇ; length)
   renaming (_++_ to _++L_)
 open import Data.List.Relation.Unary.All using ([]; _∷_)
 open import Data.Bool using (Bool; true; false; not; if_then_else_)
 open import Relation.Nullary.Decidable using (⌊_⌋)
 open import Data.Nat using (ℕ; suc)
 import Data.Nat.Show as ℕ-Show
-open import Data.Product using (_×_; _,_; proj₁)
+open import Data.Product using (_×_; _,_; proj₁; proj₂)
 open import Data.Rational using (ℚ; 0ℚ; 1ℚ)
 open import Data.String using (String; _++_)
 open import Data.Sum using (inj₁; inj₂)
@@ -94,28 +94,35 @@ module render-eval {Γ τ} (γ : Env Γ) (t : Γ ⊢ τ) where
     label-of (inj₁ input) = show-env γ
     label-of (inj₂ p)     = node-text (proj₁ (labels .at p))
 
-    node-line : ℕ × V dependence → String
-    node-line (i , x) = "  n" ++ ℕ-Show.show i ++ " [shape=box, fontsize=11, label=\"" ++ label-of x ++ "\"];\n"
+    node-line : ℕ × ℕ × V dependence → String
+    node-line (i , _ , x) = "  n" ++ ℕ-Show.show i ++ " [shape=box, fontsize=11, label=\"" ++ label-of x ++ "\"];\n"
 
-  visible-edge : V dependence → V dependence → List (V dependence) → M3.Table
-  visible-edge a b hid = M3.to-table (hide-in-evaluation-order dependence hid a b)
+    T : Tabulation
+    T = tabulation dependence three.ε? (λ _ x → x)
+
+  visible-edge : ℕ → ℕ → List ℕ → M3.Table
+  visible-edge a b hid = TabulatedHide.hide-table T (λ _ x → x) hid a b
 
   dot-at : Config dependence → String
   dot-at K = "digraph G {\n  rankdir=LR;\n" ++ cat (map node-line nvs) ++ edge-lines (rows nvs) ++ "}\n"
     where
-    nvs : List (ℕ × V dependence)
-    nvs = enumerate 0 ((inj₁ input ∷ []) ++L map inj₂ (K .visible) ++L (inj₂ ε ∷ []))
+    endpoints : List (ℕ × V dependence)
+    endpoints = (0 , inj₁ input) ∷ map (λ p → index-of dependence (inj₂ p) , inj₂ p) (K .visible)
+                ++L ((suc (length (vertices D)) , inj₂ ε) ∷ [])
 
-    hid : List (V dependence)
-    hid = map inj₂ (filterᵇ (λ q → not ⌊ q ∈? K .visible ⌋) (vertices D))
+    nvs : List (ℕ × ℕ × V dependence)
+    nvs = enumerate 0 endpoints
 
-    rows : List (ℕ × V dependence) → List Edge
-    rows []             = []
-    rows ((i , x) ∷ is) = cols nvs ++L rows is
+    hid : List ℕ
+    hid = map proj₁ (filterᵇ (λ iq → not ⌊ proj₂ iq ∈? K .visible ⌋) (enumerate 1 (vertices D)))
+
+    rows : List (ℕ × ℕ × V dependence) → List Edge
+    rows []                 = []
+    rows ((i , gx , x) ∷ is) = cols nvs ++L rows is
       where
-      cols : List (ℕ × V dependence) → List Edge
-      cols []             = []
-      cols ((j , y) ∷ js) = keep i j (visible-edge x y hid) ++L cols js
+      cols : List (ℕ × ℕ × V dependence) → List Edge
+      cols []                 = []
+      cols ((j , gy , y) ∷ js) = keep i j (visible-edge gx gy hid) ++L cols js
 
   full : Config dependence
   full = foldl (λ K p → reveal-at (tabulated-summary dependence (tabulated-first-order dependence (first-order-tables dependence))) p K)

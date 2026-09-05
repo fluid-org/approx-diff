@@ -6,15 +6,15 @@ module example.render.probe-phases where
 
 open import IO
 open import IO.Finite using (putStrLn)
-open import Data.List using (List; []; _∷_; map; length; concat; drop)
-open import Data.Nat using (ℕ)
+open import Data.List using (List; []; _∷_; map; length; concat; upTo)
+open import Data.Nat using (ℕ; suc)
 import Data.Nat.Show as ℕ-Show
 open import Data.String using (String; _++_)
 open import Data.Sum using (inj₁; inj₂)
 open import Data.Vec using (toList; tabulate)
 import matrix
 import three
-open three using (Three; O; C; D)
+open three using (Three)
 open import semiring-Q using (nonzero)
 open import signature.example.interpretation (nonzero three.semiring) three.semiring
   using (Sig; interpretation)
@@ -34,12 +34,12 @@ private
   module M3 = matrix.Mat three.semiring
 
   show3 : Three → String
-  show3 O = "O"
-  show3 C = "C"
-  show3 D = "D"
+  show3 three.O = "O"
+  show3 three.C = "C"
+  show3 three.D = "D"
 
   join-list : List Three → Three
-  join-list []       = O
+  join-list []       = three.O
   join-list (t ∷ ts) = t three.⊔ join-list ts
 
   join : ∀ {m n} → M3.Matrix m n → Three
@@ -62,13 +62,21 @@ private
   mk : String → Three → String → String
   mk k v r = trace ("phase " ++ k) (show3 v ++ " " ++ r)
 
-  hid-all : List (V dependence)
-  hid-all = map inj₂ (vertices D)
+  T5 : Tabulation
+  T5 = tabulation dependence three.ε? trace
+
+  interior-indices : List ℕ
+  interior-indices = map suc (upTo (length (vertices D)))
+
+  root-index : ℕ
+  root-index = suc (length (vertices D))
+
+  join-table : M3.Table → Three
+  join-table t = join-list (concat t)
 
   counted-collapse : ℕ → Three
-  counted-collapse k =
-    join (Tabulated.hide-in-evaluation-order dependence (edge-labels dependence) trace
-            (drop k hid-all) env-v root-v)
+  counted-collapse tgt =
+    join-table (TabulatedHide.hide-table T5 trace interior-indices 0 tgt)
 
   out : String
   out =
@@ -79,8 +87,8 @@ private
           (mk "3: fo filtered->root" (join (entry filtered-v root-v (fo filtered-v root-v)))
             (mk "4: region summary env->root"
               (join (entry env-v root-v (tabulated-summary dependence fo (FO dependence) env-v root-v)))
-              (mk "5: full collapse, edge constructions marked" (counted-collapse 0)
-                (mk "6: full collapse repeated" (counted-collapse 0)
+              (mk "5: full collapse, edge constructions marked" (counted-collapse root-index)
+                (mk "6: collapse to filtered vertex, same tabulation" (counted-collapse (index-of dependence filtered-v))
                   "end"))))))
 
 main : Main

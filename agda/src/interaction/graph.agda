@@ -3,7 +3,8 @@
 open import Data.Bool using (Bool; true; not; if_then_else_)
 open import Data.Empty using (⊥; ⊥-elim)
 open import Data.Fin using (Fin; toℕ; zero; suc)
-open import Data.List using (List; []; _∷_; _++_; map; foldl; filterᵇ; upTo; applyUpTo; any)
+open import Data.List using (List; []; _∷_; _++_; map; foldl; filterᵇ; upTo; applyUpTo)
+open import Data.Bool.ListAction using (any)
 open import Data.List.Properties using (++-identityʳ; map-++; map-∘; foldl-++)
 open import Data.List.Relation.Unary.All using (All; []; _∷_; universal) renaming (map to All-map)
 open import Data.List.Relation.Unary.AllPairs using (AllPairs; []; _∷_) renaming (map to AllPairs-map)
@@ -861,7 +862,6 @@ module _ {m : ℕ} {D : Derivation} (B : Graph m D) where
 -- keyed by position in the evaluation-order vertex list (the inputs vertex first, the conclusion
 -- last). A missing entry is the zero relation.
 record Tabulation : Set where
-  constructor tabulation
   field
     widths : List ℕ
     edges  : List (List (ℕ × M.Table))
@@ -911,9 +911,9 @@ module _ {m : ℕ} {D : Derivation} (B : Graph m D)
       keep : M.Table → List (ℕ × M.Table)
       keep t = if nonzero-table t then (j , t) ∷ row x ys else row x ys
 
-  tabulate : Tabulation
-  tabulate .Tabulation.widths = map (vertex-width B) (all-vertices B)
-  tabulate .Tabulation.edges  = map (λ x → row x (number 0 (all-vertices B))) (all-vertices B)
+  tabulation : Tabulation
+  tabulation .Tabulation.widths = map (vertex-width B) (all-vertices B)
+  tabulation .Tabulation.edges  = map (λ x → row x (number 0 (all-vertices B))) (all-vertices B)
 
 module _ {m : ℕ} {D : Derivation} (B : Graph m D) where
 
@@ -925,8 +925,8 @@ module _ {m : ℕ} {D : Derivation} (B : Graph m D) where
   table-at : Tabulation → ℕ → ℕ → Maybe M.Table
   table-at T i j = find-target j (M.nth [] i (T .edges))
 
-  read : Tabulation → (x y : V B) → vertex-object B x ⇒ vertex-object B y
-  read T x y with table-at T (index-of B x) (index-of B y)
+  read-edge : Tabulation → (x y : V B) → vertex-object B x ⇒ vertex-object B y
+  read-edge T x y with table-at T (index-of B x) (index-of B y)
   ... | just t  = mat (M.look {vertex-width B y} {vertex-width B x} t)
   ... | nothing = εₘ
 
@@ -981,11 +981,11 @@ module TabulatedHide (T : Tabulation) (tick : {A : Set} → String → A → A) 
   ... | nothing = summaries (suc k) a acc vs
   ... | just t  = summaries (suc k) a (acc ++ (v , t) ∷ []) vs
 
-  hide : List ℕ → (a b : ℕ) → Maybe M.Table
-  hide hid a b = through a b (summaries 0 a [] hid)
+  hide-tabulated : List ℕ → (a b : ℕ) → Maybe M.Table
+  hide-tabulated hid a b = through a b (summaries 0 a [] hid)
 
   hide-table : List ℕ → (a b : ℕ) → M.Table
-  hide-table hid a b with hide hid a b
+  hide-table hid a b with hide-tabulated hid a b
   ... | just t  = t
   ... | nothing = map (λ _ → map (λ _ → Semiring.ε) (upTo (wd a))) (upTo (wd b))
 

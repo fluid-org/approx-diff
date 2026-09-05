@@ -7,12 +7,11 @@ module example.render.probe where
 
 open import IO
 open import IO.Finite using (putStrLn)
-open import Data.List using (List; []; _∷_; map; length; concat; take)
+open import Data.List using (List; []; _∷_; map; length; concat; upTo)
 open import Data.Nat using (ℕ; zero; suc; _+_; _*_; _⊔_)
 import Data.Nat.Show as ℕ-Show
 open import Data.String using (String; _++_)
 open import Data.Sum using (inj₁; inj₂)
-open import Data.Vec using (toList; tabulate)
 import matrix
 import three
 open three using (Three)
@@ -43,9 +42,6 @@ private
   join-list : List Three → Three
   join-list []       = three.O
   join-list (t ∷ ts) = t three.⊔ join-list ts
-
-  join : ∀ {m n} → M3.Matrix m n → Three
-  join M = join-list (concat (toList (tabulate λ i → toList (tabulate λ j → M i j))))
 
   sum : List ℕ → ℕ
   sum []       = 0
@@ -86,12 +82,17 @@ private
   module bench where
     open Evaluated (env merge-run) (term merge-run)
 
-    hid : List (V dependence)
-    hid = map inj₂ (vertices D)
+    T : Tabulation
+    T = tabulation dependence three.ε? (λ _ x → x)
+
+    root-index : ℕ
+    root-index = suc (length (vertices D))
+
+    join-table : M3.Table → Three
+    join-table t = join-list (concat t)
 
     at : ℕ → String
-    at k = show3 (join (hide-in-evaluation-order dependence (take k hid)
-                          (inj₁ input) (inj₂ ε)))
+    at k = show3 (join-table (TabulatedHide.hide-table T (λ _ x → x) (map suc (upTo k)) 0 root-index))
 
   survey : String
   survey = scale.line "filter-sum" filter-sum-run ++ "\n" ++ scale.line "map" map-run ++ "\n"
@@ -102,4 +103,4 @@ private
   curve (k ∷ ks) = trace ("k=" ++ show k ++ " -> " ++ bench.at k) (curve ks)
 
 main : Main
-main = run (putStrLn (trace survey (show (curve (100 ∷ 200 ∷ 400 ∷ 800 ∷ [])))))
+main = run (putStrLn (trace survey (show (curve (50 ∷ [])))))
