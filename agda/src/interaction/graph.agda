@@ -807,8 +807,7 @@ module _ {m : ℕ} {D : Derivation} (B : Graph m D) where
 -- them runs forward, one traversal materialises for each vertex the relation reaching it from the
 -- source through the vertices before it, as a stored table. Each raw edge is read once, where
 -- hide-all rewrites the whole relation at each hidden vertex. The tick hook marks each edge
--- tabulation and each vertex summary, firing when the value is demanded; hide-in-evaluation-order
--- below specialises it to the identity.
+-- tabulation and each vertex summary, firing when the value is demanded.
 module Tabulated {m : ℕ} {D : Derivation} (B : Graph m D) (G : EdgeLabels (vertex-object B))
                  (tick : {A : Set} → String → A → A) where
 
@@ -848,15 +847,6 @@ module Tabulated {m : ℕ} {D : Derivation} (B : Graph m D) (G : EdgeLabels (ver
   summaries k a acc []       = acc
   summaries k a acc (v ∷ vs) =
     summaries (suc k) a (acc ++ (v , tick ("summary " ++ₛ ℕ-Show.show k) (through a v acc)) ∷ []) vs
-
-  hide-in-evaluation-order : List (V B) → (a b : V B) → M.Matrix (wd b) (wd a)
-  hide-in-evaluation-order hid a b = look (through a b (summaries 0 a [] hid))
-
-module _ {m : ℕ} {D : Derivation} (B : Graph m D) where
-
-  hide-in-evaluation-order : List (V B) → (a b : V B) →
-                             M.Matrix (vertex-width B b) (vertex-width B a)
-  hide-in-evaluation-order = Tabulated.hide-in-evaluation-order B (edge-labels B) (λ _ x → x)
 
 -- A graph tabulated once: the vertices named by their numbers in the underlying derivation graph,
 -- and the relations stored as tables, one row per source vertex with one slot per target, both in
@@ -937,8 +927,9 @@ module _ {m : ℕ} {D : Derivation} (B : Graph m D) where
   ... | just t  = mat (M.look {vertex-width B y} {vertex-width B x} t)
   ... | nothing = εₘ
 
--- Hiding in evaluation order over a tabulation: as hide-in-evaluation-order, but reading stored
--- tables by vertex number and skipping absent edges. The tick hook marks each vertex summary.
+-- Hiding in evaluation order over a tabulation: the summaries computation of Tabulated, but
+-- reading stored tables by position and skipping absent edges. The tick hook marks each vertex
+-- summary.
 module TabulatedHide (T : Tabulation) (tick : {A : Set} → String → A → A) where
 
   private
@@ -983,14 +974,6 @@ module TabulatedHide (T : Tabulation) (tick : {A : Set} → String → A → A) 
   summaries k a acc (v ∷ vs) with tick ("summary " ++ₛ ℕ-Show.show k) (through a v acc)
   ... | nothing = summaries (suc k) a acc vs
   ... | just t  = summaries (suc k) a (acc ++ (v , t) ∷ []) vs
-
-  hide-tabulated : List ℕ → (a b : ℕ) → Maybe M.Table
-  hide-tabulated hid a b = through a b (summaries 0 a [] hid)
-
-  hide-table : List ℕ → (a b : ℕ) → M.Table
-  hide-table hid a b with hide-tabulated hid a b
-  ... | just t  = t
-  ... | nothing = map (λ _ → map (λ _ → Semiring.ε) (upTo (wd a))) (upTo (wd b))
 
   -- The hidden vertices are given by number, not position; one not in the graph is ignored. Each
   -- surviving row threads one summary list through its slots, so a row's summaries are forced at
@@ -1129,7 +1112,7 @@ module _ {m : ℕ} {D : Derivation} (B : Graph m D) (G : EdgeLabels (vertex-obje
       acc-shift {Ts = Ts} (summaries-rep (acc-snoc K ⟪ through-rep K ⟫) (suc k) vs)
 
   tabulated-hide-all : ∀ hid (a b : V B) → AllPairs (λ v u → Prf (G u v ≈ εₘ)) hid →
-                       mat (Tabulated.hide-in-evaluation-order B G (λ _ x → x) hid a b) ≈
+                       mat (T.look {wd b} {wd a} (T.through a b (T.summaries 0 a [] hid))) ≈
                        hide-all (vertex-object B) G hid a b
   tabulated-hide-all hid a b pairs =
     ≈-trans (through-rep (summaries-rep nil 0 hid)) (≈-sym (HB.fold-through hid pairs a b))

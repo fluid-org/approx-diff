@@ -1,6 +1,6 @@
 {-# OPTIONS --prop --postfix-projections --guardedness #-}
 
--- Cost probes for hide-in-evaluation-order, reporting through the trace postulate on stderr so a
+-- Cost probes for the hiding pass, reporting through the trace postulate on stderr so a
 -- killed run loses nothing. Scale survey across examples, then scaling curve on merge prefixes.
 -- Run from approx-diff repository root.
 module example.render.probe where

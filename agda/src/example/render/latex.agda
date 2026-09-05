@@ -241,8 +241,8 @@ all-tables =
   -- graphs (#69); reinstate then.
   ++ₗ render.tables add-mul-run (sum-vertex ∷ []) add-mul-name "add-mul"
   ++ₗ render.tables case-inl-run (scrutinee-vertex ∷ []) case-inl-name "case-inl"
-  -- merge and merge-forward disabled: hide-in-evaluation-order diverges on merge's graph (#48
-  -- closure width growth); restore once that subtask lands.
+  -- merge and merge-forward disabled: hiding diverges on merge's graph (#48 closure width
+  -- growth); restore once that subtask lands.
 
 main : Main
 main = run (foldr (λ t io → writeFile ("test-baselines/matrices/" ++ proj₁ t ++ ".tex") (proj₂ t) >> io)
