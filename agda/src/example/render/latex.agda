@@ -33,7 +33,7 @@ open import interaction.evaluated Sig three.semiring interpretation three.C (λ 
 open import interaction.labelling Sig three.semiring interpretation three.C (λ x → three.∨-idem {x})
   using (Node; val; vals; at)
 open import interaction.moves three.semiring (λ x → three.∨-idem {x}) three.≡-of-≈ three.ε?
-  using (module Interaction; Config; visible; NonZero?)
+  using (module Interaction; Config; visible; NonZero?; tabulated-summary)
 open import example.runs (nonzero three.semiring) three.semiring three.C
   using (Run; query-run; const-run; length-run; fold0-run; case0-run; tag-run; case-l-run;
          case-r-run; test-run; map-run; adjacent-sums-run; filter-run; cond-run; eq-run;
@@ -69,7 +69,7 @@ private
       drop-ctrl : ∀ {m n} → M3.Matrix m (Nat.suc n) → M3.Matrix m n
       drop-ctrl M q p = M q (suc p)
 
-      open Interaction dependence using (entry; initial; reveal-at; summary; visible-graph)
+      open Interaction dependence using (entry; initial; reveal-at; visible-graph)
 
       wd : V dependence → ℕ
       wd = vertex-width dependence
@@ -106,7 +106,7 @@ private
     tables ps nm name = concat (map (λ u → concat (map (edge u) endpoints)) endpoints)
       where
       K : Config dependence
-      K = foldr (reveal-at summary) initial ps
+      K = foldr (reveal-at (tabulated-summary dependence)) initial ps
       endpoints : List (V dependence)
       endpoints = inj₁ input ∷ (map (λ p → inj₂ (inj₁ p)) (K .visible) ++ₗ (inj₂ (inj₂ root) ∷ []))
       edge : V dependence → V dependence → List (String × String)
