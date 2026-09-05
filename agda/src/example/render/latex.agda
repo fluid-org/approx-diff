@@ -119,6 +119,17 @@ private
            table (name ++ " (" ++ nm u ++ " to " ++ nm v ++ ")") (vertex-labels u) (vertex-labels v)
                  (rows M) none none) ∷ []
 
+  query-graph = Evaluated.dependence (env query-run) (term query-run)
+
+  -- Root of the application's argument premise: the filtered list between the comprehension and sum.
+  filtered-vertex : Vertex (Graph.shape query-graph)
+  filtered-vertex = inj₂ (inj₁ (inj₂ root))
+
+  query-name : V query-graph → String
+  query-name (inj₁ _)        = "env"
+  query-name (inj₂ (inj₁ _)) = "filtered"
+  query-name (inj₂ (inj₂ _)) = "root"
+
   add-mul-graph = Evaluated.dependence (env add-mul-run) (term add-mul-run)
 
   sum-vertex : Vertex (Graph.shape add-mul-graph)
@@ -200,6 +211,7 @@ all-tables =
   ("add-mul"               , render.plain add-mul-run     "add-mul")  ∷
   ("case-inl"              , render.plain case-inl-run    "case-inl") ∷
   ("score-signed"          , signed.fragment) ∷ []
+  ++ₗ render.tables query-run (filtered-vertex ∷ []) query-name "query"
   ++ₗ render.tables add-mul-run (sum-vertex ∷ []) add-mul-name "add-mul"
   ++ₗ render.tables case-inl-run (scrutinee-vertex ∷ []) case-inl-name "case-inl"
   -- merge and merge-forward disabled: hide-in-evaluation-order diverges on merge's graph (#48
