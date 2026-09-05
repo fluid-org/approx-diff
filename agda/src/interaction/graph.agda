@@ -10,7 +10,7 @@ open import Data.List.Relation.Unary.All using (All; []; _∷_; universal) renam
 open import Data.List.Relation.Unary.AllPairs using (AllPairs; []; _∷_) renaming (map to AllPairs-map)
 import Data.List.Relation.Unary.All.Properties as AllP
 import Data.List.Relation.Unary.AllPairs.Properties as AllPairsP
-open import Data.Nat using (ℕ; zero; suc)
+open import Data.Nat using (ℕ; zero; suc; _≡ᵇ_)
 open import Data.Product using (_×_; _,_)
 open import Data.Maybe using (Maybe; just; nothing)
 open import Data.Sum using (_⊎_; inj₁; inj₂; [_,_])
@@ -910,10 +910,16 @@ module _ {m : ℕ} {D : Derivation} (B : Graph m D)
   tabulation .Tabulation.widths = map (vertex-width B) (all-vertices B)
   tabulation .Tabulation.edges  = map row (all-vertices B)
 
-module _ {m : ℕ} {D : Derivation} (B : Graph m D) where
+table-at : Tabulation → ℕ → ℕ → Maybe M.Table
+table-at T i j = M.nth nothing j (M.nth [] i (T .edges))
 
-  table-at : Tabulation → ℕ → ℕ → Maybe M.Table
-  table-at T i j = M.nth nothing j (M.nth [] i (T .edges))
+read-table : Tabulation → ℕ → ℕ → M.Table
+read-table T i j with table-at T i j
+... | just t  = t
+... | nothing = map (λ _ → map (λ _ → Semiring.ε) (upTo (M.nth 0 i (T .widths))))
+                    (upTo (M.nth 0 j (T .widths)))
+
+module _ {m : ℕ} {D : Derivation} (B : Graph m D) where
 
   read-edge : Tabulation → (x y : V B) → vertex-object B x ⇒ vertex-object B y
   read-edge T x y with table-at T (index-of B x) (index-of B y)
@@ -974,6 +980,30 @@ module TabulatedHide (T : Tabulation) (tick : {A : Set} → String → A → A) 
   hide-table hid a b with hide-tabulated hid a b
   ... | just t  = t
   ... | nothing = map (λ _ → map (λ _ → Semiring.ε) (upTo (wd a))) (upTo (wd b))
+
+  -- Each surviving row threads one summary list through its slots, so a row's summaries are
+  -- forced at most once however many slots are read.
+  hide-graph : ((x : Semiring.Carrier) → Dec (x ≡ Semiring.ε)) → List ℕ → Tabulation
+  hide-graph ε-dec hid .Tabulation.widths = T .widths
+  hide-graph ε-dec hid .Tabulation.edges  = rows 0 (T .edges)
+    where
+    hidden : ℕ → Bool
+    hidden i = any (i ≡ᵇ_) hid
+
+    keep : Maybe M.Table → Maybe M.Table
+    keep nothing  = nothing
+    keep (just t) = if any (any (λ x → not ⌊ ε-dec x ⌋)) t then just t else nothing
+
+    row : ℕ → List (Maybe M.Table) → List (Maybe M.Table)
+    row i = slots (summaries 0 i [] hid) 0
+      where
+      slots : List (ℕ × M.Table) → ℕ → List (Maybe M.Table) → List (Maybe M.Table)
+      slots acc j []       = []
+      slots acc j (_ ∷ ss) = (if hidden j then nothing else keep (through i j acc)) ∷ slots acc (suc j) ss
+
+    rows : ℕ → List (List (Maybe M.Table)) → List (List (Maybe M.Table))
+    rows i []       = []
+    rows i (r ∷ rs) = (if hidden i then map (λ _ → nothing) r else row i r) ∷ rows (suc i) rs
 
 
 module _ {m : ℕ} {D : Derivation} (B : Graph m D) (G : EdgeLabels (vertex-object B)) where
