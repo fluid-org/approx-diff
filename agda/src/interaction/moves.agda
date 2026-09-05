@@ -298,29 +298,7 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
       no-back (inj₁ l)      l' = asym _ _ l l'
       no-back (inj₂ ≡-refl) l' = irrefl _ l'
 
-  -- The summary of a hidden region computed by the tabulated pass, with the region sorted into
-  -- evaluation order so that every nonzero edge among its vertices runs forward.
-  tabulated-summary : Relation (vertex-object 𝒢) → Summary
-  tabulated-summary first-order C a b =
-    mat (Tabulated.hide-in-evaluation-order 𝒢 (restrict first-order C) (λ _ x → x)
-           (map at (sort C)) a b)
-
-  tabulated-summary-agrees : ∀ C x y → tabulated-summary (fo-graph 𝒢) C x y ≈ summary C x y
-  tabulated-summary-agrees C x y =
-    ≈-trans (tabulated-hide-all 𝒢 (restrict (fo-graph 𝒢) C) (map at (sort C)) x y
-              (sorted-forward fwd (LinkedP.Linked⇒AllPairs Vertex≤.trans (sort-↗ C))))
-            (hide-all-perm 𝒢 fwd (map⁺ at (sort-↭ C)) x y)
-    where fwd = restrict-forward C (fo-forward 𝒢)
-
   private
-    module T𝒢 = Tabulated 𝒢 (edges 𝒢) (λ _ x → x)
-
-    hid-first-order : List (V 𝒢)
-    hid-first-order = map at (sort (fo-hidden 𝒢))
-
-    row : (a : V 𝒢) → List (V 𝒢 × T𝒢.Table)
-    row a = T𝒢.summaries 0 a [] hid-first-order
-
     sources : List (V 𝒢)
     sources = inj₁ input ∷ map at (vertices (Graph.shape 𝒢)) ++ (inj₂ (inj₂ root) ∷ [])
 
@@ -330,39 +308,78 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
     _≟ᵥ_ : (x y : V 𝒢) → Dec (x ≡ y)
     _≟ᵥ_ = SumP.≡-dec input-≟ (SumP.≡-dec (_≟_ {Graph.shape 𝒢}) root-≟)
 
+    hid-first-order : List (V 𝒢)
+    hid-first-order = map at (sort (fo-hidden 𝒢))
+
+    -- Stored tables for hiding hid in G: one tabulated pass per source vertex, read by lookup. A
+    -- reader applied to a store captures it, so a stored summary shares its tables across reads.
+    module Rows (G : Relation (vertex-object 𝒢)) (hid : List (V 𝒢)) where
+
+      private
+        module TG = Tabulated 𝒢 G (λ _ x → x)
+
+        row : (a : V 𝒢) → List (V 𝒢 × TG.Table)
+        row a = TG.summaries 0 a [] hid
+
+      Store : Set
+      Store = List (V 𝒢 × List (V 𝒢 × TG.Table))
+
+      store : Store
+      store = map (λ a → a , row a) sources
+
+      private
+        find : (x : V 𝒢) → Store → List (V 𝒢 × TG.Table)
+        find x []             = row x
+        find x ((a , t) ∷ ts) with x ≟ᵥ a
+        ... | yes _ = t
+        ... | no  _ = find x ts
+
+        find-row : ∀ x as → find x (map (λ a → a , row a) as) ≡ row x
+        find-row x []       = ≡-refl
+        find-row x (a ∷ as) with x ≟ᵥ a
+        ... | yes ≡-refl = ≡-refl
+        ... | no  _      = find-row x as
+
+      read : Store → Relation (vertex-object 𝒢)
+      read ts x y =
+        mat (TG.look {vertex-width 𝒢 y} {vertex-width 𝒢 x} (TG.through x y (find x ts)))
+
+      read-agrees : AllPairs (λ v u → Prf (G u v ≈ εₘ)) hid →
+                    ∀ x y → read store x y ≈ hide-all (vertex-object 𝒢) G hid x y
+      read-agrees pairs x y =
+        ≈-trans (≡-to-≈ (≡-cong (λ r → mat (TG.look (TG.through x y r))) (find-row x sources)))
+                (tabulated-hide-all 𝒢 G hid x y pairs)
+
   Tables : Set
-  Tables = List (V 𝒢 × List (V 𝒢 × T𝒢.Table))
+  Tables = Rows.Store (edges 𝒢) hid-first-order
 
   first-order-tables : Tables
-  first-order-tables = map (λ a → a , row a) sources
-
-  private
-    find : (x : V 𝒢) → Tables → List (V 𝒢 × T𝒢.Table)
-    find x []             = row x
-    find x ((a , t) ∷ ts) with x ≟ᵥ a
-    ... | yes _ = t
-    ... | no  _ = find x ts
-
-    find-row : ∀ x as → find x (map (λ a → a , row a) as) ≡ row x
-    find-row x []       = ≡-refl
-    find-row x (a ∷ as) with x ≟ᵥ a
-    ... | yes ≡-refl = ≡-refl
-    ... | no  _      = find-row x as
-
-    read : Tables → (x y : V 𝒢) → M.Matrix (vertex-width 𝒢 y) (vertex-width 𝒢 x)
-    read ts x y = T𝒢.look (T𝒢.through x y (find x ts))
+  first-order-tables = Rows.store (edges 𝒢) hid-first-order
 
   tabulated-first-order : Tables → Relation (vertex-object 𝒢)
-  tabulated-first-order ts x y = mat (read ts x y)
+  tabulated-first-order = Rows.read (edges 𝒢) hid-first-order
 
   tabulated-first-order-agrees : ∀ x y →
                                  tabulated-first-order first-order-tables x y ≈ fo-graph 𝒢 x y
   tabulated-first-order-agrees x y =
-    ≈-trans (≡-to-≈ (≡-cong (λ r → mat (T𝒢.look (T𝒢.through x y r))) (find-row x sources)))
-    (≈-trans (tabulated-hide-all 𝒢 (edges 𝒢) hid-first-order x y
-               (sorted-forward (edges-forward 𝒢)
-                 (LinkedP.Linked⇒AllPairs Vertex≤.trans (sort-↗ (fo-hidden 𝒢)))))
-             (hide-all-perm 𝒢 (edges-forward 𝒢) (map⁺ at (sort-↭ (fo-hidden 𝒢))) x y))
+    ≈-trans (Rows.read-agrees (edges 𝒢) hid-first-order
+              (sorted-forward (edges-forward 𝒢)
+                (LinkedP.Linked⇒AllPairs Vertex≤.trans (sort-↗ (fo-hidden 𝒢)))) x y)
+            (hide-all-perm 𝒢 (edges-forward 𝒢) (map⁺ at (sort-↭ (fo-hidden 𝒢))) x y)
+
+  -- The summary of a hidden region as a reader over its stored tables, the region sorted into
+  -- evaluation order so that every nonzero edge among its vertices runs forward.
+  tabulated-summary : Relation (vertex-object 𝒢) → Summary
+  tabulated-summary first-order C =
+    Rows.read (restrict first-order C) (map at (sort C))
+              (Rows.store (restrict first-order C) (map at (sort C)))
+
+  tabulated-summary-agrees : ∀ C x y → tabulated-summary (fo-graph 𝒢) C x y ≈ summary C x y
+  tabulated-summary-agrees C x y =
+    ≈-trans (Rows.read-agrees (restrict (fo-graph 𝒢) C) (map at (sort C))
+              (sorted-forward fwd (LinkedP.Linked⇒AllPairs Vertex≤.trans (sort-↗ C))) x y)
+            (hide-all-perm 𝒢 fwd (map⁺ at (sort-↭ C)) x y)
+    where fwd = restrict-forward C (fo-forward 𝒢)
 
   adjacent-sym : (G : Relation (vertex-object 𝒢)) {x y : V 𝒢} → Adjacent G x y → Adjacent G y x
   adjacent-sym G = [ inj₂ , inj₁ ]′
