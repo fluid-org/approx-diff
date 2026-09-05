@@ -15,7 +15,7 @@ open import Data.Sum using (inj₁; inj₂)
 open import Data.Vec using (toList; tabulate)
 import matrix
 import three
-open three using (Three; O; C; D)
+open three using (Three)
 open import semiring-Q using (nonzero)
 open import signature.example.interpretation (nonzero three.semiring) three.semiring
   using (Sig; interpretation)
@@ -36,12 +36,12 @@ private
   show = ℕ-Show.show
 
   show3 : Three → String
-  show3 O = "O"
-  show3 C = "C"
-  show3 D = "D"
+  show3 three.O = "O"
+  show3 three.C = "C"
+  show3 three.D = "D"
 
   join-list : List Three → Three
-  join-list []       = O
+  join-list []       = three.O
   join-list (t ∷ ts) = t three.⊔ join-list ts
 
   join : ∀ {m n} → M3.Matrix m n → Three
@@ -72,7 +72,7 @@ private
     open Evaluated (env r) (term r)
 
     hid : List (V dependence)
-    hid = map (λ v → inj₂ (inj₁ v)) (vertices (Graph.D dependence))
+    hid = map (λ v → inj₂ (inj₁ v)) (vertices D)
 
     ws : List ℕ
     ws = map (vertex-width dependence) hid
@@ -87,7 +87,7 @@ private
     open Evaluated (env merge-run) (term merge-run)
 
     hid : List (V dependence)
-    hid = map (λ v → inj₂ (inj₁ v)) (vertices (Graph.D dependence))
+    hid = map (λ v → inj₂ (inj₁ v)) (vertices D)
 
     at : ℕ → String
     at k = show3 (join (hide-in-evaluation-order dependence (take k hid)

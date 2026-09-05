@@ -122,27 +122,28 @@ private
 -- A configuration: the visible set, and one pair per hidden region of a set of vertices and a
 -- graph. No invariant is imposed; that the pairs are the regions of the hidden set with their
 -- summaries is a property the moves preserve.
-record Config {m n : ℕ} (B : Graph m n) : Set₁ where
+record Config {m : ℕ} {D : Derivation} (B : Graph m D) : Set₁ where
   field
-    visible : List (Vertex (Graph.D B))
-    hidden  : List (List (Vertex (Graph.D B)) × EdgeLabels (vertex-object B))
+    visible : List (Vertex D)
+    hidden  : List (List (Vertex D) × EdgeLabels (vertex-object B))
 
 open Config public
 
-module Interaction {m n : ℕ} (B : Graph m n) (first-order : EdgeLabels (vertex-object B)) where
+module Interaction {m : ℕ} {D : Derivation} (B : Graph m D)
+                   (first-order : EdgeLabels (vertex-object B)) where
 
   private
     wd : V B → ℕ
     wd = vertex-width B
 
   private
-    at : Vertex (Graph.D B) → V B
+    at : Vertex D → V B
     at p = inj₂ (inj₁ p)
 
-  open DecMem (_≟_ {Graph.D B}) public using (_∈_; _∉_; _∈?_)
+  open DecMem (_≟_ {D}) public using (_∈_; _∉_; _∈?_)
 
-  _≢?_ : (p q : Vertex (Graph.D B)) → Dec (p ≢ q)
-  p ≢? q = ¬? (_≟_ {Graph.D B} p q)
+  _≢?_ : (p q : Vertex D) → Dec (p ≢ q)
+  p ≢? q = ¬? (_≟_ {D} p q)
 
   entry : ∀ (x y : V B) → (vertex-object B x ⇒ vertex-object B y) → M.Matrix (wd y) (wd x)
   entry x y f = ∃ₛ.fst (𝔽F-full f)
@@ -159,11 +160,11 @@ module Interaction {m n : ℕ} (B : Graph m n) (first-order : EdgeLabels (vertex
   Adjacent? : (G : EdgeLabels (vertex-object B)) (x y : V B) → Dec (Adjacent G x y)
   Adjacent? G x y = NonZero? (entry x y (G x y)) ⊎-dec NonZero? (entry y x (G y x))
 
-  AdjacentIn : EdgeLabels (vertex-object B) → Vertex (Graph.D B) → List (Vertex (Graph.D B)) → Set
+  AdjacentIn : EdgeLabels (vertex-object B) → Vertex D → List (Vertex D) → Set
   AdjacentIn G p C = Any (λ q → Adjacent G (at p) (at q)) C
 
-  adjacent-in? : (G : EdgeLabels (vertex-object B)) (p : Vertex (Graph.D B))
-                 (C : List (Vertex (Graph.D B))) → Dec (AdjacentIn G p C)
+  adjacent-in? : (G : EdgeLabels (vertex-object B)) (p : Vertex D)
+                 (C : List (Vertex D)) → Dec (AdjacentIn G p C)
   adjacent-in? G p C = any? (λ q → Adjacent? G (at p) (at q)) C
 
   adjacent-O : (G : EdgeLabels (vertex-object B)) (x y : V B) → ¬ Adjacent G x y →
@@ -172,50 +173,50 @@ module Interaction {m n : ℕ} (B : Graph m n) (first-order : EdgeLabels (vertex
     ⟪ entry-ε x y (G x y) (NonZero-O (entry x y (G x y)) (λ k → h (inj₁ k))) ,ₚ
       entry-ε y x (G y x) (NonZero-O (entry y x (G y x)) (λ k → h (inj₂ k))) ⟫
 
-  merge-region : EdgeLabels (vertex-object B) → Vertex (Graph.D B) → List (List (Vertex (Graph.D B))) →
-                 List (List (Vertex (Graph.D B)))
+  merge-region : EdgeLabels (vertex-object B) → Vertex D → List (List (Vertex D)) →
+                 List (List (Vertex D))
   merge-region G w rss = (w ∷ concat (proj₁ tp)) ∷ proj₂ tp
     where tp = L.partition (adjacent-in? G w) rss
 
-  regions : EdgeLabels (vertex-object B) → List (Vertex (Graph.D B)) → List (List (Vertex (Graph.D B)))
+  regions : EdgeLabels (vertex-object B) → List (Vertex D) → List (List (Vertex D))
   regions G []       = []
   regions G (w ∷ ws) = merge-region G w (regions G ws)
 
   -- The inputs and the root are never hidden, so only an interior vertex can lie in a region.
-  VertexIn : V B → List (Vertex (Graph.D B)) → Set
+  VertexIn : V B → List (Vertex D) → Set
   VertexIn (inj₁ _)        C = ⊥
   VertexIn (inj₂ (inj₁ p)) C = p ∈ C
   VertexIn (inj₂ (inj₂ _)) C = ⊥
 
-  _∈ᵥ?_ : (z : V B) (C : List (Vertex (Graph.D B))) → Dec (VertexIn z C)
+  _∈ᵥ?_ : (z : V B) (C : List (Vertex D)) → Dec (VertexIn z C)
   inj₁ _        ∈ᵥ? C = no (λ ())
   inj₂ (inj₁ p) ∈ᵥ? C = p ∈? C
   inj₂ (inj₂ _) ∈ᵥ? C = no (λ ())
 
-  Adj-p : Vertex (Graph.D B) → List (Vertex (Graph.D B)) × EdgeLabels (vertex-object B) → Set
+  Adj-p : Vertex D → List (Vertex D) × EdgeLabels (vertex-object B) → Set
   Adj-p p CH = AdjacentIn first-order p (proj₁ CH)
 
-  adj-p? : (p : Vertex (Graph.D B))
-           (CH : List (Vertex (Graph.D B)) × EdgeLabels (vertex-object B)) → Dec (Adj-p p CH)
+  adj-p? : (p : Vertex D)
+           (CH : List (Vertex D) × EdgeLabels (vertex-object B)) → Dec (Adj-p p CH)
   adj-p? p CH = adjacent-in? first-order p (proj₁ CH)
 
-  restrict : EdgeLabels (vertex-object B) → List (Vertex (Graph.D B)) → EdgeLabels (vertex-object B)
+  restrict : EdgeLabels (vertex-object B) → List (Vertex D) → EdgeLabels (vertex-object B)
   restrict G C x y = when (x ∈ᵥ? C ⊎-dec y ∈ᵥ? C) (G x y)
 
   -- The summary of a hidden region: the dependence routed through it, as relations between the
   -- vertices adjacent to it. Restriction first, so direct edges between boundary vertices are not
   -- carried by the summary.
-  summary : List (Vertex (Graph.D B)) → EdgeLabels (vertex-object B)
+  summary : List (Vertex D) → EdgeLabels (vertex-object B)
   summary C = hide-all (vertex-object B) (restrict first-order C) (map at C)
 
   Summary : Set
-  Summary = List (Vertex (Graph.D B)) → EdgeLabels (vertex-object B)
+  Summary = List (Vertex D) → EdgeLabels (vertex-object B)
 
   initial : Summary → Config B
   initial summarise .visible = []
   initial summarise .hidden  = map (λ C → C , summarise C) (regions first-order (FO B))
 
-  hidden-set : Config B → List (Vertex (Graph.D B))
+  hidden-set : Config B → List (Vertex D)
   hidden-set K = concat (map proj₁ (K .hidden))
 
   hidden-∈ : ∀ {p} (K : Config B) → p ∈ hidden-set K → Any (λ CH → p ∈ proj₁ CH) (K .hidden)
@@ -231,16 +232,16 @@ module Interaction {m n : ℕ} (B : Graph m n) (first-order : EdgeLabels (vertex
           (map (λ CH → proj₂ CH x y) (K .hidden))
     where hs = hidden-set K
 
-  hide-at : Summary → Vertex (Graph.D B) → Config B → Config B
+  hide-at : Summary → Vertex D → Config B → Config B
   hide-at summarise p K .visible = filter (p ≢?_) (K .visible)
   hide-at summarise p K .hidden  = (C , summarise C) ∷ proj₂ tp
     where
       tp = L.partition (adj-p? p) (K .hidden)
       C  = p ∷ concat (map proj₁ (proj₁ tp))
 
-  split-region : Summary → Vertex (Graph.D B) →
-                 List (Vertex (Graph.D B)) × EdgeLabels (vertex-object B) →
-                 List (List (Vertex (Graph.D B)) × EdgeLabels (vertex-object B))
+  split-region : Summary → Vertex D →
+                 List (Vertex D) × EdgeLabels (vertex-object B) →
+                 List (List (Vertex D) × EdgeLabels (vertex-object B))
   split-region summarise p (C , H) with p ∈? C
   ... | yes _ = map (λ C' → C' , summarise C') (regions first-order (filter (p ≢?_) C))
   ... | no  _ = (C , H) ∷ []
@@ -258,13 +259,11 @@ module Interaction {m n : ℕ} (B : Graph m n) (first-order : EdgeLabels (vertex
   ... | yes k = ⊥-elim (h k)
   ... | no  _ = ≡-refl
 
-  reveal-at : Summary → Vertex (Graph.D B) → Config B → Config B
+  reveal-at : Summary → Vertex D → Config B → Config B
   reveal-at summarise p K .visible = p ∷ K .visible
   reveal-at summarise p K .hidden  = concat (map (split-region summarise p) (K .hidden))
 
-module _ {m n : ℕ} (𝒢 : Graph m n) where
-
-  open Graph 𝒢 using (D)
+module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
 
   Path : Set
   Path = Vertex D
@@ -301,13 +300,13 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
 
   private
     sources : List (V 𝒢)
-    sources = inj₁ input ∷ map at (vertices (Graph.D 𝒢)) ++ (inj₂ (inj₂ output) ∷ [])
+    sources = inj₁ input ∷ map at (vertices D) ++ (inj₂ (inj₂ output) ∷ [])
 
     input-≟ : (x y : Input) → Dec (x ≡ y)
     input-≟ input input = yes ≡-refl
 
     _≟ᵥ_ : (x y : V 𝒢) → Dec (x ≡ y)
-    _≟ᵥ_ = SumP.≡-dec input-≟ (SumP.≡-dec (_≟_ {Graph.D 𝒢}) output-≟)
+    _≟ᵥ_ = SumP.≡-dec input-≟ (SumP.≡-dec (_≟_ {D}) output-≟)
 
     hid-first-order : List (V 𝒢)
     hid-first-order = map at (sort (fo-hidden 𝒢))
@@ -567,7 +566,7 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
   blocks-⊆ (C ∷ Css) = ∈-++⁺ˡ ∷ All-map (λ g {_} h → ∈-++⁺ʳ C (g h)) (blocks-⊆ Css)
 
   FO-distinct : AllPairs _≢_ (FO 𝒢)
-  FO-distinct = AllPairsP.filter⁺ (λ q → T? (Graph.fo 𝒢 q)) (distinct (Graph.D 𝒢))
+  FO-distinct = AllPairsP.filter⁺ (λ q → T? (fo-at D q)) (distinct D)
 
   private
     partition-distinct : (K : Config 𝒢) → (K .visible ++ hidden-set K) ↭ FO 𝒢 →

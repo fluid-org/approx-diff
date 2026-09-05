@@ -37,9 +37,9 @@ import Data.Nat.Show as ℕ-Show
 open import Data.String using (String) renaming (_++_ to _++ₛ_)
 import semimodule
 
--- A dependence graph as a value rather than a family indexed by a derivation: a graph is a set of
--- interior vertices with widths, a distinguished root of given width, and the dependence relation
--- between each pair. The root has no outgoing relation, so it is a sink by construction.
+-- A dependence graph over a derivation: the derivation fixes the vertices with their widths and
+-- first-order markings, and the graph carries the dependence relation between each pair. The root
+-- has no outgoing relation, so it is a sink by construction.
 module interaction.graph {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A)
   (let module Semiring = CommutativeSemiring S) (+-idem : ∀ x → (x Semiring.+ x) Semiring.≈ x) where
 
@@ -90,15 +90,22 @@ pb₂ {X} {Y} = BP.p₂ {X} {Y}
 data Input : Set where
   input : Input
 
+-- A node carries the width and first-order marking of its output.
 data Derivation : Set where
-  node : List Derivation → Derivation
+  node : ℕ → Bool → List Derivation → Derivation
+
+out-width : Derivation → ℕ
+out-width (node n _ _) = n
+
+out-fo : Derivation → Bool
+out-fo (node _ b _) = b
 
 data Output : Set where
   output : Output
 
 mutual
   Vertex : Derivation → Set
-  Vertex (node ss) = Vertices ss
+  Vertex (node _ _ ss) = Vertices ss
 
   Vertices : List Derivation → Set
   Vertices []           = ⊥
@@ -110,7 +117,7 @@ output-≟ output output = yes ≡-refl
 
 mutual
   _≟_ : ∀ {s} → DecidableEquality (Vertex s)
-  _≟_ {node ss} = _≟s_ {ss}
+  _≟_ {node _ _ ss} = _≟s_ {ss}
 
   _≟s_ : ∀ {ss} → DecidableEquality (Vertices ss)
   _≟s_ {s ∷ []}     = SumP.≡-dec (_≟_ {s}) output-≟
@@ -120,7 +127,7 @@ mutual
 -- premises after it.
 mutual
   vertices : (s : Derivation) → List (Vertex s)
-  vertices (node ss) = vertices-of ss
+  vertices (node _ _ ss) = vertices-of ss
 
   vertices-of : (ss : List Derivation) → List (Vertices ss)
   vertices-of []           = []
@@ -139,7 +146,7 @@ private
 
 mutual
   distinct : (s : Derivation) → AllPairs _≢_ (vertices s)
-  distinct (node ss) = distinct-of ss
+  distinct (node _ _ ss) = distinct-of ss
 
   distinct-of : (ss : List Derivation) → AllPairs _≢_ (vertices-of ss)
   distinct-of []           = []
@@ -180,7 +187,7 @@ sum-<-order o₁ o₂ .IsStrictOrder.asym (inj₂ p) (inj₂ q) a b = o₂ .IsSt
 -- after it. The derivation is explicit, since it cannot be recovered from a vertex.
 mutual
   lt : (s : Derivation) → Vertex s → Vertex s → Set
-  lt (node ss) = lts ss
+  lt (node _ _ ss) = lts ss
 
   lts : (ss : List Derivation) → Vertices ss → Vertices ss → Set
   lts []           ()
@@ -189,7 +196,7 @@ mutual
 
 mutual
   lt-order : (s : Derivation) → IsStrictOrder (lt s)
-  lt-order (node ss) = lts-order ss
+  lt-order (node _ _ ss) = lts-order ss
 
   lts-order : (ss : List Derivation) → IsStrictOrder (lts ss)
   lts-order []           .IsStrictOrder.trans ()
@@ -216,7 +223,7 @@ private
 
 mutual
   lt-compare : (s : Derivation) → Trichotomous _≡_ (lt s)
-  lt-compare (node ss) = lts-compare ss
+  lt-compare (node _ _ ss) = lts-compare ss
 
   lts-compare : (ss : List Derivation) → Trichotomous _≡_ (lts ss)
   lts-compare []           ()
@@ -241,27 +248,37 @@ vertex-order s .StrictTotalOrder._≈_ = _≡_
 vertex-order s .StrictTotalOrder._<_ = lt s
 vertex-order s .StrictTotalOrder.isStrictTotalOrder = lt-strict-total s
 
+-- The subderivation whose output a vertex is.
+mutual
+  deriv-at : (s : Derivation) → Vertex s → Derivation
+  deriv-at (node _ _ ss) = derivs-at ss
+
+  derivs-at : (ss : List Derivation) → Vertices ss → Derivation
+  derivs-at []           ()
+  derivs-at (s ∷ [])     = [ deriv-at s , (λ _ → s) ]
+  derivs-at (s ∷ t ∷ ss) = [ [ deriv-at s , (λ _ → s) ] , derivs-at (t ∷ ss) ]
+
+width-at : (s : Derivation) → Vertex s → ℕ
+width-at s q = out-width (deriv-at s q)
+
+fo-at : (s : Derivation) → Vertex s → Bool
+fo-at s q = out-fo (deriv-at s q)
+
+object : (s : Derivation) → Vertex s → Semimodule
+object s q = 𝔽 (width-at s q)
+
 EdgeLabels : {V : Set} → (V → Semimodule) → Set
 EdgeLabels {V} vertex-object = (x y : V) → vertex-object x ⇒ vertex-object y
 
-record Graph (m n : ℕ) : Set₁ where
+record Graph (m : ℕ) (D : Derivation) : Set₁ where
   field
-    D   : Derivation
-    width   : Vertex D → ℕ
-    fo      : Vertex D → Bool
-
-  object : Vertex D → Semimodule
-  object v = 𝔽 (width v)
-
-  field
-    from-input    : (q : Vertex D) → 𝔽 m ⇒ object q
-    interior : EdgeLabels object
+    from-input    : (q : Vertex D) → 𝔽 m ⇒ object D q
+    interior : EdgeLabels (object D)
     -- Every non-zero relation between interior vertices runs strictly forward in the evaluation
     -- order. The inputs and the root need no condition, being below and above everything.
     <-interior : ∀ p q → lt D p q ⊎ Prf (interior p q ≈ εₘ)
-    fo-output : Bool
-    input-to-output     : 𝔽 m ⇒ 𝔽 n
-    to-output      : (p : Vertex D) → object p ⇒ 𝔽 n
+    input-to-output     : 𝔽 m ⇒ 𝔽 (out-width D)
+    to-output      : (p : Vertex D) → object D p ⇒ 𝔽 (out-width D)
 
 hide : {V : Set} (vertex-object : V → Semimodule) → EdgeLabels vertex-object → V → EdgeLabels vertex-object
 hide vertex-object G r x y = G x y +ₘ (G r y ∘ G x r)
@@ -617,7 +634,7 @@ module Ordered {V : Set} (vertex-object : V → Semimodule) (_<_ : V → V → S
 -- agreement proofs hide a premise's graph.
 mutual
   vertices-result-first : (s : Derivation) → List (Vertex s)
-  vertices-result-first (node ss) = vertices-of-result-first ss
+  vertices-result-first (node _ _ ss) = vertices-of-result-first ss
 
   vertices-of-result-first : (ss : List Derivation) → List (Vertices ss)
   vertices-of-result-first []           = []
@@ -628,7 +645,7 @@ mutual
 -- The result-first enumeration is a permutation of the canonical one.
 mutual
   vertices-perm : (s : Derivation) → vertices s ↭ vertices-result-first s
-  vertices-perm (node ss) = vertices-of-perm ss
+  vertices-perm (node _ _ ss) = vertices-of-perm ss
 
   vertices-of-perm : (ss : List Derivation) → vertices-of ss ↭ vertices-of-result-first ss
   vertices-of-perm []           = ↭-refl
@@ -645,26 +662,29 @@ mutual
               (↭-trans (↭-reflexive (++-identityʳ (map inj₁ (vertices s))))
                        (map⁺ inj₁ (vertices-perm s))))
 
-module _ {m n : ℕ} (B : Graph m n) where
+module _ {m : ℕ} {D : Derivation} (B : Graph m D) where
   open Graph B
 
   Path⁺ : Set
   Path⁺ = Vertex D ⊎ Output
 
+  deriv⁺ : Path⁺ → Derivation
+  deriv⁺ = [ deriv-at D , (λ _ → D) ]
+
   width⁺ : Path⁺ → ℕ
-  width⁺ = [ width , (λ _ → n) ]
+  width⁺ q = out-width (deriv⁺ q)
 
   object⁺ : Path⁺ → Semimodule
   object⁺ q = 𝔽 (width⁺ q)
 
   fo⁺ : Path⁺ → Bool
-  fo⁺ = [ fo , (λ _ → fo-output) ]
+  fo⁺ q = out-fo (deriv⁺ q)
 
   into⁺ : (q : Path⁺) → 𝔽 m ⇒ object⁺ q
   into⁺ (inj₁ q) = from-input q
   into⁺ (inj₂ _) = input-to-output
 
-  from-output⁺ : ∀ {K : Semimodule} → 𝔽 n ⇒ K → (q : Path⁺) → object⁺ q ⇒ K
+  from-output⁺ : ∀ {K : Semimodule} → 𝔽 (out-width D) ⇒ K → (q : Path⁺) → object⁺ q ⇒ K
   from-output⁺ u (inj₁ _) = εₘ
   from-output⁺ u (inj₂ _) = u
 
@@ -701,14 +721,14 @@ module _ {m n : ℕ} (B : Graph m n) where
   edge-labels (inj₂ p) (inj₂ q) = interior⁺ p q
   edge-labels _        (inj₁ _) = εₘ
 
-  collapse : 𝔽 m ⇒ 𝔽 n
+  collapse : 𝔽 m ⇒ 𝔽 (out-width D)
   collapse = hide-all vertex-object edge-labels (map (λ q → inj₂ (inj₁ q)) (vertices-result-first D)) (inj₁ input) (inj₂ (inj₂ output))
 
   FO : List (Vertex D)
-  FO = filterᵇ fo (vertices D)
+  FO = filterᵇ (fo-at D) (vertices D)
 
   fo-hidden : List (Vertex D)
-  fo-hidden = filterᵇ (λ q → not (fo q)) (vertices D)
+  fo-hidden = filterᵇ (λ q → not (fo-at D q)) (vertices D)
 
   fo-graph : EdgeLabels vertex-object
   fo-graph = hide-all vertex-object edge-labels (map (λ q → inj₂ (inj₁ q)) fo-hidden)
@@ -752,7 +772,7 @@ module _ {m n : ℕ} (B : Graph m n) where
               (≡-cong (hide-all vertex-object edge-labels) (≡-sym (map-++ (λ q → inj₂ (inj₁ q)) fo-hidden FO)))
 
     interior-perm : (fo-hidden ++ FO) ↭ vertices-result-first D
-    interior-perm = ↭-trans (filterᵇ-split fo (vertices D)) (vertices-perm D)
+    interior-perm = ↭-trans (filterᵇ-split (fo-at D) (vertices D)) (vertices-perm D)
 
 -- Hiding in evaluation order: with the hidden vertices listed so that every nonzero edge among
 -- them runs forward, one traversal materialises for each vertex the relation reaching it from the
@@ -760,7 +780,7 @@ module _ {m n : ℕ} (B : Graph m n) where
 -- hide-all rewrites the whole relation at each hidden vertex. The tick hook marks each edge
 -- tabulation and each vertex summary, firing when the value is demanded; hide-in-evaluation-order
 -- below specialises it to the identity.
-module Tabulated {m n : ℕ} (B : Graph m n) (G : EdgeLabels (vertex-object B))
+module Tabulated {m : ℕ} {D : Derivation} (B : Graph m D) (G : EdgeLabels (vertex-object B))
                  (tick : {A : Set} → String → A → A) where
 
   private
@@ -803,13 +823,13 @@ module Tabulated {m n : ℕ} (B : Graph m n) (G : EdgeLabels (vertex-object B))
   hide-in-evaluation-order : List (V B) → (a b : V B) → M.Matrix (wd b) (wd a)
   hide-in-evaluation-order hid a b = look (through a b (summaries 0 a [] hid))
 
-module _ {m n : ℕ} (B : Graph m n) where
+module _ {m : ℕ} {D : Derivation} (B : Graph m D) where
 
   hide-in-evaluation-order : List (V B) → (a b : V B) →
                              M.Matrix (vertex-width B b) (vertex-width B a)
   hide-in-evaluation-order = Tabulated.hide-in-evaluation-order B (edge-labels B) (λ _ x → x)
 
-module _ {m n : ℕ} (B : Graph m n) (G : EdgeLabels (vertex-object B)) where
+module _ {m : ℕ} {D : Derivation} (B : Graph m D) (G : EdgeLabels (vertex-object B)) where
 
   private
     module T = Tabulated B G (λ _ x → x)
@@ -932,7 +952,7 @@ private
 -- Hiding one premise's vertices, one at a time, inside the conclusion's graph. The state records
 -- the premise's own relations as they accumulate; Φ carries the premise's input columns to the
 -- conclusion's, which for a premise evaluated in a substituted environment is not the identity.
-module _ {m n : ℕ} (B : Graph m n) where
+module _ {m : ℕ} {D : Derivation} (B : Graph m D) where
 
   root-row : ∀ y → edge-labels B (inj₂ (inj₂ output)) y ≈ εₘ
   root-row (inj₁ _) = ≈-refl {f = εₘ}
@@ -942,13 +962,13 @@ module _ {m n : ℕ} (B : Graph m n) where
                 ≈ collapse B
   hide-paths⁺ =
     ≈-trans (≡-to-≈ (≡-cong (λ l → hide-all (vertex-object B) (edge-labels B) l (inj₁ input) (inj₂ (inj₂ output)))
-                            (≡-cong (inj₂ (inj₂ output) ∷_) (≡-sym (map-∘ {g = inj₂} {f = inj₁} (vertices-result-first (Graph.D B)))))))
-            (hide-all-cong (vertex-object B) (map (λ q → inj₂ (inj₁ q)) (vertices-result-first (Graph.D B)))
+                            (≡-cong (inj₂ (inj₂ output) ∷_) (≡-sym (map-∘ {g = inj₂} {f = inj₁} (vertices-result-first D))))))
+            (hide-all-cong (vertex-object B) (map (λ q → inj₂ (inj₁ q)) (vertices-result-first D))
                            (hide-sink (vertex-object B) (edge-labels B) (inj₂ (inj₂ output)) root-row)
                            (inj₁ input) (inj₂ (inj₂ output)))
 
 module HidePremise
-  {mB nB : ℕ} (B : Graph mB nB)
+  {mB : ℕ} {DB : Derivation} (B : Graph mB DB)
   {V : Set} (object' : V → Semimodule)
   (inp : V)
   (blk : Path⁺ B → V)
@@ -992,12 +1012,12 @@ module HidePremise
       into-ok   : ∀ q → G inp (blk q) ≈ (H .from-input q ∘ Φ)
       interior-ok : ∀ p q → G (blk p) (blk q) ≈ H .interior p q
       tgt-ok    : ∀ t → G inp (tgt t) ≈ (K t +ₘ (P t ∘ (H .from-input (inj₂ output) ∘ Φ)))
-      up-ok     : ∀ t (p : Vertex (Graph.D B)) → G (blk (inj₁ p)) (tgt t)
+      up-ok     : ∀ t (p : Vertex DB) → G (blk (inj₁ p)) (tgt t)
                                 ≈ (P t ∘ H .interior (inj₁ p) (inj₂ output))
 
   open Agrees public
 
-  agrees-hide : ∀ {G H} (w : Vertex (Graph.D B)) → Agrees G H → Agrees (hide object' G (blk (inj₁ w))) (step H (inj₁ w))
+  agrees-hide : ∀ {G H} (w : Vertex DB) → Agrees G H → Agrees (hide object' G (blk (inj₁ w))) (step H (inj₁ w))
   agrees-hide {H = H} w s .into-ok q =
     ≈-trans (+ₘ-cong (s .into-ok q) (∘-cong (s .interior-ok (inj₁ w) q) (s .into-ok (inj₁ w))))
             (≈-sym (Φ-step H (inj₁ w) q))
@@ -1015,7 +1035,7 @@ module HidePremise
               {Ym = H .interior (inj₁ w) (inj₂ output)} {Zm = H .interior (inj₁ p) (inj₁ w)}
       (s .up-ok t p) (s .up-ok t w) (s .interior-ok (inj₁ p) (inj₁ w))
 
-  agrees-hide-all : ∀ {G H} (ws : List (Vertex (Graph.D B))) → Agrees G H →
+  agrees-hide-all : ∀ {G H} (ws : List (Vertex DB)) → Agrees G H →
                     Agrees (hide-all object' G (map (λ w → blk (inj₁ w)) ws)) (steps H (map inj₁ ws))
   agrees-hide-all []       s = s
   agrees-hide-all (w ∷ ws) s = agrees-hide-all ws (agrees-hide w s)
@@ -1028,7 +1048,7 @@ module HidePremise
       interior-start : ∀ p q → G (blk p) (blk q) ≈ H .interior p q
       tgt-start    : ∀ t → G inp (tgt t) ≈ K t
       up-start     : ∀ t → G (blk (inj₂ output)) (tgt t) ≈ P t
-      off-start    : ∀ t (p : Vertex (Graph.D B)) → G (blk (inj₁ p)) (tgt t) ≈ εₘ
+      off-start    : ∀ t (p : Vertex DB) → G (blk (inj₁ p)) (tgt t) ≈ εₘ
       sink         : ∀ q → H .interior (inj₂ output) q ≈ εₘ
 
   open Start public
@@ -1070,13 +1090,13 @@ module HidePremise
     H⁰ = prem (edge-labels B)
 
     G : EdgeLabels object'
-    G = hide-all object' (hide object' G₀ (blk (inj₂ output))) (map (λ w → blk (inj₁ w)) (vertices-result-first (Graph.D B)))
+    G = hide-all object' (hide object' G₀ (blk (inj₂ output))) (map (λ w → blk (inj₁ w)) (vertices-result-first DB))
 
     H : St
-    H = steps (step H⁰ (inj₂ output)) (map inj₁ (vertices-result-first (Graph.D B)))
+    H = steps (step H⁰ (inj₂ output)) (map inj₁ (vertices-result-first DB))
 
     done : Start G₀ H⁰ → Agrees G H
-    done start = agrees-hide-all (vertices-result-first (Graph.D B)) (agrees-start start)
+    done start = agrees-hide-all (vertices-result-first DB) (agrees-start start)
 
     κ : H .from-input (inj₂ output) ≡ prem (hide-all (vertex-object B) (edge-labels B) (map inj₂ (paths⁺ B))) .from-input (inj₂ output)
     κ = ≡-cong (λ H' → H' .from-input (inj₂ output)) (folds prem inj₂ (hide (vertex-object B)) prem-step (paths⁺ B) (edge-labels B))
@@ -1167,12 +1187,8 @@ module Rule₀
   (input-to-output : 𝔽 m ⇒ 𝔽 n)
   where
 
-  E : Graph m n
-  E .Graph.D = node []
-  E .Graph.width ()
-  E .Graph.fo ()
+  E : Graph m (node n fo-output [])
   E .Graph.<-interior ()
-  E .Graph.fo-output = fo-output
   E .Graph.from-input ()
   E .Graph.interior ()
   E .Graph.input-to-output = input-to-output
@@ -1183,22 +1199,18 @@ module Rule₀
 
 module Rule₁
   {m : ℕ}
-  {mB nB : ℕ} (B : Graph mB nB)
+  {mB : ℕ} {DB : Derivation} (B : Graph mB DB)
   {n : ℕ}
   (inputs : 𝔽 m ⇒ 𝔽 mB)
   (fo-output : Bool)
   (input-to-output : 𝔽 m ⇒ 𝔽 n)
-  (up-root : 𝔽 nB ⇒ 𝔽 n)
+  (up-root : 𝔽 (out-width DB) ⇒ 𝔽 n)
   where
 
-  E : Graph m n
-  E .Graph.D = node (Graph.D B ∷ [])
-  E .Graph.width = width⁺ B
-  E .Graph.fo = fo⁺ B
+  E : Graph m (node n fo-output (DB ∷ []))
   E .Graph.from-input q = into⁺ B q ∘ inputs
   E .Graph.interior = interior⁺ B
   E .Graph.<-interior = <⁺-interior B
-  E .Graph.fo-output = fo-output
   E .Graph.input-to-output = input-to-output
   E .Graph.to-output = from-output⁺ B up-root
 
@@ -1227,7 +1239,7 @@ module Rule₁
 
     plumb : collapse E ≡ hidden.G (inj₁ input) er
     plumb = ≡-cong (λ l → hide-all (vertex-object E) (edge-labels E) l (inj₁ input) er)
-                   (≡-cong (b (inj₂ output) ∷_) (≡-sym (map-∘ {g = b} {f = inj₁} (vertices-result-first (Graph.D B)))))
+                   (≡-cong (b (inj₂ output) ∷_) (≡-sym (map-∘ {g = b} {f = inj₁} (vertices-result-first DB))))
 
   agree : collapse E ≈ (input-to-output +ₘ (up-root ∘ (collapse B ∘ inputs)))
   agree =
@@ -1237,8 +1249,9 @@ module Rule₁
 
 module Rule₂
   {m : ℕ}
-  {m₁ n₁ : ℕ} (B₁ : Graph m₁ n₁)
-  {m₂ n₂ : ℕ} (B₂ : Graph m₂ n₂)
+  {m₁ : ℕ} {D₁ : Derivation} (B₁ : Graph m₁ D₁)
+  {m₂ : ℕ} {D₂ : Derivation} (B₂ : Graph m₂ D₂)
+  (let n₁ = out-width D₁) (let n₂ = out-width D₂)
   {n : ℕ}
   (inputs₁ : 𝔽 m ⇒ 𝔽 m₁)
   (inputs₂ : (𝔽 m ⊕ᵥ 𝔽 n₁) ⇒ 𝔽 m₂)
@@ -1255,13 +1268,10 @@ module Rule₂
     from-root₁ : (𝔽 n₁) ⇒ (𝔽 m₂)
     from-root₁ = inputs₂ ∘ inb₂ {(𝔽 m)} {(𝔽 n₁)}
 
-    ps₁ = vertices-result-first (Graph.D B₁)
-    ps₂ = vertices-result-first (Graph.D B₂)
+    ps₁ = vertices-result-first D₁
+    ps₂ = vertices-result-first D₂
 
-  E : Graph m n
-  E .Graph.D = node (Graph.D B₁ ∷ Graph.D B₂ ∷ [])
-  E .Graph.width = [ width⁺ B₁ , width⁺ B₂ ]
-  E .Graph.fo = [ fo⁺ B₁ , fo⁺ B₂ ]
+  E : Graph m (node n fo-output (D₁ ∷ D₂ ∷ []))
   E .Graph.from-input (inj₁ q) = into⁺ B₁ q ∘ inputs₁
   E .Graph.from-input (inj₂ q) = into⁺ B₂ q ∘ from-inputs₂
   E .Graph.interior (inj₁ p)        (inj₁ q) = interior⁺ B₁ p q
@@ -1269,7 +1279,6 @@ module Rule₂
   E .Graph.interior (inj₁ (inj₂ _)) (inj₂ q) = into⁺ B₂ q ∘ from-root₁
   E .Graph.interior (inj₂ p)        (inj₁ q) = εₘ
   E .Graph.interior (inj₂ p)        (inj₂ q) = interior⁺ B₂ p q
-  E .Graph.fo-output = fo-output
   E .Graph.<-interior (inj₁ (inj₁ p)) (inj₁ (inj₁ q)) = Graph.<-interior B₁ p q
   E .Graph.<-interior (inj₁ (inj₁ p)) (inj₁ (inj₂ _)) = inj₁ tt
   E .Graph.<-interior (inj₁ (inj₂ _)) (inj₁ _) = inj₂ ⟪ ≈-refl ⟫
@@ -1373,7 +1382,7 @@ module Rule₂
     start₂ .S₂.off-start _ p = fixed₁ .IntoHidden.edge (inj₁ p) (inj₂ output)
     start₂ .S₂.sink q = ≈-refl {f = εₘ}
 
-    lst : map (λ q → inj₂ {A = Input} (inj₁ q)) (vertices-result-first (Graph.D E))
+    lst : map (λ q → inj₂ {A = Input} (inj₁ q)) (vertices-result-first (node n fo-output (D₁ ∷ D₂ ∷ [])))
           ≡ (b1 (inj₂ output) ∷ map (λ w → b1 (inj₁ w)) ps₁)
             ++ (b2 (inj₂ output) ∷ map (λ w → b2 (inj₁ w)) ps₂)
     lst =
@@ -1399,9 +1408,10 @@ module Rule₂
 
 module Rule₃
   {m : ℕ}
-  {m₁ n₁ : ℕ} (B₁ : Graph m₁ n₁)
-  {m₂ n₂ : ℕ} (B₂ : Graph m₂ n₂)
-  {m₃ n₃ : ℕ} (B₃ : Graph m₃ n₃)
+  {m₁ : ℕ} {D₁ : Derivation} (B₁ : Graph m₁ D₁)
+  {m₂ : ℕ} {D₂ : Derivation} (B₂ : Graph m₂ D₂)
+  {m₃ : ℕ} {D₃ : Derivation} (B₃ : Graph m₃ D₃)
+  (let n₁ = out-width D₁) (let n₂ = out-width D₂) (let n₃ = out-width D₃)
   {n : ℕ}
   (inputs₁ : 𝔽 m ⇒ 𝔽 m₁)
   (inputs₂ : 𝔽 m ⇒ 𝔽 m₂)
@@ -1423,9 +1433,9 @@ module Rule₃
     from-root₂ : (𝔽 n₂) ⇒ (𝔽 m₃)
     from-root₂ = inputs₃ ∘ inb₂ {(𝔽 m) ⊕ᵥ (𝔽 n₁)} {(𝔽 n₂)}
 
-    ps₁ = vertices-result-first (Graph.D B₁)
-    ps₂ = vertices-result-first (Graph.D B₂)
-    ps₃ = vertices-result-first (Graph.D B₃)
+    ps₁ = vertices-result-first D₁
+    ps₂ = vertices-result-first D₂
+    ps₃ = vertices-result-first D₃
 
     e₁₃ : (p : Path⁺ B₁) (q : Path⁺ B₃) → object⁺ B₁ p ⇒ object⁺ B₃ q
     e₁₃ (inj₁ _) q = εₘ
@@ -1435,10 +1445,7 @@ module Rule₃
     e₂₃ (inj₁ _) q = εₘ
     e₂₃ (inj₂ _) q = into⁺ B₃ q ∘ from-root₂
 
-  E : Graph m n
-  E .Graph.D = node (Graph.D B₁ ∷ Graph.D B₂ ∷ Graph.D B₃ ∷ [])
-  E .Graph.width = [ width⁺ B₁ , [ width⁺ B₂ , width⁺ B₃ ] ]
-  E .Graph.fo = [ fo⁺ B₁ , [ fo⁺ B₂ , fo⁺ B₃ ] ]
+  E : Graph m (node n fo-output (D₁ ∷ D₂ ∷ D₃ ∷ []))
   E .Graph.from-input (inj₁ q)        = into⁺ B₁ q ∘ inputs₁
   E .Graph.from-input (inj₂ (inj₁ q)) = into⁺ B₂ q ∘ inputs₂
   E .Graph.from-input (inj₂ (inj₂ q)) = into⁺ B₃ q ∘ from-inputs₃
@@ -1451,7 +1458,6 @@ module Rule₃
   E .Graph.interior (inj₂ (inj₂ p)) (inj₂ (inj₁ q)) = εₘ
   E .Graph.interior (inj₂ (inj₁ p)) (inj₂ (inj₂ q)) = e₂₃ p q
   E .Graph.interior (inj₂ (inj₂ p)) (inj₂ (inj₂ q)) = interior⁺ B₃ p q
-  E .Graph.fo-output = fo-output
   E .Graph.<-interior (inj₁ (inj₁ p)) (inj₁ (inj₁ q)) = Graph.<-interior B₁ p q
   E .Graph.<-interior (inj₁ (inj₁ p)) (inj₁ (inj₂ _)) = inj₁ tt
   E .Graph.<-interior (inj₁ (inj₂ _)) (inj₁ _) = inj₂ ⟪ ≈-refl ⟫
@@ -1657,7 +1663,7 @@ module Rule₃
     l₂ = b2 (inj₂ output) ∷ map (λ w → b2 (inj₁ w)) ps₂
     l₃ = b3 (inj₂ output) ∷ map (λ w → b3 (inj₁ w)) ps₃
 
-    lst : map (λ q → inj₂ {A = Input} (inj₁ q)) (vertices-result-first (Graph.D E)) ≡ l₁ ++ (l₂ ++ l₃)
+    lst : map (λ q → inj₂ {A = Input} (inj₁ q)) (vertices-result-first (node n fo-output (D₁ ∷ D₂ ∷ D₃ ∷ []))) ≡ l₁ ++ (l₂ ++ l₃)
     lst =
       ≡-trans (map-++ (λ q → inj₂ (inj₁ q)) (map inj₁ (paths⁺ B₁))
                       (map inj₂ (map inj₁ (paths⁺ B₂) ++ map inj₂ (paths⁺ B₃))))
@@ -1689,13 +1695,13 @@ module Rule₃
                      (+ₘ-cong ≈-refl (∘-cong₂ {f = up₃} (∘-cong (≈-trans (≡-to-≈ hidden₃.κ) (hide-paths⁺ B₃)) Φ₃-split))))
 
 -- A premise of a rule whose premises run in parallel, with its wiring into the rule's inputs and root.
-record Premise (m n : ℕ) : Set₁ where
+record Premise (m n : ℕ) (DB : Derivation) : Set₁ where
   constructor premise
   field
-    {mB nB} : ℕ
-    B       : Graph mB nB
+    {mB}    : ℕ
+    B       : Graph mB DB
     inputs  : 𝔽 m ⇒ 𝔽 mB
-    to-output      : 𝔽 nB ⇒ 𝔽 n
+    to-output      : 𝔽 (out-width DB) ⇒ 𝔽 n
 
 -- A rule with a list of premises in parallel: each premise reads the rule's inputs through its
 -- own input map and reaches the root through its own up map, with no edges between premises.
@@ -1703,27 +1709,14 @@ module Ruleₛ {m n : ℕ} where
 
   open Premise
 
-  Ds : List (Premise m n) → List Derivation
-  Ds []       = []
-  Ds (P ∷ Ps) = Graph.D (P .B) ∷ Ds Ps
-
-  widths : (Ps : List (Premise m n)) → Vertices (Ds Ps) → ℕ
-  widths []            ()
-  widths (P ∷ [])      = width⁺ (P .B)
-  widths (P ∷ P' ∷ Ps) = [ width⁺ (P .B) , widths (P' ∷ Ps) ]
-
-  fos : (Ps : List (Premise m n)) → Vertices (Ds Ps) → Bool
-  fos []            ()
-  fos (P ∷ [])      = fo⁺ (P .B)
-  fos (P ∷ P' ∷ Ps) = [ fo⁺ (P .B) , fos (P' ∷ Ps) ]
-
-  from-inputs : (Ps : List (Premise m n)) (q : Vertices (Ds Ps)) → 𝔽 m ⇒ 𝔽 (widths Ps q)
+  from-inputs : ∀ {Ds} (Ps : All (Premise m n) Ds) (q : Vertices Ds) → 𝔽 m ⇒ 𝔽 (out-width (derivs-at Ds q))
   from-inputs []            ()
   from-inputs (P ∷ [])      q        = into⁺ (P .B) q ∘ P .inputs
   from-inputs (P ∷ P' ∷ Ps) (inj₁ q) = into⁺ (P .B) q ∘ P .inputs
   from-inputs (P ∷ P' ∷ Ps) (inj₂ q) = from-inputs (P' ∷ Ps) q
 
-  interiors : (Ps : List (Premise m n)) (p q : Vertices (Ds Ps)) → 𝔽 (widths Ps p) ⇒ 𝔽 (widths Ps q)
+  interiors : ∀ {Ds} (Ps : All (Premise m n) Ds) (p q : Vertices Ds) →
+              𝔽 (out-width (derivs-at Ds p)) ⇒ 𝔽 (out-width (derivs-at Ds q))
   interiors []            ()
   interiors (P ∷ [])      p        q        = interior⁺ (P .B) p q
   interiors (P ∷ P' ∷ Ps) (inj₁ p) (inj₁ q) = interior⁺ (P .B) p q
@@ -1731,8 +1724,8 @@ module Ruleₛ {m n : ℕ} where
   interiors (P ∷ P' ∷ Ps) (inj₂ p) (inj₁ q) = εₘ
   interiors (P ∷ P' ∷ Ps) (inj₂ p) (inj₂ q) = interiors (P' ∷ Ps) p q
 
-  <-interiors : (Ps : List (Premise m n)) (p q : Vertices (Ds Ps)) →
-              lts (Ds Ps) p q ⊎ Prf (interiors Ps p q ≈ εₘ)
+  <-interiors : ∀ {Ds} (Ps : All (Premise m n) Ds) (p q : Vertices Ds) →
+              lts Ds p q ⊎ Prf (interiors Ps p q ≈ εₘ)
   <-interiors []            ()
   <-interiors (P ∷ [])      p        q        = <⁺-interior (P .B) p q
   <-interiors (P ∷ P' ∷ Ps) (inj₁ p) (inj₁ q) = <⁺-interior (P .B) p q
@@ -1740,32 +1733,30 @@ module Ruleₛ {m n : ℕ} where
   <-interiors (P ∷ P' ∷ Ps) (inj₂ p) (inj₁ q) = inj₂ ⟪ ≈-refl ⟫
   <-interiors (P ∷ P' ∷ Ps) (inj₂ p) (inj₂ q) = <-interiors (P' ∷ Ps) p q
 
-  to-outputs : (Ps : List (Premise m n)) (p : Vertices (Ds Ps)) → 𝔽 (widths Ps p) ⇒ 𝔽 n
+  to-outputs : ∀ {Ds} (Ps : All (Premise m n) Ds) (p : Vertices Ds) → 𝔽 (out-width (derivs-at Ds p)) ⇒ 𝔽 n
   to-outputs []            ()
   to-outputs (P ∷ [])      p        = from-output⁺ (P .B) (P .to-output) p
   to-outputs (P ∷ P' ∷ Ps) (inj₁ p) = from-output⁺ (P .B) (P .to-output) p
   to-outputs (P ∷ P' ∷ Ps) (inj₂ p) = to-outputs (P' ∷ Ps) p
 
-  E : Bool → 𝔽 m ⇒ 𝔽 n → List (Premise m n) → Graph m n
-  E fo-output input-to-output Ps .Graph.D    = node (Ds Ps)
-  E fo-output input-to-output Ps .Graph.width    = widths Ps
-  E fo-output input-to-output Ps .Graph.fo       = fos Ps
+  E : ∀ {Ds} (fo-output : Bool) → 𝔽 m ⇒ 𝔽 n → All (Premise m n) Ds → Graph m (node n fo-output Ds)
   E fo-output input-to-output Ps .Graph.from-input     = from-inputs Ps
   E fo-output input-to-output Ps .Graph.interior   = interiors Ps
   E fo-output input-to-output Ps .Graph.<-interior = <-interiors Ps
-  E fo-output input-to-output Ps .Graph.fo-output  = fo-output
   E fo-output input-to-output Ps .Graph.input-to-output      = input-to-output
   E fo-output input-to-output Ps .Graph.to-output       = to-outputs Ps
 
-  rel : List (Premise m n) → 𝔽 m ⇒ 𝔽 n
+  rel : ∀ {Ds} → All (Premise m n) Ds → 𝔽 m ⇒ 𝔽 n
   rel []       = εₘ
   rel (P ∷ Ps) = (P .to-output ∘ (collapse (P .B) ∘ P .inputs)) +ₘ rel Ps
 
   -- Hiding the first premise folds its contribution into the root edge, leaving the same rule
   -- with one premise fewer; the remaining hiding is that rule's collapse read at its own vertices.
   private
-    module Step {m₁ n₁ : ℕ} (B₁ : Graph m₁ n₁) (inputs₁ : 𝔽 m ⇒ 𝔽 m₁) (up₁ : 𝔽 n₁ ⇒ 𝔽 n)
-                (P₂ : Premise m n) (Ps : List (Premise m n))
+    module Step {m₁ : ℕ} {D₁ : Derivation} (B₁ : Graph m₁ D₁) (inputs₁ : 𝔽 m ⇒ 𝔽 m₁)
+                (up₁ : 𝔽 (out-width D₁) ⇒ 𝔽 n)
+                {D₂ : Derivation} (P₂ : Premise m n D₂)
+                {Ds : List Derivation} (Ps : All (Premise m n) Ds)
                 (fo-output : Bool) (input-to-output : 𝔽 m ⇒ 𝔽 n) where
 
       whole = E fo-output input-to-output (premise B₁ inputs₁ up₁ ∷ P₂ ∷ Ps)
@@ -1783,7 +1774,7 @@ module Ruleₛ {m n : ℕ} where
         er : V whole
         er = inj₂ (inj₂ output)
 
-        Pt : (t : Path⁺ rest) → 𝔽 n₁ ⇒ vertex-object whole (bt t)
+        Pt : (t : Path⁺ rest) → 𝔽 (out-width D₁) ⇒ vertex-object whole (bt t)
         Pt (inj₁ q) = εₘ
         Pt (inj₂ _) = up₁
 
@@ -1813,10 +1804,10 @@ module Ruleₛ {m n : ℕ} where
         done₁ = hidden₁.done start₁
         κ₁ = ≈-trans (≡-to-≈ hidden₁.κ) (hide-paths⁺ B₁)
 
-        ps₁ = vertices-result-first (Graph.D B₁)
-        psᵣ = vertices-result-first (Graph.D rest)
+        ps₁ = vertices-result-first D₁
+        psᵣ = vertices-result-first (node n fo-output (D₂ ∷ Ds))
 
-        Bh : (s : Vertex (Graph.D rest)) (t : Path⁺ rest) →
+        Bh : (s : Vertex (node n fo-output (D₂ ∷ Ds))) (t : Path⁺ rest) →
              vertex-object whole (bt (inj₁ s)) ⇒ vertex-object whole (bt t)
         Bh s (inj₁ q) = interiors (P₂ ∷ Ps) s q
         Bh s (inj₂ _) = to-outputs (P₂ ∷ Ps) s
@@ -1855,7 +1846,7 @@ module Ruleₛ {m n : ℕ} where
         restrict G (inj₂ (inj₂ output))    (inj₂ (inj₁ q))       = G er (bt (inj₁ q))
         restrict G (inj₂ (inj₂ output))    (inj₂ (inj₂ output))    = G er er
 
-        restrict-hide : ∀ G (w : Vertex (Graph.D rest)) →
+        restrict-hide : ∀ G (w : Vertex (node n fo-output (D₂ ∷ Ds))) →
                         restrict (hide (vertex-object whole) G (bt (inj₁ w))) ≐
                         hide (vertex-object rest) (restrict G) (inj₂ (inj₁ w))
         restrict-hide G w (inj₁ _)           (inj₁ _)           = ≈-refl
@@ -1868,7 +1859,7 @@ module Ruleₛ {m n : ℕ} where
         restrict-hide G w (inj₂ (inj₂ output)) (inj₂ (inj₁ q))    = ≈-refl
         restrict-hide G w (inj₂ (inj₂ output)) (inj₂ (inj₂ output)) = ≈-refl
 
-        restrict-hide-all : ∀ G (ws : List (Vertex (Graph.D rest))) →
+        restrict-hide-all : ∀ G (ws : List (Vertex (node n fo-output (D₂ ∷ Ds)))) →
                             restrict (hide-all (vertex-object whole) G (map (λ w → bt (inj₁ w)) ws)) ≐
                             hide-all (vertex-object rest) (restrict G) (map (λ w → inj₂ (inj₁ w)) ws)
         restrict-hide-all G []       x y = ≈-refl
@@ -1892,7 +1883,7 @@ module Ruleₛ {m n : ℕ} where
         agree-rest (inj₂ (inj₂ output)) (inj₂ (inj₁ q))    = sink₁ (bt (inj₁ q))
         agree-rest (inj₂ (inj₂ output)) (inj₂ (inj₂ output)) = sink₁ er
 
-        lst : map (λ q → inj₂ {A = Input} (inj₁ q)) (vertices-result-first (Graph.D whole))
+        lst : map (λ q → inj₂ {A = Input} (inj₁ q)) (vertices-result-first (node n fo-output (D₁ ∷ D₂ ∷ Ds)))
               ≡ (b1 (inj₂ output) ∷ map (λ w → b1 (inj₁ w)) ps₁) ++ map (λ w → bt (inj₁ w)) psᵣ
         lst =
           ≡-trans (map-++ (λ q → inj₂ (inj₁ q)) (map inj₁ (paths⁺ B₁)) (map inj₂ psᵣ))
@@ -1917,7 +1908,7 @@ module Ruleₛ {m n : ℕ} where
                  (hide-all-cong (vertex-object rest) (map (λ w → inj₂ (inj₁ w)) psᵣ) agree-rest
                                 (inj₁ input) (inj₂ (inj₂ output))))
 
-  agree : (fo-output : Bool) (input-to-output : 𝔽 m ⇒ 𝔽 n) (Ps : List (Premise m n)) →
+  agree : ∀ {Ds} (fo-output : Bool) (input-to-output : 𝔽 m ⇒ 𝔽 n) (Ps : All (Premise m n) Ds) →
           collapse (E fo-output input-to-output Ps) ≈ (input-to-output +ₘ rel Ps)
   agree fo-output input-to-output [] = ≈-sym (+ₘ-runit input-to-output)
   agree fo-output input-to-output (P ∷ []) =

@@ -33,8 +33,10 @@ module Evaluated {Γ τ} (γ : Env Γ) (t : Γ ⊢ τ) where
   derivation : γ , t ⇓ value [ proj₁ (proj₂ ev) ]
   derivation = proj₂ (proj₂ ev)
 
-  dependence : Graph (suc (width-env γ)) (width value)
+  D = deriv derivation
+
+  dependence : Graph (suc (width-env γ)) D
   dependence = graph derivation
 
-  labels : Labelling (Graph.D dependence) (Graph.width dependence)
+  labels : Labelling D
   labels = label derivation

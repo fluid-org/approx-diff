@@ -59,7 +59,7 @@ private
 
       -- Dependence matrix of the degenerate configuration.
       R = hide-in-evaluation-order dependence
-            (map (λ v → inj₂ (inj₁ v)) (vertices (Graph.D dependence)))
+            (map (λ v → inj₂ (inj₁ v)) (vertices D))
             (inj₁ input) (inj₂ (inj₂ output))
 
       -- Control column of the environment vertex dropped.
@@ -93,12 +93,12 @@ private
     bwd name i = table name i-labels o-labels (M3.to-table (drop-ctrl R)) none (sel-label o-labels i)
 
     related-outputs : String → String
-    related-outputs name = table name o-labels o-labels (M3.to-table (D M3.∘ (D M3.ᵀ))) none none
-      where D = drop-ctrl R
+    related-outputs name = table name o-labels o-labels (M3.to-table (rows M3.∘ (rows M3.ᵀ))) none none
+      where rows = drop-ctrl R
 
     -- One table per nonzero visible-graph edge between the environment, the revealed vertices
     -- and the root.
-    tables : List (Vertex (Graph.D dependence)) → (V dependence → String) → String →
+    tables : List (Vertex D) → (V dependence → String) → String →
              List (String × String)
     tables ps nm name = from-store (first-order-tables dependence)
       where
@@ -127,7 +127,7 @@ private
   filter-sum-graph = Evaluated.dependence (env filter-sum-run) (term filter-sum-run)
 
   -- Root of the application's argument premise: the filtered list between the comprehension and sum.
-  filtered-vertex : Vertex (Graph.D filter-sum-graph)
+  filtered-vertex : Vertex (Evaluated.D (env filter-sum-run) (term filter-sum-run))
   filtered-vertex = inj₂ (inj₁ (inj₂ output))
 
   filter-sum-name : V filter-sum-graph → String
@@ -137,7 +137,7 @@ private
 
   add-mul-graph = Evaluated.dependence (env add-mul-run) (term add-mul-run)
 
-  sum-vertex : Vertex (Graph.D add-mul-graph)
+  sum-vertex : Vertex (Evaluated.D (env add-mul-run) (term add-mul-run))
   sum-vertex = inj₁ (inj₂ output)
 
   add-mul-name : V add-mul-graph → String
@@ -147,7 +147,7 @@ private
 
   case-inl-graph = Evaluated.dependence (env case-inl-run) (term case-inl-run)
 
-  scrutinee-vertex : Vertex (Graph.D case-inl-graph)
+  scrutinee-vertex : Vertex (Evaluated.D (env case-inl-run) (term case-inl-run))
   scrutinee-vertex = inj₁ (inj₂ output)
 
   case-inl-name : V case-inl-graph → String
@@ -173,11 +173,11 @@ private
       module mat = matrix.Mat (sign.semiring ⊗S three.semiring)
 
       open evaluated.Evaluated (runs.env runs.score-run) (runs.term runs.score-run)
-        using (dependence; value)
+        using (D; dependence; value)
 
       score-rows : mat.Table
       score-rows = drop-ctrl (graph.hide-in-evaluation-order dependence
-                     (map (λ v → inj₂ (inj₁ v)) (graph.vertices (graph.Graph.D dependence)))
+                     (map (λ v → inj₂ (inj₁ v)) (graph.vertices D))
                      (inj₁ graph.input) (inj₂ (inj₂ graph.output)))
         where
         drop-ctrl : ∀ {m n} → mat.Matrix m (Nat.suc n) → mat.Table

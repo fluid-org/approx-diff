@@ -26,7 +26,7 @@ open Interpretation ℐ
 open _⇒ₛ_ using (func)
 open import language-syntax Sig renaming (_,_ to _▸_)
 open import language-operational.type-substitution Sig using (unfold₁; unfold₁-inst)
-open import language-operational.evaluation Sig S ℐ ctrl-weight hiding (_⇒_; ⟨_,_⟩; I; εₘ)
+open import language-operational.evaluation Sig S ℐ ctrl-weight hiding (Derivation; _⇒_; ⟨_,_⟩; I; εₘ)
 open import interaction.graph S +-idem
 open import matrix-embedding S using (𝔽; 𝔽-biproduct)
 
@@ -45,6 +45,51 @@ private
 
 fo-of : ∀ {Δ} (τ : type Δ) → Bool
 fo-of τ = ⌊ first-order? τ ⌋
+
+-- The root node is exposed without matching, so the tree of an abstract derivation reduces to a
+-- node.
+mutual
+  deriv : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} → γ , t ⇓ v [ R ] → Derivation
+  deriv {τ = τ} {v = v} D = node (width v) (fo-of τ) (subderivs D)
+
+  subderivs : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} → γ , t ⇓ v [ R ] → List Derivation
+  subderivs (⇓-var x)          = []
+  subderivs ⇓-unit             = []
+  subderivs ⇓-lam              = []
+  subderivs (⇓-inl D)          = deriv D ∷ []
+  subderivs (⇓-inr D)          = deriv D ∷ []
+  subderivs (⇓-case-l D₁ D₂)   = deriv D₁ ∷ deriv D₂ ∷ []
+  subderivs (⇓-case-r D₁ D₂)   = deriv D₁ ∷ deriv D₂ ∷ []
+  subderivs (⇓-pair D₁ D₂)     = deriv D₁ ∷ deriv D₂ ∷ []
+  subderivs (⇓-fst D)          = deriv D ∷ []
+  subderivs (⇓-snd D)          = deriv D ∷ []
+  subderivs (⇓-app D₁ D₂ D₃)   = deriv D₁ ∷ deriv D₂ ∷ deriv D₃ ∷ []
+  subderivs (⇓-bop D)          = derivs D
+  subderivs (⇓-brel D)         = derivs D
+  subderivs (⇓-roll D)         = deriv D ∷ []
+  subderivs (⇓-fold D₁ D₂)     = deriv D₁ ∷ deriv-m D₂ ∷ []
+
+  derivs : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R} →
+           γ , Ms ⇓s vs [ R ] → List Derivation
+  derivs []         = []
+  derivs (D₁ ∷ D₂)  = deriv D₁ ∷ derivs D₂
+
+  deriv-m : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
+            {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {v' : Val (σ' [ σr ])} {F} →
+            Map γ s σ' v v' F → Derivation
+  deriv-m {σr = σr} {σ' = σ'} {v' = v'} D = node (width v') (fo-of (σ' [ σr ])) (subderivs-m D)
+
+  subderivs-m : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
+                {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {v' : Val (σ' [ σr ])} {F} →
+                Map γ s σ' v v' F → List Derivation
+  subderivs-m (m-rec D₁ D₂)   = deriv-m D₁ ∷ deriv D₂ ∷ []
+  subderivs-m m-unit          = []
+  subderivs-m m-base          = []
+  subderivs-m m-arrow         = []
+  subderivs-m (m-inl D)       = deriv-m D ∷ []
+  subderivs-m (m-inr D)       = deriv-m D ∷ []
+  subderivs-m (m-pair D₁ D₂)  = deriv-m D₁ ∷ deriv-m D₂ ∷ []
+  subderivs-m (m-mu D)        = deriv-m D ∷ []
 
 private
   join : ∀ m n → (𝔽 m ⊕ᵥ 𝔽 n) ⇒ 𝔽 (m + n)
@@ -83,8 +128,8 @@ private
              (+ₘ-runit f))
 
 mutual
-  graph : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} → γ , t ⇓ v [ R ] →
-          Graph (suc (width-env γ)) (width v)
+  graph : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ]) →
+          Graph (suc (width-env γ)) (deriv D)
   graph {τ = τ} (⇓-var {γ = γ} x) = Rule₀.E (fo-of τ) (var-out x γ)
   graph {τ = τ} (⇓-unit {γ = γ}) = Rule₀.E (fo-of τ) wctrl
   graph {τ = τ} (⇓-lam {γ = γ} {t = t}) = Rule₀.E (fo-of τ) (lam-out γ t)
@@ -123,16 +168,17 @@ mutual
   graph {τ = τ} (⇓-fold {γ = γ} {v = v} D₁ D₂) =
     Rule₂.E (graph D₁) (graph-m D₂) I (join (suc (width-env γ)) (width v)) (fo-of τ) εₘ εₘ I
 
-  premises : ∀ {Γ is n} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R} →
-             γ , Ms ⇓s vs [ R ] → 𝔽 (bases-width is) ⇒ 𝔽 n → List (Premise (suc (width-env γ)) n)
+  premises : ∀ {Γ is n} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
+             (D : γ , Ms ⇓s vs [ R ]) → 𝔽 (bases-width is) ⇒ 𝔽 n →
+             Every (Premise (suc (width-env γ)) n) (derivs D)
   premises [] u = []
   premises (_∷_ {is = is} {v = v} D₁ D₂) u =
     premise (graph D₁) I (u ∘ in₁ {width (const v)} {bases-width is}) ∷
     premises D₂ (u ∘ in₂ {width (const v)} {bases-width is})
 
   graph-m : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
-            {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {v' : Val (σ' [ σr ])} {F} →
-            Map γ s σ' v v' F → Graph (suc (width-env γ) + width v) (width v')
+            {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {v' : Val (σ' [ σr ])} {F}
+            (D : Map γ s σ' v v' F) → Graph (suc (width-env γ) + width v) (deriv-m D)
   graph-m {γ = γ} {σr = σr} {σ' = σ'} (m-rec {w = w} {w' = w'} D₁ D₂) =
     Rule₂.E (graph-m D₁) (graph D₂) I
           (rec-inputs γ w' ∘ join (suc (width-env γ) + width w) (width w'))

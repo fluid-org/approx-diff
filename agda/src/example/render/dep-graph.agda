@@ -19,7 +19,7 @@ open import Data.Sum using (inj₁; inj₂)
 open import Data.Vec using (toList; tabulate)
 import matrix
 import three
-open three using (Three; O; C; D)
+open three using (Three)
 open import semiring-Q using (nonzero)
 open import signature.example ℚ using (add; mult) renaming (number to number-sort)
 open import signature.example.interpretation (nonzero three.semiring) three.semiring
@@ -40,16 +40,16 @@ private
   module M3 = matrix.Mat three.semiring
 
   join-list : List Three → Three
-  join-list []       = O
+  join-list []       = three.O
   join-list (t ∷ ts) = t three.⊔ join-list ts
 
   table-join : M3.Table → Three
   table-join rows = join-list (concat rows)
 
   any-three : List Three → Bool
-  any-three []       = false
-  any-three (O ∷ ts) = any-three ts
-  any-three (t ∷ ts) = true
+  any-three []             = false
+  any-three (three.O ∷ ts) = any-three ts
+  any-three (t ∷ ts)       = true
 
   table-any : M3.Table → Bool
   table-any []           = false
@@ -66,9 +66,9 @@ private
   enumerate i (x ∷ xs) = (i , x) ∷ enumerate (suc i) xs
 
   edge-line : ℕ → ℕ → Three → String
-  edge-line i j D = "  n" ++ ℕ-Show.show i ++ " -> n" ++ ℕ-Show.show j ++ " [color=blue];\n"
-  edge-line i j C = "  n" ++ ℕ-Show.show i ++ " -> n" ++ ℕ-Show.show j ++ " [style=dashed];\n"
-  edge-line i j O = ""
+  edge-line i j three.D = "  n" ++ ℕ-Show.show i ++ " -> n" ++ ℕ-Show.show j ++ " [color=blue];\n"
+  edge-line i j three.C = "  n" ++ ℕ-Show.show i ++ " -> n" ++ ℕ-Show.show j ++ " [style=dashed];\n"
+  edge-line i j three.O = ""
 
   edge-lines : List Edge → String
   edge-lines []                 = ""
@@ -109,7 +109,7 @@ module render-eval {Γ τ} (γ : Env Γ) (t : Γ ⊢ τ) where
 
     hid : List (V dependence)
     hid = map (λ p → inj₂ (inj₁ p))
-              (filterᵇ (λ q → not ⌊ q ∈? K .visible ⌋) (vertices (Graph.D dependence)))
+              (filterᵇ (λ q → not ⌊ q ∈? K .visible ⌋) (vertices D))
 
     rows : List (ℕ × V dependence) → List Edge
     rows []             = []
@@ -141,7 +141,7 @@ private
 
   module int-fig = render-eval γ-int t-int
 
-  sum-vertex : Vertex (Graph.D int-fig.dependence)
+  sum-vertex : Vertex int-fig.D
   sum-vertex = inj₁ (inj₂ output)
 
   int-dot : String
