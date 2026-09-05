@@ -24,7 +24,7 @@ open import signature.example.interpretation (nonzero three.semiring) three.semi
 open import interaction.graph three.semiring (λ x → three.∨-idem {x})
 open import interaction.evaluated Sig three.semiring interpretation three.C (λ x → three.∨-idem {x})
 open import interaction.moves three.semiring (λ x → three.∨-idem {x}) three.≡-of-≈ three.ε?
-  using (module Interaction; tabulated-summary; first-order-edges; Config)
+  using (module Interaction; tabulated-summary; fo-edges; fo-tabulation; Config)
 open import example.runs (nonzero three.semiring) three.semiring three.C
   using (filter-sum-run; env; term)
 
@@ -50,7 +50,7 @@ private
 
   open Evaluated (env filter-sum-run) (term filter-sum-run)
 
-  fo = first-order-edges dependence (λ _ x → x)
+  fo = fo-edges dependence (λ _ x → x)
 
   open Interaction dependence fo using (entry)
 
@@ -87,7 +87,7 @@ private
   ... | just p | just q = join-table (read-table H p q)
   ... | _      | _      = three.O
 
-  fo8 = first-order-edges dependence trace
+  fo8 = fo-edges dependence trace
 
   module I8 = Interaction dependence fo8
 
@@ -97,7 +97,7 @@ private
 
   module IA = Interaction dependence fo
 
-  summarise10 = tabulated-summary dependence trace fo
+  summarise10 = tabulated-summary dependence trace (fo-tabulation dependence (λ _ x → x))
 
   filtered-p : Path D
   filtered-p = into (there here) ε

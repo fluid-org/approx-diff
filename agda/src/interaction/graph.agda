@@ -920,6 +920,19 @@ read-table T i j with table-at T i j
 ... | nothing = map (λ _ → map (λ _ → Semiring.ε) (upTo (M.nth 0 i (T .widths))))
                     (upTo (M.nth 0 j (T .widths)))
 
+mask : (ℕ → ℕ → Bool) → Tabulation → Tabulation
+mask keep T .Tabulation.numbers = Tabulation.numbers T
+mask keep T .Tabulation.widths  = T .widths
+mask keep T .Tabulation.edges   = rows (Tabulation.numbers T) (T .edges)
+  where
+  slots : ℕ → List ℕ → List (Maybe M.Table) → List (Maybe M.Table)
+  slots n (m ∷ ms) (s ∷ ss) = (if keep n m then s else nothing) ∷ slots n ms ss
+  slots n _        _        = []
+
+  rows : List ℕ → List (List (Maybe M.Table)) → List (List (Maybe M.Table))
+  rows (n ∷ ns) (r ∷ rs) = slots n (Tabulation.numbers T) r ∷ rows ns rs
+  rows _        _        = []
+
 module _ {m : ℕ} {D : Derivation} (B : Graph m D) where
 
   read-edge : Tabulation → (x y : V B) → vertex-object B x ⇒ vertex-object B y

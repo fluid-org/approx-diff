@@ -34,7 +34,7 @@ open import interaction.evaluated Sig three.semiring interpretation three.C (λ 
 open import interaction.labelling Sig three.semiring interpretation three.C (λ x → three.∨-idem {x})
   using (Node; val; at)
 open import interaction.moves three.semiring (λ x → three.∨-idem {x}) three.≡-of-≈ three.ε?
-  using (module Interaction; Config; visible; NonZero?; tabulated-summary; first-order-edges)
+  using (module Interaction; Config; visible; NonZero?; tabulated-summary; fo-tabulation)
 open import example.runs (nonzero three.semiring) three.semiring three.C
   using (Run; filter-sum-run; const-run; length-run; fold0-run; case0-run; tag-run; case-l-run;
          case-r-run; test-run; map-run; adjacent-sums-run; filter-run; cond-run; eq-run;
@@ -110,9 +110,10 @@ private
              List (String × String)
     tables ps nm name = at-config (foldr (I.reveal-at summarise) (I.initial summarise) ps)
       where
-      first-order = first-order-edges dependence (λ _ x → x)
-      summarise = tabulated-summary dependence (λ _ x → x) first-order
-      module I = Interaction dependence first-order
+      fo-tab = fo-tabulation dependence (λ _ x → x)
+      fo = read-edge dependence fo-tab
+      summarise = tabulated-summary dependence (λ _ x → x) fo-tab
+      module I = Interaction dependence fo
       at-config : Config dependence → List (String × String)
       at-config K = concat (map (λ u → concat (map (edge u) endpoints)) endpoints)
         where

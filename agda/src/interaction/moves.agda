@@ -1,6 +1,5 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
-open import Agda.Builtin.Strict using (primForce; primForceLemma)
 open import Data.Bool.Properties using (T?)
 open import Data.Empty using (⊥; ⊥-elim)
 open import Data.Fin using (Fin)
@@ -20,7 +19,9 @@ open import Data.List.Relation.Unary.All as All using (All; []; _∷_; universal
 open import Data.List.Relation.Unary.AllPairs as AllPairs using (AllPairs; []; _∷_)
   renaming (map to AllPairs-map)
 open import Data.List.Relation.Unary.Any using (Any; any?; here; there; tail) renaming (map to Any-map)
-open import Data.Nat using (ℕ; _≤_; z≤n; s≤s)
+open import Data.Bool using (Bool; _∨_)
+open import Data.Bool.ListAction using (any)
+open import Data.Nat using (ℕ; _≤_; z≤n; s≤s; _≡ᵇ_)
 open import Data.Nat.ListAction using (sum)
 open import Data.Product using (Σ; _×_; _,_; proj₁; proj₂)
 open import Data.String using (String)
@@ -40,7 +41,6 @@ import Data.List.Sort.Base as SortBase
 import Data.List.Sort.MergeSort as MergeSort
 import Relation.Binary.Properties.StrictTotalOrder as StrictTotalOrderP
 import Data.List.Relation.Unary.AllPairs.Properties as AllPairsP
-import Data.Sum.Properties as SumP
 import Data.List.Relation.Unary.Any.Properties as AnyPr
 import Data.Fin.Properties as FinP
 import Data.List.Membership.DecPropositional as DecMem
@@ -131,7 +131,7 @@ record Config {m : ℕ} {D : Derivation} (B : Graph m D) : Set₁ where
 open Config public
 
 module Interaction {m : ℕ} {D : Derivation} (B : Graph m D)
-                   (first-order : EdgeLabels (vertex-object B)) where
+                   (fo-labels : EdgeLabels (vertex-object B)) where
 
   private
     wd : V B → ℕ
@@ -193,11 +193,11 @@ module Interaction {m : ℕ} {D : Derivation} (B : Graph m D)
   inj₂ p ∈ᵥ? C = p ∈? C
 
   Adj-p : Path D → List (Path D) × EdgeLabels (vertex-object B) → Set
-  Adj-p p CH = AdjacentIn first-order p (proj₁ CH)
+  Adj-p p CH = AdjacentIn fo-labels p (proj₁ CH)
 
   adj-p? : (p : Path D)
            (CH : List (Path D) × EdgeLabels (vertex-object B)) → Dec (Adj-p p CH)
-  adj-p? p CH = adjacent-in? first-order p (proj₁ CH)
+  adj-p? p CH = adjacent-in? fo-labels p (proj₁ CH)
 
   restrict : EdgeLabels (vertex-object B) → List (Path D) → EdgeLabels (vertex-object B)
   restrict G C x y = when (x ∈ᵥ? C ⊎-dec y ∈ᵥ? C) (G x y)
@@ -206,14 +206,14 @@ module Interaction {m : ℕ} {D : Derivation} (B : Graph m D)
   -- vertices adjacent to it. Restriction first, so direct edges between boundary vertices are not
   -- carried by the summary.
   summary : List (Path D) → EdgeLabels (vertex-object B)
-  summary C = hide-all (vertex-object B) (restrict first-order C) (map at C)
+  summary C = hide-all (vertex-object B) (restrict fo-labels C) (map at C)
 
   Summary : Set
   Summary = List (Path D) → EdgeLabels (vertex-object B)
 
   initial : Summary → Config B
   initial summarise .visible = []
-  initial summarise .hidden  = map (λ C → C , summarise C) (regions first-order (FO B))
+  initial summarise .hidden  = map (λ C → C , summarise C) (regions fo-labels (FO B))
 
   hidden-set : Config B → List (Path D)
   hidden-set K = concat (map proj₁ (K .hidden))
@@ -227,7 +227,7 @@ module Interaction {m : ℕ} {D : Derivation} (B : Graph m D)
   visible-graph : Config B → EdgeLabels (vertex-object B)
   visible-graph K x y =
     foldr _+ₘ_
-          (when (¬? (x ∈ᵥ? hs) ×-dec ¬? (y ∈ᵥ? hs)) (first-order x y))
+          (when (¬? (x ∈ᵥ? hs) ×-dec ¬? (y ∈ᵥ? hs)) (fo-labels x y))
           (map (λ CH → proj₂ CH x y) (K .hidden))
     where hs = hidden-set K
 
@@ -242,12 +242,12 @@ module Interaction {m : ℕ} {D : Derivation} (B : Graph m D)
                  List (Path D) × EdgeLabels (vertex-object B) →
                  List (List (Path D) × EdgeLabels (vertex-object B))
   split-region summarise p (C , H) with p ∈? C
-  ... | yes _ = map (λ C' → C' , summarise C') (regions first-order (filter (p ≢?_) C))
+  ... | yes _ = map (λ C' → C' , summarise C') (regions fo-labels (filter (p ≢?_) C))
   ... | no  _ = (C , H) ∷ []
 
   split-region-∈ : ∀ (summarise : Summary) p C (H : EdgeLabels (vertex-object B)) → p ∈ C →
                    split-region summarise p (C , H) ≡
-                   map (λ C' → C' , summarise C') (regions first-order (filter (p ≢?_) C))
+                   map (λ C' → C' , summarise C') (regions fo-labels (filter (p ≢?_) C))
   split-region-∈ summarise p C H h with p ∈? C
   ... | yes _ = ≡-refl
   ... | no ¬k = ⊥-elim (¬k h)
@@ -283,145 +283,31 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
     open SortBase.SortingAlgorithm MS.mergeSort using (sort; sort-↭; sort-↗)
     open IsStrictOrder (lt-order D) using (asym; irrefl)
 
-    sorted-forward : {G : EdgeLabels (vertex-object 𝒢)} → Fwd 𝒢 G → {C : List (Path D)} →
-                     AllPairs Vertex≤._≤_ C →
-                     AllPairs (λ v u → Prf (G u v ≈ εₘ)) (map at C)
-    sorted-forward fwd hs =
-      AllPairsP.map⁺
-        (AllPairs-map (λ {q} {q'} le → [ (λ l → ⊥-elim (no-back le l)) , (λ e → e) ]′ (fwd (at q') (at q)))
-                      hs)
-      where
-      no-back : ∀ {q q'} → Vertex≤._≤_ q q' → lt D q' q → ⊥
-      no-back {q} {q'} (inj₁ l)      l' = asym q q' l l'
-      no-back {q}      (inj₂ ≡-refl) l' = irrefl q l'
-
   private
-    sources : List (V 𝒢)
-    sources = inj₁ input ∷ map at (vertices D) ++ (inj₂ ε ∷ [])
+    fo-hid : List (V 𝒢)
+    fo-hid = map at (sort (fo-hidden 𝒢))
 
-    _≟ᵥ_ : (x y : V 𝒢) → Dec (x ≡ y)
-    _≟ᵥ_ = SumP.≡-dec input-≟ (_≟_ {D})
+  fo-tabulation : (tick : {A : Set} → String → A → A) → Tabulation
+  fo-tabulation tick =
+    TabulatedHide.hide-graph (tabulation 𝒢 ε? tick) tick ε? (map (index-of 𝒢) fo-hid)
 
-    hid-first-order : List (V 𝒢)
-    hid-first-order = map at (sort (fo-hidden 𝒢))
+  fo-edges : (tick : {A : Set} → String → A → A) → EdgeLabels (vertex-object 𝒢)
+  fo-edges tick = read-edge 𝒢 (fo-tabulation tick)
 
-    -- Stored tables for hiding hid in G: one tabulated pass per source vertex, read by lookup. A
-    -- reader applied to a store captures it, so a stored summary shares its tables across reads.
-    module Rows (G : EdgeLabels (vertex-object 𝒢)) (hid : List (V 𝒢))
-                (tick : {A : Set} → String → A → A) where
+  -- The region is sorted into evaluation order so that every nonzero edge among its vertices runs
+  -- forward; masking before hiding keeps direct boundary edges out of the summary.
+  tabulated-summary : (tick : {A : Set} → String → A → A) → Tabulation → Summary
+  tabulated-summary tick F C =
+    read-edge 𝒢 (TabulatedHide.hide-graph (mask keep F) tick ε? region)
+    where
+    region : List ℕ
+    region = map (λ p → index-of 𝒢 (at p)) (sort C)
 
-      private
-        module TG = Tabulated 𝒢 G tick
+    member : ℕ → Bool
+    member n = any (n ≡ᵇ_) region
 
-        force-list : {A : Set} → List A → List A
-        force-list []       = []
-        force-list (x ∷ xs) = primForce x λ x' → primForce (force-list xs) λ xs' → x' ∷ xs'
-
-        force-table : TG.Table → TG.Table
-        force-table t = force-list (map force-list t)
-
-        force-tables : List (V 𝒢 × TG.Table) → List (V 𝒢 × TG.Table)
-        force-tables []             = []
-        force-tables ((v , t) ∷ ts) = primForce (force-table t) λ t' → (v , t') ∷ force-tables ts
-
-        force-list-id : {A : Set} (xs : List A) → force-list xs ≡ xs
-        force-list-id []       = ≡-refl
-        force-list-id (x ∷ xs) =
-          ≡-trans (primForceLemma x _)
-                  (≡-trans (primForceLemma (force-list xs) _) (≡-cong (x ∷_) (force-list-id xs)))
-
-        force-table-id : (t : TG.Table) → force-table t ≡ t
-        force-table-id t = ≡-trans (force-list-id (map force-list t)) (rows-id t)
-          where
-          rows-id : (t : TG.Table) → map force-list t ≡ t
-          rows-id []       = ≡-refl
-          rows-id (r ∷ rs) = ≡-cong₂ _∷_ (force-list-id r) (rows-id rs)
-
-      row : (a : V 𝒢) → List (V 𝒢 × TG.Table)
-      row a = force-tables (TG.summaries 0 a [] hid)
-
-      force-tables-id : (ts : List (V 𝒢 × TG.Table)) → force-tables ts ≡ ts
-      force-tables-id []             = ≡-refl
-      force-tables-id ((v , t) ∷ ts) =
-        ≡-trans (primForceLemma (force-table t) _)
-                (≡-cong₂ (λ t' ts' → (v , t') ∷ ts') (force-table-id t) (force-tables-id ts))
-
-      Store : Set
-      Store = List (V 𝒢 × List (V 𝒢 × TG.Table))
-
-      store : Store
-      store = map (λ a → a , row a) sources
-
-      find : (x : V 𝒢) → Store → List (V 𝒢 × TG.Table)
-      find x []             = row x
-      find x ((a , t) ∷ ts) with x ≟ᵥ a
-      ... | yes _ = t
-      ... | no  _ = find x ts
-
-      find-row : ∀ x as → find x (map (λ a → a , row a) as) ≡ row x
-      find-row x []       = ≡-refl
-      find-row x (a ∷ as) with x ≟ᵥ a
-      ... | yes ≡-refl = ≡-refl
-      ... | no  _      = find-row x as
-
-      read : Store → EdgeLabels (vertex-object 𝒢)
-      read ts x y =
-        mat (TG.look {vertex-width 𝒢 y} {vertex-width 𝒢 x} (TG.through x y (find x ts)))
-
-    -- Stated at the identity tick only: an abstract tick does not reduce away, so the statement
-    -- would need a congruence proof threading tick applications through the whole pass.
-    read-agrees : (G : EdgeLabels (vertex-object 𝒢)) (hid : List (V 𝒢)) →
-                  AllPairs (λ v u → Prf (G u v ≈ εₘ)) hid → ∀ x y →
-                  Rows.read G hid (λ _ x → x) (Rows.store G hid (λ _ x → x)) x y ≈
-                  hide-all (vertex-object 𝒢) G hid x y
-    read-agrees G hid pairs x y =
-      ≈-trans (≡-to-≈ (≡-cong (λ r → mat (TG.look (TG.through x y r)))
-                              (≡-trans (R.find-row x sources)
-                                       (R.force-tables-id (TG.summaries 0 x [] hid)))))
-              (tabulated-hide-all 𝒢 G hid x y pairs)
-      where
-      module R  = Rows G hid (λ _ x → x)
-      module TG = Tabulated 𝒢 G (λ _ x → x)
-
-  Tables : Set
-  Tables = Rows.Store (edge-labels 𝒢) hid-first-order (λ _ x → x)
-
-  first-order-tables : (tick : {A : Set} → String → A → A) → Tables
-  first-order-tables = Rows.store (edge-labels 𝒢) hid-first-order
-
-  tabulated-first-order : (tick : {A : Set} → String → A → A) → Tables → EdgeLabels (vertex-object 𝒢)
-  tabulated-first-order = Rows.read (edge-labels 𝒢) hid-first-order
-
-  tabulated-first-order-agrees :
-    ∀ x y →
-    tabulated-first-order (λ _ x → x) (first-order-tables (λ _ x → x)) x y ≈ fo-graph 𝒢 x y
-  tabulated-first-order-agrees x y =
-    ≈-trans (read-agrees (edge-labels 𝒢) hid-first-order
-              (sorted-forward (edge-labels-forward 𝒢)
-                (LinkedP.Linked⇒AllPairs Vertex≤.trans (sort-↗ (fo-hidden 𝒢)))) x y)
-            (hide-all-perm 𝒢 (edge-labels-forward 𝒢) (map⁺ at (sort-↭ (fo-hidden 𝒢))) x y)
-
-  first-order-graph : (tick : {A : Set} → String → A → A) → Tabulation
-  first-order-graph tick =
-    TabulatedHide.hide-graph (tabulation 𝒢 ε? tick) tick ε? (map (index-of 𝒢) hid-first-order)
-
-  first-order-edges : (tick : {A : Set} → String → A → A) → EdgeLabels (vertex-object 𝒢)
-  first-order-edges tick = read-edge 𝒢 (first-order-graph tick)
-
-  -- The summary of a hidden region as a reader over its stored tables, the region sorted into
-  -- evaluation order so that every nonzero edge among its vertices runs forward.
-  tabulated-summary : (tick : {A : Set} → String → A → A) → EdgeLabels (vertex-object 𝒢) → Summary
-  tabulated-summary tick first-order C =
-    Rows.read (restrict first-order C) (map at (sort C)) tick
-              (Rows.store (restrict first-order C) (map at (sort C)) tick)
-
-  tabulated-summary-agrees :
-    ∀ C x y → tabulated-summary (λ _ x → x) (fo-graph 𝒢) C x y ≈ summary C x y
-  tabulated-summary-agrees C x y =
-    ≈-trans (read-agrees (restrict (fo-graph 𝒢) C) (map at (sort C))
-              (sorted-forward fwd (LinkedP.Linked⇒AllPairs Vertex≤.trans (sort-↗ C))) x y)
-            (hide-all-perm 𝒢 fwd (map⁺ at (sort-↭ C)) x y)
-    where fwd = restrict-forward C (fo-forward 𝒢)
+    keep : ℕ → ℕ → Bool
+    keep n m = member n ∨ member m
 
   adjacent-sym : (G : EdgeLabels (vertex-object 𝒢)) {x y : V 𝒢} → Adjacent G x y → Adjacent G y x
   adjacent-sym G = [ inj₂ , inj₁ ]′

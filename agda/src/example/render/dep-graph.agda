@@ -89,10 +89,11 @@ module render-eval {Γ τ} (γ : Env Γ) (t : Γ ⊢ τ) where
 
   open Evaluated γ t public
 
-  first-order = first-order-edges dependence (λ _ x → x)
-  summarise   = tabulated-summary dependence (λ _ x → x) first-order
+  fo-tab = fo-tabulation dependence (λ _ x → x)
+  fo     = read-edge dependence fo-tab
+  summarise = tabulated-summary dependence (λ _ x → x) fo-tab
 
-  open Interaction dependence first-order public
+  open Interaction dependence fo public
 
   private
     label-of : V dependence → String
