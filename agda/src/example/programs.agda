@@ -24,8 +24,8 @@ sum = lam (foldr (bop (lit 0ℚ) []) (bop add (var zero ∷ var (succ zero) ∷ 
 
 -- The running example: add up the numbers carrying a given label,
 --   sum [ snd e | e <- xs, equal-label l (fst e) ].
-query : String → emp , list (base string [×] base number) ⊢ base number
-query l =
+filter-sum : String → emp , list (base string [×] base number) ⊢ base number
+filter-sum l =
   app sum
     (from var zero collect
     when fst (var zero) ≟ (` l) ；

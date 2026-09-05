@@ -25,8 +25,8 @@ record Run : Set where
 
 open Run public
 
-query-run const-run length-run fold0-run case0-run tag-run : Run
-query-run  = run (query "a") γ-query
+filter-sum-run const-run length-run fold0-run case0-run tag-run : Run
+filter-sum-run  = run (filter-sum "a") γ-query
 const-run  = run const-term γ-query
 length-run = run length-term γ-query
 fold0-run  = run fold0-term γ-query

@@ -22,7 +22,7 @@ open import signature.example.interpretation (nonzero three.semiring) three.semi
 open import interaction.graph three.semiring (λ x → three.∨-idem {x})
 open import interaction.evaluated Sig three.semiring interpretation three.C (λ x → three.∨-idem {x})
 open import example.runs (nonzero three.semiring) three.semiring three.C
-  using (Run; query-run; map-run; filter-run; merge-run; env; term)
+  using (Run; filter-sum-run; map-run; filter-run; merge-run; env; term)
 
 {-# FOREIGN GHC import qualified Debug.Trace #-}
 {-# FOREIGN GHC import qualified Data.Text #-}
@@ -94,7 +94,7 @@ private
                           (inj₁ input) (inj₂ (inj₂ root))))
 
   survey : String
-  survey = scale.line "query" query-run ++ "\n" ++ scale.line "map" map-run ++ "\n"
+  survey = scale.line "filter-sum" filter-sum-run ++ "\n" ++ scale.line "map" map-run ++ "\n"
            ++ scale.line "filter" filter-run ++ "\n" ++ scale.line "merge" merge-run
 
   curve : List ℕ → ℕ

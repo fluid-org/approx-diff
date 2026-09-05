@@ -36,7 +36,7 @@ open import interaction.moves three.semiring (λ x → three.∨-idem {x}) three
   using (module Interaction; Config; visible; NonZero?; tabulated-summary;
          Tables; first-order-tables; tabulated-first-order)
 open import example.runs (nonzero three.semiring) three.semiring three.C
-  using (Run; query-run; const-run; length-run; fold0-run; case0-run; tag-run; case-l-run;
+  using (Run; filter-sum-run; const-run; length-run; fold0-run; case0-run; tag-run; case-l-run;
          case-r-run; test-run; map-run; adjacent-sums-run; filter-run; cond-run; eq-run;
          mult-run; add-mul-run; case-inl-run; mavg-run; total-run; sum-mul-run; rose-run; score-run; env; term)
 open import example.render.table using (Label; none; sel-label; table; signed-table)
@@ -124,16 +124,16 @@ private
                table (name ++ " (" ++ nm u ++ " to " ++ nm v ++ ")") (vertex-labels u) (vertex-labels v)
                      (M3.to-table M) none none) ∷ []
 
-  query-graph = Evaluated.dependence (env query-run) (term query-run)
+  filter-sum-graph = Evaluated.dependence (env filter-sum-run) (term filter-sum-run)
 
   -- Root of the application's argument premise: the filtered list between the comprehension and sum.
-  filtered-vertex : Vertex (Graph.D query-graph)
+  filtered-vertex : Vertex (Graph.D filter-sum-graph)
   filtered-vertex = inj₂ (inj₁ (inj₂ root))
 
-  query-name : V query-graph → String
-  query-name (inj₁ _)        = "env"
-  query-name (inj₂ (inj₁ _)) = "filtered"
-  query-name (inj₂ (inj₂ _)) = "root"
+  filter-sum-name : V filter-sum-graph → String
+  filter-sum-name (inj₁ _)        = "env"
+  filter-sum-name (inj₂ (inj₁ _)) = "filtered"
+  filter-sum-name (inj₂ (inj₂ _)) = "root"
 
   add-mul-graph = Evaluated.dependence (env add-mul-run) (term add-mul-run)
 
@@ -189,7 +189,7 @@ private
 
 all-tables : List (String × String)
 all-tables =
-  ("query"         , render.plain query-run         "query")      ∷
+  ("filter-sum"    , render.plain filter-sum-run    "filter-sum") ∷
   ("const"         , render.plain const-run         "const")      ∷
   ("length"        , render.plain length-run        "length")     ∷
   ("fold0"         , render.plain fold0-run         "fold0")      ∷
@@ -216,7 +216,8 @@ all-tables =
   ("add-mul"               , render.plain add-mul-run     "add-mul")  ∷
   ("case-inl"              , render.plain case-inl-run    "case-inl") ∷
   ("score-signed"          , signed.fragment) ∷ []
-  ++ₗ render.tables query-run (filtered-vertex ∷ []) query-name "query"
+  -- filter-sum stage tables disabled: revealing the filtered list is slow until hide produces
+  -- graphs (#69); reinstate then.
   ++ₗ render.tables add-mul-run (sum-vertex ∷ []) add-mul-name "add-mul"
   ++ₗ render.tables case-inl-run (scrutinee-vertex ∷ []) case-inl-name "case-inl"
   -- merge and merge-forward disabled: hide-in-evaluation-order diverges on merge's graph (#48

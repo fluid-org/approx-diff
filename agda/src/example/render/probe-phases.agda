@@ -1,6 +1,6 @@
 {-# OPTIONS --prop --postfix-projections --guardedness #-}
 
--- Phase timings for the query stage-table pipeline: trace markers on stderr bracket each read, so
+-- Phase timings for the filter-sum stage-table pipeline: trace markers on stderr bracket each read, so
 -- the gaps between marker arrival times give the phase costs. Run from approx-diff repository root.
 module example.render.probe-phases where
 
@@ -23,7 +23,7 @@ open import interaction.evaluated Sig three.semiring interpretation three.C (λ 
 open import interaction.moves three.semiring (λ x → three.∨-idem {x}) three.≡-of-≈ three.ε?
   using (module Interaction; tabulated-summary; first-order-tables; tabulated-first-order; Tables)
 open import example.runs (nonzero three.semiring) three.semiring three.C
-  using (query-run; env; term)
+  using (filter-sum-run; env; term)
 
 {-# FOREIGN GHC import qualified Debug.Trace #-}
 {-# FOREIGN GHC import qualified Data.Text #-}
@@ -45,7 +45,7 @@ private
   join : ∀ {m n} → M3.Matrix m n → Three
   join M = join-list (concat (toList (tabulate λ i → toList (tabulate λ j → M i j))))
 
-  open Evaluated (env query-run) (term query-run)
+  open Evaluated (env filter-sum-run) (term filter-sum-run)
 
   ts : Tables dependence
   ts = first-order-tables dependence
