@@ -1,16 +1,17 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
-open import Data.Bool using (Bool; true; not)
+open import Data.Bool using (Bool; true; not; if_then_else_)
 open import Data.Empty using (⊥; ⊥-elim)
 open import Data.Fin using (Fin; toℕ; zero; suc)
-open import Data.List using (List; []; _∷_; _++_; map; foldl; filterᵇ; upTo; applyUpTo)
+open import Data.List using (List; []; _∷_; _++_; map; foldl; filterᵇ; upTo; applyUpTo; any)
 open import Data.List.Properties using (++-identityʳ; map-++; map-∘; foldl-++)
 open import Data.List.Relation.Unary.All using (All; []; _∷_; universal) renaming (map to All-map)
 open import Data.List.Relation.Unary.AllPairs using (AllPairs; []; _∷_) renaming (map to AllPairs-map)
 import Data.List.Relation.Unary.All.Properties as AllP
 import Data.List.Relation.Unary.AllPairs.Properties as AllPairsP
-open import Data.Nat using (ℕ; zero; suc)
+open import Data.Nat using (ℕ; zero; suc; _≡ᵇ_)
 open import Data.Product using (_×_; _,_)
+open import Data.Maybe using (Maybe; just; nothing)
 open import Data.Sum using (_⊎_; inj₁; inj₂; [_,_])
 open import Data.Vec using (toList; tabulate)
 import Data.List.Relation.Binary.Permutation.Propositional as ↭
@@ -24,7 +25,7 @@ open import Relation.Binary
          Trichotomous; Tri; tri<; tri≈; tri>)
 open import Relation.Binary.PropositionalEquality using (_≡_; _≢_; subst₂; isEquivalence)
   renaming (refl to ≡-refl; sym to ≡-sym; trans to ≡-trans; cong to ≡-cong; cong₂ to ≡-cong₂)
-open import Relation.Nullary.Decidable using (Dec; yes; no)
+open import Relation.Nullary.Decidable using (Dec; yes; no; ⌊_⌋)
 import Data.Sum.Properties as SumP
 open import Level using (0ℓ)
 open import prop using (Prf; ⟪_⟫; _∧_; _,_; proj₁; proj₂; ∃ₛ)
@@ -89,6 +90,9 @@ pb₂ {X} {Y} = BP.p₂ {X} {Y}
 
 data Input : Set where
   input : Input
+
+input-≟ : DecidableEquality Input
+input-≟ input input = yes ≡-refl
 
 -- A node carries the width and first-order marking of its output.
 data Derivation : Set where
@@ -852,6 +856,139 @@ module _ {m : ℕ} {D : Derivation} (B : Graph m D) where
   hide-in-evaluation-order : List (V B) → (a b : V B) →
                              M.Matrix (vertex-width B b) (vertex-width B a)
   hide-in-evaluation-order = Tabulated.hide-in-evaluation-order B (edge-labels B) (λ _ x → x)
+
+-- A graph tabulated once: the non-zero relations stored as tables, grouped by source vertex and
+-- keyed by position in the evaluation-order vertex list (the inputs vertex first, the conclusion
+-- last). A missing entry is the zero relation.
+record Tabulation : Set where
+  constructor tabulation
+  field
+    widths : List ℕ
+    edges  : List (List (ℕ × M.Table))
+
+open Tabulation public using (widths; edges)
+
+module _ {m : ℕ} {D : Derivation} (B : Graph m D) where
+
+  all-vertices : List (V B)
+  all-vertices = inj₁ input ∷ map inj₂ (vertices D) ++ (inj₂ ε ∷ [])
+
+  vertex-at : ℕ → V B
+  vertex-at i = M.nth (inj₂ ε) i (all-vertices)
+
+  private
+    _≟ᵥ_ : DecidableEquality (V B)
+    _≟ᵥ_ = SumP.≡-dec input-≟ (_≟_ {D})
+
+  index-of : V B → ℕ
+  index-of x = scan 0 all-vertices
+    where
+    scan : ℕ → List (V B) → ℕ
+    scan k []       = k
+    scan k (y ∷ ys) = if ⌊ x ≟ᵥ y ⌋ then k else scan (suc k) ys
+
+module _ {m : ℕ} {D : Derivation} (B : Graph m D)
+         (ε-dec : (x : Semiring.Carrier) → Dec (x ≡ Semiring.ε))
+         (tick : {A : Set} → String → A → A) where
+
+  private
+    module TB = Tabulated B (edge-labels B) tick
+
+    nonzero : Semiring.Carrier → Bool
+    nonzero x = not ⌊ ε-dec x ⌋
+
+    nonzero-table : M.Table → Bool
+    nonzero-table = any (any nonzero)
+
+    number : ℕ → List (V B) → List (ℕ × V B)
+    number k []       = []
+    number k (x ∷ xs) = (k , x) ∷ number (suc k) xs
+
+    row : V B → List (ℕ × V B) → List (ℕ × M.Table)
+    row x []             = []
+    row x ((j , y) ∷ ys) = keep (TB.edge x y)
+      where
+      keep : M.Table → List (ℕ × M.Table)
+      keep t = if nonzero-table t then (j , t) ∷ row x ys else row x ys
+
+  tabulate : Tabulation
+  tabulate .Tabulation.widths = map (vertex-width B) (all-vertices B)
+  tabulate .Tabulation.edges  = map (λ x → row x (number 0 (all-vertices B))) (all-vertices B)
+
+module _ {m : ℕ} {D : Derivation} (B : Graph m D) where
+
+  private
+    find-target : ℕ → List (ℕ × M.Table) → Maybe M.Table
+    find-target j []             = nothing
+    find-target j ((k , t) ∷ ts) = if j ≡ᵇ k then just t else find-target j ts
+
+  table-at : Tabulation → ℕ → ℕ → Maybe M.Table
+  table-at T i j = find-target j (M.nth [] i (T .edges))
+
+  read : Tabulation → (x y : V B) → vertex-object B x ⇒ vertex-object B y
+  read T x y with table-at T (index-of B x) (index-of B y)
+  ... | just t  = mat (M.look {vertex-width B y} {vertex-width B x} t)
+  ... | nothing = εₘ
+
+-- Hiding in evaluation order over a tabulation: as hide-in-evaluation-order, but reading stored
+-- tables by vertex number and skipping absent edges. The tick hook marks each vertex summary.
+module TabulatedHide (T : Tabulation) (tick : {A : Set} → String → A → A) where
+
+  private
+    find-target : ℕ → List (ℕ × M.Table) → Maybe M.Table
+    find-target j []             = nothing
+    find-target j ((k , t) ∷ ts) = if j ≡ᵇ k then just t else find-target j ts
+
+    wd : ℕ → ℕ
+    wd i = M.nth 0 i (T .widths)
+
+  edge : ℕ → ℕ → Maybe M.Table
+  edge i j = find-target j (M.nth [] i (T .edges))
+
+  private
+    sum : List Semiring.Carrier → Semiring.Carrier
+    sum []       = Semiring.ε
+    sum (x ∷ xs) = x Semiring.+ sum xs
+
+    add : ℕ → ℕ → M.Table → M.Table → M.Table
+    add r c t u =
+      map (λ i → map (λ j → M.nth Semiring.ε j (M.nth [] i t) Semiring.+ M.nth Semiring.ε j (M.nth [] i u))
+                     (upTo c))
+          (upTo r)
+
+    mul : ℕ → ℕ → ℕ → M.Table → M.Table → M.Table
+    mul r k c t u =
+      map (λ i → map (λ j → sum (map (λ l → M.nth Semiring.ε l (M.nth [] i t) Semiring.·
+                                            M.nth Semiring.ε j (M.nth [] l u))
+                                     (upTo k)))
+                     (upTo c))
+          (upTo r)
+
+    add? : ℕ → ℕ → Maybe M.Table → Maybe M.Table → Maybe M.Table
+    add? r c nothing  u        = u
+    add? r c t        nothing  = t
+    add? r c (just t) (just u) = just (add r c t u)
+
+  through : (a v : ℕ) → List (ℕ × M.Table) → Maybe M.Table
+  through a v []             = edge a v
+  through a v ((u , t) ∷ us) with edge u v
+  ... | nothing = through a v us
+  ... | just e  = add? (wd v) (wd a) (just (mul (wd v) (wd u) (wd a) e t)) (through a v us)
+
+  summaries : ℕ → (a : ℕ) → List (ℕ × M.Table) → List ℕ → List (ℕ × M.Table)
+  summaries k a acc []       = acc
+  summaries k a acc (v ∷ vs) with tick ("summary " ++ₛ ℕ-Show.show k) (through a v acc)
+  ... | nothing = summaries (suc k) a acc vs
+  ... | just t  = summaries (suc k) a (acc ++ (v , t) ∷ []) vs
+
+  hide : List ℕ → (a b : ℕ) → Maybe M.Table
+  hide hid a b = through a b (summaries 0 a [] hid)
+
+  hide-table : List ℕ → (a b : ℕ) → M.Table
+  hide-table hid a b with hide hid a b
+  ... | just t  = t
+  ... | nothing = map (λ _ → map (λ _ → Semiring.ε) (upTo (wd a))) (upTo (wd b))
+
 
 module _ {m : ℕ} {D : Derivation} (B : Graph m D) (G : EdgeLabels (vertex-object B)) where
 

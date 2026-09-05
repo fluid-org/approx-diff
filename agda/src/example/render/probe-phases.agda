@@ -6,7 +6,7 @@ module example.render.probe-phases where
 
 open import IO
 open import IO.Finite using (putStrLn)
-open import Data.List using (List; []; _∷_; map; length; concat)
+open import Data.List using (List; []; _∷_; map; length; concat; drop)
 open import Data.Nat using (ℕ)
 import Data.Nat.Show as ℕ-Show
 open import Data.String using (String; _++_)
@@ -62,6 +62,14 @@ private
   mk : String → Three → String → String
   mk k v r = trace ("phase " ++ k) (show3 v ++ " " ++ r)
 
+  hid-all : List (V dependence)
+  hid-all = map inj₂ (vertices D)
+
+  counted-collapse : ℕ → Three
+  counted-collapse k =
+    join (Tabulated.hide-in-evaluation-order dependence (edge-labels dependence) trace
+            (drop k hid-all) env-v root-v)
+
   out : String
   out =
     trace ("phase 0: FO " ++ ℕ-Show.show (length (FO dependence))
@@ -71,7 +79,9 @@ private
           (mk "3: fo filtered->root" (join (entry filtered-v root-v (fo filtered-v root-v)))
             (mk "4: region summary env->root"
               (join (entry env-v root-v (tabulated-summary dependence fo (FO dependence) env-v root-v)))
-              "end"))))
+              (mk "5: full collapse, edge constructions marked" (counted-collapse 0)
+                (mk "6: full collapse repeated" (counted-collapse 0)
+                  "end"))))))
 
 main : Main
 main = run (putStrLn out)

@@ -298,9 +298,6 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
     sources : List (V 𝒢)
     sources = inj₁ input ∷ map at (vertices D) ++ (inj₂ ε ∷ [])
 
-    input-≟ : (x y : Input) → Dec (x ≡ y)
-    input-≟ input input = yes ≡-refl
-
     _≟ᵥ_ : (x y : V 𝒢) → Dec (x ≡ y)
     _≟ᵥ_ = SumP.≡-dec input-≟ (_≟_ {D})
 
