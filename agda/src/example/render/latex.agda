@@ -105,7 +105,7 @@ private
     tables ps nm name = concat (map (λ u → concat (map (edge u) endpoints)) endpoints)
       where
       K : Config dependence
-      K = foldr (reveal-at (tabulated-summary dependence)) initial ps
+      K = foldr (reveal-at (tabulated-summary dependence)) (initial (tabulated-summary dependence)) ps
       endpoints : List (V dependence)
       endpoints = inj₁ input ∷ (map (λ p → inj₂ (inj₁ p)) (K .visible) ++ₗ (inj₂ (inj₂ root) ∷ []))
       edge : V dependence → V dependence → List (String × String)

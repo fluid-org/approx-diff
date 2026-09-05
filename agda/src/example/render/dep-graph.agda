@@ -126,7 +126,8 @@ module render-eval {Γ τ} (γ : Env Γ) (t : Γ ⊢ τ) where
       cols ((j , y) ∷ js) = keep i j (visible-edge x y hid) ++L cols js
 
   full : Config dependence
-  full = foldl (λ K p → reveal-at (tabulated-summary dependence) p K) initial (FO dependence)
+  full = foldl (λ K p → reveal-at (tabulated-summary dependence) p K)
+             (initial (tabulated-summary dependence)) (FO dependence)
 
   dot : String
   dot = dot-at full
@@ -150,9 +151,10 @@ private
   sum-vertex = inj₁ (inj₂ root)
 
   int-dot : String
-  int-dot = int-fig.dot-at (int-fig.reveal-at (tabulated-summary int-fig.dependence) sum-vertex int-fig.initial)
+  int-dot = int-fig.dot-at (int-fig.reveal-at (tabulated-summary int-fig.dependence) sum-vertex
+              (int-fig.initial (tabulated-summary int-fig.dependence)))
 
 main : Main
 main = run (writeFile "dot/intermediate-three.dot" int-dot >>
-            writeFile "dot/filter-three.dot" (filter-fig.dot-at filter-fig.initial) >>
-            writeFile "dot/map-three.dot" (map-fig.dot-at map-fig.initial))
+            writeFile "dot/filter-three.dot" (filter-fig.dot-at (filter-fig.initial (tabulated-summary filter-fig.dependence))) >>
+            writeFile "dot/map-three.dot" (map-fig.dot-at (map-fig.initial (tabulated-summary map-fig.dependence))))
