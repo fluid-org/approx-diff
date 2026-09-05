@@ -33,7 +33,8 @@ open import interaction.evaluated Sig three.semiring interpretation three.C (λ 
 open import interaction.labelling Sig three.semiring interpretation three.C (λ x → three.∨-idem {x})
   using (Node; val; at)
 open import interaction.moves three.semiring (λ x → three.∨-idem {x}) three.≡-of-≈ three.ε?
-  using (module Interaction; Config; visible; NonZero?; tabulated-summary)
+  using (module Interaction; Config; visible; NonZero?; tabulated-summary;
+         Tables; first-order-tables; tabulated-first-order)
 open import example.runs (nonzero three.semiring) three.semiring three.C
   using (Run; query-run; const-run; length-run; fold0-run; case0-run; tag-run; case-l-run;
          case-r-run; test-run; map-run; adjacent-sums-run; filter-run; cond-run; eq-run;
@@ -68,7 +69,7 @@ private
       drop-ctrl : ∀ {m n} → M3.Matrix m (Nat.suc n) → M3.Matrix m n
       drop-ctrl M q p = M q (suc p)
 
-      open Interaction dependence (fo-graph dependence) using (entry; initial; reveal-at; visible-graph)
+      open Interaction dependence (fo-graph dependence) using (entry)
 
       wd : V dependence → ℕ
       wd = vertex-width dependence
@@ -102,23 +103,29 @@ private
     -- and the root.
     tables : List (Vertex (Graph.shape dependence)) → (V dependence → String) → String →
              List (String × String)
-    tables ps nm name = concat (map (λ u → concat (map (edge u) endpoints)) endpoints)
+    tables ps nm name = from-store (first-order-tables dependence)
       where
-      K : Config dependence
-      K = foldr (reveal-at (tabulated-summary dependence (fo-graph dependence)))
-                (initial (tabulated-summary dependence (fo-graph dependence))) ps
-      endpoints : List (V dependence)
-      endpoints = inj₁ input ∷ (map (λ p → inj₂ (inj₁ p)) (K .visible) ++ₗ (inj₂ (inj₂ root) ∷ []))
-      edge : V dependence → V dependence → List (String × String)
-      edge u v = go (presented u v (entry u v (visible-graph K u v)))
+      from-store : Tables dependence → List (String × String)
+      from-store ts = at-config (foldr (I.reveal-at summarise) (I.initial summarise) ps)
         where
-        go : M3.Matrix (wd v) (pwd u) → List (String × String)
-        go M with NonZero? M
-        ... | no  _ = []
-        ... | yes _ =
-          (name ++ "-" ++ nm u ++ "-" ++ nm v ,
-           table (name ++ " (" ++ nm u ++ " to " ++ nm v ++ ")") (vertex-labels u) (vertex-labels v)
-                 (rows M) none none) ∷ []
+        first-order = tabulated-first-order dependence ts
+        summarise = tabulated-summary dependence first-order
+        module I = Interaction dependence first-order
+        at-config : Config dependence → List (String × String)
+        at-config K = concat (map (λ u → concat (map (edge u) endpoints)) endpoints)
+          where
+          endpoints : List (V dependence)
+          endpoints = inj₁ input ∷ (map (λ p → inj₂ (inj₁ p)) (K .visible) ++ₗ (inj₂ (inj₂ root) ∷ []))
+          edge : V dependence → V dependence → List (String × String)
+          edge u v = emit (presented u v (entry u v (I.visible-graph K u v)))
+            where
+            emit : M3.Matrix (wd v) (pwd u) → List (String × String)
+            emit M with NonZero? M
+            ... | no  _ = []
+            ... | yes _ =
+              (name ++ "-" ++ nm u ++ "-" ++ nm v ,
+               table (name ++ " (" ++ nm u ++ " to " ++ nm v ++ ")") (vertex-labels u) (vertex-labels v)
+                     (rows M) none none) ∷ []
 
   query-graph = Evaluated.dependence (env query-run) (term query-run)
 

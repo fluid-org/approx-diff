@@ -38,6 +38,7 @@ import Data.List.Sort.Base as SortBase
 import Data.List.Sort.MergeSort as MergeSort
 import Relation.Binary.Properties.StrictTotalOrder as StrictTotalOrderP
 import Data.List.Relation.Unary.AllPairs.Properties as AllPairsP
+import Data.Sum.Properties as SumP
 import Data.List.Relation.Unary.Any.Properties as AnyPr
 import Data.Fin.Properties as FinP
 import Data.List.Membership.DecPropositional as DecMem
@@ -310,6 +311,58 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
               (sorted-forward fwd (LinkedP.Linked⇒AllPairs Vertex≤.trans (sort-↗ C))))
             (hide-all-perm 𝒢 fwd (map⁺ at (sort-↭ C)) x y)
     where fwd = restrict-forward C (fo-forward 𝒢)
+
+  private
+    module T𝒢 = Tabulated 𝒢 (edges 𝒢) (λ _ x → x)
+
+    hid-first-order : List (V 𝒢)
+    hid-first-order = map at (sort (fo-hidden 𝒢))
+
+    row : (a : V 𝒢) → List (V 𝒢 × T𝒢.Table)
+    row a = T𝒢.summaries 0 a [] hid-first-order
+
+    sources : List (V 𝒢)
+    sources = inj₁ input ∷ map at (vertices (Graph.shape 𝒢)) ++ (inj₂ (inj₂ root) ∷ [])
+
+    input-≟ : (x y : Input) → Dec (x ≡ y)
+    input-≟ input input = yes ≡-refl
+
+    _≟ᵥ_ : (x y : V 𝒢) → Dec (x ≡ y)
+    _≟ᵥ_ = SumP.≡-dec input-≟ (SumP.≡-dec (_≟_ {Graph.shape 𝒢}) root-≟)
+
+  Tables : Set
+  Tables = List (V 𝒢 × List (V 𝒢 × T𝒢.Table))
+
+  first-order-tables : Tables
+  first-order-tables = map (λ a → a , row a) sources
+
+  private
+    find : (x : V 𝒢) → Tables → List (V 𝒢 × T𝒢.Table)
+    find x []             = row x
+    find x ((a , t) ∷ ts) with x ≟ᵥ a
+    ... | yes _ = t
+    ... | no  _ = find x ts
+
+    find-row : ∀ x as → find x (map (λ a → a , row a) as) ≡ row x
+    find-row x []       = ≡-refl
+    find-row x (a ∷ as) with x ≟ᵥ a
+    ... | yes ≡-refl = ≡-refl
+    ... | no  _      = find-row x as
+
+    read : Tables → (x y : V 𝒢) → M.Matrix (vertex-width 𝒢 y) (vertex-width 𝒢 x)
+    read ts x y = T𝒢.look (T𝒢.through x y (find x ts))
+
+  tabulated-first-order : Tables → Relation (vertex-object 𝒢)
+  tabulated-first-order ts x y = mat (read ts x y)
+
+  tabulated-first-order-agrees : ∀ x y →
+                                 tabulated-first-order first-order-tables x y ≈ fo-graph 𝒢 x y
+  tabulated-first-order-agrees x y =
+    ≈-trans (≡-to-≈ (≡-cong (λ r → mat (T𝒢.look (T𝒢.through x y r))) (find-row x sources)))
+    (≈-trans (tabulated-hide-all 𝒢 (edges 𝒢) hid-first-order x y
+               (sorted-forward (edges-forward 𝒢)
+                 (LinkedP.Linked⇒AllPairs Vertex≤.trans (sort-↗ (fo-hidden 𝒢)))))
+             (hide-all-perm 𝒢 (edges-forward 𝒢) (map⁺ at (sort-↭ (fo-hidden 𝒢))) x y))
 
   adjacent-sym : (G : Relation (vertex-object 𝒢)) {x y : V 𝒢} → Adjacent G x y → Adjacent G y x
   adjacent-sym G = [ inj₂ , inj₁ ]′
