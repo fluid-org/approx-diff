@@ -7,6 +7,7 @@ open import IO
 open import IO.Finite using (writeFile)
 open import Data.Fin using (suc)
 open import Data.List using (List; []; _∷_; map; foldr; concat; length; upTo) renaming (_++_ to _++ₗ_)
+open import Data.Maybe using (Maybe; just; nothing)
 open import Data.Nat using (ℕ)
 import Data.Nat as Nat
 open import Data.Product using (_×_; _,_; proj₁; proj₂)
@@ -59,10 +60,17 @@ private
 
       T = tabulation dependence three.ε? (λ _ x → x)
 
+      H = TabulatedHide.hide-graph T (λ _ x → x) three.ε? (map Nat.suc (upTo (length (vertices D))))
+
+      collapsed : M3.Table
+      collapsed = go (position H 0) (position H (Nat.suc (length (vertices D))))
+        where
+        go : Maybe ℕ → Maybe ℕ → M3.Table
+        go (just p) (just q) = read-table H p q
+        go _        _        = []
+
       -- Dependence matrix of the degenerate configuration.
-      R = M3.look {vertex-width dependence (inj₂ ε)} {vertex-width dependence (inj₁ input)}
-            (TabulatedHide.hide-table T (λ _ x → x) (map Nat.suc (upTo (length (vertices D))))
-              0 (Nat.suc (length (vertices D))))
+      R = M3.look {vertex-width dependence (inj₂ ε)} {vertex-width dependence (inj₁ input)} collapsed
 
       -- Control column of the environment vertex dropped.
       drop-ctrl : ∀ {m n} → M3.Matrix m (Nat.suc n) → M3.Matrix m n
@@ -178,14 +186,21 @@ private
       open evaluated.Evaluated (runs.env runs.score-run) (runs.term runs.score-run)
         using (D; dependence; value)
 
+      signed-H : graph.Tabulation
+      signed-H = graph.TabulatedHide.hide-graph
+                   (graph.tabulation dependence signed-ε? (λ _ x → x)) (λ _ x → x) signed-ε?
+                   (map Nat.suc (upTo (length (graph.vertices D))))
+
       score-rows : mat.Table
       score-rows = drop-ctrl (mat.look {graph.vertex-width dependence (inj₂ graph.ε)}
                                        {graph.vertex-width dependence (inj₁ graph.input)}
-                     (graph.TabulatedHide.hide-table
-                        (graph.tabulation dependence signed-ε? (λ _ x → x)) (λ _ x → x)
-                        (map Nat.suc (upTo (length (graph.vertices D)))) 0
-                        (Nat.suc (length (graph.vertices D)))))
+                     (go (graph.position signed-H 0)
+                         (graph.position signed-H (Nat.suc (length (graph.vertices D))))))
         where
+        go : Maybe ℕ → Maybe ℕ → mat.Table
+        go (just p) (just q) = graph.read-table signed-H p q
+        go _        _        = []
+
         drop-ctrl : ∀ {m n} → mat.Matrix m (Nat.suc n) → mat.Table
         drop-ctrl R = toList (tabulate (λ q → toList (tabulate (λ p → R q (suc p)))))
 

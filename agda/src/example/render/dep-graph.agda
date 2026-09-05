@@ -10,6 +10,7 @@ open import Data.List using (List; []; _∷_; map; concat; foldl; filterᵇ; len
 open import Data.List.Relation.Unary.All using ([]; _∷_)
 open import Data.Bool using (Bool; true; false; not; if_then_else_)
 open import Relation.Nullary.Decidable using (⌊_⌋)
+open import Data.Maybe using (Maybe; just; nothing)
 open import Data.Nat using (ℕ; suc)
 import Data.Nat.Show as ℕ-Show
 open import Data.Product using (_×_; _,_; proj₁; proj₂)
@@ -100,9 +101,6 @@ module render-eval {Γ τ} (γ : Env Γ) (t : Γ ⊢ τ) where
     T : Tabulation
     T = tabulation dependence three.ε? (λ _ x → x)
 
-  visible-edge : ℕ → ℕ → List ℕ → M3.Table
-  visible-edge a b hid = TabulatedHide.hide-table T (λ _ x → x) hid a b
-
   dot-at : Config dependence → String
   dot-at K = "digraph G {\n  rankdir=LR;\n" ++ cat (map node-line nvs) ++ edge-lines (rows nvs) ++ "}\n"
     where
@@ -116,13 +114,23 @@ module render-eval {Γ τ} (γ : Env Γ) (t : Γ ⊢ τ) where
     hid : List ℕ
     hid = map proj₁ (filterᵇ (λ iq → not ⌊ proj₂ iq ∈? K .visible ⌋) (enumerate 1 (vertices D)))
 
+    H : Tabulation
+    H = TabulatedHide.hide-graph T (λ _ x → x) three.ε? hid
+
+    visible-edge : ℕ → ℕ → M3.Table
+    visible-edge a b = go (position H a) (position H b)
+      where
+      go : Maybe ℕ → Maybe ℕ → M3.Table
+      go (just p) (just q) = read-table H p q
+      go _        _        = []
+
     rows : List (ℕ × ℕ × V dependence) → List Edge
     rows []                 = []
     rows ((i , gx , x) ∷ is) = cols nvs ++L rows is
       where
       cols : List (ℕ × ℕ × V dependence) → List Edge
       cols []                 = []
-      cols ((j , gy , y) ∷ js) = keep i j (visible-edge gx gy hid) ++L cols js
+      cols ((j , gy , y) ∷ js) = keep i j (visible-edge gx gy) ++L cols js
 
   full : Config dependence
   full = foldl (λ K p → reveal-at (tabulated-summary dependence (tabulated-first-order dependence (first-order-tables dependence))) p K)
