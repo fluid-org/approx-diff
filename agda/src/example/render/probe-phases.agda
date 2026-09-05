@@ -24,7 +24,7 @@ open import signature.example.interpretation (nonzero three.semiring) three.semi
 open import interaction.graph three.semiring (λ x → three.∨-idem {x})
 open import interaction.evaluated Sig three.semiring interpretation three.C (λ x → three.∨-idem {x})
 open import interaction.moves three.semiring (λ x → three.∨-idem {x}) three.≡-of-≈ three.ε?
-  using (module Interaction; tabulated-summary; first-order-edges)
+  using (module Interaction; tabulated-summary; first-order-edges; Config)
 open import example.runs (nonzero three.semiring) three.semiring three.C
   using (filter-sum-run; env; term)
 
@@ -95,6 +95,21 @@ private
   consult []             = three.O
   consult ((x , y) ∷ es) = join (I8.entry x y (fo8 x y)) three.⊔ consult es
 
+  module IA = Interaction dependence fo
+
+  summarise10 = tabulated-summary dependence trace fo
+
+  filtered-p : Path D
+  filtered-p = into (there here) ε
+
+  K10 K10' : Config dependence
+  K10  = IA.initial summarise10
+  K10' = IA.reveal-at summarise10 filtered-p K10
+
+  consult-vis : Config dependence → List (V dependence × V dependence) → Three
+  consult-vis K []             = three.O
+  consult-vis K ((x , y) ∷ es) = join (IA.entry x y (IA.visible-graph K x y)) three.⊔ consult-vis K es
+
   out : String
   out =
     trace ("phase 0: FO " ++ ℕ-Show.show (length (FO dependence))
@@ -106,7 +121,12 @@ private
               (mk "8b: edge to root" (consult ((env-v , root-v) ∷ []))
                 (mk "8c: edge to filtered vertex" (consult ((env-v , filtered-v) ∷ []))
                   (mk "9: root and self edges again" (consult ((env-v , root-v) ∷ (env-v , env-v) ∷ []))
-                    "end")))))))
+                    (mk "10a: initial config, edge to root" (consult-vis K10 ((env-v , root-v) ∷ []))
+                      (mk "10b: same edge twice" (consult-vis K10 ((env-v , root-v) ∷ (env-v , root-v) ∷ []))
+                        (mk "10c: after reveal, edge to root" (consult-vis K10' ((env-v , root-v) ∷ []))
+                          (mk "10d: same edge twice after reveal"
+                              (consult-vis K10' ((env-v , root-v) ∷ (env-v , root-v) ∷ []))
+                            "end")))))))))))
 
 main : Main
 main = run (putStrLn out)
