@@ -1,5 +1,6 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
+open import Agda.Builtin.Strict using (primForce; primForceLemma)
 open import Data.Bool.Properties using (T?)
 open import Data.Empty using (⊥; ⊥-elim)
 open import Data.Fin using (Fin)
@@ -318,8 +319,38 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
       private
         module TG = Tabulated 𝒢 G (λ _ x → x)
 
+        force-list : {A : Set} → List A → List A
+        force-list []       = []
+        force-list (x ∷ xs) = primForce x λ x' → primForce (force-list xs) λ xs' → x' ∷ xs'
+
+        force-table : TG.Table → TG.Table
+        force-table t = force-list (map force-list t)
+
+        force-tables : List (V 𝒢 × TG.Table) → List (V 𝒢 × TG.Table)
+        force-tables []             = []
+        force-tables ((v , t) ∷ ts) = primForce (force-table t) λ t' → (v , t') ∷ force-tables ts
+
         row : (a : V 𝒢) → List (V 𝒢 × TG.Table)
-        row a = TG.summaries 0 a [] hid
+        row a = force-tables (TG.summaries 0 a [] hid)
+
+        force-list-id : {A : Set} (xs : List A) → force-list xs ≡ xs
+        force-list-id []       = ≡-refl
+        force-list-id (x ∷ xs) =
+          ≡-trans (primForceLemma x _)
+                  (≡-trans (primForceLemma (force-list xs) _) (≡-cong (x ∷_) (force-list-id xs)))
+
+        force-table-id : (t : TG.Table) → force-table t ≡ t
+        force-table-id t = ≡-trans (force-list-id (map force-list t)) (rows-id t)
+          where
+          rows-id : (t : TG.Table) → map force-list t ≡ t
+          rows-id []       = ≡-refl
+          rows-id (r ∷ rs) = ≡-cong₂ _∷_ (force-list-id r) (rows-id rs)
+
+        force-tables-id : (ts : List (V 𝒢 × TG.Table)) → force-tables ts ≡ ts
+        force-tables-id []             = ≡-refl
+        force-tables-id ((v , t) ∷ ts) =
+          ≡-trans (primForceLemma (force-table t) _)
+                  (≡-cong₂ (λ t' ts' → (v , t') ∷ ts') (force-table-id t) (force-tables-id ts))
 
       Store : Set
       Store = List (V 𝒢 × List (V 𝒢 × TG.Table))
@@ -347,7 +378,9 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
       read-agrees : AllPairs (λ v u → Prf (G u v ≈ εₘ)) hid →
                     ∀ x y → read store x y ≈ hide-all (vertex-object 𝒢) G hid x y
       read-agrees pairs x y =
-        ≈-trans (≡-to-≈ (≡-cong (λ r → mat (TG.look (TG.through x y r))) (find-row x sources)))
+        ≈-trans (≡-to-≈ (≡-cong (λ r → mat (TG.look (TG.through x y r)))
+                                (≡-trans (find-row x sources)
+                                         (force-tables-id (TG.summaries 0 x [] hid)))))
                 (tabulated-hide-all 𝒢 G hid x y pairs)
 
   Tables : Set
