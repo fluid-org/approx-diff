@@ -31,7 +31,7 @@ open import signature.example.interpretation (nonzero three.semiring) three.semi
 open import interaction.graph three.semiring (λ x → three.∨-idem {x})
 open import interaction.evaluated Sig three.semiring interpretation three.C (λ x → three.∨-idem {x})
 open import interaction.labelling Sig three.semiring interpretation three.C (λ x → three.∨-idem {x})
-  using (Node; val; vals; at)
+  using (Node; val; at)
 open import interaction.moves three.semiring (λ x → three.∨-idem {x}) three.≡-of-≈ three.ε?
   using (module Interaction; Config; visible; NonZero?; tabulated-summary)
 open import example.runs (nonzero three.semiring) three.semiring three.C
@@ -40,7 +40,7 @@ open import example.runs (nonzero three.semiring) three.semiring three.C
          mult-run; add-mul-run; case-inl-run; mavg-run; total-run; sum-mul-run; rose-run; score-run; env; term)
 open import example.render.table using (Label; Mat; SignedMat; none; sel-label; table; signed-table)
 open import example.render.value-labels (nonzero three.semiring) three.semiring three.C
-  using (val-labels; env-labels; vals-labels)
+  using (val-labels; env-labels)
 
 private
   module M3 = matrix.Mat three.semiring
@@ -49,8 +49,7 @@ private
   rows M = toList (tabulate (λ q → toList (tabulate (M q))))
 
   node-labels : ℕ → Node → List Label
-  node-labels off (val v)        = val-labels off v
-  node-labels off (vals {is} vs) = vals-labels {is} off vs
+  node-labels off (val v) = val-labels off v
 
   module render (r : Run) where
     private
@@ -123,7 +122,7 @@ private
   add-mul-graph = Evaluated.dependence (env add-mul-run) (term add-mul-run)
 
   sum-vertex : Vertex (Graph.shape add-mul-graph)
-  sum-vertex = inj₁ (inj₁ (inj₂ root))
+  sum-vertex = inj₁ (inj₂ root)
 
   add-mul-name : V add-mul-graph → String
   add-mul-name (inj₁ _)        = "env"

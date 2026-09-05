@@ -18,7 +18,7 @@ import ho-agreement
 -- Hiding in any order gives the same relation: hide-all-perm.
 import interaction.graph
 
--- Operational agreement: agree, agree-s, agree-m.
+-- Operational agreement: agree, agree-premises, agree-m.
 import interaction.dependence-graph
 
 -- The value at each vertex of a dependence graph, its width the vertex's: label.

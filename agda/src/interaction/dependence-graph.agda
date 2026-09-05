@@ -1,7 +1,7 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
-import Data.Bool as Bool
-open Bool using (Bool)
+open import Data.Bool using (Bool)
+open import Data.List using (List; []; _∷_)
 open import Data.Nat using (ℕ; suc; _+_)
 open import Level using (0ℓ)
 open import Relation.Binary.PropositionalEquality using (sym; cong)
@@ -116,21 +116,19 @@ mutual
               ⟨ join (suc (width-env γ)) (suc (width-env γ')) ∘ pb₁ , pb₂ ⟩))
           (fo-of τ) εₘ εₘ εₘ I
   graph {τ = τ} (⇓-bop {γ = γ} {ω = ω} {vs = vs} D) =
-    Rule₁.E (graph-s D) I (fo-of τ) wctrl (op-dep ω vs)
+    Ruleₛ.E (fo-of τ) wctrl (premises D (op-dep ω vs))
   graph {τ = τ} (⇓-brel {γ = γ} {ω = ω} {vs = vs} D) =
-    Rule₁.E (graph-s D) I (fo-of τ) wctrl (brel-deps ω vs (rel-pred ω .func vs))
+    Ruleₛ.E (fo-of τ) wctrl (premises D (brel-deps ω vs (rel-pred ω .func vs)))
   graph {τ = τ} (⇓-roll {γ = γ} D) = Rule₁.E (graph D) I (fo-of τ) εₘ I
   graph {τ = τ} (⇓-fold {γ = γ} {v = v} D₁ D₂) =
     Rule₂.E (graph D₁) (graph-m D₂) I (join (suc (width-env γ)) (width v)) (fo-of τ) εₘ εₘ I
 
-  graph-s : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R} →
-            γ , Ms ⇓s vs [ R ] → Graph (suc (width-env γ)) (bases-width is)
-  graph-s {γ = γ} [] = Rule₀.E Bool.true εₘ
-  graph-s {γ = γ} (_∷_ {is = is} {v = v} D₁ D₂) =
-    Rule₂.E (graph D₁) (graph-s D₂) I
-          (p₁ {suc (width-env γ)} {width (const v)} ∘ join (suc (width-env γ)) (width (const v)))
-          Bool.true εₘ
-          (in₁ {width (const v)} {bases-width is}) (in₂ {width (const v)} {bases-width is})
+  premises : ∀ {Γ is n} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R} →
+             γ , Ms ⇓s vs [ R ] → 𝔽 (bases-width is) ⇒ 𝔽 n → List (Premise (suc (width-env γ)) n)
+  premises [] u = []
+  premises (_∷_ {is = is} {v = v} D₁ D₂) u =
+    premise (graph D₁) I (u ∘ in₁ {width (const v)} {bases-width is}) ∷
+    premises D₂ (u ∘ in₂ {width (const v)} {bases-width is})
 
   graph-m : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
             {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {v' : Val (σ' [ σr ])} {F} →
@@ -333,11 +331,11 @@ mutual
              (join (suc (width-env γ) + suc (width-env γ')) (width v) ∘
                ⟨ join (suc (width-env γ)) (suc (width-env γ')) ∘ pb₁ , pb₂ ⟩)
   agree {τ = τ} (⇓-bop {γ = γ} {ω = ω} {vs = vs} {R = R} D) =
-    ≈-trans (Rule₁.agree (graph-s D) I (fo-of τ) wctrl (op-dep ω vs))
-            (one wctrl (op-dep ω vs) (agree-s D))
+    ≈-trans (Ruleₛ.agree (fo-of τ) wctrl (premises D (op-dep ω vs)))
+            (+ₘ-cong ≈-refl (agree-premises D (op-dep ω vs)))
   agree {τ = τ} (⇓-brel {γ = γ} {ω = ω} {vs = vs} {R = R} D) =
-    ≈-trans (Rule₁.agree (graph-s D) I (fo-of τ) wctrl (brel-deps ω vs (rel-pred ω .func vs)))
-            (one wctrl (brel-deps ω vs (rel-pred ω .func vs)) (agree-s D))
+    ≈-trans (Ruleₛ.agree (fo-of τ) wctrl (premises D (brel-deps ω vs (rel-pred ω .func vs))))
+            (+ₘ-cong ≈-refl (agree-premises D (brel-deps ω vs (rel-pred ω .func vs))))
   agree {τ = τ} (⇓-roll {γ = γ} {R = R} D) =
     ≈-trans (Rule₁.agree (graph D) I (fo-of τ) εₘ I)
     (≈-trans (+ₘ-lunit (I ∘ (collapse (graph D) ∘ I)))
@@ -347,21 +345,15 @@ mutual
     (≈-trans (seq (join (suc (width-env γ)) (width v)) (agree D₁) (agree-m D₂))
              (∘-cong₂ {f = F} (join-pair I R)))
 
-  agree-s : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
-            (D : γ , Ms ⇓s vs [ R ]) → collapse (graph-s D) ≈ R
-  agree-s {γ = γ} [] = Rule₀.agree Bool.true εₘ
-  agree-s {γ = γ} (_∷_ {is = is} {v = v} {R = R} {Rs = Rs} D₁ D₂) =
-    ≈-trans (Rule₂.agree (graph D₁) (graph-s D₂) I insH Bool.true εₘ
-                       (in₁ {width (const v)} {bases-width is}) (in₂ {width (const v)} {bases-width is}))
-    (≈-trans (two-roots εₘ I insH
-                        (in₁ {width (const v)} {bases-width is}) (in₂ {width (const v)} {bases-width is})
-                        (collapse (graph D₁)) (collapse (graph-s D₂))
-                        (≈-trans id-right (agree D₁))
-                        (inputs-only (collapse (graph-s D₂)) (collapse (graph D₁) ∘ I) (agree-s D₂)))
-             (+ₘ-lunit ((in₁ {width (const v)} {bases-width is} ∘ R) +ₘ
-                        (in₂ {width (const v)} {bases-width is} ∘ Rs))))
-    where
-    insH = p₁ {suc (width-env γ)} {width (const v)} ∘ join (suc (width-env γ)) (width (const v))
+  agree-premises : ∀ {Γ is n} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
+                   (D : γ , Ms ⇓s vs [ R ]) (u : 𝔽 (bases-width is) ⇒ 𝔽 n) →
+                   Ruleₛ.rel (premises D u) ≈ (u ∘ R)
+  agree-premises [] u = ≈-sym (CME.comp-bilinear-ε₂ u)
+  agree-premises (_∷_ {is = is} {v = v} {R = R} {Rs = Rs} D₁ D₂) u =
+    ≈-trans (+ₘ-cong (∘-cong₂ {f = u ∘ in₁ {width (const v)} {bases-width is}}
+                              (≈-trans id-right (agree D₁)))
+                     (agree-premises D₂ (u ∘ in₂ {width (const v)} {bases-width is})))
+            (up-pair u R Rs)
 
   agree-m : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
             {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {v' : Val (σ' [ σr ])} {F}

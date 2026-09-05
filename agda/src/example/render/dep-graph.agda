@@ -21,12 +21,9 @@ import matrix
 import three
 open three using (Three; O; C; D)
 open import semiring-Q using (nonzero)
-open import signature.interpretation using (Interpretation)
 open import signature.example ℚ using (add; mult) renaming (number to number-sort)
 open import signature.example.interpretation (nonzero three.semiring) three.semiring
-  using (Sig; interpretation; sort-val)
-open Interpretation interpretation using (sort-vals)
-open import example.render.constants (nonzero three.semiring) three.semiring using (show-const)
+  using (Sig; interpretation)
 open import language-syntax Sig using (_⊢_; var; zero; succ; base; bop; emp) renaming (_,_ to _▸_)
 open import language-operational.evaluation Sig three.semiring interpretation three.C
   using (Env; emp; _·_; const)
@@ -83,13 +80,8 @@ private
   edge-lines []                 = ""
   edge-lines ((i , j , B) ∷ es) = edge-line i j (ll-join B) ++ edge-lines es
 
-  txt-sort-vals : ∀ {is} → sort-vals is → String
-  txt-sort-vals {[]}     _        = "()"
-  txt-sort-vals {i ∷ is} (v , vs) = show-const {i} v ++ " " ++ txt-sort-vals {is} vs
-
   node-text : Node → String
-  node-text (val v)        = show-val v
-  node-text (vals {is} vs) = txt-sort-vals {is} vs
+  node-text (val v) = show-val v
 
   cat : List String → String
   cat []       = ""
@@ -155,7 +147,7 @@ private
   module int-fig = render-eval γ-int t-int
 
   sum-vertex : Vertex (Graph.shape int-fig.dependence)
-  sum-vertex = inj₁ (inj₁ (inj₂ root))
+  sum-vertex = inj₁ (inj₂ root)
 
   int-dot : String
   int-dot = int-fig.dot-at (int-fig.reveal-at (tabulated-summary int-fig.dependence) sum-vertex int-fig.initial)
