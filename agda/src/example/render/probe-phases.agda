@@ -9,6 +9,7 @@ open import IO.Finite using (putStrLn)
 open import Data.Bool using (not)
 open import Data.List using (List; []; _∷_; map; length; concat; filterᵇ; upTo)
 open import Data.Maybe using (just; nothing)
+open import Data.Product using (_×_; _,_)
 open import Data.Nat using (ℕ; suc; _≡ᵇ_)
 import Data.Nat.Show as ℕ-Show
 open import Data.String using (String; _++_)
@@ -89,6 +90,17 @@ private
   ... | just p | just q = join-table (read-table H p q)
   ... | _      | _      = three.O
 
+  ts8 : Tables dependence
+  ts8 = first-order-tables dependence trace
+
+  fo8 = tabulated-first-order dependence trace ts8
+
+  module I8 = Interaction dependence fo8
+
+  consult : List (V dependence × V dependence) → Three
+  consult []             = three.O
+  consult ((x , y) ∷ es) = join (I8.entry x y (fo8 x y)) three.⊔ consult es
+
   out : String
   out =
     trace ("phase 0: FO " ++ ℕ-Show.show (length (FO dependence))
@@ -96,7 +108,9 @@ private
       (mk "5: full hide, edge to root" (ask full-hide root-index)
         (mk "6: partial hide, edge to filtered vertex" (ask partial-hide filtered-index)
           (mk "7: same partial hide, edge to root" (ask partial-hide root-index)
-            "end")))
+            (mk "8: first-order graph, two edges" (consult ((env-v , root-v) ∷ (env-v , filtered-v) ∷ []))
+              (mk "9: same two edges, reversed" (consult ((env-v , filtered-v) ∷ (env-v , root-v) ∷ []))
+                "end")))))
 
 main : Main
 main = run (putStrLn out)
