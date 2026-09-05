@@ -11,12 +11,11 @@ fi
 
 mkdir -p dot
 
-t0=$SECONDS
 ( cd agda && agda --compile --compile-dir=_build src/example/render/dep-graph.agda >/dev/null )
 t1=$SECONDS
 agda/_build/dep-graph
 t2=$SECONDS
-line="$(date '+%Y-%m-%d %H:%M') dep-graph compile $((t1-t0))s run $((t2-t1))s"
+line="$(date '+%Y-%m-%d %H:%M') dep-graph run $((t2-t1))s"
 echo "$line" >> agda/_build/timings.log
 echo "$line" >&2
 
