@@ -10,7 +10,7 @@ open import Data.List.Relation.Unary.All using (All; []; _∷_; universal) renam
 open import Data.List.Relation.Unary.AllPairs using (AllPairs; []; _∷_) renaming (map to AllPairs-map)
 import Data.List.Relation.Unary.All.Properties as AllP
 import Data.List.Relation.Unary.AllPairs.Properties as AllPairsP
-open import Data.Nat using (ℕ; zero; suc; _≡ᵇ_)
+open import Data.Nat using (ℕ; zero; suc)
 open import Data.Product using (_×_; _,_)
 open import Data.Maybe using (Maybe; just; nothing)
 open import Data.Sum using (_⊎_; inj₁; inj₂; [_,_])
@@ -858,13 +858,13 @@ module _ {m : ℕ} {D : Derivation} (B : Graph m D) where
                              M.Matrix (vertex-width B b) (vertex-width B a)
   hide-in-evaluation-order = Tabulated.hide-in-evaluation-order B (edge-labels B) (λ _ x → x)
 
--- A graph tabulated once: the non-zero relations stored as tables, grouped by source vertex and
--- keyed by position in the evaluation-order vertex list (the inputs vertex first, the conclusion
--- last). A missing entry is the zero relation.
+-- A graph tabulated once: the relations stored as tables, one row per source vertex with one slot
+-- per target, both in evaluation order (the inputs vertex first, the conclusion last). An empty
+-- slot is the zero relation, so a read forces only the slot it consults.
 record Tabulation : Set where
   field
     widths : List ℕ
-    edges  : List (List (ℕ × M.Table))
+    edges  : List (List (Maybe M.Table))
 
 open Tabulation public using (widths; edges)
 
@@ -900,30 +900,20 @@ module _ {m : ℕ} {D : Derivation} (B : Graph m D)
     nonzero-table : M.Table → Bool
     nonzero-table = any (any nonzero)
 
-    number : ℕ → List (V B) → List (ℕ × V B)
-    number k []       = []
-    number k (x ∷ xs) = (k , x) ∷ number (suc k) xs
+    slot : M.Table → Maybe M.Table
+    slot t = if nonzero-table t then just t else nothing
 
-    row : V B → List (ℕ × V B) → List (ℕ × M.Table)
-    row x []             = []
-    row x ((j , y) ∷ ys) = keep (TB.edge x y)
-      where
-      keep : M.Table → List (ℕ × M.Table)
-      keep t = if nonzero-table t then (j , t) ∷ row x ys else row x ys
+    row : V B → List (Maybe M.Table)
+    row x = map (λ y → slot (TB.edge x y)) (all-vertices B)
 
   tabulation : Tabulation
   tabulation .Tabulation.widths = map (vertex-width B) (all-vertices B)
-  tabulation .Tabulation.edges  = map (λ x → row x (number 0 (all-vertices B))) (all-vertices B)
+  tabulation .Tabulation.edges  = map row (all-vertices B)
 
 module _ {m : ℕ} {D : Derivation} (B : Graph m D) where
 
-  private
-    find-target : ℕ → List (ℕ × M.Table) → Maybe M.Table
-    find-target j []             = nothing
-    find-target j ((k , t) ∷ ts) = if j ≡ᵇ k then just t else find-target j ts
-
   table-at : Tabulation → ℕ → ℕ → Maybe M.Table
-  table-at T i j = find-target j (M.nth [] i (T .edges))
+  table-at T i j = M.nth nothing j (M.nth [] i (T .edges))
 
   read-edge : Tabulation → (x y : V B) → vertex-object B x ⇒ vertex-object B y
   read-edge T x y with table-at T (index-of B x) (index-of B y)
@@ -935,15 +925,11 @@ module _ {m : ℕ} {D : Derivation} (B : Graph m D) where
 module TabulatedHide (T : Tabulation) (tick : {A : Set} → String → A → A) where
 
   private
-    find-target : ℕ → List (ℕ × M.Table) → Maybe M.Table
-    find-target j []             = nothing
-    find-target j ((k , t) ∷ ts) = if j ≡ᵇ k then just t else find-target j ts
-
     wd : ℕ → ℕ
     wd i = M.nth 0 i (T .widths)
 
   edge : ℕ → ℕ → Maybe M.Table
-  edge i j = find-target j (M.nth [] i (T .edges))
+  edge i j = M.nth nothing j (M.nth [] i (T .edges))
 
   private
     sum : List Semiring.Carrier → Semiring.Carrier

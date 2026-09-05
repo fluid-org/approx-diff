@@ -83,7 +83,7 @@ private
     open Evaluated (env merge-run) (term merge-run)
 
     T : Tabulation
-    T = tabulation dependence three.ε? (λ _ x → x)
+    T = tabulation dependence three.ε? trace
 
     root-index : ℕ
     root-index = suc (length (vertices D))
@@ -103,4 +103,4 @@ private
   curve (k ∷ ks) = trace ("k=" ++ show k ++ " -> " ++ bench.at k) (curve ks)
 
 main : Main
-main = run (putStrLn (trace survey (show (curve (50 ∷ [])))))
+main = run (putStrLn (trace survey (show (curve (5 ∷ [])))))
