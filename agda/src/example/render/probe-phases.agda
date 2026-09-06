@@ -80,8 +80,8 @@ private
   filtered-index = index-of dependence filtered-v
 
   full-hide partial-hide : Tabulation
-  full-hide    = TabulatedHide.hide-graph T5 trace three.ε? interior-indices
-  partial-hide = TabulatedHide.hide-graph T5 trace three.ε?
+  full-hide    = Tabulated.hide-graph T5 trace three.ε? interior-indices
+  partial-hide = Tabulated.hide-graph T5 trace three.ε?
                    (filterᵇ (λ i → not (i ≡ᵇ filtered-index)) interior-indices)
 
   ask : Tabulation → ℕ → Three

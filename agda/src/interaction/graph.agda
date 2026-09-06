@@ -803,51 +803,6 @@ module _ {m : ℕ} {D : Derivation} (B : Graph m D) where
     interior-perm : (fo-hidden ++ FO) ↭ vertices-result-first D
     interior-perm = ↭-trans (filterᵇ-split (fo-at D) (vertices D)) (vertices-perm D)
 
--- Hiding in evaluation order: with the hidden vertices listed so that every nonzero edge among
--- them runs forward, one traversal materialises for each vertex the relation reaching it from the
--- source through the vertices before it, as a stored table. Each raw edge is read once, where
--- hide-all rewrites the whole relation at each hidden vertex. The tick hook marks each edge
--- tabulation and each vertex summary, firing when the value is demanded.
-module Tabulated {m : ℕ} {D : Derivation} (B : Graph m D) (G : EdgeLabels (vertex-object B))
-                 (tick : {A : Set} → String → A → A) where
-
-  private
-    wd : V B → ℕ
-    wd = vertex-width B
-
-  open M public using (Table; nth; to-table; look)
-
-  entry : ∀ (x y : V B) → vertex-object B x ⇒ vertex-object B y → M.Matrix (wd y) (wd x)
-  entry x y f = ∃ₛ.fst (𝔽F-full f)
-
-  edge : (u v : V B) → Table
-  edge u v = tick "edge" (to-table (entry u v (G u v)))
-
-  sum : List Semiring.Carrier → Semiring.Carrier
-  sum []       = Semiring.ε
-  sum (x ∷ xs) = x Semiring.+ sum xs
-
-  add : ℕ → ℕ → Table → Table → Table
-  add r c T U =
-    map (λ i → map (λ j → nth Semiring.ε j (nth [] i T) Semiring.+ nth Semiring.ε j (nth [] i U)) (upTo c))
-        (upTo r)
-
-  mul : ℕ → ℕ → ℕ → Table → Table → Table
-  mul r m c T U =
-    map (λ i → map (λ j → sum (map (λ t → nth Semiring.ε t (nth [] i T) Semiring.· nth Semiring.ε j (nth [] t U))
-                                   (upTo m)))
-                   (upTo c))
-        (upTo r)
-
-  through : (a v : V B) → List (V B × Table) → Table
-  through a v []             = edge a v
-  through a v ((u , T) ∷ us) = add (wd v) (wd a) (mul (wd v) (wd u) (wd a) (edge u v) T) (through a v us)
-
-  summaries : ℕ → (a : V B) → List (V B × Table) → List (V B) → List (V B × Table)
-  summaries k a acc []       = acc
-  summaries k a acc (v ∷ vs) =
-    summaries (suc k) a (acc ++ (v , tick ("summary " ++ₛ ℕ-Show.show k) (through a v acc)) ∷ []) vs
-
 -- A graph tabulated once: the vertices named by their numbers in the underlying derivation graph,
 -- and the relations stored as tables, one row per source vertex with one slot per target, both in
 -- evaluation order (the inputs vertex first, the conclusion last). An empty slot is the zero
@@ -885,7 +840,8 @@ module _ {m : ℕ} {D : Derivation} (B : Graph m D)
          (tick : {A : Set} → String → A → A) where
 
   private
-    module TB = Tabulated B (edge-labels B) tick
+    edge : (u v : V B) → M.Table
+    edge u v = tick "edge" (M.to-table (∃ₛ.fst (𝔽F-full (edge-labels B u v))))
 
     nonzero : Semiring.Carrier → Bool
     nonzero x = not ⌊ ε-dec x ⌋
@@ -897,7 +853,7 @@ module _ {m : ℕ} {D : Derivation} (B : Graph m D)
     slot t = if nonzero-table t then just t else nothing
 
     row : V B → List (Maybe M.Table)
-    row x = map (λ y → slot (TB.edge x y)) (all-vertices B)
+    row x = map (λ y → slot (edge x y)) (all-vertices B)
 
   tabulation : Tabulation
   tabulation .Tabulation.numbers = upTo (length (all-vertices B))
@@ -955,10 +911,9 @@ module _ {m : ℕ} {D : Derivation} (B : Graph m D) where
     ... | nothing = εₘ
     go _ _ = εₘ
 
--- Hiding in evaluation order over a tabulation: the summaries computation of Tabulated, but
--- reading stored tables by position and skipping absent edges. The tick hook marks each vertex
--- summary.
-module TabulatedHide (T : Tabulation) (tick : {A : Set} → String → A → A) where
+-- Hiding over a tabulation, with the hidden vertices listed so that every nonzero edge among
+-- them runs forward.
+module Tabulated (T : Tabulation) (tick : {A : Set} → String → A → A) where
 
   private
     wd : ℕ → ℕ
@@ -1037,107 +992,6 @@ module TabulatedHide (T : Tabulation) (tick : {A : Set} → String → A → A) 
     result .Tabulation.numbers = map (λ p → M.nth 0 p (Tabulation.numbers T)) survivors
     result .Tabulation.widths  = map wd survivors
     result .Tabulation.edges   = map row survivors
-
-
-module _ {m : ℕ} {D : Derivation} (B : Graph m D) (G : EdgeLabels (vertex-object B)) where
-
-  private
-    module T = Tabulated B G (λ _ x → x)
-    module HB = Hide (V B) (vertex-object B)
-
-    wd : V B → ℕ
-    wd = vertex-width B
-
-    ≈-of-≡ : ∀ {x y : Semiring.Carrier} → x ≡ y → x Semiring.≈ y
-    ≈-of-≡ ≡-refl = Semiring.refl
-
-    nth-tabulate : {C : Set} (d : C) {k : ℕ} (f : Fin k → C) (i : Fin k) →
-                   T.nth d (toℕ i) (toList (tabulate f)) ≡ f i
-    nth-tabulate d f zero    = ≡-refl
-    nth-tabulate d f (suc i) = nth-tabulate d (λ k → f (suc k)) i
-
-    nth-applyUpTo : {C : Set} (d : C) (g : ℕ → C) {r : ℕ} (h : ℕ → ℕ) (i : Fin r) →
-                    T.nth d (toℕ i) (map g (applyUpTo h r)) ≡ g (h (toℕ i))
-    nth-applyUpTo d g h zero    = ≡-refl
-    nth-applyUpTo d g h (suc i) = nth-applyUpTo d g (λ k → h (suc k)) i
-
-    sum-Σ : (g : ℕ → Semiring.Carrier) {r : ℕ} (h : ℕ → ℕ) →
-            T.sum (map g (applyUpTo h r)) ≡ M.Σ {r} (λ k → g (h (toℕ k)))
-    sum-Σ g {zero}  h = ≡-refl
-    sum-Σ g {suc r} h = ≡-cong (λ z → g (h 0) Semiring.+ z) (sum-Σ g {r} (λ k → h (suc k)))
-
-    look-to-table : ∀ {r c} (R : M.Matrix r c) (i : Fin r) (j : Fin c) →
-                    T.look (T.to-table R) i j ≡ R i j
-    look-to-table R i j =
-      ≡-trans (≡-cong (T.nth Semiring.ε (toℕ j)) (nth-tabulate [] _ i)) (nth-tabulate Semiring.ε _ j)
-
-    look-add : ∀ {r c} (t u : T.Table) (i : Fin r) (j : Fin c) →
-               T.look (T.add r c t u) i j ≡ (T.look t i j Semiring.+ T.look u i j)
-    look-add t u i j =
-      ≡-trans (≡-cong (T.nth Semiring.ε (toℕ j)) (nth-applyUpTo [] _ (λ k → k) i))
-              (nth-applyUpTo Semiring.ε _ (λ k → k) j)
-
-    look-mul : ∀ {r s c} (t u : T.Table) (i : Fin r) (j : Fin c) →
-               T.look (T.mul r s c t u) i j ≡ M._∘_ (T.look {r} {s} t) (T.look {s} {c} u) i j
-    look-mul {s = s} t u i j =
-      ≡-trans (≡-cong (T.nth Semiring.ε (toℕ j)) (nth-applyUpTo [] _ (λ k → k) i))
-              (≡-trans (nth-applyUpTo Semiring.ε _ (λ k → k) j)
-                       (sum-Σ (λ k → T.nth Semiring.ε k (T.nth [] (toℕ i) t) Semiring.·
-                                     T.nth Semiring.ε (toℕ j) (T.nth [] k u)) {s} (λ k → k)))
-
-    edge-rep : ∀ (u v : V B) → mat (T.look {wd v} {wd u} (T.edge u v)) ≈ G u v
-    edge-rep u v =
-      ≈-trans (mat-cong (λ i j → ≈-of-≡ (look-to-table (T.entry u v (G u v)) i j)))
-              (∃ₛ.snd (𝔽F-full (G u v)))
-
-    data Acc (a : V B) : List (V B × T.Table) → {us : List (V B)} → HB.Tables a us → Set where
-      nil  : Acc a [] []
-      cons : ∀ {u t acc us} {Ts : HB.Tables a us} {T : vertex-object B a ⇒ vertex-object B u} →
-             Prf (mat (T.look {wd u} {wd a} t) ≈ T) → Acc a acc Ts →
-             Acc a ((u , t) ∷ acc) (_∷_ {x = u} T Ts)
-
-    through-rep : ∀ {a v acc us} {Ts : HB.Tables a us} → Acc a acc Ts →
-                  mat (T.look {wd v} {wd a} (T.through a v acc)) ≈ HB.through G a v Ts
-    through-rep {a} {v} nil = edge-rep a v
-    through-rep {a} {v} (cons {u} {t} {acc} {T = Tm} ⟪ rep ⟫ K) =
-      ≈-trans (mat-cong (λ i j → ≈-of-≡
-                 (look-add (T.mul (wd v) (wd u) (wd a) (T.edge u v) t) (T.through a v acc) i j)))
-      (≈-trans (mat-+ (T.look (T.mul (wd v) (wd u) (wd a) (T.edge u v) t))
-                      (T.look (T.through a v acc)))
-      (+ₘ-cong
-        (≈-trans (mat-cong (λ i j → ≈-of-≡ (look-mul {wd v} {wd u} {wd a} (T.edge u v) t i j)))
-        (≈-trans (mat-comp (T.look {wd v} {wd u} (T.edge u v)) (T.look {wd u} {wd a} t))
-                 (∘-cong (edge-rep u v) rep)))
-        (through-rep K)))
-
-    acc-nil : ∀ {a acc us} {Ts : HB.Tables a us} → Acc a acc Ts → Acc a acc (AllP.++⁺ Ts [])
-    acc-nil nil        = nil
-    acc-nil (cons r K) = cons r (acc-nil K)
-
-    acc-snoc : ∀ {a acc us} {Ts : HB.Tables a us} {v t} {T : vertex-object B a ⇒ vertex-object B v} →
-               Acc a acc Ts → Prf (mat (T.look {wd v} {wd a} t) ≈ T) →
-               Acc a (acc ++ (v , t) ∷ []) (AllP.++⁺ Ts (_∷_ {x = v} T []))
-    acc-snoc nil        r = cons r nil
-    acc-snoc (cons s K) r = cons s (acc-snoc K r)
-
-    acc-shift : ∀ {a acc us vs} {Ts : HB.Tables a us} {v} {T : vertex-object B a ⇒ vertex-object B v}
-                {Us : HB.Tables a vs} →
-                Acc a acc (AllP.++⁺ (AllP.++⁺ Ts (_∷_ {x = v} T [])) Us) →
-                Acc a acc (AllP.++⁺ Ts (_∷_ {x = v} T Us))
-    acc-shift {Ts = []}       K          = K
-    acc-shift {Ts = T' ∷ Ts'} (cons s K) = cons s (acc-shift {Ts = Ts'} K)
-
-    summaries-rep : ∀ {a acc us} {Ts : HB.Tables a us} → Acc a acc Ts → ∀ k vs →
-                    Acc a (T.summaries k a acc vs) (AllP.++⁺ Ts (HB.summaries G a Ts vs))
-    summaries-rep K k []       = acc-nil K
-    summaries-rep {Ts = Ts} K k (v ∷ vs) =
-      acc-shift {Ts = Ts} (summaries-rep (acc-snoc K ⟪ through-rep K ⟫) (suc k) vs)
-
-  tabulated-hide-all : ∀ hid (a b : V B) → AllPairs (λ v u → Prf (G u v ≈ εₘ)) hid →
-                       mat (T.look {wd b} {wd a} (T.through a b (T.summaries 0 a [] hid))) ≈
-                       hide-all (vertex-object B) G hid a b
-  tabulated-hide-all hid a b pairs =
-    ≈-trans (through-rep (summaries-rep nil 0 hid)) (≈-sym (HB.fold-through hid pairs a b))
 
 private
   distrib-root : ∀ {W N K L : Semimodule} (P : N ⇒ W) (Xm : K ⇒ N) (Ym : L ⇒ N) (Zm : K ⇒ L) →

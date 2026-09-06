@@ -93,7 +93,7 @@ private
     join-table t = join-list (concat t)
 
     at : ℕ → String
-    at k = show3 (ask (TabulatedHide.hide-graph T (λ _ x → x) three.ε? (map suc (upTo k))))
+    at k = show3 (ask (Tabulated.hide-graph T (λ _ x → x) three.ε? (map suc (upTo k))))
       where
       ask : Tabulation → Three
       ask H with position H 0 | position H root-index

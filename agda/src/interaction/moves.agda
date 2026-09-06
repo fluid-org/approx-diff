@@ -310,7 +310,7 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
 
   fo-tabulation : (tick : {A : Set} → String → A → A) → Tabulation
   fo-tabulation tick =
-    TabulatedHide.hide-graph (tabulation 𝒢 ε? tick) tick ε? (map (index-of 𝒢) fo-hid)
+    Tabulated.hide-graph (tabulation 𝒢 ε? tick) tick ε? (map (index-of 𝒢) fo-hid)
 
   fo-edges : (tick : {A : Set} → String → A → A) → EdgeLabels (vertex-object 𝒢)
   fo-edges tick = read-edge 𝒢 (fo-tabulation tick)
@@ -319,7 +319,7 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
   -- forward; masking before hiding keeps direct boundary edges out of the summary.
   tabulated-summary : (tick : {A : Set} → String → A → A) → Tabulation → Summary
   tabulated-summary tick F C =
-    TabulatedHide.hide-graph (restrict-tabulation region F) tick ε? region
+    Tabulated.hide-graph (restrict-tabulation region F) tick ε? region
     where
     region : List ℕ
     region = map (λ p → index-of 𝒢 (at p)) (sort C)
