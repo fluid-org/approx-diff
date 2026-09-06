@@ -3,7 +3,7 @@
 open import Data.Bool.Properties using (T?)
 open import Data.Empty using (⊥; ⊥-elim)
 open import Data.Fin using (Fin)
-open import Data.List using (List; []; _∷_; _++_; allFin; length; map; filter; concat; foldr)
+open import Data.List using (List; []; _∷_; _++_; allFin; length; map; filter; filterᵇ; concat; foldr)
 import Data.List as L
 open import Data.List.Properties
   using (++-identityʳ; concat-++; concat-map; foldl-++; length-map; map-++; map-∘;
@@ -12,21 +12,23 @@ open import Data.List.Relation.Binary.Permutation.Propositional.Properties
   using (map⁺; shift; ++⁺; drop-∷; All-resp-↭; Any-resp-↭; ↭-length; ∈-resp-↭)
 open import Data.List.Relation.Binary.Pointwise using ([]; _∷_)
 open import Data.List.Relation.Binary.Subset.Propositional using (_⊆_)
+open import Data.List.Membership.Propositional using () renaming (_∈_ to _∈ₚ_)
 open import Data.List.Membership.Propositional.Properties
-  using (∈-++⁺ˡ; ∈-++⁺ʳ; ∈-concat⁻; ∈-concat⁺′; ∈-map⁺; ∈-filter⁻)
+  using (∈-++⁺ˡ; ∈-++⁺ʳ; ∈-concat⁻; ∈-concat⁺′; ∈-map⁺; ∈-map⁻; ∈-filter⁻)
 open import Data.List.Relation.Unary.All as All using (All; []; _∷_)
   renaming (map to All-map; tabulate to All-tabulate; lookup to All-lookup)
 open import Data.List.Relation.Unary.AllPairs as AllPairs using (AllPairs; []; _∷_)
   renaming (map to AllPairs-map)
 open import Data.List.Relation.Unary.Any using (Any; any?; here; there; tail) renaming (map to Any-map)
-open import Data.Bool using (Bool; _∨_)
+open import Data.Bool using (Bool; true; false; not; _∨_; if_then_else_)
 open import Data.Bool.ListAction using (any)
 open import Data.Maybe using (Maybe; just; nothing)
-open import Data.Nat using (ℕ; _≤_; z≤n; s≤s; _≡ᵇ_)
+open import Data.Nat using (ℕ; zero; suc; _≤_; z≤n; s≤s; _≡ᵇ_)
 open import Data.Nat.ListAction using (sum)
 open import Data.Product using (Σ; _×_; _,_; proj₁; proj₂)
 open import Data.String using (String)
 open import Data.Sum using (_⊎_; inj₁; inj₂; [_,_]′)
+open import Data.Sum.Properties using (inj₂-injective)
 open import Level using (0ℓ)
 open import Relation.Binary.PropositionalEquality using (_≡_; _≢_; subst; subst₂)
   renaming (refl to ≡-refl; sym to ≡-sym; trans to ≡-trans; cong to ≡-cong; cong₂ to ≡-cong₂)
@@ -1096,3 +1098,186 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
     blocks-part : concat (map (λ CH → map proj₁ (split-region summarise p CH)) (K .hidden)) ↭↭
                   concat (map (λ CH → regions G (filter notp (proj₁ CH))) (K .hidden))
     blocks-part = concat-↭↭ (All-map (λ {CH} one → per-block CH one) (AllP.map⁻ (blocks-one-region K S)))
+
+  private
+    idt : {A' : Set} → String → A' → A'
+    idt _ a = a
+
+    ≡ᵇ-self : (n : ℕ) → (n ≡ᵇ n) ≡ true
+    ≡ᵇ-self zero    = ≡-refl
+    ≡ᵇ-self (suc n) = ≡ᵇ-self n
+
+    ≡ᵇ-to-≡ : (i j : ℕ) → (i ≡ᵇ j) ≡ true → i ≡ j
+    ≡ᵇ-to-≡ zero    zero    _  = ≡-refl
+    ≡ᵇ-to-≡ zero    (suc j) ()
+    ≡ᵇ-to-≡ (suc i) zero    ()
+    ≡ᵇ-to-≡ (suc i) (suc j) e  = ≡-cong suc (≡ᵇ-to-≡ i j e)
+
+    ∨-true : (a : Bool) {b : Bool} → (a ∨ b) ≡ true → (a ≡ true) ⊎ (b ≡ true)
+    ∨-true true  e = inj₁ ≡-refl
+    ∨-true false e = inj₂ e
+
+    ∨-trueˡ : {a b : Bool} → a ≡ true → (a ∨ b) ≡ true
+    ∨-trueˡ {a} {b} e = ≡-cong (_∨ b) e
+
+    ∨-trueʳ : (a : Bool) {b : Bool} → b ≡ true → (a ∨ b) ≡ true
+    ∨-trueʳ true  e = ≡-refl
+    ∨-trueʳ false e = e
+
+    not-both : {b : Bool} → b ≡ true → not b ≡ true → ⊥
+    not-both {true}  _  ()
+    not-both {false} () _
+
+    any-≡ᵇ-∈ : (n : ℕ) (L : List ℕ) → any (n ≡ᵇ_) L ≡ true → Any (n ≡_) L
+    any-≡ᵇ-∈ n []      ()
+    any-≡ᵇ-∈ n (j ∷ L) e with n ≡ᵇ j in nj
+    ... | true  = here (≡ᵇ-to-≡ n j nj)
+    ... | false = there (any-≡ᵇ-∈ n L e)
+
+    ∈-any-≡ᵇ : (n : ℕ) (L : List ℕ) → Any (n ≡_) L → any (n ≡ᵇ_) L ≡ true
+    ∈-any-≡ᵇ n (j ∷ L) (here ≡-refl) rewrite ≡ᵇ-self n = ≡-refl
+    ∈-any-≡ᵇ n (j ∷ L) (there m) with n ≡ᵇ j
+    ... | true  = ≡-refl
+    ... | false = ∈-any-≡ᵇ n L m
+
+    filterᵇ-true : {A' : Set} (f : A' → Bool) {x : A'} (xs : List A') →
+                   x ∈ₚ filterᵇ f xs → f x ≡ true
+    filterᵇ-true f []       ()
+    filterᵇ-true f (y ∷ xs) m with f y in fy | m
+    ... | true  | here e   = ≡-trans (≡-cong f e) fy
+    ... | true  | there m' = filterᵇ-true f xs m'
+    ... | false | m'       = filterᵇ-true f xs m'
+
+    F₀ : Tabulation
+    F₀ = fo-tabulation idt
+
+    sorted-pairs : (G : EdgeLabels (vertex-object 𝒢)) → Fwd 𝒢 G →
+                   (C : List (Path D)) → AllPairs _≢_ C →
+                   AllPairs (λ v u → Prf (G u v ≈ εₘ)) (map at (sort C))
+    sorted-pairs G fwd C dist =
+      AllPairsP.map⁺ (AllPairs-map step (AllPairs.zip (le-pairs , ne-pairs)))
+      where
+      le-pairs : AllPairs Vertex≤._≤_ (sort C)
+      le-pairs = LinkedP.Linked⇒AllPairs Vertex≤.trans (sort-↗ C)
+
+      ne-pairs : AllPairs _≢_ (sort C)
+      ne-pairs = AllPairs-perm (λ h e → h (≡-sym e)) (↭-sym (sort-↭ C)) dist
+
+      step : {p q : Path D} → Vertex≤._≤_ p q × p ≢ q → Prf (G (at q) (at p) ≈ εₘ)
+      step {p} {q} (inj₁ lt-pq , ne) with fwd (at q) (at p)
+      ... | inj₂ z  = z
+      ... | inj₁ qp = ⊥-elim (asym p q lt-pq qp)
+      step (inj₂ e , ne) = ⊥-elim (ne e)
+
+    fo-hidden-distinct : AllPairs _≢_ (fo-hidden 𝒢)
+    fo-hidden-distinct = AllPairsP.filter⁺ (λ q → T? (not (fo-at D q))) (distinct D)
+
+    fo-hid-mem : All (_∈ₚ all-vertices 𝒢) fo-hid
+    fo-hid-mem = All-tabulate (λ {w} _ → ∈-all-vertices 𝒢 w)
+
+    fo-hid-pairs : AllPairs (λ v u → Prf (edge-labels 𝒢 u v ≈ εₘ)) fo-hid
+    fo-hid-pairs = sorted-pairs (edge-labels 𝒢) (edge-labels-forward 𝒢) (fo-hidden 𝒢)
+                                fo-hidden-distinct
+
+    module FoHide = HideRepresents 𝒢 ε? (tabulation-rep 𝒢 ε?) fo-hid fo-hid-mem fo-hid-pairs
+
+    fo-rep : Represents 𝒢 F₀ FoHide.remaining (fo-graph 𝒢)
+    fo-rep = rep-cong 𝒢 (λ x y → hide-all-perm 𝒢 (edge-labels-forward 𝒢)
+                                                 (map⁺ at (sort-↭ (fo-hidden 𝒢))) x y)
+                     FoHide.hide-rep
+
+  -- The tabulated summariser at identity tick satisfies boundary agreement: the stored
+  -- fo-tabulation represents the first-order graph at its surviving vertices, restriction and
+  -- hiding preserve representation, and sorting the region is sound because the restricted graph
+  -- is forward.
+  tabulated-agrees : Agrees (tabulated-summary (λ _ x → x) (fo-tabulation (λ _ x → x)))
+  tabulated-agrees C C⊆FO C-dist x y hxf hyf hxC hyC =
+    ⟪ ≈-trans (≡-to-≈ region-eq)
+      (≈-trans (read-edge-rep 𝒢 RH.hide-rep x∈rem y∈rem)
+               (hide-all-perm 𝒢 (restrict-forward C (fo-forward 𝒢)) (map⁺ at (sort-↭ C)) x y)) ⟫
+    where
+    regionV : List (V 𝒢)
+    regionV = map at (sort C)
+
+    idxs : List ℕ
+    idxs = map (index-of 𝒢) regionV
+
+    side⁻ : (z : V 𝒢) → any (index-of 𝒢 z ≡ᵇ_) idxs ≡ true → VertexIn z C
+    side⁻ z e with ∈-map⁻ at (Any-map (λ ie → index-of-injective 𝒢 ie)
+                                   (AnyPr.map⁻ (any-≡ᵇ-∈ (index-of 𝒢 z) idxs e)))
+    ... | (p , pm , ze) = subst (λ v → VertexIn v C) (≡-sym ze) (∈-resp-↭ (sort-↭ C) pm)
+
+    side⁺ : (z : V 𝒢) → VertexIn z C → any (index-of 𝒢 z ≡ᵇ_) idxs ≡ true
+    side⁺ (inj₁ _) ()
+    side⁺ (inj₂ p) h =
+      ∈-any-≡ᵇ (index-of 𝒢 (at p)) idxs
+               (∈-map⁺ (index-of 𝒢) (∈-map⁺ at (∈-resp-↭ (↭-sym (sort-↭ C)) h)))
+
+    mask-restrict : (x' y' : V 𝒢) →
+                    restrict-mask 𝒢 regionV (fo-graph 𝒢) x' y' ≈ restrict (fo-graph 𝒢) C x' y'
+    mask-restrict x' y' with x' ∈ᵥ? C ⊎-dec y' ∈ᵥ? C
+    ... | yes k =
+      ≡-to-≈ (≡-cong (λ b → if b then fo-graph 𝒢 x' y' else εₘ) (mem-true k))
+      where
+      mem-true : (VertexIn x' C ⊎ VertexIn y' C) →
+                 (any (index-of 𝒢 x' ≡ᵇ_) idxs ∨ any (index-of 𝒢 y' ≡ᵇ_) idxs) ≡ true
+      mem-true (inj₁ h) = ∨-trueˡ (side⁺ x' h)
+      mem-true (inj₂ h) = ∨-trueʳ (any (index-of 𝒢 x' ≡ᵇ_) idxs) (side⁺ y' h)
+    ... | no ¬k with any (index-of 𝒢 x' ≡ᵇ_) idxs ∨ any (index-of 𝒢 y' ≡ᵇ_) idxs in bb
+    ...   | false = ≈-refl
+    ...   | true  = ⊥-elimₚ (¬k (bool-mem (∨-true (any (index-of 𝒢 x' ≡ᵇ_) idxs) bb)))
+      where
+      bool-mem : (any (index-of 𝒢 x' ≡ᵇ_) idxs ≡ true) ⊎ (any (index-of 𝒢 y' ≡ᵇ_) idxs ≡ true) →
+                 VertexIn x' C ⊎ VertexIn y' C
+      bool-mem (inj₁ ex) = inj₁ (side⁻ x' ex)
+      bool-mem (inj₂ ey) = inj₂ (side⁻ y' ey)
+
+    R-region : Represents 𝒢 (restrict-tabulation (map (index-of 𝒢) regionV) F₀)
+                          FoHide.remaining (restrict (fo-graph 𝒢) C)
+    R-region = rep-cong 𝒢 mask-restrict (restrict-rep 𝒢 fo-rep regionV)
+
+    C-mem : All (_∈ₚ FoHide.remaining) regionV
+    C-mem = All-tabulate in-rem
+      where
+      in-rem : {w : V 𝒢} → w ∈ₚ regionV → w ∈ₚ FoHide.remaining
+      in-rem {w} mw with ∈-map⁻ at mw
+      ... | (p , pm , eq) = FoHide.∈-remaining (∈-all-vertices 𝒢 w) not-hid
+        where
+        not-hid : ¬ (w ∈ₚ fo-hid)
+        not-hid mh with ∈-map⁻ at mh
+        ... | (q , qm , eq') =
+          not-both (filterᵇ-true (fo-at D) (vertices D) (C⊆FO (∈-resp-↭ (sort-↭ C) pm)))
+                   (filterᵇ-true (λ r → not (fo-at D r)) (vertices D)
+                     (subst (_∈ fo-hidden 𝒢)
+                            (≡-sym (inj₂-injective (≡-trans (≡-sym eq) eq')))
+                            (∈-resp-↭ (sort-↭ (fo-hidden 𝒢)) qm)))
+
+    region-pairs : AllPairs (λ v u → Prf (restrict (fo-graph 𝒢) C u v ≈ εₘ)) regionV
+    region-pairs = sorted-pairs (restrict (fo-graph 𝒢) C) (restrict-forward C (fo-forward 𝒢))
+                                C C-dist
+
+    module RH = HideRepresents 𝒢 ε? R-region regionV C-mem region-pairs
+
+    region-eq : read-edge 𝒢 (tabulated-summary (λ _ x' → x') (fo-tabulation (λ _ x' → x')) C) x y
+                ≡ read-edge 𝒢 (Tabulated.hide-graph
+                                (restrict-tabulation (map (index-of 𝒢) regionV) F₀)
+                                (λ _ c → c) ε? (map (index-of 𝒢) regionV)) x y
+    region-eq =
+      ≡-cong (λ l → read-edge 𝒢 (Tabulated.hide-graph (restrict-tabulation l F₀)
+                                  (λ _ c → c) ε? l) x y)
+             (map-∘ {g = index-of 𝒢} {f = at} (sort C))
+
+    not-in-map : {v : V 𝒢} (L : List (Path D)) → ¬ VertexIn v L → ¬ (v ∈ₚ map at (sort L))
+    not-in-map L nh mv with ∈-map⁻ at mv
+    ... | (p , pm , eq) =
+      nh (subst (λ v' → VertexIn v' L) (≡-sym eq) (∈-resp-↭ (sort-↭ L) pm))
+
+    x∈rem : x ∈ₚ RH.remaining
+    x∈rem = RH.∈-remaining
+              (FoHide.∈-remaining (∈-all-vertices 𝒢 x) (not-in-map (fo-hidden 𝒢) hxf))
+              (not-in-map C hxC)
+
+    y∈rem : y ∈ₚ RH.remaining
+    y∈rem = RH.∈-remaining
+              (FoHide.∈-remaining (∈-all-vertices 𝒢 y) (not-in-map (fo-hidden 𝒢) hyf))
+              (not-in-map C hyC)
