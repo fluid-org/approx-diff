@@ -828,12 +828,12 @@ module _ {m : ℕ} {D : Derivation} (B : Graph m D) where
     _≟ᵥ_ : DecidableEquality (V B)
     _≟ᵥ_ = SumP.≡-dec input-≟ (_≟_ {D})
 
+  find-vertex : V B → ℕ → List (V B) → ℕ
+  find-vertex x k []       = k
+  find-vertex x k (y ∷ ys) = if ⌊ x ≟ᵥ y ⌋ then k else find-vertex x (suc k) ys
+
   index-of : V B → ℕ
-  index-of x = scan 0 all-vertices
-    where
-    scan : ℕ → List (V B) → ℕ
-    scan k []       = k
-    scan k (y ∷ ys) = if ⌊ x ≟ᵥ y ⌋ then k else scan (suc k) ys
+  index-of x = find-vertex x 0 all-vertices
 
 module _ {m : ℕ} {D : Derivation} (B : Graph m D)
          (ε-dec : (x : Semiring.Carrier) → Dec (x ≡ Semiring.ε))
@@ -860,12 +860,12 @@ module _ {m : ℕ} {D : Derivation} (B : Graph m D)
   tabulation .Tabulation.widths   = map (vertex-width B) (all-vertices B)
   tabulation .Tabulation.edges    = map row (all-vertices B)
 
+find-number : ℕ → ℕ → List ℕ → Maybe ℕ
+find-number i k []       = nothing
+find-number i k (j ∷ js) = if i ≡ᵇ j then just k else find-number i (suc k) js
+
 position : Tabulation → ℕ → Maybe ℕ
-position T i = scan 0 (Tabulation.numbers T)
-  where
-  scan : ℕ → List ℕ → Maybe ℕ
-  scan k []       = nothing
-  scan k (j ∷ js) = if i ≡ᵇ j then just k else scan (suc k) js
+position T i = find-number i 0 (Tabulation.numbers T)
 
 table-at : Tabulation → ℕ → ℕ → Maybe M.Table
 table-at T i j = M.nth nothing j (M.nth [] i (T .edges))
@@ -915,30 +915,28 @@ module _ {m : ℕ} {D : Derivation} (B : Graph m D) where
 -- them runs forward.
 module Tabulated (T : Tabulation) (tick : {A : Set} → String → A → A) where
 
-  private
-    wd : ℕ → ℕ
-    wd i = M.nth 0 i (T .widths)
+  wd : ℕ → ℕ
+  wd i = M.nth 0 i (T .widths)
 
   edge : ℕ → ℕ → Maybe M.Table
   edge i j = M.nth nothing j (M.nth [] i (T .edges))
 
-  private
-    sum : List Semiring.Carrier → Semiring.Carrier
-    sum []       = Semiring.ε
-    sum (x ∷ xs) = x Semiring.+ sum xs
+  sum : List Semiring.Carrier → Semiring.Carrier
+  sum []       = Semiring.ε
+  sum (x ∷ xs) = x Semiring.+ sum xs
 
-    mul : ℕ → ℕ → ℕ → M.Table → M.Table → M.Table
-    mul r k c t u =
-      map (λ i → map (λ j → sum (map (λ l → M.nth Semiring.ε l (M.nth [] i t) Semiring.·
-                                            M.nth Semiring.ε j (M.nth [] l u))
-                                     (upTo k)))
-                     (upTo c))
-          (upTo r)
+  mul : ℕ → ℕ → ℕ → M.Table → M.Table → M.Table
+  mul r k c t u =
+    map (λ i → map (λ j → sum (map (λ l → M.nth Semiring.ε l (M.nth [] i t) Semiring.·
+                                          M.nth Semiring.ε j (M.nth [] l u))
+                                   (upTo k)))
+                   (upTo c))
+        (upTo r)
 
-    add? : ℕ → ℕ → Maybe M.Table → Maybe M.Table → Maybe M.Table
-    add? r c nothing  u        = u
-    add? r c t        nothing  = t
-    add? r c (just t) (just u) = just (add-table r c t u)
+  add? : ℕ → ℕ → Maybe M.Table → Maybe M.Table → Maybe M.Table
+  add? r c nothing  u        = u
+  add? r c t        nothing  = t
+  add? r c (just t) (just u) = just (add-table r c t u)
 
   through : (a v : ℕ) → List (ℕ × M.Table) → Maybe M.Table
   through a v []             = edge a v
@@ -957,9 +955,7 @@ module Tabulated (T : Tabulation) (tick : {A : Set} → String → A → A) wher
   -- most once however many slots are read. The zero test visits every entry rather than
   -- short-circuiting, so a stored table is fully evaluated and holds no thunks over the input
   -- graph.
-  hide-graph : ((x : Semiring.Carrier) → Dec (x ≡ Semiring.ε)) → List ℕ → Tabulation
-  hide-graph ε-dec hid = result
-    where
+  module HideGraph (ε-dec : (x : Semiring.Carrier) → Dec (x ≡ Semiring.ε)) (hid : List ℕ) where
     hid-pos survivors : List ℕ
     hid-pos   = mapMaybe (position T) hid
     survivors = filterᵇ (λ p → not (any (p ≡ᵇ_) hid-pos)) (upTo (length (T .widths)))
@@ -981,17 +977,19 @@ module Tabulated (T : Tabulation) (tick : {A : Set} → String → A → A) wher
     keep nothing  = nothing
     keep (just t) = if nonzero-table t then just t else nothing
 
+    row-slots : ℕ → List (ℕ × M.Table) → List (Maybe M.Table)
+    row-slots a acc = map (λ b → keep (through a b acc)) survivors
+
     row : ℕ → List (Maybe M.Table)
-    row a = slots (summaries 0 a [] hid-pos) survivors
-      where
-      slots : List (ℕ × M.Table) → List ℕ → List (Maybe M.Table)
-      slots acc []       = []
-      slots acc (b ∷ bs) = keep (through a b acc) ∷ slots acc bs
+    row a = row-slots a (summaries 0 a [] hid-pos)
 
     result : Tabulation
     result .Tabulation.numbers = map (λ p → M.nth 0 p (Tabulation.numbers T)) survivors
     result .Tabulation.widths  = map wd survivors
     result .Tabulation.edges   = map row survivors
+
+  hide-graph : ((x : Semiring.Carrier) → Dec (x ≡ Semiring.ε)) → List ℕ → Tabulation
+  hide-graph ε-dec hid = HideGraph.result ε-dec hid
 
 private
   distrib-root : ∀ {W N K L : Semimodule} (P : N ⇒ W) (Xm : K ⇒ N) (Ym : L ⇒ N) (Zm : K ⇒ L) →
