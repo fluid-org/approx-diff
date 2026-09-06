@@ -50,8 +50,9 @@ private
   node-labels off (val v) = val-labels off v
 
   module render (r : Run) where
+    open Evaluated (env r) (term r) public using (D; dependence)
     private
-      open Evaluated (env r) (term r)
+      open Evaluated (env r) (term r) hiding (D; dependence)
 
       i-labels o-labels : List Label
       i-labels = env-labels (env r)
@@ -119,33 +120,33 @@ private
              table (name ++ " (" ++ nm u ++ " to " ++ nm v ++ ")") (vertex-labels u) (vertex-labels v)
                    (M3.to-table M) none none) ∷ []
 
-  filter-sum-graph = Evaluated.dependence (env filter-sum-run) (term filter-sum-run)
+  module filter-sum-tables = render filter-sum-run
 
   -- Root of the application's argument premise: the filtered list between the comprehension and sum.
-  filtered-vertex : Path (Evaluated.D (env filter-sum-run) (term filter-sum-run))
+  filtered-vertex : Path filter-sum-tables.D
   filtered-vertex = into (there here) ε
 
-  filter-sum-name : V filter-sum-graph → String
+  filter-sum-name : V filter-sum-tables.dependence → String
   filter-sum-name (inj₁ _)          = "env"
   filter-sum-name (inj₂ ε)          = "root"
   filter-sum-name (inj₂ (into _ _)) = "filtered"
 
-  add-mul-graph = Evaluated.dependence (env add-mul-run) (term add-mul-run)
+  module add-mul-tables = render add-mul-run
 
-  sum-vertex : Path (Evaluated.D (env add-mul-run) (term add-mul-run))
+  sum-vertex : Path add-mul-tables.D
   sum-vertex = into here ε
 
-  add-mul-name : V add-mul-graph → String
+  add-mul-name : V add-mul-tables.dependence → String
   add-mul-name (inj₁ _)          = "env"
   add-mul-name (inj₂ ε)          = "root"
   add-mul-name (inj₂ (into _ _)) = "sum"
 
-  case-inl-graph = Evaluated.dependence (env case-inl-run) (term case-inl-run)
+  module case-inl-tables = render case-inl-run
 
-  scrutinee-vertex : Path (Evaluated.D (env case-inl-run) (term case-inl-run))
+  scrutinee-vertex : Path case-inl-tables.D
   scrutinee-vertex = into here ε
 
-  case-inl-name : V case-inl-graph → String
+  case-inl-name : V case-inl-tables.dependence → String
   case-inl-name (inj₁ _)          = "env"
   case-inl-name (inj₂ ε)          = "root"
   case-inl-name (inj₂ (into _ _)) = "scrutinee"
@@ -223,10 +224,9 @@ all-tables =
   ("add-mul"               , render.plain add-mul-run     "add-mul")  ∷
   ("case-inl"              , render.plain case-inl-run    "case-inl") ∷
   ("score-signed"          , signed.fragment) ∷ []
-  -- filter-sum stage tables disabled: revealing the filtered list is slow until hide produces
-  -- graphs (#69); reinstate then.
-  ++ₗ render.tables add-mul-run (sum-vertex ∷ []) add-mul-name "add-mul"
-  ++ₗ render.tables case-inl-run (scrutinee-vertex ∷ []) case-inl-name "case-inl"
+  ++ₗ filter-sum-tables.tables (filtered-vertex ∷ []) filter-sum-name "filter-sum"
+  ++ₗ add-mul-tables.tables (sum-vertex ∷ []) add-mul-name "add-mul"
+  ++ₗ case-inl-tables.tables (scrutinee-vertex ∷ []) case-inl-name "case-inl"
   -- merge and merge-forward disabled: hiding diverges on merge's graph (#48 closure width
   -- growth); restore once that subtask lands.
 
