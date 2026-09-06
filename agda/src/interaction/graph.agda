@@ -11,6 +11,7 @@ open import Data.List.Relation.Unary.All using (All; []; _∷_; universal)
 open import Data.List.Relation.Unary.AllPairs using (AllPairs; []; _∷_) renaming (map to AllPairs-map)
 open import Data.List.Relation.Unary.Any using (here; there)
 open import Data.List.Membership.Propositional using (_∈_)
+open import Data.List.Membership.Propositional.Properties using (∈-map⁺; ∈-++⁺ˡ; ∈-++⁺ʳ)
 import Data.List.Relation.Unary.All.Properties as AllP
 import Data.List.Relation.Unary.AllPairs.Properties as AllPairsP
 open import Data.Nat using (ℕ; zero; suc; _≡ᵇ_; _+_; _<_; _≤_; z≤n; s≤s)
@@ -229,6 +230,22 @@ mutual
   distinct-one s =
     AllPairsP.++⁺ (distinct s) ([] ∷ [])
                   (All-map (λ h → h ∷ []) (vertices-no-ε s))
+
+mutual
+  ∈-vertices : {s : Derivation} (p : Path s) → p ≢ ε → p ∈ vertices s
+  ∈-vertices {node n b ss} ε          ne = ⊥-elim (ne ≡-refl)
+  ∈-vertices {node n b ss} (into i q) _  = ∈-vertices-of i q
+
+  ∈-vertices-of : {n : ℕ} {b : Bool} {ss : List Derivation} {s : Derivation}
+                  (i : ss ∋ s) (q : Path s) → into {n} {b} i q ∈ vertices-of n b ss
+  ∈-vertices-of {ss = s ∷ ss} here      q = ∈-++⁺ˡ (∈-map⁺ (into here) q-mem)
+    where
+    q-mem : q ∈ (vertices s ++ (ε ∷ []))
+    q-mem with q ≟ ε
+    ... | yes ≡-refl = ∈-++⁺ʳ (vertices s) (here ≡-refl)
+    ... | no  ne     = ∈-++⁺ˡ (∈-vertices q ne)
+  ∈-vertices-of {ss = s ∷ ss} (there i) q =
+    ∈-++⁺ʳ (map (into here) (vertices s ++ (ε ∷ []))) (∈-map⁺ weaken (∈-vertices-of i q))
 
 
 sum-< : {A B : Set} → (A → A → Set) → (B → B → Set) → A ⊎ B → A ⊎ B → Set
@@ -888,21 +905,24 @@ read-table T i j with table-at T i j
 ... | just t  = t
 ... | nothing = zero-table (M.nth 0 j (T .widths)) (M.nth 0 i (T .widths))
 
+mask-slots : (ℕ → Bool) → Bool → List ℕ → List (Maybe M.Table) → List (Maybe M.Table)
+mask-slots member keep-row _        []       = []
+mask-slots member keep-row []       _        = []
+mask-slots member keep-row (m ∷ ms) (s ∷ ss) =
+  (if keep-row ∨ member m then s else nothing) ∷ mask-slots member keep-row ms ss
+
+mask-rows : (ℕ → Bool) → List ℕ → List ℕ → List (List (Maybe M.Table)) →
+            List (List (Maybe M.Table))
+mask-rows member all-ns _        []       = []
+mask-rows member all-ns []       _        = []
+mask-rows member all-ns (n ∷ ns) (r ∷ rs) =
+  mask-slots member (member n) all-ns r ∷ mask-rows member all-ns ns rs
+
 restrict : List ℕ → Tabulation → Tabulation
 restrict region T .Tabulation.numbers = Tabulation.numbers T
 restrict region T .Tabulation.widths  = T .widths
-restrict region T .Tabulation.edges   = rows (Tabulation.numbers T) (T .edges)
-  where
-  member : ℕ → Bool
-  member n = any (n ≡ᵇ_) region
-
-  slots : Bool → List ℕ → List (Maybe M.Table) → List (Maybe M.Table)
-  slots keep-row (m ∷ ms) (s ∷ ss) = (if keep-row ∨ member m then s else nothing) ∷ slots keep-row ms ss
-  slots keep-row _        _        = []
-
-  rows : List ℕ → List (List (Maybe M.Table)) → List (List (Maybe M.Table))
-  rows (n ∷ ns) (r ∷ rs) = slots (member n) (Tabulation.numbers T) r ∷ rows ns rs
-  rows _        _        = []
+restrict region T .Tabulation.edges   =
+  mask-rows (λ n → any (n ≡ᵇ_) region) (Tabulation.numbers T) (Tabulation.numbers T) (T .edges)
 
 module _ {m : ℕ} {D : Derivation} (B : Graph m D) where
 
@@ -1146,6 +1166,33 @@ private
   ... | just z  = there (∈-mapMaybe m e)
   ... | nothing = ∈-mapMaybe m e
 
+  nth?-applyUpTo : (h : ℕ → ℕ) {p n : ℕ} → p < n → nth? p (applyUpTo h n) ≡ just (h p)
+  nth?-applyUpTo h {zero}  {suc n} _        = ≡-refl
+  nth?-applyUpTo h {suc p} {suc n} (s≤s lt) = nth?-applyUpTo (λ i → h (suc i)) {p} lt
+
+  if-nothing : (c : Bool) {w : Maybe M.Table} → w ≡ nothing →
+               (if c then w else nothing) ≡ nothing
+  if-nothing false e = ≡-refl
+  if-nothing true  e = e
+
+  mask-col : (member : ℕ → Bool) (keep : Bool) (ms : List ℕ) (ss : List (Maybe M.Table))
+             (b : ℕ) {nb : ℕ} → nth? b ms ≡ just nb →
+             M.nth nothing b (mask-slots member keep ms ss)
+             ≡ (if keep ∨ member nb then M.nth nothing b ss else nothing)
+  mask-col member keep []       ss       b       ()
+  mask-col member keep (m ∷ ms) []       b  {nb} hb = ≡-sym (if-nothing (keep ∨ member nb) ≡-refl)
+  mask-col member keep (m ∷ ms) (s ∷ ss) zero    ≡-refl = ≡-refl
+  mask-col member keep (m ∷ ms) (s ∷ ss) (suc b) hb = mask-col member keep ms ss b hb
+
+  mask-row : (member : ℕ → Bool) (all-ns ns : List ℕ) (rs : List (List (Maybe M.Table)))
+             (a : ℕ) {na : ℕ} → nth? a ns ≡ just na →
+             M.nth [] a (mask-rows member all-ns ns rs)
+             ≡ mask-slots member (member na) all-ns (M.nth [] a rs)
+  mask-row member all-ns []       rs       a       ()
+  mask-row member all-ns (n ∷ ns) []       a       ha = ≡-refl
+  mask-row member all-ns (n ∷ ns) (r ∷ rs) zero    ≡-refl = ≡-refl
+  mask-row member all-ns (n ∷ ns) (r ∷ rs) (suc a) ha = mask-row member all-ns ns rs a ha
+
 -- A tabulation represents a graph at a vertex list when its numbers and widths read off that list
 -- and every slot's morphism is the graph's edge.
 module _ {m : ℕ} {D : Derivation} (B : Graph m D) where
@@ -1277,6 +1324,81 @@ module _ {m : ℕ} {D : Derivation} (B : Graph m D) where
       zero-case =
         ≈-trans (≈-sym (∃ₛ.snd (𝔽F-full (edge-labels B x y))))
                 (≈-trans (mat-cong (λ i j → ≈-of-≡ (entry-ε i j))) mat-ε)
+
+  ∈-all-vertices : (v : V B) → v ∈ all-vertices B
+  ∈-all-vertices (inj₁ input)      = here ≡-refl
+  ∈-all-vertices (inj₂ ε)          = there (∈-++⁺ʳ (map inj₂ (vertices D)) (here ≡-refl))
+  ∈-all-vertices (inj₂ (into i q)) = there (∈-++⁺ˡ (∈-map⁺ inj₂ (∈-vertices (into i q) (λ ()))))
+
+  index-of-injective : {u v : V B} → index-of B u ≡ index-of B v → u ≡ v
+  index-of-injective {u} {v} e with ∈-nth? (∈-all-vertices u) | ∈-nth? (∈-all-vertices v)
+  ... | (pu , eu) | (pv , ev) =
+    just-inj (≡-trans (≡-sym eu)
+             (≡-trans (≡-cong (λ p → nth? p (all-vertices B)) same-pos) ev))
+    where
+    idx-at : {p : ℕ} {z : V B} → nth? p (all-vertices B) ≡ just z → index-of B z ≡ p
+    idx-at {p} {z} h =
+      ≡-sym (just-inj
+        (≡-trans (≡-sym (nth?-applyUpTo (λ i → i) (nth?-length p (all-vertices B) h)))
+                 (subst (λ l → nth? p l ≡ just (index-of B z)) (≡-sym numbers-self)
+                        (nth?-map (index-of B) p (all-vertices B) h))))
+
+    same-pos : pu ≡ pv
+    same-pos = ≡-trans (≡-sym (idx-at eu)) (≡-trans e (idx-at ev))
+
+  rep-cong : {T : Tabulation} {vs : List (V B)} {G G' : EdgeLabels (vertex-object B)} →
+             ((x y : V B) → G x y ≈ G' x y) →
+             Represents T vs G → Represents T vs G'
+  rep-cong e R .numbers-eq       = R .numbers-eq
+  rep-cong e R .widths-eq        = R .widths-eq
+  rep-cong e R .numbers-distinct = R .numbers-distinct
+  rep-cong e R .slots {a} {b} {x} {y} ha hb = ⟪ ≈-trans (Prf.prf (R .slots ha hb)) (e x y) ⟫
+
+  -- The graph the restricted tabulation stores: an edge survives when either endpoint's number
+  -- lies in the region.
+  restrict-mask : List (V B) → EdgeLabels (vertex-object B) → EdgeLabels (vertex-object B)
+  restrict-mask ws' G x y =
+    if any (index-of B x ≡ᵇ_) (map (index-of B) ws')
+       ∨ any (index-of B y ≡ᵇ_) (map (index-of B) ws')
+    then G x y else εₘ
+
+  restrict-rep : {T : Tabulation} {vs : List (V B)} {G : EdgeLabels (vertex-object B)} →
+                 Represents T vs G → (ws' : List (V B)) →
+                 Represents (restrict (map (index-of B) ws') T) vs (restrict-mask ws' G)
+  restrict-rep R ws' .numbers-eq       = R .numbers-eq
+  restrict-rep R ws' .widths-eq        = R .widths-eq
+  restrict-rep R ws' .numbers-distinct = R .numbers-distinct
+  restrict-rep {T} {vs} {G} R ws' .slots {a} {b} {x} {y} ha hb =
+    subst (λ w → Prf (table-morphism B x y w ≈ restrict-mask ws' G x y)) (≡-sym slot-eq) at-mask
+    where
+    member : ℕ → Bool
+    member n = any (n ≡ᵇ_) (map (index-of B) ws')
+
+    na-eq : nth? a (Tabulation.numbers T) ≡ just (index-of B x)
+    na-eq = subst (λ ns → nth? a ns ≡ just (index-of B x)) (≡-sym (R .numbers-eq))
+                  (nth?-map (index-of B) a vs ha)
+
+    nb-eq : nth? b (Tabulation.numbers T) ≡ just (index-of B y)
+    nb-eq = subst (λ ns → nth? b ns ≡ just (index-of B y)) (≡-sym (R .numbers-eq))
+                  (nth?-map (index-of B) b vs hb)
+
+    slot-eq : table-at (restrict (map (index-of B) ws') T) a b
+              ≡ (if member (index-of B x) ∨ member (index-of B y)
+                 then table-at T a b else nothing)
+    slot-eq =
+      ≡-trans (≡-cong (M.nth nothing b)
+                      (mask-row member (Tabulation.numbers T) (Tabulation.numbers T)
+                                (Tabulation.edges T) a na-eq))
+              (mask-col member (member (index-of B x)) (Tabulation.numbers T)
+                        (M.nth [] a (Tabulation.edges T)) b nb-eq)
+
+    at-mask : Prf (table-morphism B x y
+                     (if member (index-of B x) ∨ member (index-of B y)
+                      then table-at T a b else nothing)
+                   ≈ restrict-mask ws' G x y)
+    at-mask with member (index-of B x) ∨ member (index-of B y)
+    ... | true  = R .slots ha hb
+    ... | false = ⟪ ≈-refl ⟫
 
   -- Hiding over a represented tabulation represents hiding in the graph: with the hidden vertices
   -- stored, listed without repeats, and carrying no backward edge among them, the result
