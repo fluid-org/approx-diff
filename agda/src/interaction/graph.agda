@@ -5,7 +5,7 @@ open import Data.Empty using (⊥; ⊥-elim)
 open import Data.Fin using (Fin; toℕ; zero; suc)
 open import Data.List using (List; []; _∷_; _++_; map; mapMaybe; foldl; filterᵇ; length; upTo; applyUpTo)
 open import Data.Bool.ListAction using (any)
-open import Data.List.Properties using (++-identityʳ; map-++; map-∘; foldl-++)
+open import Data.List.Properties using (++-identityʳ; map-++; map-∘; foldl-++; length-map)
 open import Data.List.Relation.Unary.All using (All; []; _∷_; universal)
   renaming (map to All-map; lookup to All-lookup)
 open import Data.List.Relation.Unary.AllPairs using (AllPairs; []; _∷_) renaming (map to AllPairs-map)
@@ -13,7 +13,7 @@ open import Data.List.Relation.Unary.Any using (here; there)
 open import Data.List.Membership.Propositional using (_∈_)
 import Data.List.Relation.Unary.All.Properties as AllP
 import Data.List.Relation.Unary.AllPairs.Properties as AllPairsP
-open import Data.Nat using (ℕ; zero; suc; _≡ᵇ_; _+_)
+open import Data.Nat using (ℕ; zero; suc; _≡ᵇ_; _+_; _<_; _≤_; z≤n; s≤s)
 open import Data.Nat.Properties using (+-suc; +-identityʳ; <⇒≢)
 open import Data.Product using (Σ; _×_; _,_)
 open import Data.Maybe using (Maybe; just; nothing)
@@ -30,6 +30,7 @@ open import Relation.Binary
          Trichotomous; Tri; tri<; tri≈; tri>)
 open import Relation.Binary.PropositionalEquality using (_≡_; _≢_; subst; subst₂; isEquivalence)
   renaming (refl to ≡-refl; sym to ≡-sym; trans to ≡-trans; cong to ≡-cong; cong₂ to ≡-cong₂)
+open import Relation.Nullary using (¬_)
 open import Relation.Nullary.Decidable using (Dec; yes; no; ⌊_⌋)
 import Data.Sum.Properties as SumP
 open import Level using (0ℓ)
@@ -1084,6 +1085,67 @@ private
   look-to-table R i j =
     ≡-trans (≡-cong (M.nth Semiring.ε (toℕ j)) (nth-tabulate [] _ i)) (nth-tabulate Semiring.ε _ j)
 
+  nth-applyUpTo : {C : Set} (d : C) (g : ℕ → C) {r : ℕ} (h : ℕ → ℕ) (i : Fin r) →
+                  M.nth d (toℕ i) (map g (applyUpTo h r)) ≡ g (h (toℕ i))
+  nth-applyUpTo d g h zero    = ≡-refl
+  nth-applyUpTo d g h (suc i) = nth-applyUpTo d g (λ k → h (suc k)) i
+
+  just-inj : {C : Set} {u v : C} → just u ≡ just v → u ≡ v
+  just-inj ≡-refl = ≡-refl
+
+  nth?-defined : {C : Set} (p : ℕ) (xs : List C) → p < length xs → Σ C (λ z → nth? p xs ≡ just z)
+  nth?-defined zero    (x ∷ _)  _        = x , ≡-refl
+  nth?-defined (suc p) (_ ∷ xs) (s≤s lt) = nth?-defined p xs lt
+
+  nth?-length : {C : Set} (p : ℕ) (xs : List C) {x : C} → nth? p xs ≡ just x → p < length xs
+  nth?-length zero    (_ ∷ _)  _  = s≤s z≤n
+  nth?-length (suc p) (_ ∷ xs) h  = s≤s (nth?-length p xs h)
+  nth?-length zero    []       ()
+  nth?-length (suc p) []       ()
+
+  applyUpTo-All : (h : ℕ → ℕ) (n : ℕ) {P : ℕ → Set} →
+                  ((p : ℕ) → p < n → P (h p)) → All P (applyUpTo h n)
+  applyUpTo-All h zero    f = []
+  applyUpTo-All h (suc n) f =
+    f 0 (s≤s z≤n) ∷ applyUpTo-All (λ i → h (suc i)) n (λ p lt → f (suc p) (s≤s lt))
+
+  <-applyUpTo : (h : ℕ → ℕ) {p n : ℕ} → p < n → h p ∈ applyUpTo h n
+  <-applyUpTo h {zero}  {suc n} _        = here ≡-refl
+  <-applyUpTo h {suc p} {suc n} (s≤s lt) = there (<-applyUpTo (λ i → h (suc i)) {p} lt)
+
+  filterᵇ-All : {C : Set} {P : C → Set} (f : C → Bool) {xs : List C} →
+                All P xs → All P (filterᵇ f xs)
+  filterᵇ-All f {[]}     []        = []
+  filterᵇ-All f {x ∷ xs} (px ∷ ps) with f x
+  ... | true  = px ∷ filterᵇ-All f ps
+  ... | false = filterᵇ-All f ps
+
+  filterᵇ-AllPairs : {C : Set} {P : C → C → Set} (f : C → Bool) {xs : List C} →
+                     AllPairs P xs → AllPairs P (filterᵇ f xs)
+  filterᵇ-AllPairs f {[]}     []        = []
+  filterᵇ-AllPairs f {x ∷ xs} (hx ∷ ps) with f x
+  ... | true  = filterᵇ-All f hx ∷ filterᵇ-AllPairs f ps
+  ... | false = filterᵇ-AllPairs f ps
+
+  all-any-false : {C : Set} (f : C → Bool) (xs : List C) → All (λ x → f x ≡ false) xs →
+                  any f xs ≡ false
+  all-any-false f []       []        = ≡-refl
+  all-any-false f (x ∷ xs) (e ∷ es) rewrite e = all-any-false f xs es
+
+  ∈-filterᵇ : {C : Set} (f : C → Bool) {x : C} {xs : List C} → x ∈ xs → f x ≡ true →
+              x ∈ filterᵇ f xs
+  ∈-filterᵇ f (here ≡-refl) e rewrite e = here ≡-refl
+  ∈-filterᵇ f {xs = y ∷ xs} (there m) e with f y
+  ... | true  = there (∈-filterᵇ f m e)
+  ... | false = ∈-filterᵇ f m e
+
+  ∈-mapMaybe : {C C' : Set} {f : C → Maybe C'} {x : C'} {qs : List C} {q : C} →
+               q ∈ qs → f q ≡ just x → x ∈ mapMaybe f qs
+  ∈-mapMaybe (here ≡-refl) e rewrite e = here ≡-refl
+  ∈-mapMaybe {f = f} {qs = q' ∷ qs} (there m) e with f q'
+  ... | just z  = there (∈-mapMaybe m e)
+  ... | nothing = ∈-mapMaybe m e
+
 -- A tabulation represents a graph at a vertex list when its numbers and widths read off that list
 -- and every slot's morphism is the graph's edge.
 module _ {m : ℕ} {D : Derivation} (B : Graph m D) where
@@ -1215,6 +1277,326 @@ module _ {m : ℕ} {D : Derivation} (B : Graph m D) where
       zero-case =
         ≈-trans (≈-sym (∃ₛ.snd (𝔽F-full (edge-labels B x y))))
                 (≈-trans (mat-cong (λ i j → ≈-of-≡ (entry-ε i j))) mat-ε)
+
+  -- Hiding over a represented tabulation represents hiding in the graph: with the hidden vertices
+  -- stored, listed without repeats, and carrying no backward edge among them, the result
+  -- represents hide-all at the surviving vertices.
+  module HideRepresents
+      (ε-dec : (x : Semiring.Carrier) → Dec (x ≡ Semiring.ε))
+      {T : Tabulation} {vs : List (V B)} {G : EdgeLabels (vertex-object B)}
+      (R : Represents T vs G)
+      (ws : List (V B)) (ws-mem : All (_∈ vs) ws)
+      (pairs : AllPairs (λ v u → Prf (G u v ≈ εₘ)) ws) where
+
+    private
+      module TB = Tabulated T (λ _ c → c)
+      module HG = TB.HideGraph ε-dec (map (index-of B) ws)
+      module HB = Hide (V B) (vertex-object B)
+
+    remaining : List (V B)
+    remaining = mapMaybe (λ p → nth? p vs) HG.survivors
+
+    private
+      wd-at : {p : ℕ} {x : V B} → nth? p vs ≡ just x → TB.wd p ≡ vertex-width B x
+      wd-at {p} {x} h =
+        ≡-trans (≡-cong (M.nth 0 p) (R .widths-eq))
+                (nth?-nth 0 p (map (vertex-width B) vs) (nth?-map (vertex-width B) p vs h))
+
+      num-at : {p : ℕ} {x : V B} → nth? p vs ≡ just x →
+               M.nth 0 p (Tabulation.numbers T) ≡ index-of B x
+      num-at {p} {x} h =
+        ≡-trans (≡-cong (M.nth 0 p) (R .numbers-eq))
+                (nth?-nth 0 p (map (index-of B) vs) (nth?-map (index-of B) p vs h))
+
+      nth?-num : {p : ℕ} {x : V B} → nth? p vs ≡ just x →
+                 nth? p (Tabulation.numbers T) ≡ just (index-of B x)
+      nth?-num {p} {x} h =
+        subst (λ ns → nth? p ns ≡ just (index-of B x)) (≡-sym (R .numbers-eq))
+              (nth?-map (index-of B) p vs h)
+
+      len-eq : length (Tabulation.widths T) ≡ length vs
+      len-eq = ≡-trans (≡-cong length (R .widths-eq)) (length-map (vertex-width B) vs)
+
+      data PosOf : List ℕ → List (V B) → Set where
+        []  : PosOf [] []
+        _∷_ : ∀ {p w ps ws'} → nth? p vs ≡ just w → PosOf ps ws' → PosOf (p ∷ ps) (w ∷ ws')
+
+      pos-of : (ws' : List (V B)) → All (_∈ vs) ws' →
+               PosOf (mapMaybe (position T) (map (index-of B) ws')) ws'
+      pos-of []        []         = []
+      pos-of (w ∷ ws') (mw ∷ mws) with ∈-nth? mw
+      ... | (p , e) rewrite locate R e = e ∷ pos-of ws' mws
+
+      data Acc (x : V B) : List (ℕ × M.Table) → {us : List (V B)} → HB.Tables x us → Set where
+        nil  : Acc x [] []
+        keep : ∀ {u : ℕ} {y : V B} {t : M.Table} {acc : List (ℕ × M.Table)} {us : List (V B)}
+               {Ts : HB.Tables x us} {S : vertex-object B x ⇒ vertex-object B y} →
+               nth? u vs ≡ just y →
+               Prf (mat (M.look {vertex-width B y} {vertex-width B x} t) ≈ S) →
+               Acc x acc Ts → Acc x ((u , t) ∷ acc) (_∷_ {x = y} S Ts)
+        skip : ∀ {y : V B} {acc : List (ℕ × M.Table)} {us : List (V B)}
+               {Ts : HB.Tables x us} {S : vertex-object B x ⇒ vertex-object B y} →
+               Prf (S ≈ εₘ) → Acc x acc Ts → Acc x acc (_∷_ {x = y} S Ts)
+
+      sum-Σ : (g : ℕ → Semiring.Carrier) {r : ℕ} (h : ℕ → ℕ) →
+              TB.sum (map g (applyUpTo h r)) ≡ M.Σ {r} (λ k → g (h (toℕ k)))
+      sum-Σ g {zero}  h = ≡-refl
+      sum-Σ g {suc r} h = ≡-cong (λ z → g (h 0) Semiring.+ z) (sum-Σ g {r} (λ k → h (suc k)))
+
+      look-mul : ∀ {r s c} (t u : M.Table) (i : Fin r) (j : Fin c) →
+                 M.look (TB.mul r s c t u) i j ≡ M._∘_ (M.look {r} {s} t) (M.look {s} {c} u) i j
+      look-mul {s = s} t u i j =
+        ≡-trans (≡-cong (M.nth Semiring.ε (toℕ j)) (nth-applyUpTo [] _ (λ k → k) i))
+                (≡-trans (nth-applyUpTo Semiring.ε _ (λ k → k) j)
+                         (sum-Σ (λ k → M.nth Semiring.ε k (M.nth [] (toℕ i) t) Semiring.·
+                                       M.nth Semiring.ε (toℕ j) (M.nth [] k u)) {s} (λ k → k)))
+
+      look-add : ∀ {r c} (t u : M.Table) (i : Fin r) (j : Fin c) →
+                 M.look (add-table r c t u) i j ≡ (M.look t i j Semiring.+ M.look u i j)
+      look-add t u i j =
+        ≡-trans (≡-cong (M.nth Semiring.ε (toℕ j)) (nth-applyUpTo [] _ (λ k → k) i))
+                (nth-applyUpTo Semiring.ε _ (λ k → k) j)
+
+      through-rep : (pa pb : ℕ) {x y : V B} → nth? pa vs ≡ just x → nth? pb vs ≡ just y →
+                    (acc : List (ℕ × M.Table)) {us : List (V B)} {Ts : HB.Tables x us} →
+                    Acc x acc Ts →
+                    Prf (table-morphism B x y (TB.through pa pb acc) ≈ HB.through G x y Ts)
+      through-rep pa pb ha hb _ nil = R .slots ha hb
+      through-rep pa pb {x} {y} ha hb _ (keep {u} {y'} {t} {acc} {Ts = Ts} {S = S} hu ⟪ tr ⟫ K)
+        with table-at T u pb | Prf.prf (R .slots hu hb)
+      ... | nothing | z =
+        ⟪ ≈-trans (Prf.prf (through-rep pa pb ha hb acc K))
+                  (≈-sym (≈-trans (+ₘ-cong (≈-trans {g = εₘ {vertex-object B y'} {vertex-object B y} ∘ S}
+                                                    (∘-cong₁ {f₁ = G y' y} {f₂ = εₘ} {g = S} (≈-sym z))
+                                                    (CM.comp-bilinear-ε₁ {Z = vertex-object B y} S))
+                                           ≈-refl)
+                                  (+ₘ-lunit (HB.through G x y Ts)))) ⟫
+      ... | just e  | z
+        rewrite wd-at hb | wd-at hu | wd-at ha
+        with TB.through pa pb acc | Prf.prf (through-rep pa pb ha hb acc K)
+      ...   | nothing | ihz =
+        ⟪ ≈-trans mul-rep
+                  (≈-sym (≈-trans (+ₘ-cong ≈-refl (≈-sym ihz)) (+ₘ-runit (G y' y ∘ S)))) ⟫
+        where
+        mul-rep : mat (M.look {vertex-width B y} {vertex-width B x}
+                       (TB.mul (vertex-width B y) (vertex-width B y') (vertex-width B x) e t))
+                  ≈ (G y' y ∘ S)
+        mul-rep =
+          ≈-trans (mat-cong (λ i j → ≈-of-≡ (look-mul {s = vertex-width B y'} e t i j)))
+                  (≈-trans (mat-comp (M.look e) (M.look t)) (∘-cong z tr))
+      ...   | just t' | ihe =
+        ⟪ ≈-trans (mat-cong (λ i j → ≈-of-≡
+                    (look-add (TB.mul (vertex-width B y) (vertex-width B y') (vertex-width B x) e t)
+                              t' i j)))
+          (≈-trans (mat-+ (M.look (TB.mul (vertex-width B y) (vertex-width B y') (vertex-width B x) e t))
+                          (M.look t'))
+                   (+ₘ-cong mul-rep ihe)) ⟫
+        where
+        mul-rep : mat (M.look {vertex-width B y} {vertex-width B x}
+                       (TB.mul (vertex-width B y) (vertex-width B y') (vertex-width B x) e t))
+                  ≈ (G y' y ∘ S)
+        mul-rep =
+          ≈-trans (mat-cong (λ i j → ≈-of-≡ (look-mul {s = vertex-width B y'} e t i j)))
+                  (≈-trans (mat-comp (M.look e) (M.look t)) (∘-cong z tr))
+      through-rep pa pb {x} {y} ha hb acc (skip {y''} {Ts = Ts} {S = S} ⟪ sz ⟫ K) =
+        ⟪ ≈-trans (Prf.prf (through-rep pa pb ha hb acc K))
+                  (≈-sym (≈-trans (+ₘ-cong (≈-trans {g = G y'' y ∘ εₘ {vertex-object B x} {vertex-object B y''}}
+                                                    (∘-cong₂ {f = G y'' y} sz)
+                                                    (CM.comp-bilinear-ε₂ {X = vertex-object B x} (G y'' y)))
+                                           ≈-refl)
+                                  (+ₘ-lunit (HB.through G x y Ts)))) ⟫
+
+      acc-nil : ∀ {x acc us} {Ts : HB.Tables x us} → Acc x acc Ts → Acc x acc (AllP.++⁺ Ts [])
+      acc-nil nil           = nil
+      acc-nil (keep e r K)  = keep e r (acc-nil K)
+      acc-nil (skip z K)    = skip z (acc-nil K)
+
+      acc-snoc-keep : ∀ {x acc us} {Ts : HB.Tables x us} {u : ℕ} {y : V B} {t : M.Table}
+                      {S : vertex-object B x ⇒ vertex-object B y} →
+                      Acc x acc Ts → nth? u vs ≡ just y →
+                      Prf (mat (M.look {vertex-width B y} {vertex-width B x} t) ≈ S) →
+                      Acc x (acc ++ (u , t) ∷ []) (AllP.++⁺ Ts (_∷_ {x = y} S []))
+      acc-snoc-keep nil           e r = keep e r nil
+      acc-snoc-keep (keep e' r' K) e r = keep e' r' (acc-snoc-keep K e r)
+      acc-snoc-keep (skip z K)    e r = skip z (acc-snoc-keep K e r)
+
+      acc-snoc-skip : ∀ {x acc us} {Ts : HB.Tables x us} {y : V B}
+                      {S : vertex-object B x ⇒ vertex-object B y} →
+                      Acc x acc Ts → Prf (S ≈ εₘ) → Acc x acc (AllP.++⁺ Ts (_∷_ {x = y} S []))
+      acc-snoc-skip nil           z = skip z nil
+      acc-snoc-skip (keep e r K)  z = keep e r (acc-snoc-skip K z)
+      acc-snoc-skip (skip z' K)   z = skip z' (acc-snoc-skip K z)
+
+      acc-shift : ∀ {x acc us vs'} {Ts : HB.Tables x us} {v : V B}
+                  {S : vertex-object B x ⇒ vertex-object B v} {Us : HB.Tables x vs'} →
+                  Acc x acc (AllP.++⁺ (AllP.++⁺ Ts (_∷_ {x = v} S [])) Us) →
+                  Acc x acc (AllP.++⁺ Ts (_∷_ {x = v} S Us))
+      acc-shift {Ts = []}       K            = K
+      acc-shift {Ts = T' ∷ Ts'} (keep e r K) = keep e r (acc-shift {Ts = Ts'} K)
+      acc-shift {Ts = T' ∷ Ts'} (skip z K)   = skip z (acc-shift {Ts = Ts'} K)
+
+      summaries-rep : {x : V B} (pa : ℕ) → nth? pa vs ≡ just x →
+                      (acc : List (ℕ × M.Table)) {us : List (V B)} {Ts : HB.Tables x us} →
+                      Acc x acc Ts → (k : ℕ) {ps : List ℕ} {ws' : List (V B)} → PosOf ps ws' →
+                      Acc x (TB.summaries k pa acc ps) (AllP.++⁺ Ts (HB.summaries G x Ts ws'))
+      summaries-rep pa ha acc K k [] = acc-nil K
+      summaries-rep {x} pa ha acc {Ts = Ts} K k (_∷_ {p} {w} hp P)
+        with TB.through pa p acc | Prf.prf (through-rep pa p ha hp acc K)
+      ... | nothing | z =
+        acc-shift {Ts = Ts} (summaries-rep pa ha acc (acc-snoc-skip K ⟪ ≈-sym z ⟫) (suc k) P)
+      ... | just t  | e =
+        acc-shift {Ts = Ts}
+                  (summaries-rep pa ha (acc ++ (p , t) ∷ []) (acc-snoc-keep K hp ⟪ e ⟫) (suc k) P)
+
+      hidden-rep : {x y : V B} (pa pb : ℕ) → nth? pa vs ≡ just x → nth? pb vs ≡ just y →
+                   Prf (table-morphism B x y (TB.through pa pb (TB.summaries 0 pa [] HG.hid-pos))
+                        ≈ hide-all (vertex-object B) G ws x y)
+      hidden-rep {x} {y} pa pb ha hb =
+        ⟪ ≈-trans (Prf.prf (through-rep pa pb ha hb (TB.summaries 0 pa [] HG.hid-pos)
+                                        (summaries-rep pa ha [] nil 0 (pos-of ws ws-mem))))
+                  (≈-sym (HB.fold-through ws pairs x y)) ⟫
+
+      or!-false : (a b : Bool) → HG.or! a b ≡ false → (a ≡ false) × (b ≡ false)
+      or!-false false b     e = ≡-refl , e
+      or!-false true  false e = ⊥-elim (true≢false e)
+      or!-false true  true  e = ⊥-elim (true≢false e)
+
+      row-false : (r : List Semiring.Carrier) → HG.nonzero-row r ≡ false →
+                  All (λ e → e ≡ Semiring.ε) r
+      row-false []      _ = []
+      row-false (c ∷ r) e with or!-false (not ⌊ ε-dec c ⌋) (HG.nonzero-row r) e
+      ... | (e₁ , e₂) = dec-just (ε-dec c) (not-false e₁) ∷ row-false r e₂
+
+      tab-false : (t : M.Table) → HG.nonzero-table t ≡ false →
+                  All (All (λ e → e ≡ Semiring.ε)) t
+      tab-false []      _ = []
+      tab-false (r ∷ t) e with or!-false (HG.nonzero-row r) (HG.nonzero-table t) e
+      ... | (e₁ , e₂) = row-false r e₁ ∷ tab-false t e₂
+
+      look-εₘ : (x y : V B) (t : M.Table) → All (All (λ e → e ≡ Semiring.ε)) t →
+                mat (M.look {vertex-width B y} {vertex-width B x} t) ≈ εₘ
+      look-εₘ x y t z =
+        ≈-trans (mat-cong (λ i j → ≈-of-≡
+                  (nth-All [] (toℕ i) ≡-refl
+                           (All-map (λ rz → nth-All Semiring.ε (toℕ j) ≡-refl rz) z))))
+                mat-ε
+
+      keep-rep : (x y : V B) (w : Maybe M.Table) →
+                 table-morphism B x y (HG.keep w) ≈ table-morphism B x y w
+      keep-rep x y nothing  = ≈-refl
+      keep-rep x y (just t) with HG.nonzero-table t in nz
+      ... | true  = ≈-refl
+      ... | false = ≈-sym (look-εₘ x y t (tab-false t nz))
+
+      survivors-just : All (λ p → Σ (V B) (λ z → nth? p vs ≡ just z)) HG.survivors
+      survivors-just =
+        All-map (λ {p} lt → nth?-defined p vs lt)
+                (filterᵇ-All (λ p → not (any (p ≡ᵇ_) HG.hid-pos))
+                             (applyUpTo-All (λ i → i) (length (Tabulation.widths T))
+                                            (λ p lt → subst (p <_) len-eq lt)))
+
+      extract : ∀ {ps} → All (λ p → Σ (V B) (λ z → nth? p vs ≡ just z)) ps → List (V B)
+      extract []             = []
+      extract ((z , _) ∷ sj) = z ∷ extract sj
+
+      mapMaybe-just : ∀ {ps} (sj : All (λ p → Σ (V B) (λ z → nth? p vs ≡ just z)) ps) →
+                      mapMaybe (λ p → nth? p vs) ps ≡ extract sj
+      mapMaybe-just []               = ≡-refl
+      mapMaybe-just (_∷_ (z , e) sj) rewrite e = ≡-cong (z ∷_) (mapMaybe-just sj)
+
+      at-extract : ∀ {ps} (sj : All (λ p → Σ (V B) (λ z → nth? p vs ≡ just z)) ps) {a : ℕ}
+                   {x : V B} → nth? a (extract sj) ≡ just x →
+                   Σ ℕ (λ p → (nth? a ps ≡ just p) × (nth? p vs ≡ just x))
+      at-extract (_∷_ {p₀} (z , e) sj) {zero}  ≡-refl = p₀ , ≡-refl , e
+      at-extract (_∷_ {p₀} (z , e) sj) {suc a} h with at-extract sj {a} h
+      ... | (p , sa , sx) = p , sa , sx
+
+      nums-eq : ∀ {ps} (sj : All (λ p → Σ (V B) (λ z → nth? p vs ≡ just z)) ps) →
+                map (λ p → M.nth 0 p (Tabulation.numbers T)) ps
+                ≡ map (index-of B) (mapMaybe (λ p → nth? p vs) ps)
+      nums-eq []               = ≡-refl
+      nums-eq (_∷_ (z , e) sj) rewrite e = ≡-cong₂ _∷_ (num-at e) (nums-eq sj)
+
+      wids-eq : ∀ {ps} (sj : All (λ p → Σ (V B) (λ z → nth? p vs ≡ just z)) ps) →
+                map TB.wd ps ≡ map (vertex-width B) (mapMaybe (λ p → nth? p vs) ps)
+      wids-eq []               = ≡-refl
+      wids-eq (_∷_ (z , e) sj) rewrite e = ≡-cong₂ _∷_ (wd-at e) (wids-eq sj)
+
+      nth-differ : (js : List ℕ) → AllPairs _≢_ js → {p q : ℕ} {a b : ℕ} → p ≢ q →
+                   nth? p js ≡ just a → nth? q js ≡ just b → a ≢ b
+      nth-differ (j ∷ js) (hj ∷ ps) {zero}  {zero}  pq _      _  = ⊥-elim (pq ≡-refl)
+      nth-differ (j ∷ js) (hj ∷ ps) {zero}  {suc q} pq ≡-refl eb =
+        λ ab → All-lookup hj (nth?-∈ {p = q} eb) ab
+      nth-differ (j ∷ js) (hj ∷ ps) {suc p} {zero}  pq ea ≡-refl =
+        λ ab → All-lookup hj (nth?-∈ {p = p} ea) (≡-sym ab)
+      nth-differ (j ∷ js) (hj ∷ ps) {suc p} {suc q} pq ea eb =
+        nth-differ js ps (λ e → pq (≡-cong suc e)) ea eb
+
+      map-nth-distinct : ∀ {ps} → All (λ p → Σ (V B) (λ z → nth? p vs ≡ just z)) ps →
+                         AllPairs _≢_ ps →
+                         AllPairs _≢_ (map (λ p → M.nth 0 p (Tabulation.numbers T)) ps)
+      map-nth-distinct []                   []          = []
+      map-nth-distinct (_∷_ {p} (z , e) sj) (hp ∷ dps) =
+        AllP.map⁺ (heads sj hp) ∷ map-nth-distinct sj dps
+        where
+        heads : ∀ {qs} → All (λ q → Σ (V B) (λ z' → nth? q vs ≡ just z')) qs → All (p ≢_) qs →
+                All (λ q → M.nth 0 p (Tabulation.numbers T) ≢ M.nth 0 q (Tabulation.numbers T)) qs
+        heads []                      []         = []
+        heads (_∷_ {q} (z' , e') sj') (ne ∷ nes) =
+          (λ eq → nth-differ (Tabulation.numbers T) (R .numbers-distinct) ne
+                             (nth?-num e) (nth?-num e')
+                             (≡-trans (≡-sym (num-at e)) (≡-trans eq (num-at e'))))
+          ∷ heads sj' nes
+
+      avoid : ∀ {ps ws'} → PosOf ps ws' → {p : ℕ} {x : V B} → nth? p vs ≡ just x →
+              ¬ (x ∈ ws') → All (λ q → (p ≡ᵇ q) ≡ false) ps
+      avoid []                _  _  = []
+      avoid (_∷_ {q} {w} e P) {p} hp nx =
+        ≡ᵇ-false p q (λ pq →
+          nx (here (just-inj (≡-trans (≡-sym (subst (λ r → nth? r vs ≡ just _) pq hp)) e))))
+        ∷ avoid P hp (λ h → nx (there h))
+
+    ∈-remaining : {x : V B} → x ∈ vs → ¬ (x ∈ ws) → x ∈ remaining
+    ∈-remaining {x} mx nw with ∈-nth? mx
+    ... | (p , hp) =
+      ∈-mapMaybe (∈-filterᵇ (λ p' → not (any (p' ≡ᵇ_) HG.hid-pos)) up-mem surv) hp
+      where
+      up-mem : p ∈ upTo (length (Tabulation.widths T))
+      up-mem = subst (λ n → p ∈ upTo n) (≡-sym len-eq)
+                     (<-applyUpTo (λ i → i) (nth?-length p vs hp))
+      surv : not (any (p ≡ᵇ_) HG.hid-pos) ≡ true
+      surv = ≡-cong not (all-any-false (p ≡ᵇ_) HG.hid-pos (avoid (pos-of ws ws-mem) hp nw))
+
+    hide-rep : Represents (TB.hide-graph ε-dec (map (index-of B) ws)) remaining
+               (hide-all (vertex-object B) G ws)
+    hide-rep .numbers-eq       = nums-eq survivors-just
+    hide-rep .widths-eq        = wids-eq survivors-just
+    hide-rep .numbers-distinct =
+      map-nth-distinct survivors-just
+                       (filterᵇ-AllPairs (λ p → not (any (p ≡ᵇ_) HG.hid-pos))
+                                         (upTo-distinct (length (Tabulation.widths T))))
+    hide-rep .slots {a'} {b'} {x} {y} ha' hb'
+      with at-extract survivors-just
+                      (subst (λ l → nth? a' l ≡ just x) (mapMaybe-just survivors-just) ha')
+         | at-extract survivors-just
+                      (subst (λ l → nth? b' l ≡ just y) (mapMaybe-just survivors-just) hb')
+    ... | (pa , spa , hpa) | (pb , spb , hpb) =
+      subst (λ w → Prf (table-morphism B x y w ≈ hide-all (vertex-object B) G ws x y))
+            (≡-sym slot-eq)
+            ⟪ ≈-trans (keep-rep x y (TB.through pa pb (TB.summaries 0 pa [] HG.hid-pos)))
+                      (Prf.prf (hidden-rep pa pb hpa hpb)) ⟫
+      where
+      acc₀ = TB.summaries 0 pa [] HG.hid-pos
+
+      slot-eq : table-at (TB.hide-graph ε-dec (map (index-of B) ws)) a' b'
+                ≡ HG.keep (TB.through pa pb acc₀)
+      slot-eq =
+        ≡-trans (≡-cong (M.nth nothing b')
+                        (nth?-nth [] a' (map HG.row HG.survivors)
+                                  (nth?-map HG.row a' HG.survivors spa)))
+                (nth?-nth nothing b'
+                          (map (λ b → HG.keep (TB.through pa b acc₀)) HG.survivors)
+                          (nth?-map (λ b → HG.keep (TB.through pa b acc₀)) b' HG.survivors spb))
 
 private
   distrib-root : ∀ {W N K L : Semimodule} (P : N ⇒ W) (Xm : K ⇒ N) (Ym : L ⇒ N) (Zm : K ⇒ L) →
