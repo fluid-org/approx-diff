@@ -1,6 +1,6 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
-open import Data.Bool using (Bool; true; false; not; if_then_else_)
+open import Data.Bool using (Bool; true; false; not; _∨_; if_then_else_)
 open import Data.Empty using (⊥; ⊥-elim)
 open import Data.Fin using (Fin; toℕ; zero; suc)
 open import Data.List using (List; []; _∷_; _++_; map; mapMaybe; foldl; filterᵇ; length; upTo; applyUpTo)
@@ -928,17 +928,20 @@ read-table T i j with table-at T i j
 ... | just t  = t
 ... | nothing = zero-table (M.nth 0 j (T .widths)) (M.nth 0 i (T .widths))
 
-mask : (ℕ → ℕ → Bool) → Tabulation → Tabulation
-mask keep T .Tabulation.numbers = Tabulation.numbers T
-mask keep T .Tabulation.widths  = T .widths
-mask keep T .Tabulation.edges   = rows (Tabulation.numbers T) (T .edges)
+restrict : List ℕ → Tabulation → Tabulation
+restrict region T .Tabulation.numbers = Tabulation.numbers T
+restrict region T .Tabulation.widths  = T .widths
+restrict region T .Tabulation.edges   = rows (Tabulation.numbers T) (T .edges)
   where
-  slots : ℕ → List ℕ → List (Maybe M.Table) → List (Maybe M.Table)
-  slots n (m ∷ ms) (s ∷ ss) = (if keep n m then s else nothing) ∷ slots n ms ss
-  slots n _        _        = []
+  member : ℕ → Bool
+  member n = any (n ≡ᵇ_) region
+
+  slots : Bool → List ℕ → List (Maybe M.Table) → List (Maybe M.Table)
+  slots keep-row (m ∷ ms) (s ∷ ss) = (if keep-row ∨ member m then s else nothing) ∷ slots keep-row ms ss
+  slots keep-row _        _        = []
 
   rows : List ℕ → List (List (Maybe M.Table)) → List (List (Maybe M.Table))
-  rows (n ∷ ns) (r ∷ rs) = slots n (Tabulation.numbers T) r ∷ rows ns rs
+  rows (n ∷ ns) (r ∷ rs) = slots (member n) (Tabulation.numbers T) r ∷ rows ns rs
   rows _        _        = []
 
 module _ {m : ℕ} {D : Derivation} (B : Graph m D) where
@@ -2147,40 +2150,40 @@ module Ruleₛ {m n : ℕ} where
           input-col (inj₂ _) = ≈-refl {f = εₘ}
 
         -- The remaining relation read at the vertices of the rest, whose root is the rule's own.
-        restrict : EdgeLabels (vertex-object whole) → EdgeLabels (vertex-object rest)
-        restrict G (inj₁ _)            (inj₁ _)            = G (inj₁ input) (inj₁ input)
-        restrict G (inj₁ _)            (inj₂ ε)            = G (inj₁ input) er
-        restrict G (inj₁ _)            (inj₂ (into j q))   = G (inj₁ input) (bt (into j q))
-        restrict G (inj₂ ε)            (inj₁ _)            = G er (inj₁ input)
-        restrict G (inj₂ ε)            (inj₂ ε)            = G er er
-        restrict G (inj₂ ε)            (inj₂ (into j q))   = G er (bt (into j q))
-        restrict G (inj₂ (into i p))   (inj₁ _)            = G (bt (into i p)) (inj₁ input)
-        restrict G (inj₂ (into i p))   (inj₂ ε)            = G (bt (into i p)) er
-        restrict G (inj₂ (into i p))   (inj₂ (into j q))   = G (bt (into i p)) (bt (into j q))
+        onto-rest : EdgeLabels (vertex-object whole) → EdgeLabels (vertex-object rest)
+        onto-rest G (inj₁ _)            (inj₁ _)            = G (inj₁ input) (inj₁ input)
+        onto-rest G (inj₁ _)            (inj₂ ε)            = G (inj₁ input) er
+        onto-rest G (inj₁ _)            (inj₂ (into j q))   = G (inj₁ input) (bt (into j q))
+        onto-rest G (inj₂ ε)            (inj₁ _)            = G er (inj₁ input)
+        onto-rest G (inj₂ ε)            (inj₂ ε)            = G er er
+        onto-rest G (inj₂ ε)            (inj₂ (into j q))   = G er (bt (into j q))
+        onto-rest G (inj₂ (into i p))   (inj₁ _)            = G (bt (into i p)) (inj₁ input)
+        onto-rest G (inj₂ (into i p))   (inj₂ ε)            = G (bt (into i p)) er
+        onto-rest G (inj₂ (into i p))   (inj₂ (into j q))   = G (bt (into i p)) (bt (into j q))
 
-        restrict-hide : ∀ G {s} (i : Ds ∋ s) (w : Path s) →
-                        restrict (hide (vertex-object whole) G (bt (into i w))) ≐
-                        hide (vertex-object rest) (restrict G) (inj₂ (into i w))
-        restrict-hide G i w (inj₁ _)          (inj₁ _)          = ≈-refl
-        restrict-hide G i w (inj₁ _)          (inj₂ ε)          = ≈-refl
-        restrict-hide G i w (inj₁ _)          (inj₂ (into _ _)) = ≈-refl
-        restrict-hide G i w (inj₂ ε)          (inj₁ _)          = ≈-refl
-        restrict-hide G i w (inj₂ ε)          (inj₂ ε)          = ≈-refl
-        restrict-hide G i w (inj₂ ε)          (inj₂ (into _ _)) = ≈-refl
-        restrict-hide G i w (inj₂ (into _ _)) (inj₁ _)          = ≈-refl
-        restrict-hide G i w (inj₂ (into _ _)) (inj₂ ε)          = ≈-refl
-        restrict-hide G i w (inj₂ (into _ _)) (inj₂ (into _ _)) = ≈-refl
+        onto-rest-hide : ∀ G {s} (i : Ds ∋ s) (w : Path s) →
+                        onto-rest (hide (vertex-object whole) G (bt (into i w))) ≐
+                        hide (vertex-object rest) (onto-rest G) (inj₂ (into i w))
+        onto-rest-hide G i w (inj₁ _)          (inj₁ _)          = ≈-refl
+        onto-rest-hide G i w (inj₁ _)          (inj₂ ε)          = ≈-refl
+        onto-rest-hide G i w (inj₁ _)          (inj₂ (into _ _)) = ≈-refl
+        onto-rest-hide G i w (inj₂ ε)          (inj₁ _)          = ≈-refl
+        onto-rest-hide G i w (inj₂ ε)          (inj₂ ε)          = ≈-refl
+        onto-rest-hide G i w (inj₂ ε)          (inj₂ (into _ _)) = ≈-refl
+        onto-rest-hide G i w (inj₂ (into _ _)) (inj₁ _)          = ≈-refl
+        onto-rest-hide G i w (inj₂ (into _ _)) (inj₂ ε)          = ≈-refl
+        onto-rest-hide G i w (inj₂ (into _ _)) (inj₂ (into _ _)) = ≈-refl
 
-        restrict-hide-all : ∀ G ws → All (_≢ ε) ws →
-                            restrict (hide-all (vertex-object whole) G (map bt ws)) ≐
-                            hide-all (vertex-object rest) (restrict G) (map inj₂ ws)
-        restrict-hide-all G []              _          x y = ≈-refl
-        restrict-hide-all G (ε ∷ ws)        (ne ∷ _)   x y = ⊥-elimₚ (ne ≡-refl)
-        restrict-hide-all G (into i w ∷ ws) (_ ∷ hs)   x y =
-          ≈-trans (restrict-hide-all (hide (vertex-object whole) G (bt (into i w))) ws hs x y)
-                  (hide-all-cong (vertex-object rest) (map inj₂ ws) (restrict-hide G i w) x y)
+        onto-rest-hide-all : ∀ G ws → All (_≢ ε) ws →
+                            onto-rest (hide-all (vertex-object whole) G (map bt ws)) ≐
+                            hide-all (vertex-object rest) (onto-rest G) (map inj₂ ws)
+        onto-rest-hide-all G []              _          x y = ≈-refl
+        onto-rest-hide-all G (ε ∷ ws)        (ne ∷ _)   x y = ⊥-elimₚ (ne ≡-refl)
+        onto-rest-hide-all G (into i w ∷ ws) (_ ∷ hs)   x y =
+          ≈-trans (onto-rest-hide-all (hide (vertex-object whole) G (bt (into i w))) ws hs x y)
+                  (hide-all-cong (vertex-object rest) (map inj₂ ws) (onto-rest-hide G i w) x y)
 
-        agree-rest : restrict hidden₁.G ≐ edge-labels rest
+        agree-rest : onto-rest hidden₁.G ≐ edge-labels rest
         agree-rest (inj₁ _)          (inj₁ _)          = source₁ (inj₁ input)
         agree-rest (inj₁ _)          (inj₂ (into j q)) =
           ≈-trans (done₁ .S₁.tgt-ok (into j q))
@@ -2214,7 +2217,7 @@ module Ruleₛ {m n : ℕ} where
       reduce : collapse whole ≈ collapse rest
       reduce =
         ≈-trans (≡-to-≈ plumb)
-        (≈-trans (restrict-hide-all hidden₁.G psᵣ (vertices-result-first-no-ε (node n fo-output Ds))
+        (≈-trans (onto-rest-hide-all hidden₁.G psᵣ (vertices-result-first-no-ε (node n fo-output Ds))
                                     (inj₁ input) (inj₂ ε))
                  (hide-all-cong (vertex-object rest) (map inj₂ psᵣ) agree-rest
                                 (inj₁ input) (inj₂ ε)))

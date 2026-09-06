@@ -66,7 +66,7 @@ module interaction.moves {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A)
   (≡-of-≈ : ∀ {x y} → x S.≈ y → x ≡ y)
   (ε? : (x : S.Carrier) → Dec (x ≡ S.ε)) where
 
-open import interaction.graph S +-idem
+open import interaction.graph S +-idem renaming (restrict to restrict-tabulation)
 open import matrix-embedding S using (𝔽; mat; mat-cong; mat-ε; 𝔽F-full)
 open import prop using (Prf; ⟪_⟫; ∃ₛ) renaming (_∧_ to _∧ₚ_; _,_ to _,ₚ_; proj₁ to proj₁ₚ; proj₂ to proj₂ₚ)
 open import categories using (Category)
@@ -319,16 +319,10 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
   -- forward; masking before hiding keeps direct boundary edges out of the summary.
   tabulated-summary : (tick : {A : Set} → String → A → A) → Tabulation → Summary
   tabulated-summary tick F C =
-    TabulatedHide.hide-graph (mask keep F) tick ε? region
+    TabulatedHide.hide-graph (restrict-tabulation region F) tick ε? region
     where
     region : List ℕ
     region = map (λ p → index-of 𝒢 (at p)) (sort C)
-
-    member : ℕ → Bool
-    member n = any (n ≡ᵇ_) region
-
-    keep : ℕ → ℕ → Bool
-    keep n m = member n ∨ member m
 
   adjacent-sym : (G : EdgeLabels (vertex-object 𝒢)) {x y : V 𝒢} → Adjacent G x y → Adjacent G y x
   adjacent-sym G = [ inj₂ , inj₁ ]′
