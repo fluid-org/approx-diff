@@ -21,12 +21,13 @@ import example.render.value-labels
 import example.runs
 import interaction.evaluated
 import interaction.graph
+import interaction.moves
 import matrix
 import semiring-sign as sign
 import signature.example.interpretation
 import three
 open import semiring-Q using (nonzero)
-open import commutative-semiring-product using (_⊗S_; ⊗-idem; ⊗-ε?)
+open import commutative-semiring-product using (_⊗S_; ⊗-idem; ⊗-ε?; ⊗-≡-of-≈)
 open import signature.example.interpretation (nonzero three.semiring) three.semiring
   using (Sig; interpretation)
 open import interaction.graph three.semiring (λ x → three.∨-idem {x})
@@ -173,21 +174,21 @@ private
       open evaluated.Evaluated (runs.env runs.score-run) (runs.term runs.score-run)
         using (D; dependence; value)
 
-      signed-H : graph.Tabulation
-      signed-H = graph.TabulatedHide.hide-graph
-                   (graph.tabulation dependence signed-ε? (λ _ x → x)) (λ _ x → x) signed-ε?
-                   (map Nat.suc (upTo (length (graph.vertices D))))
+      module smoves = interaction.moves (sign.semiring ⊗S three.semiring)
+                        (⊗-idem sign.semiring three.semiring sign.+ˢ-idem (λ x → three.∨-idem {x}))
+                        (⊗-≡-of-≈ sign.semiring three.semiring sign.≡-of-≈ three.≡-of-≈)
+                        signed-ε?
+
+      fo-tab = smoves.fo-tabulation dependence (λ _ x → x)
+      fo = graph.read-edge dependence fo-tab
+      summarise = smoves.tabulated-summary dependence (λ _ x → x) fo-tab
+      module I = smoves.Interaction dependence fo
 
       score-rows : mat.Table
       score-rows = drop-ctrl (mat.look {graph.vertex-width dependence (inj₂ graph.ε)}
                                        {graph.vertex-width dependence (inj₁ graph.input)}
-                     (go (graph.position signed-H 0)
-                         (graph.position signed-H (Nat.suc (length (graph.vertices D))))))
+                     (I.visible-table fo-tab (I.initial summarise) (inj₁ graph.input) (inj₂ graph.ε)))
         where
-        go : Maybe ℕ → Maybe ℕ → mat.Table
-        go (just p) (just q) = graph.read-table signed-H p q
-        go _        _        = []
-
         drop-ctrl : ∀ {m n} → mat.Matrix m (Nat.suc n) → mat.Table
         drop-ctrl R = toList (tabulate (λ q → toList (tabulate (λ p → R q (suc p)))))
 
