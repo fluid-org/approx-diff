@@ -914,11 +914,19 @@ position T i = scan 0 (Tabulation.numbers T)
 table-at : Tabulation → ℕ → ℕ → Maybe M.Table
 table-at T i j = M.nth nothing j (M.nth [] i (T .edges))
 
+zero-table : ℕ → ℕ → M.Table
+zero-table r c = map (λ _ → map (λ _ → Semiring.ε) (upTo c)) (upTo r)
+
+add-table : ℕ → ℕ → M.Table → M.Table → M.Table
+add-table r c t u =
+  map (λ i → map (λ j → M.nth Semiring.ε j (M.nth [] i t) Semiring.+ M.nth Semiring.ε j (M.nth [] i u))
+             (upTo c))
+      (upTo r)
+
 read-table : Tabulation → ℕ → ℕ → M.Table
 read-table T i j with table-at T i j
 ... | just t  = t
-... | nothing = map (λ _ → map (λ _ → Semiring.ε) (upTo (M.nth 0 i (T .widths))))
-                    (upTo (M.nth 0 j (T .widths)))
+... | nothing = zero-table (M.nth 0 j (T .widths)) (M.nth 0 i (T .widths))
 
 mask : (ℕ → ℕ → Bool) → Tabulation → Tabulation
 mask keep T .Tabulation.numbers = Tabulation.numbers T
@@ -961,12 +969,6 @@ module TabulatedHide (T : Tabulation) (tick : {A : Set} → String → A → A) 
     sum []       = Semiring.ε
     sum (x ∷ xs) = x Semiring.+ sum xs
 
-    add : ℕ → ℕ → M.Table → M.Table → M.Table
-    add r c t u =
-      map (λ i → map (λ j → M.nth Semiring.ε j (M.nth [] i t) Semiring.+ M.nth Semiring.ε j (M.nth [] i u))
-                     (upTo c))
-          (upTo r)
-
     mul : ℕ → ℕ → ℕ → M.Table → M.Table → M.Table
     mul r k c t u =
       map (λ i → map (λ j → sum (map (λ l → M.nth Semiring.ε l (M.nth [] i t) Semiring.·
@@ -978,7 +980,7 @@ module TabulatedHide (T : Tabulation) (tick : {A : Set} → String → A → A) 
     add? : ℕ → ℕ → Maybe M.Table → Maybe M.Table → Maybe M.Table
     add? r c nothing  u        = u
     add? r c t        nothing  = t
-    add? r c (just t) (just u) = just (add r c t u)
+    add? r c (just t) (just u) = just (add-table r c t u)
 
   through : (a v : ℕ) → List (ℕ × M.Table) → Maybe M.Table
   through a v []             = edge a v

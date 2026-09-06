@@ -103,9 +103,6 @@ module render-eval {Γ τ} (γ : Env Γ) (t : Γ ⊢ τ) where
     node-line : ℕ × ℕ × V dependence → String
     node-line (i , _ , x) = "  n" ++ ℕ-Show.show i ++ " [shape=box, fontsize=11, label=\"" ++ label-of x ++ "\"];\n"
 
-    T : Tabulation
-    T = tabulation dependence three.ε? (λ _ x → x)
-
   dot-at : Config dependence → String
   dot-at K = "digraph G {\n  rankdir=LR;\n" ++ cat (map node-line nvs) ++ edge-lines (rows nvs) ++ "}\n"
     where
@@ -116,26 +113,13 @@ module render-eval {Γ τ} (γ : Env Γ) (t : Γ ⊢ τ) where
     nvs : List (ℕ × ℕ × V dependence)
     nvs = enumerate 0 endpoints
 
-    hid : List ℕ
-    hid = map proj₁ (filterᵇ (λ iq → not ⌊ proj₂ iq ∈? K .visible ⌋) (enumerate 1 (vertices D)))
-
-    H : Tabulation
-    H = TabulatedHide.hide-graph T (λ _ x → x) three.ε? hid
-
-    visible-edge : ℕ → ℕ → M3.Table
-    visible-edge a b = go (position H a) (position H b)
-      where
-      go : Maybe ℕ → Maybe ℕ → M3.Table
-      go (just p) (just q) = read-table H p q
-      go _        _        = []
-
     rows : List (ℕ × ℕ × V dependence) → List Edge
     rows []                 = []
     rows ((i , gx , x) ∷ is) = cols nvs ++L rows is
       where
       cols : List (ℕ × ℕ × V dependence) → List Edge
       cols []                 = []
-      cols ((j , gy , y) ∷ js) = keep i j (visible-edge gx gy) ++L cols js
+      cols ((j , gy , y) ∷ js) = keep i j (visible-table fo-tab K x y) ++L cols js
 
   full : Config dependence
   full = foldl (λ K p → reveal-at summarise p K) (initial summarise) (FO dependence)

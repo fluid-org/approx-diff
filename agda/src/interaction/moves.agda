@@ -21,6 +21,7 @@ open import Data.List.Relation.Unary.AllPairs as AllPairs using (AllPairs; []; _
 open import Data.List.Relation.Unary.Any using (Any; any?; here; there; tail) renaming (map to Any-map)
 open import Data.Bool using (Bool; _∨_)
 open import Data.Bool.ListAction using (any)
+open import Data.Maybe using (Maybe; just; nothing)
 open import Data.Nat using (ℕ; _≤_; z≤n; s≤s; _≡ᵇ_)
 open import Data.Nat.ListAction using (sum)
 open import Data.Product using (Σ; _×_; _,_; proj₁; proj₂)
@@ -230,6 +231,26 @@ module Interaction {m : ℕ} {D : Derivation} (B : Graph m D)
           (when (¬? (x ∈ᵥ? hs) ×-dec ¬? (y ∈ᵥ? hs)) (fo-labels x y))
           (map (λ CH → read-edge B (proj₂ CH) x y) (K .hidden))
     where hs = hidden-set K
+
+  -- F must be the graph fo-labels reads.
+  visible-table : Tabulation → Config B → (x y : V B) → M.Table
+  visible-table F K x y =
+    foldr (add-table (vertex-width B y) (vertex-width B x)) base
+          (map (λ CH → region-table (proj₂ CH)) (K .hidden))
+    where
+    hs = hidden-set K
+
+    region-table : Tabulation → M.Table
+    region-table T = go (position T (index-of B x)) (position T (index-of B y))
+      where
+      go : Maybe ℕ → Maybe ℕ → M.Table
+      go (just p) (just q) = read-table T p q
+      go _        _        = zero-table (vertex-width B y) (vertex-width B x)
+
+    base : M.Table
+    base with ¬? (x ∈ᵥ? hs) ×-dec ¬? (y ∈ᵥ? hs)
+    ... | yes _ = region-table F
+    ... | no  _ = zero-table (vertex-width B y) (vertex-width B x)
 
   hide-at : Summary → Path D → Config B → Config B
   hide-at summarise p K .visible = filter (p ≢?_) (K .visible)

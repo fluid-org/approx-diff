@@ -57,25 +57,18 @@ private
       i-labels = env-labels (env r)
       o-labels = val-labels 0 value
 
-      T = tabulation dependence three.ε? (λ _ x → x)
-
-      H = TabulatedHide.hide-graph T (λ _ x → x) three.ε? (map Nat.suc (upTo (length (vertices D))))
-
-      collapsed : M3.Table
-      collapsed = go (position H 0) (position H (Nat.suc (length (vertices D))))
-        where
-        go : Maybe ℕ → Maybe ℕ → M3.Table
-        go (just p) (just q) = read-table H p q
-        go _        _        = []
+      fo-tab = fo-tabulation dependence (λ _ x → x)
+      fo = read-edge dependence fo-tab
+      summarise = tabulated-summary dependence (λ _ x → x) fo-tab
+      module I = Interaction dependence fo
 
       -- Dependence matrix of the degenerate configuration.
-      R = M3.look {vertex-width dependence (inj₂ ε)} {vertex-width dependence (inj₁ input)} collapsed
+      R = M3.look {vertex-width dependence (inj₂ ε)} {vertex-width dependence (inj₁ input)}
+            (I.visible-table fo-tab (I.initial summarise) (inj₁ input) (inj₂ ε))
 
       -- Control column of the environment vertex dropped.
       drop-ctrl : ∀ {m n} → M3.Matrix m (Nat.suc n) → M3.Matrix m n
       drop-ctrl M q p = M q (suc p)
-
-      open Interaction dependence (fo-graph dependence) using (entry)
 
       wd : V dependence → ℕ
       wd = vertex-width dependence
@@ -110,17 +103,13 @@ private
              List (String × String)
     tables ps nm name = at-config (foldr (I.reveal-at summarise) (I.initial summarise) ps)
       where
-      fo-tab = fo-tabulation dependence (λ _ x → x)
-      fo = read-edge dependence fo-tab
-      summarise = tabulated-summary dependence (λ _ x → x) fo-tab
-      module I = Interaction dependence fo
       at-config : Config dependence → List (String × String)
       at-config K = concat (map (λ u → concat (map (edge u) endpoints)) endpoints)
         where
         endpoints : List (V dependence)
         endpoints = inj₁ input ∷ (map inj₂ (K .visible) ++ₗ (inj₂ ε ∷ []))
         edge : V dependence → V dependence → List (String × String)
-        edge u v = emit (presented u v (entry u v (I.visible-graph K u v)))
+        edge u v = emit (presented u v (M3.look {wd v} {wd u} (I.visible-table fo-tab K u v)))
           where
           emit : M3.Matrix (wd v) (pwd u) → List (String × String)
           emit M with NonZero? M

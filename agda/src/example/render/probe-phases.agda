@@ -50,7 +50,9 @@ private
 
   open Evaluated (env filter-sum-run) (term filter-sum-run)
 
-  fo = fo-edges dependence (λ _ x → x)
+  fo-tab = fo-tabulation dependence (λ _ x → x)
+
+  fo = read-edge dependence fo-tab
 
   open Interaction dependence fo using (entry)
 
@@ -127,7 +129,7 @@ private
     where
     inner : V dependence → List (V dependence) → Three
     inner u []       = three.O
-    inner u (v ∷ vs) = join! (join (trace "extract" (IA.entry u v (IA.visible-graph K u v)))) (inner u vs)
+    inner u (v ∷ vs) = join! (join-table (IA.visible-table fo-tab K u v)) (inner u vs)
 
     outer : List (V dependence) → Three
     outer []       = three.O
