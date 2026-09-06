@@ -6,12 +6,16 @@ open import Data.Fin using (Fin; toℕ; zero; suc)
 open import Data.List using (List; []; _∷_; _++_; map; mapMaybe; foldl; filterᵇ; length; upTo; applyUpTo)
 open import Data.Bool.ListAction using (any)
 open import Data.List.Properties using (++-identityʳ; map-++; map-∘; foldl-++)
-open import Data.List.Relation.Unary.All using (All; []; _∷_; universal) renaming (map to All-map)
+open import Data.List.Relation.Unary.All using (All; []; _∷_; universal)
+  renaming (map to All-map; lookup to All-lookup)
 open import Data.List.Relation.Unary.AllPairs using (AllPairs; []; _∷_) renaming (map to AllPairs-map)
+open import Data.List.Relation.Unary.Any using (here; there)
+open import Data.List.Membership.Propositional using (_∈_)
 import Data.List.Relation.Unary.All.Properties as AllP
 import Data.List.Relation.Unary.AllPairs.Properties as AllPairsP
-open import Data.Nat using (ℕ; zero; suc; _≡ᵇ_)
-open import Data.Product using (_×_; _,_)
+open import Data.Nat using (ℕ; zero; suc; _≡ᵇ_; _+_)
+open import Data.Nat.Properties using (+-suc; +-identityʳ; <⇒≢)
+open import Data.Product using (Σ; _×_; _,_)
 open import Data.Maybe using (Maybe; just; nothing)
 open import Data.Sum using (_⊎_; inj₁; inj₂; [_,_])
 open import Data.Vec using (toList; tabulate)
@@ -24,7 +28,7 @@ open import Data.Unit using (tt) renaming (⊤ to Unit)
 open import Relation.Binary
   using (DecidableEquality; StrictTotalOrder; IsStrictTotalOrder; IsStrictPartialOrder;
          Trichotomous; Tri; tri<; tri≈; tri>)
-open import Relation.Binary.PropositionalEquality using (_≡_; _≢_; subst₂; isEquivalence)
+open import Relation.Binary.PropositionalEquality using (_≡_; _≢_; subst; subst₂; isEquivalence)
   renaming (refl to ≡-refl; sym to ≡-sym; trans to ≡-trans; cong to ≡-cong; cong₂ to ≡-cong₂)
 open import Relation.Nullary.Decidable using (Dec; yes; no; ⌊_⌋)
 import Data.Sum.Properties as SumP
@@ -52,7 +56,7 @@ open import categories using (Category)
 open Category SemiMod.cat
   using (_⇒_; _∘_; _≈_; ∘-cong; ∘-cong₁; ∘-cong₂; assoc; id-left; id-right; ≈-refl; ≈-sym; ≈-trans; ≡-to-≈)
 open import cmon-enriched using (CMonEnriched; Biproduct)
-open import matrix-embedding S using (𝔽; 𝔽F-full; mat; mat-cong; mat-comp; mat-+)
+open import matrix-embedding S using (𝔽; 𝔽F-full; mat; mat-cong; mat-comp; mat-+; mat-ε)
 private
   module CM = CMonEnriched SemiMod.cmon-enriched
   module M = matrix.Mat S
@@ -839,26 +843,25 @@ module _ {m : ℕ} {D : Derivation} (B : Graph m D)
          (ε-dec : (x : Semiring.Carrier) → Dec (x ≡ Semiring.ε))
          (tick : {A : Set} → String → A → A) where
 
-  private
-    edge : (u v : V B) → M.Table
-    edge u v = tick "edge" (M.to-table (∃ₛ.fst (𝔽F-full (edge-labels B u v))))
+  edge-table : (u v : V B) → M.Table
+  edge-table u v = tick "edge" (M.to-table (∃ₛ.fst (𝔽F-full (edge-labels B u v))))
 
-    nonzero : Semiring.Carrier → Bool
-    nonzero x = not ⌊ ε-dec x ⌋
+  nonzero-entry : Semiring.Carrier → Bool
+  nonzero-entry x = not ⌊ ε-dec x ⌋
 
-    nonzero-table : M.Table → Bool
-    nonzero-table = any (any nonzero)
+  nonzero-slot : M.Table → Bool
+  nonzero-slot = any (any nonzero-entry)
 
-    slot : M.Table → Maybe M.Table
-    slot t = if nonzero-table t then just t else nothing
+  edge-slot : M.Table → Maybe M.Table
+  edge-slot t = if nonzero-slot t then just t else nothing
 
-    row : V B → List (Maybe M.Table)
-    row x = map (λ y → slot (edge x y)) (all-vertices B)
+  edge-row : V B → List (Maybe M.Table)
+  edge-row x = map (λ y → edge-slot (edge-table x y)) (all-vertices B)
 
   tabulation : Tabulation
   tabulation .Tabulation.numbers = upTo (length (all-vertices B))
   tabulation .Tabulation.widths   = map (vertex-width B) (all-vertices B)
-  tabulation .Tabulation.edges    = map row (all-vertices B)
+  tabulation .Tabulation.edges    = map edge-row (all-vertices B)
 
 find-number : ℕ → ℕ → List ℕ → Maybe ℕ
 find-number i k []       = nothing
@@ -902,14 +905,16 @@ restrict region T .Tabulation.edges   = rows (Tabulation.numbers T) (T .edges)
 
 module _ {m : ℕ} {D : Derivation} (B : Graph m D) where
 
+  table-morphism : (x y : V B) → Maybe M.Table → vertex-object B x ⇒ vertex-object B y
+  table-morphism x y (just t) = mat (M.look {vertex-width B y} {vertex-width B x} t)
+  table-morphism x y nothing  = εₘ
+
+  read-slot : Tabulation → (x y : V B) → Maybe ℕ → Maybe ℕ → vertex-object B x ⇒ vertex-object B y
+  read-slot T x y (just a) (just b) = table-morphism x y (table-at T a b)
+  read-slot T x y _        _        = εₘ
+
   read-edge : Tabulation → (x y : V B) → vertex-object B x ⇒ vertex-object B y
-  read-edge T x y = go (position T (index-of B x)) (position T (index-of B y))
-    where
-    go : Maybe ℕ → Maybe ℕ → vertex-object B x ⇒ vertex-object B y
-    go (just p) (just q) with table-at T p q
-    ... | just t  = mat (M.look {vertex-width B y} {vertex-width B x} t)
-    ... | nothing = εₘ
-    go _ _ = εₘ
+  read-edge T x y = read-slot T x y (position T (index-of B x)) (position T (index-of B y))
 
 -- Hiding over a tabulation, with the hidden vertices listed so that every nonzero edge among
 -- them runs forward.
@@ -990,6 +995,226 @@ module Tabulated (T : Tabulation) (tick : {A : Set} → String → A → A) wher
 
   hide-graph : ((x : Semiring.Carrier) → Dec (x ≡ Semiring.ε)) → List ℕ → Tabulation
   hide-graph ε-dec hid = HideGraph.result ε-dec hid
+
+private
+  nth? : {C : Set} → ℕ → List C → Maybe C
+  nth? _       []       = nothing
+  nth? zero    (x ∷ _)  = just x
+  nth? (suc n) (_ ∷ xs) = nth? n xs
+
+  nth?-map : {C C' : Set} (f : C → C') (p : ℕ) (xs : List C) {x : C} →
+             nth? p xs ≡ just x → nth? p (map f xs) ≡ just (f x)
+  nth?-map f zero    (_ ∷ _)  ≡-refl = ≡-refl
+  nth?-map f (suc p) (_ ∷ xs) h      = nth?-map f p xs h
+
+  nth?-nth : {C : Set} (d : C) (p : ℕ) (xs : List C) {x : C} →
+             nth? p xs ≡ just x → M.nth d p xs ≡ x
+  nth?-nth d zero    (_ ∷ _)  ≡-refl = ≡-refl
+  nth?-nth d (suc p) (_ ∷ xs) h      = nth?-nth d p xs h
+
+  nth?-∈ : {C : Set} {p : ℕ} {xs : List C} {x : C} → nth? p xs ≡ just x → x ∈ xs
+  nth?-∈ {p = zero}  {_ ∷ _} ≡-refl = here ≡-refl
+  nth?-∈ {p = suc p} {_ ∷ _} h      = there (nth?-∈ {p = p} h)
+
+  ∈-nth? : {C : Set} {x : C} {xs : List C} → x ∈ xs → Σ ℕ (λ p → nth? p xs ≡ just x)
+  ∈-nth? (here ≡-refl) = 0 , ≡-refl
+  ∈-nth? (there h) with ∈-nth? h
+  ... | (p , e) = suc p , e
+
+  nth-All : {C : Set} {P : C → Set} (d : C) (n : ℕ) {xs : List C} → P d → All P xs → P (M.nth d n xs)
+  nth-All d n       pd []        = pd
+  nth-All d zero    pd (px ∷ _)  = px
+  nth-All d (suc n) pd (_ ∷ ps)  = nth-All d n pd ps
+
+  ≡ᵇ-refl : (n : ℕ) → (n ≡ᵇ n) ≡ true
+  ≡ᵇ-refl zero    = ≡-refl
+  ≡ᵇ-refl (suc n) = ≡ᵇ-refl n
+
+  ≡ᵇ-false : (i j : ℕ) → i ≢ j → (i ≡ᵇ j) ≡ false
+  ≡ᵇ-false zero    zero    ne = ⊥-elim (ne ≡-refl)
+  ≡ᵇ-false zero    (suc j) ne = ≡-refl
+  ≡ᵇ-false (suc i) zero    ne = ≡-refl
+  ≡ᵇ-false (suc i) (suc j) ne = ≡ᵇ-false i j (λ e → ne (≡-cong suc e))
+
+  find-hit : (i k : ℕ) {p : ℕ} (js : List ℕ) → AllPairs _≢_ js → nth? p js ≡ just i →
+             find-number i k js ≡ just (k + p)
+  find-hit i k {zero}  (_ ∷ js) _         ≡-refl rewrite ≡ᵇ-refl i = ≡-cong just (≡-sym (+-identityʳ k))
+  find-hit i k {suc p} (j ∷ js) (hj ∷ ps) h
+    rewrite ≡ᵇ-false i j (λ e → All-lookup hj (nth?-∈ {p = p} h) (≡-sym e)) =
+    ≡-trans (find-hit i (suc k) {p} js ps h) (≡-cong just (≡-sym (+-suc k p)))
+
+  applyUpTo-≡ : {C : Set} (f g : ℕ → C) (n : ℕ) → ((i : ℕ) → f i ≡ g i) →
+                applyUpTo f n ≡ applyUpTo g n
+  applyUpTo-≡ f g zero    e = ≡-refl
+  applyUpTo-≡ f g (suc n) e =
+    ≡-cong₂ _∷_ (e 0) (applyUpTo-≡ (λ i → f (suc i)) (λ i → g (suc i)) n (λ i → e (suc i)))
+
+  map-≡ : {C C' : Set} {f g : C → C'} {xs : List C} → All (λ x → f x ≡ g x) xs → map f xs ≡ map g xs
+  map-≡ []       = ≡-refl
+  map-≡ (e ∷ es) = ≡-cong₂ _∷_ e (map-≡ es)
+
+  true≢false : true ≡ false → ⊥
+  true≢false ()
+
+  ∨-false : {a b : Bool} → (a ∨ b) ≡ false → (a ≡ false) × (b ≡ false)
+  ∨-false {false} e = ≡-refl , e
+  ∨-false {true}  e = ⊥-elim (true≢false e)
+
+  any-false : {C : Set} (f : C → Bool) (xs : List C) → any f xs ≡ false →
+              All (λ x → f x ≡ false) xs
+  any-false f []       _ = []
+  any-false f (x ∷ xs) e with ∨-false {f x} e
+  ... | (e₁ , e₂) = e₁ ∷ any-false f xs e₂
+
+  dec-just : {P : Set} (d : Dec P) → ⌊ d ⌋ ≡ true → P
+  dec-just (yes p) _  = p
+  dec-just (no _)  ()
+
+  not-false : {b : Bool} → not b ≡ false → b ≡ true
+  not-false {true}  _  = ≡-refl
+  not-false {false} ()
+
+  nth-tabulate : {C : Set} (d : C) {k : ℕ} (f : Fin k → C) (i : Fin k) →
+                 M.nth d (toℕ i) (toList (tabulate f)) ≡ f i
+  nth-tabulate d f zero    = ≡-refl
+  nth-tabulate d f (suc i) = nth-tabulate d (λ k → f (suc k)) i
+
+  look-to-table : ∀ {r c} (R : M.Matrix r c) (i : Fin r) (j : Fin c) →
+                  M.look (M.to-table R) i j ≡ R i j
+  look-to-table R i j =
+    ≡-trans (≡-cong (M.nth Semiring.ε (toℕ j)) (nth-tabulate [] _ i)) (nth-tabulate Semiring.ε _ j)
+
+-- A tabulation represents a graph at a vertex list when its numbers and widths read off that list
+-- and every slot's morphism is the graph's edge.
+module _ {m : ℕ} {D : Derivation} (B : Graph m D) where
+
+  private
+    ≈-of-≡ : ∀ {x y : Semiring.Carrier} → x ≡ y → x Semiring.≈ y
+    ≈-of-≡ ≡-refl = Semiring.refl
+
+  record Represents (T : Tabulation) (vs : List (V B)) (G : EdgeLabels (vertex-object B)) : Set where
+    field
+      numbers-eq       : Tabulation.numbers T ≡ map (index-of B) vs
+      widths-eq        : T .widths ≡ map (vertex-width B) vs
+      numbers-distinct : AllPairs _≢_ (Tabulation.numbers T)
+      slots            : ∀ {a b : ℕ} {x y : V B} → nth? a vs ≡ just x → nth? b vs ≡ just y →
+                         Prf (table-morphism B x y (table-at T a b) ≈ G x y)
+
+  open Represents public
+
+  locate : {T : Tabulation} {vs : List (V B)} {G : EdgeLabels (vertex-object B)} →
+           Represents T vs G → {p : ℕ} {x : V B} → nth? p vs ≡ just x →
+           position T (index-of B x) ≡ just p
+  locate {T} {vs} R {p} {x} h =
+    subst (λ ns → find-number (index-of B x) 0 ns ≡ just p) (≡-sym (R .numbers-eq))
+          (find-hit (index-of B x) 0 {p} (map (index-of B) vs)
+                    (subst (AllPairs _≢_) (R .numbers-eq) (R .numbers-distinct))
+                    (nth?-map (index-of B) p vs h))
+
+  read-edge-rep : {T : Tabulation} {vs : List (V B)} {G : EdgeLabels (vertex-object B)} →
+                  Represents T vs G → {x y : V B} → x ∈ vs → y ∈ vs →
+                  read-edge B T x y ≈ G x y
+  read-edge-rep {T} {vs} {G} R {x} {y} mx my with ∈-nth? mx | ∈-nth? my
+  ... | (p , hp) | (q , hq) =
+    ≈-trans (≡-to-≈ (≡-cong₂ (λ u v → read-slot B T x y u v) (locate R hp) (locate R hq)))
+            (Prf.prf (R .slots hp hq))
+
+  private
+    eqv : DecidableEquality (V B)
+    eqv = SumP.≡-dec input-≟ (_≟_ {D})
+
+    ⌊⌋-refl : (x : V B) → ⌊ eqv x x ⌋ ≡ true
+    ⌊⌋-refl x with eqv x x
+    ... | yes _  = ≡-refl
+    ... | no  ne = ⊥-elim (ne ≡-refl)
+
+    ⌊⌋-false : {x y : V B} → x ≢ y → ⌊ eqv x y ⌋ ≡ false
+    ⌊⌋-false {x} {y} ne with eqv x y
+    ... | yes e = ⊥-elim (ne e)
+    ... | no  _ = ≡-refl
+
+    all-distinct : AllPairs _≢_ (all-vertices B)
+    all-distinct = head-≢ ∷ tail-distinct
+      where
+      head-≢ : All (inj₁ input ≢_) (map inj₂ (vertices D) ++ (inj₂ ε ∷ []))
+      head-≢ = AllP.++⁺ (AllP.map⁺ (universal (λ _ ()) (vertices D))) ((λ ()) ∷ [])
+
+      tail-distinct : AllPairs _≢_ (map inj₂ (vertices D) ++ (inj₂ ε ∷ []))
+      tail-distinct =
+        subst (AllPairs _≢_) (map-++ inj₂ (vertices D) (ε ∷ []))
+              (AllPairsP.map⁺ (AllPairs-map (λ h e → h (SumP.inj₂-injective e)) (distinct-one D)))
+
+    find-self : (xs : List (V B)) → AllPairs _≢_ xs → (k : ℕ) →
+                map (λ x → find-vertex B x k xs) xs ≡ applyUpTo (λ i → k + i) (length xs)
+    find-self []       []        k = ≡-refl
+    find-self (x ∷ xs) (hx ∷ ps) k =
+      ≡-cong₂ _∷_ head-eq
+        (≡-trans (map-≡ (All-map skip hx))
+        (≡-trans (find-self xs ps (suc k))
+                 (applyUpTo-≡ (λ i → suc k + i) (λ i → k + suc i) (length xs)
+                              (λ i → ≡-sym (+-suc k i)))))
+      where
+      head-eq : find-vertex B x k (x ∷ xs) ≡ k + 0
+      head-eq = ≡-trans (≡-cong (λ b → if b then k else find-vertex B x (suc k) xs) (⌊⌋-refl x))
+                        (≡-sym (+-identityʳ k))
+
+      skip : ∀ {y} → x ≢ y → find-vertex B y k (x ∷ xs) ≡ find-vertex B y (suc k) xs
+      skip {y} ne =
+        ≡-cong (λ b → if b then k else find-vertex B y (suc k) xs) (⌊⌋-false (λ e → ne (≡-sym e)))
+
+    numbers-self : upTo (length (all-vertices B)) ≡ map (index-of B) (all-vertices B)
+    numbers-self = ≡-sym (find-self (all-vertices B) all-distinct 0)
+
+    upTo-distinct : (n : ℕ) → AllPairs _≢_ (upTo n)
+    upTo-distinct n = AllPairsP.applyUpTo⁺₁ _ n (λ i<j _ → <⇒≢ i<j)
+
+  tabulation-rep : (ε-dec : (x : Semiring.Carrier) → Dec (x ≡ Semiring.ε)) →
+                   Represents (tabulation B ε-dec (λ _ x → x)) (all-vertices B) (edge-labels B)
+  tabulation-rep ε-dec .numbers-eq       = numbers-self
+  tabulation-rep ε-dec .widths-eq        = ≡-refl
+  tabulation-rep ε-dec .numbers-distinct = upTo-distinct (length (all-vertices B))
+  tabulation-rep ε-dec .slots {a} {b} {x} {y} ha hb =
+    subst (λ w → Prf (table-morphism B x y w ≈ edge-labels B x y)) (≡-sym table-eq) at-slot
+    where
+    idt : {C : Set} → String → C → C
+    idt _ c = c
+
+    R = ∃ₛ.fst (𝔽F-full (edge-labels B x y))
+
+    table-eq : table-at (tabulation B ε-dec idt) a b
+               ≡ edge-slot B ε-dec idt (edge-table B ε-dec idt x y)
+    table-eq =
+      ≡-trans (≡-cong (M.nth nothing b)
+                      (nth?-nth [] a (map (edge-row B ε-dec idt) (all-vertices B))
+                                (nth?-map (edge-row B ε-dec idt) a (all-vertices B) ha)))
+              (nth?-nth nothing b
+                        (map (λ y' → edge-slot B ε-dec idt (edge-table B ε-dec idt x y'))
+                             (all-vertices B))
+                        (nth?-map (λ y' → edge-slot B ε-dec idt (edge-table B ε-dec idt x y'))
+                                  b (all-vertices B) hb))
+
+    at-slot : Prf (table-morphism B x y (edge-slot B ε-dec idt (edge-table B ε-dec idt x y))
+                   ≈ edge-labels B x y)
+    at-slot with nonzero-slot B ε-dec idt (edge-table B ε-dec idt x y) in nz
+    ... | true  =
+      ⟪ ≈-trans (mat-cong (λ i j → ≈-of-≡ (look-to-table R i j)))
+                (∃ₛ.snd (𝔽F-full (edge-labels B x y))) ⟫
+    ... | false = ⟪ ≈-sym zero-case ⟫
+      where
+      all-ε : All (All (λ e → e ≡ Semiring.ε)) (M.to-table R)
+      all-ε = All-map (λ rf → All-map (λ ef → dec-just (ε-dec _) (not-false ef)) (any-false _ _ rf))
+                      (any-false _ (M.to-table R) nz)
+
+      entry-ε : ∀ i j → R i j ≡ Semiring.ε
+      entry-ε i j =
+        ≡-trans (≡-sym (look-to-table R i j))
+                (nth-All [] (toℕ i) ≡-refl
+                         (All-map (λ rz → nth-All Semiring.ε (toℕ j) ≡-refl rz) all-ε))
+
+      zero-case : edge-labels B x y ≈ εₘ
+      zero-case =
+        ≈-trans (≈-sym (∃ₛ.snd (𝔽F-full (edge-labels B x y))))
+                (≈-trans (mat-cong (λ i j → ≈-of-≡ (entry-ε i j))) mat-ε)
 
 private
   distrib-root : ∀ {W N K L : Semimodule} (P : N ⇒ W) (Xm : K ⇒ N) (Ym : L ⇒ N) (Zm : K ⇒ L) →
