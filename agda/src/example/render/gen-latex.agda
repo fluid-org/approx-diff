@@ -1,7 +1,7 @@
 {-# OPTIONS --prop --postfix-projections --guardedness #-}
 
 -- Run from approx-diff repository root.
-module example.render.latex where
+module example.render.gen-latex where
 
 open import IO
 open import IO.Finite using (writeFile)

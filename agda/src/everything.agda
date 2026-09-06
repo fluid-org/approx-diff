@@ -29,5 +29,5 @@ import interaction.labelling
 import interaction.moves
 
 -- Tests.
-import example.render.latex
-import example.render.dep-graph
+import example.render.gen-latex
+import example.render.gen-dot

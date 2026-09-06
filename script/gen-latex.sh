@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Compile the example.render.latex program and run it; the binary writes one file per table
+# Compile the example.render.gen-latex program and run it; the binary writes one file per table
 # under test-baselines/matrices via Agda IO.
 
 set -euo pipefail
@@ -21,13 +21,13 @@ trap 'rm -f "$pidfile"' EXIT
 # iteration builds at some cost to the binary's speed.
 ( cd agda && agda --compile --compile-dir=_build --ghc-flag=-rtsopts \
     --ghc-flag=-j10 ${DUMP_FAST:+--ghc-flag=-O0} \
-    src/example/render/latex.agda > "$log" 2>&1 )
+    src/example/render/gen-latex.agda > "$log" 2>&1 )
 t1=$SECONDS
 status=0
-GHCRTS="${DUMP_GHCRTS:--M12G -s}" agda/_build/latex || status=$?
+GHCRTS="${DUMP_GHCRTS:--M12G -s}" agda/_build/gen-latex || status=$?
 t2=$SECONDS
 if [ -z "${DUMP_FAST:-}" ]; then
-  line="$(date '+%Y-%m-%d %H:%M') latex run $((t2-t1))s"
+  line="$(date '+%Y-%m-%d %H:%M') gen-latex run $((t2-t1))s"
   echo "$line" >> agda/_build/timings.log
   echo "$line" >&2
 fi
