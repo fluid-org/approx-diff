@@ -126,22 +126,22 @@ private
 -- A configuration: the visible set, and one pair per hidden region of a set of vertices and a
 -- graph. No invariant is imposed; that the pairs are the regions of the hidden set with their
 -- summaries is a property the moves preserve.
-record Config {m : ℕ} {D : Derivation} (B : Graph m D) : Set₁ where
+record Config {m : ℕ} {D : Derivation} (𝒢 : Graph m D) : Set₁ where
   field
     visible : List (Path D)
     hidden  : List (List (Path D) × Tabulation)
 
 open Config public
 
-module Interaction {m : ℕ} {D : Derivation} (B : Graph m D)
-                   (fo-labels : EdgeLabels (vertex-object B)) where
+module Interaction {m : ℕ} {D : Derivation} (𝒢 : Graph m D)
+                   (fo-labels : EdgeLabels (vertex-object 𝒢)) where
 
   private
-    wd : V B → ℕ
-    wd = vertex-width B
+    wd : V 𝒢 → ℕ
+    wd = vertex-width 𝒢
 
   private
-    at : Path D → V B
+    at : Path D → V 𝒢
     at p = inj₂ p
 
   open DecMem (_≟_ {D}) public using (_∈_; _∉_; _∈?_)
@@ -149,49 +149,49 @@ module Interaction {m : ℕ} {D : Derivation} (B : Graph m D)
   _≢?_ : (p q : Path D) → Dec (p ≢ q)
   p ≢? q = ¬? (_≟_ {D} p q)
 
-  entry : ∀ (x y : V B) → (vertex-object B x ⇒ vertex-object B y) → M.Matrix (wd y) (wd x)
+  entry : ∀ (x y : V 𝒢) → (vertex-object 𝒢 x ⇒ vertex-object 𝒢 y) → M.Matrix (wd y) (wd x)
   entry x y f = ∃ₛ.fst (𝔽F-full f)
 
-  entry-ε : ∀ (x y : V B) (f : vertex-object B x ⇒ vertex-object B y) →
+  entry-ε : ∀ (x y : V 𝒢) (f : vertex-object 𝒢 x ⇒ vertex-object 𝒢 y) →
             (∀ i j → entry x y f i j ≡ S.ε) → f ≈ εₘ
   entry-ε x y f h =
     ≈-trans (≈-sym (∃ₛ.snd (𝔽F-full f)))
     (≈-trans (mat-cong (λ i j → ≈-of-≡ (h i j))) mat-ε)
 
-  Adjacent : EdgeLabels (vertex-object B) → V B → V B → Set
+  Adjacent : EdgeLabels (vertex-object 𝒢) → V 𝒢 → V 𝒢 → Set
   Adjacent G x y = NonZero (entry x y (G x y)) ⊎ NonZero (entry y x (G y x))
 
-  Adjacent? : (G : EdgeLabels (vertex-object B)) (x y : V B) → Dec (Adjacent G x y)
+  Adjacent? : (G : EdgeLabels (vertex-object 𝒢)) (x y : V 𝒢) → Dec (Adjacent G x y)
   Adjacent? G x y = NonZero? (entry x y (G x y)) ⊎-dec NonZero? (entry y x (G y x))
 
-  AdjacentIn : EdgeLabels (vertex-object B) → Path D → List (Path D) → Set
+  AdjacentIn : EdgeLabels (vertex-object 𝒢) → Path D → List (Path D) → Set
   AdjacentIn G p C = Any (λ q → Adjacent G (at p) (at q)) C
 
-  adjacent-in? : (G : EdgeLabels (vertex-object B)) (p : Path D)
+  adjacent-in? : (G : EdgeLabels (vertex-object 𝒢)) (p : Path D)
                  (C : List (Path D)) → Dec (AdjacentIn G p C)
   adjacent-in? G p C = any? (λ q → Adjacent? G (at p) (at q)) C
 
-  adjacent-O : (G : EdgeLabels (vertex-object B)) (x y : V B) → ¬ Adjacent G x y →
+  adjacent-O : (G : EdgeLabels (vertex-object 𝒢)) (x y : V 𝒢) → ¬ Adjacent G x y →
                Prf ((G x y ≈ εₘ) ∧ₚ (G y x ≈ εₘ))
   adjacent-O G x y h =
     ⟪ entry-ε x y (G x y) (NonZero-O (entry x y (G x y)) (λ k → h (inj₁ k))) ,ₚ
       entry-ε y x (G y x) (NonZero-O (entry y x (G y x)) (λ k → h (inj₂ k))) ⟫
 
-  merge-region : EdgeLabels (vertex-object B) → Path D → List (List (Path D)) →
+  merge-region : EdgeLabels (vertex-object 𝒢) → Path D → List (List (Path D)) →
                  List (List (Path D))
   merge-region G w rss = (w ∷ concat (proj₁ tp)) ∷ proj₂ tp
     where tp = L.partition (adjacent-in? G w) rss
 
-  regions : EdgeLabels (vertex-object B) → List (Path D) → List (List (Path D))
+  regions : EdgeLabels (vertex-object 𝒢) → List (Path D) → List (List (Path D))
   regions G []       = []
   regions G (w ∷ ws) = merge-region G w (regions G ws)
 
   -- The inputs and the root are never hidden, so only an interior vertex can lie in a region.
-  VertexIn : V B → List (Path D) → Set
+  VertexIn : V 𝒢 → List (Path D) → Set
   VertexIn (inj₁ _) C = ⊥
   VertexIn (inj₂ p) C = p ∈ C
 
-  _∈ᵥ?_ : (z : V B) (C : List (Path D)) → Dec (VertexIn z C)
+  _∈ᵥ?_ : (z : V 𝒢) (C : List (Path D)) → Dec (VertexIn z C)
   inj₁ _        ∈ᵥ? C = no (λ ())
   inj₂ p ∈ᵥ? C = p ∈? C
 
@@ -202,101 +202,101 @@ module Interaction {m : ℕ} {D : Derivation} (B : Graph m D)
            (CH : List (Path D) × Tabulation) → Dec (Adj-p p CH)
   adj-p? p CH = adjacent-in? fo-labels p (proj₁ CH)
 
-  restrict : EdgeLabels (vertex-object B) → List (Path D) → EdgeLabels (vertex-object B)
+  restrict : EdgeLabels (vertex-object 𝒢) → List (Path D) → EdgeLabels (vertex-object 𝒢)
   restrict G C x y = when (x ∈ᵥ? C ⊎-dec y ∈ᵥ? C) (G x y)
 
   -- The summary of a hidden region: the dependence routed through it, as relations between the
   -- vertices adjacent to it. Restriction first, so direct edges between boundary vertices are not
   -- carried by the summary.
-  summary : List (Path D) → EdgeLabels (vertex-object B)
-  summary C = hide-all (vertex-object B) (restrict fo-labels C) (map at C)
+  summary : List (Path D) → EdgeLabels (vertex-object 𝒢)
+  summary C = hide-all (vertex-object 𝒢) (restrict fo-labels C) (map at C)
 
   Summary : Set
   Summary = List (Path D) → Tabulation
 
-  initial : Summary → Config B
+  initial : Summary → Config 𝒢
   initial summarise .visible = []
-  initial summarise .hidden  = map (λ C → C , summarise C) (regions fo-labels (FO B))
+  initial summarise .hidden  = map (λ C → C , summarise C) (regions fo-labels (FO 𝒢))
 
-  hidden-set : Config B → List (Path D)
+  hidden-set : Config 𝒢 → List (Path D)
   hidden-set K = concat (map proj₁ (K .hidden))
 
-  hidden-∈ : ∀ {p} (K : Config B) → p ∈ hidden-set K → Any (λ CH → p ∈ proj₁ CH) (K .hidden)
+  hidden-∈ : ∀ {p} (K : Config 𝒢) → p ∈ hidden-set K → Any (λ CH → p ∈ proj₁ CH) (K .hidden)
   hidden-∈ K h = AnyPr.map⁻ (∈-concat⁻ (map proj₁ (K .hidden)) h)
 
-  hidden-∉ : ∀ {p} (K : Config B) → p ∉ hidden-set K → All (λ CH → p ∉ proj₁ CH) (K .hidden)
+  hidden-∉ : ∀ {p} (K : Config 𝒢) → p ∉ hidden-set K → All (λ CH → p ∉ proj₁ CH) (K .hidden)
   hidden-∉ K h = All-tabulate (λ m k → h (∈-concat⁺′ k (∈-map⁺ proj₁ m)))
 
-  visible-graph : Config B → EdgeLabels (vertex-object B)
+  visible-graph : Config 𝒢 → EdgeLabels (vertex-object 𝒢)
   visible-graph K x y =
     foldr _+ₘ_
           (when (¬? (x ∈ᵥ? hs) ×-dec ¬? (y ∈ᵥ? hs)) (fo-labels x y))
-          (map (λ CH → read-edge B (proj₂ CH) x y) (K .hidden))
+          (map (λ CH → read-edge 𝒢 (proj₂ CH) x y) (K .hidden))
     where hs = hidden-set K
 
-  region-slot : Tabulation → (x y : V B) → Maybe ℕ → Maybe ℕ → M.Table
+  region-slot : Tabulation → (x y : V 𝒢) → Maybe ℕ → Maybe ℕ → M.Table
   region-slot T x y (just p) (just q) = read-table T p q
-  region-slot T x y _        _        = zero-table (vertex-width B y) (vertex-width B x)
+  region-slot T x y _        _        = zero-table (vertex-width 𝒢 y) (vertex-width 𝒢 x)
 
-  region-table : Tabulation → (x y : V B) → M.Table
-  region-table T x y = region-slot T x y (position T (index-of B x)) (position T (index-of B y))
+  region-table : Tabulation → (x y : V 𝒢) → M.Table
+  region-table T x y = region-slot T x y (position T (index-of 𝒢 x)) (position T (index-of 𝒢 y))
 
   -- F must be the graph fo-labels reads.
-  visible-table : Tabulation → Config B → (x y : V B) → M.Table
+  visible-table : Tabulation → Config 𝒢 → (x y : V 𝒢) → M.Table
   visible-table F K x y =
-    foldr (add-table (vertex-width B y) (vertex-width B x))
+    foldr (add-table (vertex-width 𝒢 y) (vertex-width 𝒢 x))
           (if ⌊ ¬? (x ∈ᵥ? hidden-set K) ×-dec ¬? (y ∈ᵥ? hidden-set K) ⌋
            then region-table F x y
-           else zero-table (vertex-width B y) (vertex-width B x))
+           else zero-table (vertex-width 𝒢 y) (vertex-width 𝒢 x))
           (map (λ CH → region-table (proj₂ CH) x y) (K .hidden))
 
-  region-table-rep : (T : Tabulation) (x y : V B) →
-                     mat (M.look {vertex-width B y} {vertex-width B x} (region-table T x y))
-                     ≈ read-edge B T x y
-  region-table-rep T x y with position T (index-of B x) | position T (index-of B y)
-  ... | just p  | just q  = read-table-rep B T x y p q
-  ... | just _  | nothing = zero-table-morphism B x y (vertex-width B y) (vertex-width B x)
-  ... | nothing | just _  = zero-table-morphism B x y (vertex-width B y) (vertex-width B x)
-  ... | nothing | nothing = zero-table-morphism B x y (vertex-width B y) (vertex-width B x)
+  region-table-rep : (T : Tabulation) (x y : V 𝒢) →
+                     mat (M.look {vertex-width 𝒢 y} {vertex-width 𝒢 x} (region-table T x y))
+                     ≈ read-edge 𝒢 T x y
+  region-table-rep T x y with position T (index-of 𝒢 x) | position T (index-of 𝒢 y)
+  ... | just p  | just q  = read-table-rep 𝒢 T x y p q
+  ... | just _  | nothing = zero-table-morphism 𝒢 x y (vertex-width 𝒢 y) (vertex-width 𝒢 x)
+  ... | nothing | just _  = zero-table-morphism 𝒢 x y (vertex-width 𝒢 y) (vertex-width 𝒢 x)
+  ... | nothing | nothing = zero-table-morphism 𝒢 x y (vertex-width 𝒢 y) (vertex-width 𝒢 x)
 
   -- The rendered table computes the matrix of the visible graph, provided F stores the graph
   -- fo-labels reads.
   visible-table-rep : (F : Tabulation) →
-                      ((x' y' : V B) → read-edge B F x' y' ≈ fo-labels x' y') →
-                      (K : Config B) (x y : V B) →
-                      mat (M.look {vertex-width B y} {vertex-width B x} (visible-table F K x y))
+                      ((x' y' : V 𝒢) → read-edge 𝒢 F x' y' ≈ fo-labels x' y') →
+                      (K : Config 𝒢) (x y : V 𝒢) →
+                      mat (M.look {vertex-width 𝒢 y} {vertex-width 𝒢 x} (visible-table F K x y))
                       ≈ visible-graph K x y
   visible-table-rep F F-reads K x y = fold-rep (K .hidden)
     where
     both? = ¬? (x ∈ᵥ? hidden-set K) ×-dec ¬? (y ∈ᵥ? hidden-set K)
     base' = if ⌊ both? ⌋ then region-table F x y
-            else zero-table (vertex-width B y) (vertex-width B x)
+            else zero-table (vertex-width 𝒢 y) (vertex-width 𝒢 x)
 
-    base-rep : mat (M.look {vertex-width B y} {vertex-width B x} base')
+    base-rep : mat (M.look {vertex-width 𝒢 y} {vertex-width 𝒢 x} base')
                ≈ when both? (fo-labels x y)
     base-rep with ¬? (x ∈ᵥ? hidden-set K) ×-dec ¬? (y ∈ᵥ? hidden-set K)
     ... | yes _ = ≈-trans (region-table-rep F x y) (F-reads x y)
-    ... | no  _ = zero-table-morphism B x y (vertex-width B y) (vertex-width B x)
+    ... | no  _ = zero-table-morphism 𝒢 x y (vertex-width 𝒢 y) (vertex-width 𝒢 x)
 
     fold-rep : (CHs : List (List (Path D) × Tabulation)) →
-               mat (M.look {vertex-width B y} {vertex-width B x}
-                    (foldr (add-table (vertex-width B y) (vertex-width B x)) base'
+               mat (M.look {vertex-width 𝒢 y} {vertex-width 𝒢 x}
+                    (foldr (add-table (vertex-width 𝒢 y) (vertex-width 𝒢 x)) base'
                            (map (λ CH → region-table (proj₂ CH) x y) CHs)))
                ≈ foldr _+ₘ_ (when both? (fo-labels x y))
-                            (map (λ CH → read-edge B (proj₂ CH) x y) CHs)
+                            (map (λ CH → read-edge 𝒢 (proj₂ CH) x y) CHs)
     fold-rep []         = base-rep
     fold-rep (CH ∷ CHs) =
       ≈-trans (mat-cong (λ i j → ≈-of-≡
                 (look-add (region-table (proj₂ CH) x y)
-                          (foldr (add-table (vertex-width B y) (vertex-width B x)) base'
+                          (foldr (add-table (vertex-width 𝒢 y) (vertex-width 𝒢 x)) base'
                                  (map (λ CH' → region-table (proj₂ CH') x y) CHs))
                           i j)))
       (≈-trans (mat-+ (M.look (region-table (proj₂ CH) x y))
-                      (M.look (foldr (add-table (vertex-width B y) (vertex-width B x)) base'
+                      (M.look (foldr (add-table (vertex-width 𝒢 y) (vertex-width 𝒢 x)) base'
                                      (map (λ CH' → region-table (proj₂ CH') x y) CHs))))
                (+ₘ-cong (region-table-rep (proj₂ CH) x y) (fold-rep CHs)))
 
-  hide-at : Summary → Path D → Config B → Config B
+  hide-at : Summary → Path D → Config 𝒢 → Config 𝒢
   hide-at summarise p K .visible = filter (p ≢?_) (K .visible)
   hide-at summarise p K .hidden  = (C , summarise C) ∷ proj₂ tp
     where
@@ -323,7 +323,7 @@ module Interaction {m : ℕ} {D : Derivation} (B : Graph m D)
   ... | yes k = ⊥-elim (h k)
   ... | no  _ = ≡-refl
 
-  reveal-at : Summary → Path D → Config B → Config B
+  reveal-at : Summary → Path D → Config 𝒢 → Config 𝒢
   reveal-at summarise p K .visible = p ∷ K .visible
   reveal-at summarise p K .hidden  = concat (map (split-region summarise p) (K .hidden))
 
