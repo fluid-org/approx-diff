@@ -34,7 +34,7 @@ open import Relation.Binary.PropositionalEquality using (_≡_; _≢_; subst; su
   renaming (refl to ≡-refl; sym to ≡-sym; trans to ≡-trans; cong to ≡-cong; cong₂ to ≡-cong₂)
 open import Relation.Nullary using (¬_)
 open import Relation.Unary.Properties using (∁?)
-open import Relation.Nullary.Decidable using (Dec; yes; no; ¬?; _⊎-dec_; _×-dec_)
+open import Relation.Nullary.Decidable using (Dec; yes; no; ¬?; ⌊_⌋; _⊎-dec_; _×-dec_)
 import Data.List.Relation.Binary.Permutation.Homogeneous as H
 import Data.List.Relation.Binary.Permutation.Propositional as ↭
 open ↭ using (_↭_; ↭-refl; ↭-sym; ↭-trans; ↭-reflexive)
@@ -69,7 +69,7 @@ module interaction.moves {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A)
   (ε? : (x : S.Carrier) → Dec (x ≡ S.ε)) where
 
 open import interaction.graph S +-idem renaming (restrict to restrict-tabulation)
-open import matrix-embedding S using (𝔽; mat; mat-cong; mat-ε; 𝔽F-full)
+open import matrix-embedding S using (𝔽; mat; mat-cong; mat-ε; mat-+; 𝔽F-full)
 open import prop using (Prf; ⟪_⟫; ∃ₛ) renaming (_∧_ to _∧ₚ_; _,_ to _,ₚ_; proj₁ to proj₁ₚ; proj₂ to proj₂ₚ)
 open import categories using (Category)
 open Category SemiMod.cat using (_⇒_; _∘_; _≈_; ≈-refl; ≈-sym; ≈-trans; ≡-to-≈)
@@ -234,25 +234,67 @@ module Interaction {m : ℕ} {D : Derivation} (B : Graph m D)
           (map (λ CH → read-edge B (proj₂ CH) x y) (K .hidden))
     where hs = hidden-set K
 
+  region-slot : Tabulation → (x y : V B) → Maybe ℕ → Maybe ℕ → M.Table
+  region-slot T x y (just p) (just q) = read-table T p q
+  region-slot T x y _        _        = zero-table (vertex-width B y) (vertex-width B x)
+
+  region-table : Tabulation → (x y : V B) → M.Table
+  region-table T x y = region-slot T x y (position T (index-of B x)) (position T (index-of B y))
+
   -- F must be the graph fo-labels reads.
   visible-table : Tabulation → Config B → (x y : V B) → M.Table
   visible-table F K x y =
-    foldr (add-table (vertex-width B y) (vertex-width B x)) base
-          (map (λ CH → region-table (proj₂ CH)) (K .hidden))
+    foldr (add-table (vertex-width B y) (vertex-width B x))
+          (if ⌊ ¬? (x ∈ᵥ? hidden-set K) ×-dec ¬? (y ∈ᵥ? hidden-set K) ⌋
+           then region-table F x y
+           else zero-table (vertex-width B y) (vertex-width B x))
+          (map (λ CH → region-table (proj₂ CH) x y) (K .hidden))
+
+  region-table-rep : (T : Tabulation) (x y : V B) →
+                     mat (M.look {vertex-width B y} {vertex-width B x} (region-table T x y))
+                     ≈ read-edge B T x y
+  region-table-rep T x y with position T (index-of B x) | position T (index-of B y)
+  ... | just p  | just q  = read-table-rep B T x y p q
+  ... | just _  | nothing = zero-table-morphism B x y (vertex-width B y) (vertex-width B x)
+  ... | nothing | just _  = zero-table-morphism B x y (vertex-width B y) (vertex-width B x)
+  ... | nothing | nothing = zero-table-morphism B x y (vertex-width B y) (vertex-width B x)
+
+  -- The rendered table computes the matrix of the visible graph, provided F stores the graph
+  -- fo-labels reads.
+  visible-table-rep : (F : Tabulation) →
+                      ((x' y' : V B) → read-edge B F x' y' ≈ fo-labels x' y') →
+                      (K : Config B) (x y : V B) →
+                      mat (M.look {vertex-width B y} {vertex-width B x} (visible-table F K x y))
+                      ≈ visible-graph K x y
+  visible-table-rep F F-reads K x y = fold-rep (K .hidden)
     where
-    hs = hidden-set K
+    both? = ¬? (x ∈ᵥ? hidden-set K) ×-dec ¬? (y ∈ᵥ? hidden-set K)
+    base' = if ⌊ both? ⌋ then region-table F x y
+            else zero-table (vertex-width B y) (vertex-width B x)
 
-    region-table : Tabulation → M.Table
-    region-table T = go (position T (index-of B x)) (position T (index-of B y))
-      where
-      go : Maybe ℕ → Maybe ℕ → M.Table
-      go (just p) (just q) = read-table T p q
-      go _        _        = zero-table (vertex-width B y) (vertex-width B x)
+    base-rep : mat (M.look {vertex-width B y} {vertex-width B x} base')
+               ≈ when both? (fo-labels x y)
+    base-rep with ¬? (x ∈ᵥ? hidden-set K) ×-dec ¬? (y ∈ᵥ? hidden-set K)
+    ... | yes _ = ≈-trans (region-table-rep F x y) (F-reads x y)
+    ... | no  _ = zero-table-morphism B x y (vertex-width B y) (vertex-width B x)
 
-    base : M.Table
-    base with ¬? (x ∈ᵥ? hs) ×-dec ¬? (y ∈ᵥ? hs)
-    ... | yes _ = region-table F
-    ... | no  _ = zero-table (vertex-width B y) (vertex-width B x)
+    fold-rep : (CHs : List (List (Path D) × Tabulation)) →
+               mat (M.look {vertex-width B y} {vertex-width B x}
+                    (foldr (add-table (vertex-width B y) (vertex-width B x)) base'
+                           (map (λ CH → region-table (proj₂ CH) x y) CHs)))
+               ≈ foldr _+ₘ_ (when both? (fo-labels x y))
+                            (map (λ CH → read-edge B (proj₂ CH) x y) CHs)
+    fold-rep []         = base-rep
+    fold-rep (CH ∷ CHs) =
+      ≈-trans (mat-cong (λ i j → ≈-of-≡
+                (look-add (region-table (proj₂ CH) x y)
+                          (foldr (add-table (vertex-width B y) (vertex-width B x)) base'
+                                 (map (λ CH' → region-table (proj₂ CH') x y) CHs))
+                          i j)))
+      (≈-trans (mat-+ (M.look (region-table (proj₂ CH) x y))
+                      (M.look (foldr (add-table (vertex-width B y) (vertex-width B x)) base'
+                                     (map (λ CH' → region-table (proj₂ CH') x y) CHs))))
+               (+ₘ-cong (region-table-rep (proj₂ CH) x y) (fold-rep CHs)))
 
   hide-at : Summary → Path D → Config B → Config B
   hide-at summarise p K .visible = filter (p ≢?_) (K .visible)

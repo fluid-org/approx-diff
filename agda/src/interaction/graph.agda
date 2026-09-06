@@ -1193,6 +1193,12 @@ private
   mask-row member all-ns (n ∷ ns) (r ∷ rs) zero    ≡-refl = ≡-refl
   mask-row member all-ns (n ∷ ns) (r ∷ rs) (suc a) ha = mask-row member all-ns ns rs a ha
 
+look-add : ∀ {r c} (t u : M.Table) (i : Fin r) (j : Fin c) →
+           M.look (add-table r c t u) i j ≡ (M.look t i j Semiring.+ M.look u i j)
+look-add t u i j =
+  ≡-trans (≡-cong (M.nth Semiring.ε (toℕ j)) (nth-applyUpTo [] _ (λ k → k) i))
+          (nth-applyUpTo Semiring.ε _ (λ k → k) j)
+
 -- A tabulation represents a graph at a vertex list when its numbers and widths read off that list
 -- and every slot's morphism is the graph's edge.
 module _ {m : ℕ} {D : Derivation} (B : Graph m D) where
@@ -1200,6 +1206,28 @@ module _ {m : ℕ} {D : Derivation} (B : Graph m D) where
   private
     ≈-of-≡ : ∀ {x y : Semiring.Carrier} → x ≡ y → x Semiring.≈ y
     ≈-of-≡ ≡-refl = Semiring.refl
+
+  zero-table-morphism : (x y : V B) (r c : ℕ) →
+                        mat (M.look {vertex-width B y} {vertex-width B x} (zero-table r c)) ≈ εₘ
+  zero-table-morphism x y r c =
+    ≈-trans (mat-cong (λ i j → ≈-of-≡ (entry i j))) mat-ε
+    where
+    entry : (i : Fin (vertex-width B y)) (j : Fin (vertex-width B x)) →
+            M.look (zero-table r c) i j ≡ Semiring.ε
+    entry i j =
+      nth-All {P = λ row → M.nth Semiring.ε (toℕ j) row ≡ Semiring.ε} [] (toℕ i) ≡-refl
+              (AllP.map⁺ (universal (λ _ →
+                 nth-All {P = λ e → e ≡ Semiring.ε} Semiring.ε (toℕ j) ≡-refl
+                         (AllP.map⁺ (universal (λ _ → ≡-refl) (upTo c))))
+                 (upTo r)))
+
+  read-table-rep : (T : Tabulation) (x y : V B) (p q : ℕ) →
+                   mat (M.look {vertex-width B y} {vertex-width B x} (read-table T p q))
+                   ≈ table-morphism B x y (table-at T p q)
+  read-table-rep T x y p q with table-at T p q
+  ... | just t  = ≈-refl
+  ... | nothing =
+    zero-table-morphism x y (M.nth 0 q (Tabulation.widths T)) (M.nth 0 p (Tabulation.widths T))
 
   record Represents (T : Tabulation) (vs : List (V B)) (G : EdgeLabels (vertex-object B)) : Set where
     field
@@ -1472,12 +1500,6 @@ module _ {m : ℕ} {D : Derivation} (B : Graph m D) where
                 (≡-trans (nth-applyUpTo Semiring.ε _ (λ k → k) j)
                          (sum-Σ (λ k → M.nth Semiring.ε k (M.nth [] (toℕ i) t) Semiring.·
                                        M.nth Semiring.ε (toℕ j) (M.nth [] k u)) {s} (λ k → k)))
-
-      look-add : ∀ {r c} (t u : M.Table) (i : Fin r) (j : Fin c) →
-                 M.look (add-table r c t u) i j ≡ (M.look t i j Semiring.+ M.look u i j)
-      look-add t u i j =
-        ≡-trans (≡-cong (M.nth Semiring.ε (toℕ j)) (nth-applyUpTo [] _ (λ k → k) i))
-                (nth-applyUpTo Semiring.ε _ (λ k → k) j)
 
       through-rep : (pa pb : ℕ) {x y : V B} → nth? pa vs ≡ just x → nth? pb vs ≡ just y →
                     (acc : List (ℕ × M.Table)) {us : List (V B)} {Ts : HB.Tables x us} →
