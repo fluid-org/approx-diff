@@ -134,6 +134,22 @@ width-at s q = out-width (deriv-at s q)
 fo-at : (s : Derivation) → Path s → Bool
 fo-at s q = out-fo (deriv-at s q)
 
+child : (ss : List Derivation) → ℕ → Maybe (Σ Derivation (ss ∋_))
+child []       _       = nothing
+child (s ∷ ss) zero    = just (s , here)
+child (s ∷ ss) (suc k) with child ss k
+... | just (s' , i) = just (s' , there i)
+... | nothing       = nothing
+
+-- The path through given premise positions, when each position exists.
+path-at : (s : Derivation) → List ℕ → Maybe (Path s)
+path-at s             []       = just ε
+path-at (node n b ss) (k ∷ ks) with child ss k
+... | nothing       = nothing
+... | just (s' , i) with path-at s' ks
+...   | nothing = nothing
+...   | just p  = just (into i p)
+
 object : (s : Derivation) → Path s → Semimodule
 object s q = 𝔽 (width-at s q)
 

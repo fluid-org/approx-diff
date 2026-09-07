@@ -5,7 +5,7 @@ module example.render.gen-dot where
 
 open import IO
 open import IO.Finite using (writeFile; putStrLn)
-open import Data.List using (List; []; _∷_; map; concat; foldl; filterᵇ; length)
+open import Data.List using (List; []; _∷_; map; mapMaybe; concat; foldl; foldr; filterᵇ; length)
   renaming (_++_ to _++L_)
 open import Data.List.Relation.Unary.All using ([]; _∷_)
 open import Data.Bool using (Bool; true; false; not; if_then_else_)
@@ -142,12 +142,12 @@ private
 
   module int-fig = render-eval γ-int t-int
 
-  sum-vertex : Path int-fig.D
-  sum-vertex = into here ε
+  sum-vertex : List ℕ
+  sum-vertex = 0 ∷ []
 
   int-dot : String
-  int-dot = int-fig.dot-at (int-fig.reveal-at int-fig.summarise sum-vertex
-              (int-fig.initial int-fig.summarise))
+  int-dot = int-fig.dot-at (foldr (int-fig.reveal-at int-fig.summarise)
+              (int-fig.initial int-fig.summarise) (mapMaybe (path-at int-fig.D) (sum-vertex ∷ [])))
 
 main : Main
 main = run (writeFile "dot/intermediate-three.dot" int-dot >>

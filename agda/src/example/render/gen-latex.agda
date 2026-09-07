@@ -6,7 +6,8 @@ module example.render.gen-latex where
 open import IO
 open import IO.Finite using (writeFile)
 open import Data.Fin using (suc)
-open import Data.List using (List; []; _∷_; map; foldr; concat; length; upTo) renaming (_++_ to _++ₗ_)
+open import Data.List using (List; []; _∷_; map; mapMaybe; foldr; concat; length; upTo)
+  renaming (_++_ to _++ₗ_)
 open import Data.Maybe using (Maybe; just; nothing)
 open import Data.Nat using (ℕ)
 import Data.Nat as Nat
@@ -101,9 +102,10 @@ private
 
     -- One table per nonzero visible-graph edge between the environment, the revealed vertices
     -- and the root.
-    tables : List (Path D) → (V dependence → String) → String →
+    tables : List (List ℕ) → (V dependence → String) → String →
              List (String × String)
-    tables ps nm name = at-config (foldr (I.reveal-at summarise) (I.initial summarise) ps)
+    tables ks nm name =
+      at-config (foldr (I.reveal-at summarise) (I.initial summarise) (mapMaybe (path-at D) ks))
       where
       at-config : Config dependence → List (String × String)
       at-config K = concat (map (λ u → concat (map (edge u) endpoints)) endpoints)
@@ -124,8 +126,8 @@ private
   module filter-sum-tables = render filter-sum-run
 
   -- Root of the application's argument premise: the filtered list between the comprehension and sum.
-  filtered-vertex : Path filter-sum-tables.D
-  filtered-vertex = into (there here) ε
+  filtered-vertex : List ℕ
+  filtered-vertex = 1 ∷ []
 
   filter-sum-name : V filter-sum-tables.dependence → String
   filter-sum-name (inj₁ _)          = "env"
@@ -134,8 +136,8 @@ private
 
   module add-mul-tables = render add-mul-run
 
-  sum-vertex : Path add-mul-tables.D
-  sum-vertex = into here ε
+  sum-vertex : List ℕ
+  sum-vertex = 0 ∷ []
 
   add-mul-name : V add-mul-tables.dependence → String
   add-mul-name (inj₁ _)          = "env"
@@ -144,8 +146,8 @@ private
 
   module case-inl-tables = render case-inl-run
 
-  scrutinee-vertex : Path case-inl-tables.D
-  scrutinee-vertex = into here ε
+  scrutinee-vertex : List ℕ
+  scrutinee-vertex = 0 ∷ []
 
   case-inl-name : V case-inl-tables.dependence → String
   case-inl-name (inj₁ _)          = "env"
