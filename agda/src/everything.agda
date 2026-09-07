@@ -3,6 +3,9 @@
 -- The results of the paper and the tests. A module outside this dependency chain isn't part of the development.
 module everything where
 
+-- Support of a term; embedding after strengthening recovers the term: embed-strengthen.
+import language-syntax.support
+
 -- Every value and environment is total: val-total, env-total. Existence half of the determinism theorem: eval.
 import language-operational.totality
 
