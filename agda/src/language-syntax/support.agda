@@ -4,53 +4,53 @@ open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong
 open import Data.List.Relation.Unary.All using ([]; _∷_) renaming (All to Every)
 open import signature using (Signature)
 
--- Support: the subcontext of entries a term mentions, as a mask over its context. Strengthening
--- retypes a term in any subcontext whose mask covers its support, and renaming along the mask's
--- embedding recovers the term: embed-strengthen.
+-- Support: the subcontext of entries a term mentions, presented as a thinning of its context.
+-- Strengthening retypes a term in any subcontext whose thinning covers its support, and renaming
+-- along the thinning's embedding recovers the term: embed-strengthen.
 module language-syntax.support {ℓ} (Sig : Signature ℓ) where
 
 open Signature Sig using (sort)
 open import language-syntax Sig
 
-data mask : ctxt → Set ℓ where
-  emp  : mask emp
-  keep : ∀ {Γ τ} → mask Γ → mask (Γ , τ)
-  drop : ∀ {Γ τ} → mask Γ → mask (Γ , τ)
+data thinning : ctxt → Set ℓ where
+  emp  : thinning emp
+  keep : ∀ {Γ τ} → thinning Γ → thinning (Γ , τ)
+  drop : ∀ {Γ τ} → thinning Γ → thinning (Γ , τ)
 
-restrict : ∀ {Γ} → mask Γ → ctxt
+restrict : ∀ {Γ} → thinning Γ → ctxt
 restrict emp              = emp
-restrict (keep {τ = τ} m) = restrict m , τ
-restrict (drop m)         = restrict m
+restrict (keep {τ = τ} θ) = restrict θ , τ
+restrict (drop θ)         = restrict θ
 
-embed : ∀ {Γ} (m : mask Γ) → Ren (restrict m) Γ
+embed : ∀ {Γ} (θ : thinning Γ) → Ren (restrict θ) Γ
 embed emp      ()
-embed (keep m) = ext (embed m)
-embed (drop m) x = succ (embed m x)
+embed (keep θ) = ext (embed θ)
+embed (drop θ) x = succ (embed θ x)
 
-none : ∀ {Γ} → mask Γ
+none : ∀ {Γ} → thinning Γ
 none {emp}   = emp
 none {Γ , τ} = drop none
 
-var-mask : ∀ {Γ τ} → Γ ∋ τ → mask Γ
-var-mask zero     = keep none
-var-mask (succ x) = drop (var-mask x)
+var-thinning : ∀ {Γ τ} → Γ ∋ τ → thinning Γ
+var-thinning zero     = keep none
+var-thinning (succ x) = drop (var-thinning x)
 
-tail : ∀ {Γ τ} → mask (Γ , τ) → mask Γ
-tail (keep m) = m
-tail (drop m) = m
+tail : ∀ {Γ τ} → thinning (Γ , τ) → thinning Γ
+tail (keep θ) = θ
+tail (drop θ) = θ
 
-_∪_ : ∀ {Γ} → mask Γ → mask Γ → mask Γ
+_∪_ : ∀ {Γ} → thinning Γ → thinning Γ → thinning Γ
 emp    ∪ emp     = emp
-keep m ∪ keep m' = keep (m ∪ m')
-keep m ∪ drop m' = keep (m ∪ m')
-drop m ∪ keep m' = keep (m ∪ m')
-drop m ∪ drop m' = drop (m ∪ m')
+keep θ ∪ keep θ' = keep (θ ∪ θ')
+keep θ ∪ drop θ' = keep (θ ∪ θ')
+drop θ ∪ keep θ' = keep (θ ∪ θ')
+drop θ ∪ drop θ' = drop (θ ∪ θ')
 
 infixl 40 _∪_
 
 mutual
-  support : ∀ {Γ τ} → Γ ⊢ τ → mask Γ
-  support (var x)        = var-mask x
+  support : ∀ {Γ τ} → Γ ⊢ τ → thinning Γ
+  support (var x)        = var-thinning x
   support unit           = none
   support (inl t)        = support t
   support (inr t)        = support t
@@ -65,62 +65,61 @@ mutual
   support (roll t)       = support t
   support (fold s t)     = tail (support s) ∪ support t
 
-  supports : ∀ {Γ σs} → Every (λ σ → Γ ⊢ base σ) σs → mask Γ
+  supports : ∀ {Γ σs} → Every (λ σ → Γ ⊢ base σ) σs → thinning Γ
   supports []       = none
   supports (t ∷ ts) = support t ∪ supports ts
 
-data _⊆_ : ∀ {Γ} → mask Γ → mask Γ → Set ℓ where
+data _⊆_ : ∀ {Γ} → thinning Γ → thinning Γ → Set ℓ where
   emp  : emp ⊆ emp
-  keep : ∀ {Γ τ} {m m' : mask Γ} → m ⊆ m' → keep {τ = τ} m ⊆ keep m'
-  drop : ∀ {Γ τ} {m m' : mask Γ} → m ⊆ m' → drop {τ = τ} m ⊆ drop m'
-  add  : ∀ {Γ τ} {m m' : mask Γ} → m ⊆ m' → drop {τ = τ} m ⊆ keep m'
+  keep : ∀ {Γ τ} {θ θ' : thinning Γ} → θ ⊆ θ' → keep {τ = τ} θ ⊆ keep θ'
+  drop : ∀ {Γ τ} {θ θ' : thinning Γ} → θ ⊆ θ' → drop {τ = τ} θ ⊆ drop θ'
+  add  : ∀ {Γ τ} {θ θ' : thinning Γ} → θ ⊆ θ' → drop {τ = τ} θ ⊆ keep θ'
 
 infix 4 _⊆_
 
-⊆-refl : ∀ {Γ} {m : mask Γ} → m ⊆ m
-⊆-refl {m = emp}    = emp
-⊆-refl {m = keep m} = keep ⊆-refl
-⊆-refl {m = drop m} = drop ⊆-refl
+⊆-refl : ∀ {Γ} {θ : thinning Γ} → θ ⊆ θ
+⊆-refl {θ = emp}    = emp
+⊆-refl {θ = keep θ} = keep ⊆-refl
+⊆-refl {θ = drop θ} = drop ⊆-refl
 
-⊆-trans : ∀ {Γ} {m m' m'' : mask Γ} → m ⊆ m' → m' ⊆ m'' → m ⊆ m''
+⊆-trans : ∀ {Γ} {θ θ' θ'' : thinning Γ} → θ ⊆ θ' → θ' ⊆ θ'' → θ ⊆ θ''
 ⊆-trans emp      emp       = emp
 ⊆-trans (keep h) (keep h') = keep (⊆-trans h h')
 ⊆-trans (drop h) (drop h') = drop (⊆-trans h h')
 ⊆-trans (drop h) (add h')  = add (⊆-trans h h')
 ⊆-trans (add h)  (keep h') = add (⊆-trans h h')
 
-∪-⊆₁ : ∀ {Γ} (m m' : mask Γ) → m ⊆ m ∪ m'
+∪-⊆₁ : ∀ {Γ} (θ θ' : thinning Γ) → θ ⊆ θ ∪ θ'
 ∪-⊆₁ emp      emp       = emp
-∪-⊆₁ (keep m) (keep m') = keep (∪-⊆₁ m m')
-∪-⊆₁ (keep m) (drop m') = keep (∪-⊆₁ m m')
-∪-⊆₁ (drop m) (keep m') = add (∪-⊆₁ m m')
-∪-⊆₁ (drop m) (drop m') = drop (∪-⊆₁ m m')
+∪-⊆₁ (keep θ) (keep θ') = keep (∪-⊆₁ θ θ')
+∪-⊆₁ (keep θ) (drop θ') = keep (∪-⊆₁ θ θ')
+∪-⊆₁ (drop θ) (keep θ') = add (∪-⊆₁ θ θ')
+∪-⊆₁ (drop θ) (drop θ') = drop (∪-⊆₁ θ θ')
 
-∪-⊆₂ : ∀ {Γ} (m m' : mask Γ) → m' ⊆ m ∪ m'
+∪-⊆₂ : ∀ {Γ} (θ θ' : thinning Γ) → θ' ⊆ θ ∪ θ'
 ∪-⊆₂ emp      emp       = emp
-∪-⊆₂ (keep m) (keep m') = keep (∪-⊆₂ m m')
-∪-⊆₂ (keep m) (drop m') = add (∪-⊆₂ m m')
-∪-⊆₂ (drop m) (keep m') = keep (∪-⊆₂ m m')
-∪-⊆₂ (drop m) (drop m') = drop (∪-⊆₂ m m')
+∪-⊆₂ (keep θ) (keep θ') = keep (∪-⊆₂ θ θ')
+∪-⊆₂ (keep θ) (drop θ') = add (∪-⊆₂ θ θ')
+∪-⊆₂ (drop θ) (keep θ') = keep (∪-⊆₂ θ θ')
+∪-⊆₂ (drop θ) (drop θ') = drop (∪-⊆₂ θ θ')
 
-∪-bound₁ : ∀ {Γ} {m₁ m₂ m : mask Γ} → m₁ ∪ m₂ ⊆ m → m₁ ⊆ m
+∪-bound₁ : ∀ {Γ} {θ₁ θ₂ θ : thinning Γ} → θ₁ ∪ θ₂ ⊆ θ → θ₁ ⊆ θ
 ∪-bound₁ = ⊆-trans (∪-⊆₁ _ _)
 
-∪-bound₂ : ∀ {Γ} {m₁ m₂ m : mask Γ} → m₁ ∪ m₂ ⊆ m → m₂ ⊆ m
+∪-bound₂ : ∀ {Γ} {θ₁ θ₂ θ : thinning Γ} → θ₁ ∪ θ₂ ⊆ θ → θ₂ ⊆ θ
 ∪-bound₂ = ⊆-trans (∪-⊆₂ _ _)
 
--- A binder body's mask is included in any mask that keeps the bound entry and covers its tail.
-keep-tail : ∀ {Γ τ} {m₀ : mask (Γ , τ)} {m : mask Γ} → tail m₀ ⊆ m → m₀ ⊆ keep m
-keep-tail {m₀ = keep m₀} h = keep h
-keep-tail {m₀ = drop m₀} h = add h
+keep-tail : ∀ {Γ τ} {θ₀ : thinning (Γ , τ)} {θ : thinning Γ} → tail θ₀ ⊆ θ → θ₀ ⊆ keep θ
+keep-tail {θ₀ = keep θ₀} h = keep h
+keep-tail {θ₀ = drop θ₀} h = add h
 
-strengthen-var : ∀ {Γ τ} (x : Γ ∋ τ) {m : mask Γ} → var-mask x ⊆ m → restrict m ∋ τ
+strengthen-var : ∀ {Γ τ} (x : Γ ∋ τ) {θ : thinning Γ} → var-thinning x ⊆ θ → restrict θ ∋ τ
 strengthen-var zero     (keep _) = zero
 strengthen-var (succ x) (add h)  = succ (strengthen-var x h)
 strengthen-var (succ x) (drop h) = strengthen-var x h
 
 mutual
-  strengthen : ∀ {Γ τ} (t : Γ ⊢ τ) {m : mask Γ} → support t ⊆ m → restrict m ⊢ τ
+  strengthen : ∀ {Γ τ} (t : Γ ⊢ τ) {θ : thinning Γ} → support t ⊆ θ → restrict θ ⊢ τ
   strengthen (var x)        h = var (strengthen-var x h)
   strengthen unit           h = unit
   strengthen (inl t)        h = inl (strengthen t h)
@@ -138,8 +137,8 @@ mutual
   strengthen (roll t)       h = roll (strengthen t h)
   strengthen (fold s t)     h = fold (strengthen s (keep-tail (∪-bound₁ h))) (strengthen t (∪-bound₂ h))
 
-  strengthens : ∀ {Γ σs} (ts : Every (λ σ → Γ ⊢ base σ) σs) {m : mask Γ} → supports ts ⊆ m →
-                Every (λ σ → restrict m ⊢ base σ) σs
+  strengthens : ∀ {Γ σs} (ts : Every (λ σ → Γ ⊢ base σ) σs) {θ : thinning Γ} → supports ts ⊆ θ →
+                Every (λ σ → restrict θ ⊢ base σ) σs
   strengthens []       h = []
   strengthens (t ∷ ts) h = strengthen t (∪-bound₁ h) ∷ strengthens ts (∪-bound₂ h)
 
@@ -148,14 +147,15 @@ private
           a ≡ a' → b ≡ b' → c ≡ c' → f a b c ≡ f a' b' c'
   cong₃ f refl refl refl = refl
 
-embed-var : ∀ {Γ τ} (x : Γ ∋ τ) {m : mask Γ} (h : var-mask x ⊆ m) → embed m (strengthen-var x h) ≡ x
+embed-var : ∀ {Γ τ} (x : Γ ∋ τ) {θ : thinning Γ} (h : var-thinning x ⊆ θ) →
+            embed θ (strengthen-var x h) ≡ x
 embed-var zero     (keep _) = refl
 embed-var (succ x) (add h)  = cong succ (embed-var x h)
 embed-var (succ x) (drop h) = cong succ (embed-var x h)
 
 mutual
-  embed-strengthen : ∀ {Γ τ} (t : Γ ⊢ τ) {m : mask Γ} (h : support t ⊆ m) →
-                     embed m * strengthen t h ≡ t
+  embed-strengthen : ∀ {Γ τ} (t : Γ ⊢ τ) {θ : thinning Γ} (h : support t ⊆ θ) →
+                     embed θ * strengthen t h ≡ t
   embed-strengthen (var x)        h = cong var (embed-var x h)
   embed-strengthen unit           h = refl
   embed-strengthen (inl t)        h = cong inl (embed-strengthen t h)
@@ -176,7 +176,7 @@ mutual
   embed-strengthen (fold s t)     h = cong₂ fold (embed-strengthen s (keep-tail (∪-bound₁ h)))
                                                  (embed-strengthen t (∪-bound₂ h))
 
-  embed-strengthens : ∀ {Γ σs} (ts : Every (λ σ → Γ ⊢ base σ) σs) {m : mask Γ} (h : supports ts ⊆ m) →
-                      embed m ** strengthens ts h ≡ ts
+  embed-strengthens : ∀ {Γ σs} (ts : Every (λ σ → Γ ⊢ base σ) σs) {θ : thinning Γ}
+                      (h : supports ts ⊆ θ) → embed θ ** strengthens ts h ≡ ts
   embed-strengthens []       h = refl
   embed-strengthens (t ∷ ts) h = cong₂ _∷_ (embed-strengthen t (∪-bound₁ h)) (embed-strengthens ts (∪-bound₂ h))
