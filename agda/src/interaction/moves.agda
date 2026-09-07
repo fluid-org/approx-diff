@@ -3,7 +3,7 @@
 open import Data.Bool.Properties using (T?)
 open import Data.Empty using (⊥; ⊥-elim)
 open import Data.Fin using (Fin)
-open import Data.List using (List; []; _∷_; _++_; allFin; length; map; filter; filterᵇ; concat; foldr)
+open import Data.List using (List; []; _∷_; _++_; allFin; length; map; mapMaybe; filter; filterᵇ; concat; foldr)
 import Data.List as L
 open import Data.List.Properties
   using (++-identityʳ; concat-++; concat-map; foldl-++; length-map; map-++; map-∘;
@@ -249,6 +249,18 @@ module Interaction {m : ℕ} {D : Derivation} (𝒢 : Graph m D)
            then region-table F x y
            else zero-table (vertex-width 𝒢 y) (vertex-width 𝒢 x))
           (map (λ CH → region-table (proj₂ CH) x y) (K .summaries))
+
+  -- The edges of the visible graph among labelled endpoints: the ordered pairs whose dependence
+  -- matrix is nonzero.
+  visible-edges : {A : Set} → Tabulation → Config 𝒢 → List (A × V 𝒢) →
+                  List ((A × V 𝒢) × (A × V 𝒢))
+  visible-edges {A} F K us = concat (map (λ u → mapMaybe (edge u) us) us)
+    where
+    edge : A × V 𝒢 → A × V 𝒢 → Maybe ((A × V 𝒢) × (A × V 𝒢))
+    edge u v with NonZero? (M.look {vertex-width 𝒢 (proj₂ v)} {vertex-width 𝒢 (proj₂ u)}
+                              (visible-table F K (proj₂ u) (proj₂ v)))
+    ... | yes _ = just (u , v)
+    ... | no  _ = nothing
 
   region-table-rep : (T : Tabulation) (x y : V 𝒢) →
                      mat (M.look {vertex-width 𝒢 y} {vertex-width 𝒢 x} (region-table T x y))

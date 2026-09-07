@@ -41,7 +41,7 @@ open import example.runs (nonzero three.semiring) three.semiring three.C
   using (Run; filter-sum-run; const-run; length-run; fold0-run; case0-run; tag-run; case-l-run;
          case-r-run; test-run; map-run; adjacent-sums-run; filter-run; cond-run; eq-run;
          mult-run; add-mul-run; case-inl-run; mavg-run; total-run; sum-mul-run; rose-run; score-run; env; term)
-open import example.render.table using (Label; none; sel-label; table; signed-table)
+open import example.render.table using (Label; Sel; none; sel-label; table; signed-table)
 open import example.render.value-labels (nonzero three.semiring) three.semiring three.C
   using (val-labels; env-labels)
 
@@ -50,6 +50,20 @@ private
 
   node-labels : ℕ → Node → List Label
   node-labels off (val v) = val-labels off v
+
+  data Presentation : Set where
+    matrices : Maybe ℕ → Maybe ℕ → Presentation
+    related  : Presentation
+
+  -- A test: a run, the vertices to reveal (each a name and premise positions), and how to present
+  -- the resulting visible graph. Emitted under key/<u>-<v> for each visible edge.
+  record Test : Set where
+    field
+      key     : String
+      title   : String
+      the-run : Run
+      reveals : List (String × List ℕ)
+      present : Presentation
 
   module render (r : Run) where
     open Evaluated (env r) (term r) public using (D; dependence)
@@ -89,70 +103,98 @@ private
       presented (inj₁ input) _ M = drop-ctrl M
       presented (inj₂ _)     _ M = M
 
-    plain : String → String
-    plain name = table name i-labels o-labels (M3.to-table (drop-ctrl R)) none none
+    -- One table per edge of the visible graph after the reveals, between the environment, the
+    -- revealed vertices and the root.
+    emit : String → String → List (String × List ℕ) → Presentation → List (String × String)
+    emit key title reveals (matrices si so) = mapMaybe edge-entry (I.visible-edges fo-tab K endpoints)
+      where
+      resolve : String × List ℕ → Maybe (String × Path D)
+      resolve (s , ks) with path-at D ks
+      ... | just p  = just (s , p)
+      ... | nothing = nothing
 
-    fwd bwd : String → ℕ → String
-    fwd name i = table name i-labels o-labels (M3.to-table (drop-ctrl R)) (sel-label i-labels i) none
-    bwd name i = table name i-labels o-labels (M3.to-table (drop-ctrl R)) none (sel-label o-labels i)
+      named : List (String × Path D)
+      named = mapMaybe resolve reveals
 
-    related-outputs : String → String
-    related-outputs name = table name o-labels o-labels (M3.to-table (rows M3.∘ (rows M3.ᵀ))) none none
+      K : Config dependence
+      K = foldr (I.reveal-at summarise) (I.initial summarise) (map proj₂ named)
+
+      endpoints : List (String × V dependence)
+      endpoints = ("env" , inj₁ input) ∷
+                  (map (λ sp → proj₁ sp , inj₂ (proj₂ sp)) named ++ₗ (("root" , inj₂ ε) ∷ []))
+
+      sel-here : List Label → Maybe ℕ → Sel
+      sel-here ls nothing  = none
+      sel-here ls (just i) = sel-label ls i
+
+      at-env : V dependence → Sel
+      at-env (inj₁ _) = sel-here i-labels si
+      at-env _        = none
+
+      at-root : V dependence → Sel
+      at-root (inj₂ ε) = sel-here o-labels so
+      at-root _        = none
+
+      -- An edge whose weight lies only in the dropped control column presents as an all-zero
+      -- table; suppressed.
+      edge-entry : (String × V dependence) × (String × V dependence) → Maybe (String × String)
+      edge-entry ((nu , u) , (nv , v)) with presented u v (M3.look {wd v} {wd u} (I.visible-table fo-tab K u v))
+      ... | M with NonZero? M
+      ...   | no  _ = nothing
+      ...   | yes _ = just
+        (key ++ "/" ++ nu ++ "-" ++ nv ,
+         table (title ++ " (" ++ nu ++ " to " ++ nv ++ ")") (vertex-labels u) (vertex-labels v)
+               (M3.to-table M) (at-env u) (at-root v))
+    emit key title reveals related =
+      (key ++ "/root-root" ,
+       table title o-labels o-labels (M3.to-table (rows M3.∘ (rows M3.ᵀ))) none none) ∷ []
       where rows = drop-ctrl R
 
-    -- One table per nonzero visible-graph edge between the environment, the revealed vertices
-    -- and the root.
-    tables : List (List ℕ) → (V dependence → String) → String →
-             List (String × String)
-    tables ks nm name =
-      at-config (foldr (I.reveal-at summarise) (I.initial summarise) (mapMaybe (path-at D) ks))
-      where
-      at-config : Config dependence → List (String × String)
-      at-config K = concat (map (λ u → concat (map (edge u) endpoints)) endpoints)
-        where
-        endpoints : List (V dependence)
-        endpoints = inj₁ input ∷ (map inj₂ (K .visible) ++ₗ (inj₂ ε ∷ []))
-        edge : V dependence → V dependence → List (String × String)
-        edge u v = emit (presented u v (M3.look {wd v} {wd u} (I.visible-table fo-tab K u v)))
-          where
-          emit : M3.Matrix (wd v) (pwd u) → List (String × String)
-          emit M with NonZero? M
-          ... | no  _ = []
-          ... | yes _ =
-            (name ++ "-" ++ nm u ++ "-" ++ nm v ,
-             table (name ++ " (" ++ nm u ++ " to " ++ nm v ++ ")") (vertex-labels u) (vertex-labels v)
-                   (M3.to-table M) none none) ∷ []
+  mk : String → String → Run → List (String × List ℕ) → Presentation → Test
+  mk k ti r rs pr .Test.key     = k
+  mk k ti r rs pr .Test.title   = ti
+  mk k ti r rs pr .Test.the-run = r
+  mk k ti r rs pr .Test.reveals = rs
+  mk k ti r rs pr .Test.present = pr
 
-  module filter-sum-tables = render filter-sum-run
+  plain : String → Run → Test
+  plain name r = mk name name r [] (matrices nothing nothing)
 
-  -- Root of the application's argument premise: the filtered list between the comprehension and sum.
-  filtered-vertex : List ℕ
-  filtered-vertex = 1 ∷ []
+  emit-test : Test → List (String × String)
+  emit-test T = render.emit (Test.the-run T) (Test.key T) (Test.title T) (Test.reveals T) (Test.present T)
 
-  filter-sum-name : V filter-sum-tables.dependence → String
-  filter-sum-name (inj₁ _)          = "env"
-  filter-sum-name (inj₂ ε)          = "root"
-  filter-sum-name (inj₂ (into _ _)) = "filtered"
-
-  module add-mul-tables = render add-mul-run
-
-  sum-vertex : List ℕ
-  sum-vertex = 0 ∷ []
-
-  add-mul-name : V add-mul-tables.dependence → String
-  add-mul-name (inj₁ _)          = "env"
-  add-mul-name (inj₂ ε)          = "root"
-  add-mul-name (inj₂ (into _ _)) = "sum"
-
-  module case-inl-tables = render case-inl-run
-
-  scrutinee-vertex : List ℕ
-  scrutinee-vertex = 0 ∷ []
-
-  case-inl-name : V case-inl-tables.dependence → String
-  case-inl-name (inj₁ _)          = "env"
-  case-inl-name (inj₂ ε)          = "root"
-  case-inl-name (inj₂ (into _ _)) = "scrutinee"
+  tests : List Test
+  tests =
+    plain "filter-sum" filter-sum-run ∷
+    plain "const" const-run ∷
+    plain "length" length-run ∷
+    plain "fold0" fold0-run ∷
+    plain "case0" case0-run ∷
+    plain "tag" tag-run ∷
+    plain "case-left" case-l-run ∷
+    plain "case-right" case-r-run ∷
+    plain "test" test-run ∷
+    plain "map" map-run ∷
+    plain "adjacent-sums" adjacent-sums-run ∷
+    plain "filter" filter-run ∷
+    plain "cond" cond-run ∷
+    plain "eq" eq-run ∷
+    plain "mult" mult-run ∷
+    plain "mavg" mavg-run ∷
+    plain "total" total-run ∷
+    plain "sum-mul" sum-mul-run ∷
+    plain "rose" rose-run ∷
+    plain "score" score-run ∷
+    plain "add-mul" add-mul-run ∷
+    plain "case-inl" case-inl-run ∷
+    mk "map-backward" "map (backward slice)" map-run [] (matrices nothing (just 2)) ∷
+    mk "adjacent-sums-forward" "adjacent-sums (forward slice)" adjacent-sums-run [] (matrices (just 2) nothing) ∷
+    mk "mavg-related" "mavg (related outputs)" mavg-run [] related ∷
+    mk "adjacent-sums-related" "adjacent-sums (related outputs)" adjacent-sums-run [] related ∷
+    -- Root of the application's argument premise: the filtered list between the comprehension and sum.
+    mk "filter-sum-filtered" "filter-sum" filter-sum-run (("filtered" , 1 ∷ []) ∷ []) (matrices nothing nothing) ∷
+    mk "add-mul-sum" "add-mul" add-mul-run (("sum" , 0 ∷ []) ∷ []) (matrices nothing nothing) ∷
+    mk "case-inl-scrutinee" "case-inl" case-inl-run (("scrutinee" , 0 ∷ []) ∷ []) (matrices nothing nothing) ∷ []
 
   module signed where
     private
@@ -200,36 +242,7 @@ private
 
 all-tables : List (String × String)
 all-tables =
-  ("filter-sum"    , render.plain filter-sum-run    "filter-sum") ∷
-  ("const"         , render.plain const-run         "const")      ∷
-  ("length"        , render.plain length-run        "length")     ∷
-  ("fold0"         , render.plain fold0-run         "fold0")      ∷
-  ("case0"         , render.plain case0-run         "case0")      ∷
-  ("tag"           , render.plain tag-run           "tag")        ∷
-  ("case-left"     , render.plain case-l-run        "case-left")  ∷
-  ("case-right"    , render.plain case-r-run        "case-right") ∷
-  ("test"          , render.plain test-run          "test")       ∷
-  ("map"           , render.plain map-run           "map")        ∷
-  ("adjacent-sums" , render.plain adjacent-sums-run "adjacent-sums") ∷
-  ("filter"        , render.plain filter-run        "filter")     ∷
-  ("cond"          , render.plain cond-run          "cond")       ∷
-  ("eq"            , render.plain eq-run            "eq")         ∷
-  ("mult"          , render.plain mult-run          "mult")       ∷
-  ("mavg"          , render.plain mavg-run          "mavg")       ∷
-  ("total"         , render.plain total-run         "total")      ∷
-  ("sum-mul"       , render.plain sum-mul-run       "sum-mul")    ∷
-  ("rose"          , render.plain rose-run          "rose")       ∷
-  ("score"         , render.plain score-run         "score")      ∷
-  ("map-backward"        , render.bwd map-run "map (backward slice)" 2) ∷
-  ("adjacent-sums-forward" , render.fwd adjacent-sums-run "adjacent-sums (forward slice)" 2) ∷
-  ("mavg-related"          , render.related-outputs mavg-run "mavg (related outputs)") ∷
-  ("adjacent-sums-related" , render.related-outputs adjacent-sums-run "adjacent-sums (related outputs)") ∷
-  ("add-mul"               , render.plain add-mul-run     "add-mul")  ∷
-  ("case-inl"              , render.plain case-inl-run    "case-inl") ∷
-  ("score-signed"          , signed.fragment) ∷ []
-  ++ₗ filter-sum-tables.tables (filtered-vertex ∷ []) filter-sum-name "filter-sum"
-  ++ₗ add-mul-tables.tables (sum-vertex ∷ []) add-mul-name "add-mul"
-  ++ₗ case-inl-tables.tables (scrutinee-vertex ∷ []) case-inl-name "case-inl"
+  concat (map emit-test tests) ++ₗ (("score-signed/env-root" , signed.fragment) ∷ [])
   -- merge and merge-forward disabled: hiding diverges on merge's graph (#48 closure width
   -- growth); restore once that subtask lands.
 
