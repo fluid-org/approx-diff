@@ -13,7 +13,9 @@ module Mat {o ℓ} {A : Setoid o ℓ} (S : CommutativeSemiring A) where
 
   open CommutativeSemiring S public
   open import Data.Nat using (ℕ; zero; suc)
-  open import Data.Fin using (Fin; zero; suc)
+  open import Data.Fin using (Fin; zero; suc; toℕ)
+  open import Data.List using (List; []; _∷_)
+  open import Data.Vec using (toList; tabulate)
 
   Vec : ℕ → Set o
   Vec n = Fin n → Carrier
@@ -34,6 +36,20 @@ module Mat {o ℓ} {A : Setoid o ℓ} (S : CommutativeSemiring A) where
 
   Matrix : ℕ → ℕ → Set o
   Matrix m n = Fin m → Fin n → Carrier
+
+  Table : Set o
+  Table = List (List Carrier)
+
+  nth : {C : Set o} → C → ℕ → List C → C
+  nth d _       []       = d
+  nth d zero    (x ∷ _)  = x
+  nth d (suc n) (_ ∷ xs) = nth d n xs
+
+  to-table : ∀ {m n} → Matrix m n → Table
+  to-table R = toList (tabulate λ i → toList (tabulate λ j → R i j))
+
+  look : ∀ {r c} → Table → Matrix r c
+  look T i j = nth ε (toℕ j) (nth [] (toℕ i) T)
 
   I : ∀ {n} → Matrix n n
   I = e

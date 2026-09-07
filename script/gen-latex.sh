@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# Compile the example.render.latex program and run it; the binary writes
-# test-baselines/matrices.tex via Agda IO.
+# Compile the example.render.gen-latex program and run it; the binary writes one file per table
+# under test-baselines/matrices via Agda IO.
 
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-mkdir -p test-baselines
+mkdir -p test-baselines/matrices
 
 run=${AGDA_WATCH_DIR:-$HOME/.claude/run}
 mkdir -p "$run"
@@ -21,11 +21,17 @@ trap 'rm -f "$pidfile"' EXIT
 # iteration builds at some cost to the binary's speed.
 ( cd agda && agda --compile --compile-dir=_build --ghc-flag=-rtsopts \
     --ghc-flag=-j10 ${DUMP_FAST:+--ghc-flag=-O0} \
-    src/example/render/latex.agda > "$log" 2>&1 )
+    src/example/render/gen-latex.agda > "$log" 2>&1 )
+t1=$SECONDS
 status=0
-GHCRTS="${DUMP_GHCRTS:--M1G -s}" agda/_build/latex || status=$?
+GHCRTS="${DUMP_GHCRTS:--M12G -s}" agda/_build/gen-latex || status=$?
+t2=$SECONDS
+if [ -z "${DUMP_FAST:-}" ]; then
+  line="$(date '+%Y-%m-%d %H:%M') gen-latex run $((t2-t1))s"
+  echo "$line" >> agda/_build/timings.log
+  echo "$line" >&2
+fi
 if [ "$status" -ne 0 ]; then
-  git checkout -- test-baselines/matrices.tex
   # Agda regenerates Haskell only for modules whose interfaces changed, and the result can be
   # inconsistent with the older object code; the binary then aborts with a GHC internal error.
   if [ "$status" -eq 134 ]; then
@@ -35,4 +41,4 @@ if [ "$status" -ne 0 ]; then
   exit "$status"
 fi
 
-echo "wrote test-baselines/matrices.tex"
+echo "wrote test-baselines/matrices/"

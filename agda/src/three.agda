@@ -5,7 +5,9 @@
 -- flow and the multiplicative unit, C marks a path through a control point, O is no dependence.
 module three where
 
-open import prop using (⊤; ⊥; tt; _∨_; inj₁; inj₂)
+open import prop using (⊤; ⊥; tt; _∨_; _∧_; _,_; inj₁; inj₂)
+open import Relation.Nullary.Decidable using (Dec; yes; no)
+open import Relation.Binary.PropositionalEquality using (_≡_) renaming (refl to ≡-refl)
 open import basics using (IsPreorder; IsMeet; IsJoin; IsBottom; IsTop)
 
 data Three : Set where
@@ -171,3 +173,22 @@ private
 
 ∧-idem : ∀ {x} → (x S.· x) S.≈ x
 ∧-idem = IsMeet.idem ⊓-isMeet
+
+≈-of-≡ : ∀ {x y : Three} → x ≡ y → x S.≈ y
+≈-of-≡ ≡-refl = S.refl
+
+≡-of-≈ : ∀ {x y : Three} → x S.≈ y → x ≡ y
+≡-of-≈ {O} {O} _ = ≡-refl
+≡-of-≈ {C} {C} _ = ≡-refl
+≡-of-≈ {D} {D} _ = ≡-refl
+≡-of-≈ {O} {C} (_ , ())
+≡-of-≈ {O} {D} (_ , ())
+≡-of-≈ {C} {O} (() , _)
+≡-of-≈ {C} {D} (_ , ())
+≡-of-≈ {D} {O} (() , _)
+≡-of-≈ {D} {C} (() , _)
+
+ε? : (x : Three) → Dec (x ≡ O)
+ε? O = yes ≡-refl
+ε? C = no (λ ())
+ε? D = no (λ ())

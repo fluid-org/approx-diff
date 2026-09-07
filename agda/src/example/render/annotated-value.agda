@@ -1,7 +1,7 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
 open import Level using (0ℓ)
-open import Data.Nat using (ℕ; zero; suc; _+_)
+open import Data.Nat using (ℕ; _+_)
 open import Data.Unit using (⊤; tt)
 open import Data.List using (List; []; _∷_; _++_; length)
 open import Data.Vec as Vec using (Vec; fromList) renaming ([] to []ᵥ; _∷_ to _∷ᵥ_)
@@ -10,7 +10,6 @@ open import prop-setoid using (Setoid)
 open import commutative-semiring using (CommutativeSemiring)
 open import signature using (Signature)
 open import signature.interpretation using (Interpretation)
-import two
 
 module example.render.annotated-value {ℓ} (Sig : Signature ℓ)
   {A₀ : Setoid 0ℓ 0ℓ} (S₀ : CommutativeSemiring A₀)
@@ -47,23 +46,10 @@ data AVal (X : Set) : Set where
 
 width : ∀ {X} → AVal X → ℕ
 width-vec : ∀ {X : Set} {k} → Vec (AVal X) k → ℕ
-width-all : ∀ {X} → List (AVal X) → ℕ
 
 width (node _ _ n cs) = n + width-vec cs
 width-vec []ᵥ       = 0
 width-vec (t ∷ᵥ ts) = width t + width-vec ts
-width-all []       = 0
-width-all (t ∷ ts) = width t + width-all ts
-
-fold : ∀ {X B : Set} → (∀ (t : Tag) → X → ℕ → ℕ → Vec B (arity t) → B) → ℕ → AVal X → B
-fold-vec : ∀ {X B : Set} {k} → (∀ (t : Tag) → X → ℕ → ℕ → Vec B (arity t) → B) → ℕ → Vec (AVal X) k → Vec B k
-fold-all : ∀ {X B : Set} → (∀ (t : Tag) → X → ℕ → ℕ → Vec B (arity t) → B) → ℕ → List (AVal X) → List B
-
-fold f off (node sh x n cs) = f sh x n off (fold-vec f (off + n) cs)
-fold-vec f off []ᵥ       = []ᵥ
-fold-vec f off (t ∷ᵥ ts) = fold f off t ∷ᵥ fold-vec f (off + width t) ts
-fold-all f off []       = []
-fold-all f off (t ∷ ts) = fold f off t ∷ fold-all f (off + width t) ts
 
 module _ (show-const : ∀ {s} → sort-val s → String) where
 
@@ -95,33 +81,3 @@ label-of (Tag.clo _)   = "clo"
 label-of Tag.cons      = "∷"
 label-of Tag.nil       = "[]"
 label-of (Tag.const l) = l
-
-module annotate {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A) where
-
-  private
-    module Sc = CommutativeSemiring S
-
-  Scalar : Set
-  Scalar = Setoid.Carrier A
-
-  private
-    sum-at : (ℕ → Scalar) → ℕ → ℕ → Scalar
-    sum-at row off zero    = Sc.ε
-    sum-at row off (suc n) = row off Sc.+ sum-at row (suc off) n
-
-  block-sum : (ℕ → ℕ → Scalar) → ℕ → ℕ → ℕ → ℕ → Scalar
-  block-sum M qoff qn poff pn = sum-at (λ q → sum-at (M q) poff pn) qoff qn
-
-  fill : (ℕ → Scalar) → ℕ → AVal ⊤ → AVal Scalar
-  fill row = fold (λ sh _ n off cs → node sh (sum-at row off n) n cs)
-
-  fill-all : (ℕ → Scalar) → ℕ → List (AVal ⊤) → List (AVal Scalar)
-  fill-all row off []       = []
-  fill-all row off (t ∷ ts) = fill row off t ∷ fill-all row (off + width t) ts
-
-  row→aval : ∀ {τ} (show-const : ∀ {s} → sort-val s → String) → (ℕ → Scalar) → Val τ → AVal Scalar
-  row→aval sc row v = fill row 0 (shape-of sc v)
-
-  row→avals : ∀ {Γ} (show-const : ∀ {s} → sort-val s → String) → (ℕ → Scalar) → Env Γ → List (AVal Scalar)
-  row→avals sc row γ = fill-all row 0 (shape-env-of sc γ)
-

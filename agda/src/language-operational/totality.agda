@@ -17,7 +17,8 @@ open import commutative-semiring using (CommutativeSemiring)
 open import categories using (Category)
 open import signature using (Signature)
 open import signature.interpretation using (Interpretation)
-import matrix
+import matrix-embedding
+import semimodule
 
 -- Computability (totality) predicate on values: the existence
 -- content of the logical relation, without the denotational component. Its fundamental lemma is
@@ -36,10 +37,10 @@ open import language-operational.evaluation Sig S ℐ ctrl-weight
   renaming (size to vsize; size-subst to vsize-subst)
 
 private
-  module M = matrix.Mat S
+  module SemiMod = semimodule S
 
-open Category M.cat using (_⇒_)
-open M using (⟨_,_⟩)
+open import matrix-embedding S using (𝔽)
+open Category SemiMod.cat using (_⇒_)
 
 private
   ℓT = ℓ
@@ -53,7 +54,7 @@ Total′ N (σ [×] τ) p (pair v u) = Total′ N σ (bound₁ p) v × Total′ 
 Total′ (suc N) (σ [→] τ) (s≤s p) (clo γ' t) =
   ∀ (v : Val σ) → Total′ N σ (bound₁ p) v →
   Σ (Val τ) λ u →
-  Σ (suc (width-env γ' + width v) ⇒ width u) λ R →
+  Σ (𝔽 (suc (width-env γ' + width v)) ⇒ 𝔽 (width u)) λ R →
   (γ' · v , t ⇓ u [ R ]) × Total′ N τ (bound₂ p) u
 Total′ N (μ τ) p (roll v) = Total′ N (τ [ μ τ ]) (bound-μ τ p) v
 
@@ -97,7 +98,7 @@ bool-total (inj₂ _) = tt
 ArrTot : (σ τ : type 0) {Γ' : ctxt} (γ' : Env Γ') (t : (Γ' ▸ σ) ⊢ τ) → Set ℓT
 ArrTot σ τ {Γ'} γ' t =
   ∀ (v : Val σ) → Total σ v →
-  Σ (Val τ) λ u → Σ (suc (width-env γ' + width v) ⇒ width u) λ R →
+  Σ (Val τ) λ u → Σ (𝔽 (suc (width-env γ' + width v)) ⇒ 𝔽 (width u)) λ R →
   ((γ' · v) , t ⇓ u [ R ]) × Total τ u
 
 arr-in : ∀ {σ τ Γ'} {γ' : Env Γ'} {t : (Γ' ▸ σ) ⊢ τ} → ArrTot σ τ γ' t → Total (σ [→] τ) (clo γ' t)
@@ -113,7 +114,7 @@ map-total : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : (Γ ▸ 
             ∀ (σ' : type 1) {N} {p : arr-depth (σ' [ μ τ₀ ]) ≤ N} {v : Val (σ' [ μ τ₀ ])} →
             Acc _<_ (vsize v) → Total′ N (σ' [ μ τ₀ ]) p v →
             Σ (Val (σ' [ σr ])) λ v' →
-            Σ ((suc (width-env γ) + width v) ⇒ width v') λ F →
+            Σ (𝔽 (suc (width-env γ) + width v) ⇒ 𝔽 (width v')) λ F →
             Map γ s σ' v v' F × Total (σ' [ σr ]) v'
 map-total {τ₀ = τ₀} f (var Fin.zero) {v = roll w} (acc ra) t =
   let (w' , F , Dm , tw') = map-total f τ₀ (ra (n<1+n _)) t
@@ -134,7 +135,7 @@ map-total {σr = σr} f (σ₁ [×] σ₂) {v = pair v₁ v₂} (acc ra) (t₁ ,
   in pair v₁' v₂' , _ , m-pair D₁ D₂ , (Total-at-bound (σ₁ [ σr ]) t₁' , Total-at-bound (σ₂ [ σr ]) t₂')
 map-total {γ = γ} {τ₀ = τ₀} {σr = σr} {s = s} f (μ τ') {v = roll w} (acc ra) t =
   ≡-subst (λ (x : Val (B [ μ B ])) →
-             Σ (Val ((μ τ') [ σr ])) λ v' → Σ ((suc (width-env γ) + width (roll {τ = B} x)) ⇒ width v') λ F →
+             Σ (Val ((μ τ') [ σr ])) λ v' → Σ (𝔽 (suc (width-env γ) + width (roll {τ = B} x)) ⇒ 𝔽 (width v')) λ F →
              Map γ s (μ τ') (roll {τ = B} x) v' F × Total ((μ τ') [ σr ]) v')
     (subst-subst-sym {P = Val} E {w})
     (let (w' , F , Dm , tw') =
@@ -148,7 +149,7 @@ map-total {γ = γ} {τ₀ = τ₀} {σr = σr} {s = s} f (μ τ') {v = roll w} 
   E = unfold₁-inst τ' (μ τ₀)
 
 Eval : ∀ {Γ} (γ : Env Γ) {τ} (t : Γ ⊢ τ) → Set ℓT
-Eval γ {τ} t = Σ (Val τ) λ v → Σ (suc (width-env γ) ⇒ width v) λ R → (γ , t ⇓ v [ R ]) × Total τ v
+Eval γ {τ} t = Σ (Val τ) λ v → Σ (𝔽 (suc (width-env γ)) ⇒ 𝔽 (width v)) λ R → (γ , t ⇓ v [ R ]) × Total τ v
 
 fundamental : ∀ {Γ τ} (t : Γ ⊢ τ) (γ : Env Γ) → TotalEnv Γ γ → Eval γ t
 fundamental-s : ∀ {Γ is} (Ms : Every (λ s₁ → Γ ⊢ base s₁) is) (γ : Env Γ) → TotalEnv Γ γ → Derivations γ Ms

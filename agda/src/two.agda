@@ -4,6 +4,7 @@ module two where
 open import prop using (⊤; ⊥; tt; _∨_; inj₁; inj₂; _,_)
 open import Relation.Binary.PropositionalEquality using (_≡_)
   renaming (refl to ≡-refl; sym to ≡-sym; trans to ≡-trans; cong to ≡-cong; cong₂ to ≡-cong₂)
+open import Relation.Nullary.Decidable using (Dec; yes; no)
 import Data.Empty as Empty
 import Data.Product as Product
 import Data.Sum as Sum
@@ -242,3 +243,7 @@ private
 ≡-of-≈ {O} {I} (_ , ())
 ≡-of-≈ {I} {O} (() , _)
 
+
+ε? : (x : Two) → Dec (x ≡ O)
+ε? O = yes ≡-refl
+ε? I = no (λ ())

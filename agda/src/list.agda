@@ -4,8 +4,9 @@
 -- at both levels.
 module list where
 
+open import Data.Bool using (Bool; true; false; not)
 open import Data.Empty using (⊥; ⊥-elim)
-open import Data.List using (List; []; _∷_; _++_; length; map; concat; filter; partition)
+open import Data.List using (List; []; _∷_; _++_; length; map; concat; filter; filterᵇ; partition)
 open import Data.Nat.ListAction using (sum)
 open import Data.List.Properties using (++-assoc; length-++; filter-all; filter-accept; filter-reject;
                                         partition-defn)
@@ -14,7 +15,8 @@ import Data.List.Relation.Binary.Permutation.Homogeneous as H
 import Data.List.Relation.Binary.Permutation.Propositional as ↭
 open ↭ using (_↭_; ↭-refl; ↭-sym; ↭-trans; ↭-reflexive)
 open import Data.List.Relation.Binary.Pointwise using (Pointwise; []; _∷_; Pointwise-length)
-open import Data.List.Relation.Unary.All using (All; []; _∷_; universal) renaming (map to All-map)
+open import Data.List.Relation.Unary.All as All using (All; []; _∷_; universal)
+  renaming (map to All-map)
 import Data.List.Relation.Unary.All.Properties as AllP
 open import Data.List.Relation.Unary.AllPairs using (AllPairs; []; _∷_)
 open import Data.List.Relation.Unary.Any using (Any; any?; here; there; tail)
@@ -58,15 +60,20 @@ Any-filter⁻ : ∀ {a p q} {A : Set a} {P : A → Set p} {Q : A → Set q}
               Any Q (filter P? xs) → Any (λ x → Q x × P x) xs
 Any-filter⁻ P? xs m = AnyP.filter⁻ P? (Any-All m (AllP.all-filter P? xs))
 
+-- Splitting a list by a Boolean predicate: the rejected elements followed by the accepted ones
+-- permute to the original list.
+filterᵇ-split : ∀ {a} {A : Set a} (p : A → Bool) (xs : List A) →
+                (filterᵇ (λ x → not (p x)) xs ++ filterᵇ p xs) ↭ xs
+filterᵇ-split p []       = ↭-refl
+filterᵇ-split p (x ∷ xs) with p x
+... | true  = ↭-trans (shift x (filterᵇ (λ y → not (p y)) xs) (filterᵇ p xs))
+                      (↭.prep x (filterᵇ-split p xs))
+... | false = ↭.prep x (filterᵇ-split p xs)
+
 Any-contra : ∀ {a p b} {A : Set a} {P : A → Set p} {B : Set b} {xs : List A} →
              (∀ {x} → P x → ⊥) → Any P xs → B
 Any-contra contra (here px) = ⊥-elim (contra px)
 Any-contra contra (there a) = Any-contra contra a
-
-map-All-cong : ∀ {a b} {A : Set a} {B : Set b} {f g : A → B} {xs : List A} →
-               All (λ x → f x ≡ g x) xs → map f xs ≡ map g xs
-map-All-cong []       = ≡-refl
-map-All-cong (h ∷ hs) = ≡-cong₂ _∷_ h (map-All-cong hs)
 
 perm-length : ∀ {a r} {A : Set a} {R : A → A → Set r} {xs ys : List A} →
               H.Permutation R xs ys → length xs ≡ length ys
@@ -179,17 +186,6 @@ part₂-¬ P? (x ∷ xs) with P? x
 ... | yes _  = part₂-¬ P? xs
 ... | no ¬px = ¬px ∷ part₂-¬ P? xs
 
-All-zip : ∀ {a p q r} {A : Set a} {P : A → Set p} {Q : A → Set q} {R : A → Set r} →
-          (∀ {x} → P x → Q x → R x) → ∀ {xs : List A} → All P xs → All Q xs → All R xs
-All-zip h []       []       = []
-All-zip h (p ∷ ps) (q ∷ qs) = h p q ∷ All-zip h ps qs
-
-AllPairs-zip : ∀ {a r s} {A : Set a} {S : A → A → Set r} {S' : A → A → Set s} →
-               ∀ {xs : List A} → AllPairs S xs → AllPairs S' xs →
-               AllPairs (λ x y → S x y × S' x y) xs
-AllPairs-zip []         []           = []
-AllPairs-zip (px ∷ ps) (px' ∷ ps') = All-zip _,_ px px' ∷ AllPairs-zip ps ps'
-
 partition-AllPairs : ∀ {a r p} {A : Set a} {S : A → A → Set r} {P : A → Set p}
                      (P? : (x : A) → Dec (P x)) → (∀ {x y} → S x y → S y x) →
                      ∀ {xs : List A} → AllPairs S xs →
@@ -200,7 +196,7 @@ partition-AllPairs : ∀ {a r p} {A : Set a} {S : A → A → Set r} {P : A → 
 partition-AllPairs P? sym [] = [] , [] , []
 partition-AllPairs P? sym (_∷_ {x} px ps) with partition-AllPairs P? sym ps | partition-All P? px
 ... | (a₁ , a₂ , cross) | (px₁ , px₂) with P? x
-...   | yes _ = px₁ ∷ a₁ , a₂ , All-zip (λ s c → s ∷ c) px₂ cross
+...   | yes _ = px₁ ∷ a₁ , a₂ , All.zipWith (λ (s , c) → s ∷ c) (px₂ , cross)
 ...   | no  _ = a₁ , px₂ ∷ a₂ , All-map (λ s → sym s) px₁ ∷ cross
 
 AllPairs-++⁻ : ∀ {a r} {A : Set a} {S : A → A → Set r} (xs ys : List A) →

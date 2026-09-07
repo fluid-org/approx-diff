@@ -11,8 +11,13 @@ fi
 
 mkdir -p dot
 
-( cd agda && agda --compile --compile-dir=_build src/example/render/dep-graph.agda >/dev/null )
-agda/_build/dep-graph
+( cd agda && agda --compile --compile-dir=_build src/example/render/gen-dot.agda >/dev/null )
+t1=$SECONDS
+agda/_build/gen-dot
+t2=$SECONDS
+line="$(date '+%Y-%m-%d %H:%M') gen-dot run $((t2-t1))s"
+echo "$line" >> agda/_build/timings.log
+echo "$line" >&2
 
 for f in dot/*.dot; do
   echo "wrote $f"

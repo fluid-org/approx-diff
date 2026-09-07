@@ -40,7 +40,7 @@ mu-types.pdf: mu-types.tex $(MU_TYPES_DEPS)
 	cp _latex/mu-types.pdf .
 	@! grep -qE "LaTeX Warning: There were undefined references\.|natbib Warning: There were undefined citations\." _latex/mu-types.log
 
-examples.pdf: examples.tex test-baselines/matrices.tex
+examples.pdf: examples.tex $(wildcard test-baselines/matrices/*.tex)
 	latexmk $(LATEXMK_OPTS) examples
 	cp _latex/examples.pdf .
 

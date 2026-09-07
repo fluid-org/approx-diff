@@ -3,7 +3,7 @@
 open import Data.Bool.Properties using (T?)
 open import Data.Empty using (⊥; ⊥-elim)
 open import Data.Fin using (Fin)
-open import Data.List using (List; []; _∷_; _++_; allFin; length; map; filter; concat; foldr)
+open import Data.List using (List; []; _∷_; _++_; allFin; length; map; filter; filterᵇ; concat; foldr)
 import Data.List as L
 open import Data.List.Properties
   using (++-identityʳ; concat-++; concat-map; foldl-++; length-map; map-++; map-∘;
@@ -12,258 +12,373 @@ open import Data.List.Relation.Binary.Permutation.Propositional.Properties
   using (map⁺; shift; ++⁺; drop-∷; All-resp-↭; Any-resp-↭; ↭-length; ∈-resp-↭)
 open import Data.List.Relation.Binary.Pointwise using ([]; _∷_)
 open import Data.List.Relation.Binary.Subset.Propositional using (_⊆_)
+open import Data.List.Membership.Propositional using () renaming (_∈_ to _∈ₚ_)
 open import Data.List.Membership.Propositional.Properties
-  using (∈-++⁺ˡ; ∈-++⁺ʳ; ∈-concat⁻; ∈-concat⁺′; ∈-map⁺; ∈-filter⁻)
-open import Data.List.Relation.Unary.All using (All; []; _∷_; universal)
+  using (∈-++⁺ˡ; ∈-++⁺ʳ; ∈-concat⁻; ∈-concat⁺′; ∈-map⁺; ∈-map⁻; ∈-filter⁻)
+open import Data.List.Relation.Unary.All as All using (All; []; _∷_)
   renaming (map to All-map; tabulate to All-tabulate; lookup to All-lookup)
-open import Data.List.Relation.Unary.AllPairs using (AllPairs; []; _∷_) renaming (map to AllPairs-map)
+open import Data.List.Relation.Unary.AllPairs as AllPairs using (AllPairs; []; _∷_)
+  renaming (map to AllPairs-map)
 open import Data.List.Relation.Unary.Any using (Any; any?; here; there; tail) renaming (map to Any-map)
-open import Data.Nat using (ℕ; _≤_; z≤n; s≤s)
+open import Data.Bool using (Bool; true; false; not; _∨_; if_then_else_)
+open import Data.Bool.ListAction using (any)
+open import Data.Maybe using (Maybe; just; nothing)
+open import Data.Nat using (ℕ; zero; suc; _≤_; z≤n; s≤s; _≡ᵇ_)
 open import Data.Nat.ListAction using (sum)
 open import Data.Product using (Σ; _×_; _,_; proj₁; proj₂)
+open import Data.String using (String)
 open import Data.Sum using (_⊎_; inj₁; inj₂; [_,_]′)
+open import Data.Sum.Properties using (inj₂-injective)
 open import Level using (0ℓ)
 open import Relation.Binary.PropositionalEquality using (_≡_; _≢_; subst; subst₂)
   renaming (refl to ≡-refl; sym to ≡-sym; trans to ≡-trans; cong to ≡-cong; cong₂ to ≡-cong₂)
 open import Relation.Nullary using (¬_)
 open import Relation.Unary.Properties using (∁?)
-open import Relation.Nullary.Decidable using (Dec; yes; no; ¬?; _⊎-dec_; _×-dec_)
+open import Relation.Nullary.Decidable using (Dec; yes; no; ¬?; ⌊_⌋; _⊎-dec_; _×-dec_)
 import Data.List.Relation.Binary.Permutation.Homogeneous as H
 import Data.List.Relation.Binary.Permutation.Propositional as ↭
 open ↭ using (_↭_; ↭-refl; ↭-sym; ↭-trans; ↭-reflexive)
 import Data.List.Relation.Unary.All.Properties as AllP
+import Data.List.Relation.Unary.Linked.Properties as LinkedP
+import Data.List.Sort.Base as SortBase
+import Data.List.Sort.MergeSort as MergeSort
+import Relation.Binary.Properties.StrictTotalOrder as StrictTotalOrderP
 import Data.List.Relation.Unary.AllPairs.Properties as AllPairsP
 import Data.List.Relation.Unary.Any.Properties as AnyPr
 import Data.Fin.Properties as FinP
 import Data.List.Membership.DecPropositional as DecMem
 import matrix
-import two
-open two using (≈-of-≡; ≡-of-≈)
+open import prop-setoid using (Setoid)
+open import commutative-semiring using (CommutativeSemiring)
 open import list
+open import basics using (IsStrictOrder)
+import prop.set-elim as set-elim
 
 -- Configurations of the interaction: a visible set of vertices together with one hidden region per
 -- weakly connected component of the hidden set, each carrying the dependence routed through it as
 -- a summary. The visible graph reads the first-order graph at the visible vertices and the
 -- summaries elsewhere. The hide move merges the regions adjacent to a vertex and the reveal move
--- splits the region containing one. The moves preserve the invariant that the stored regions are
--- the regions of the hidden set with their summaries, and are mutually inverse.
-module interaction.moves where
+-- splits the region containing one. The moves preserve the invariant that the stored pairs are
+-- the view of the visible set, and are mutually inverse. Adjacency is
+-- decided through a width witness exhibiting each vertex object as a free semimodule, by reading
+-- an edge's matrix off basis vectors.
+module interaction.moves {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A)
+  (let module S = CommutativeSemiring S)
+  (+-idem : ∀ x → (x S.+ x) S.≈ x)
+  (≡-of-≈ : ∀ {x y} → x S.≈ y → x ≡ y)
+  (ε? : (x : S.Carrier) → Dec (x ≡ S.ε)) where
 
-open import interaction.graph two.semiring (λ x → two.∨-idem {x})
-import commutative-semiring
-open import prop using (Prf; ⟪_⟫) renaming (_∧_ to _∧ₚ_; _,_ to _,ₚ_; proj₁ to proj₁ₚ; proj₂ to proj₂ₚ)
+open import interaction.graph S +-idem renaming (restrict to restrict-tabulation)
+open import matrix-embedding S using (𝔽; mat; mat-cong; mat-ε; mat-+; 𝔽F-full)
+open import prop using (Prf; ⟪_⟫; ∃ₛ) renaming (_∧_ to _∧ₚ_; _,_ to _,ₚ_; proj₁ to proj₁ₚ; proj₂ to proj₂ₚ)
+open import categories using (Category)
+open Category SemiMod.cat using (_⇒_; _∘_; _≈_; ≈-refl; ≈-sym; ≈-trans; ≡-to-≈)
 
 private
-  module M = matrix.Mat two.semiring
-  module S = commutative-semiring.CommutativeSemiring two.semiring
+  module M = matrix.Mat S
+
+  ≈-of-≡ : ∀ {x y} → x ≡ y → x S.≈ y
+  ≈-of-≡ ≡-refl = S.refl
+
+  foldr-base : ∀ {P Q : SemiMod.Semimodule} (b : P ⇒ Q) (ts : List (P ⇒ Q)) →
+               foldr _+ₘ_ b ts ≈ (b +ₘ foldr _+ₘ_ εₘ ts)
+  foldr-base b []       = ≈-sym (+ₘ-runit b)
+  foldr-base b (t ∷ ts) = ≈-trans (+ₘ-cong ≈-refl (foldr-base b ts)) (+ₘ-swap-mid t b (foldr _+ₘ_ εₘ ts))
+
+  foldr-map-≈ : ∀ {a} {A' : Set a} {P Q : SemiMod.Semimodule} (b : P ⇒ Q)
+                (f g : A' → P ⇒ Q) (xs : List A') →
+                All (λ x → Prf (f x ≈ g x)) xs →
+                foldr _+ₘ_ b (map f xs) ≈ foldr _+ₘ_ b (map g xs)
+  foldr-map-≈ b f g []       []            = ≈-refl
+  foldr-map-≈ b f g (x ∷ xs) (⟪ e ⟫ ∷ es) = +ₘ-cong e (foldr-map-≈ b f g xs es)
 
 NonZero : ∀ {m n} → M.Matrix m n → Set
-NonZero {m} {n} R = Σ (Fin m) λ i → Σ (Fin n) λ j → R i j ≡ two.I
+NonZero {m} {n} R = Σ (Fin m) λ i → Σ (Fin n) λ j → ¬ (R i j ≡ S.ε)
 
 NonZero? : ∀ {m n} (R : M.Matrix m n) → Dec (NonZero R)
-NonZero? R = FinP.any? (λ i → FinP.any? (λ j → is-I? (R i j)))
-  where
-  is-I? : (t : two.Two) → Dec (t ≡ two.I)
-  is-I? two.O = no (λ ())
-  is-I? two.I = yes ≡-refl
+NonZero? R = FinP.any? (λ i → FinP.any? (λ j → ¬? (ε? (R i j))))
 
-NonZero-O : ∀ {m n} (R : M.Matrix m n) → ¬ NonZero R → ∀ i j → R i j ≡ two.O
-NonZero-O R h i j with R i j in e
-... | two.O = ≡-refl
-... | two.I = ⊥-elim (h (i , j , e))
+NonZero-O : ∀ {m n} (R : M.Matrix m n) → ¬ NonZero R → ∀ i j → R i j ≡ S.ε
+NonZero-O R h i j = dec-case (ε? (R i j)) (λ e → e) (λ ne → ⊥-elim (h (i , j , ne)))
 
-when : ∀ {p} {P : Set p} {m n} → Dec P → M.Matrix m n → M.Matrix m n
-when (yes _) R = R
-when (no _)  R = M.εₘ
+when : ∀ {p} {P : Set p} {X Y : SemiMod.Semimodule} → Dec P → X ⇒ Y → X ⇒ Y
+when (yes _) f = f
+when (no _)  f = εₘ
+
+private
+  when-yes : ∀ {p} {P : Set p} (d : Dec P) → P →
+             ∀ {X Y : SemiMod.Semimodule} (f : X ⇒ Y) → when d f ≈ f
+  when-yes (yes _)  h f = ≈-refl
+  when-yes (no  ¬h) h f = set-elim.⊥-elim (¬h h)
+
+  when-O : ∀ {p} {P : Set p} (d : Dec P) {X Y : SemiMod.Semimodule} (f : X ⇒ Y) →
+           (P → f ≈ εₘ) → when d f ≈ εₘ
+  when-O (no  _) f h = ≈-refl
+  when-O (yes k) f h = h k
+
+  when-sub : ∀ {p q} {P : Set p} {Q : Set q} (d₁ : Dec P) (d₂ : Dec Q)
+             {X Y : SemiMod.Semimodule} (f : X ⇒ Y) → (P → Q) →
+             (when d₁ f +ₘ when d₂ f) ≈ when d₂ f
+  when-sub (no  _) d₂        f imp = +ₘ-lunit (when d₂ f)
+  when-sub (yes k) (yes _)   f imp = +ₘ-idem f
+  when-sub (yes k) (no  ¬k') f imp = set-elim.⊥-elim (¬k' (imp k))
 
 -- A configuration: the visible set, and one pair per hidden region of a set of vertices and a
--- graph. No invariant is imposed; that the pairs are the regions of the hidden set with their
--- summaries is a property the moves preserve.
-record Config {m n : ℕ} (B : Graph m n) : Set₁ where
+-- graph. No invariant is imposed; that the pairs are the view of the visible set is a property
+-- the moves preserve.
+record Config {m : ℕ} {D : Derivation} (𝒢 : Graph m D) : Set₁ where
   field
-    visible : List (Vertex (Graph.shape B))
-    hidden  : List (List (Vertex (Graph.shape B)) × Relation (vertex-width B))
+    visible : List (Path D)
+    summaries : List (List (Path D) × Tabulation)
 
 open Config public
 
-module Interaction {m n : ℕ} (B : Graph m n) where
+module Interaction {m : ℕ} {D : Derivation} (𝒢 : Graph m D)
+                   (fo-labels : EdgeLabels (vertex-object 𝒢)) where
 
   private
-    at : Vertex (Graph.shape B) → V B
-    at p = inj₂ (inj₁ p)
+    wd : V 𝒢 → ℕ
+    wd = vertex-width 𝒢
 
-  open DecMem (_≟_ {Graph.shape B}) public using (_∈_; _∉_; _∈?_)
+  private
+    at : Path D → V 𝒢
+    at p = inj₂ p
 
-  _≢?_ : (p q : Vertex (Graph.shape B)) → Dec (p ≢ q)
-  p ≢? q = ¬? (_≟_ {Graph.shape B} p q)
+  open DecMem (_≟_ {D}) public using (_∈_; _∉_; _∈?_)
 
-  Adjacent : Relation (vertex-width B) → V B → V B → Set
-  Adjacent G x y = NonZero (G x y) ⊎ NonZero (G y x)
+  _≢?_ : (p q : Path D) → Dec (p ≢ q)
+  p ≢? q = ¬? (_≟_ {D} p q)
 
-  Adjacent? : (G : Relation (vertex-width B)) (x y : V B) → Dec (Adjacent G x y)
-  Adjacent? G x y = NonZero? (G x y) ⊎-dec NonZero? (G y x)
+  entry : ∀ (x y : V 𝒢) → (vertex-object 𝒢 x ⇒ vertex-object 𝒢 y) → M.Matrix (wd y) (wd x)
+  entry x y f = ∃ₛ.fst (𝔽F-full f)
 
-  AdjacentIn : Relation (vertex-width B) → Vertex (Graph.shape B) → List (Vertex (Graph.shape B)) → Set
+  entry-ε : ∀ (x y : V 𝒢) (f : vertex-object 𝒢 x ⇒ vertex-object 𝒢 y) →
+            (∀ i j → entry x y f i j ≡ S.ε) → f ≈ εₘ
+  entry-ε x y f h =
+    ≈-trans (≈-sym (∃ₛ.snd (𝔽F-full f)))
+    (≈-trans (mat-cong (λ i j → ≈-of-≡ (h i j))) mat-ε)
+
+  Adjacent : EdgeLabels (vertex-object 𝒢) → V 𝒢 → V 𝒢 → Set
+  Adjacent G x y = NonZero (entry x y (G x y)) ⊎ NonZero (entry y x (G y x))
+
+  Adjacent? : (G : EdgeLabels (vertex-object 𝒢)) (x y : V 𝒢) → Dec (Adjacent G x y)
+  Adjacent? G x y = NonZero? (entry x y (G x y)) ⊎-dec NonZero? (entry y x (G y x))
+
+  AdjacentIn : EdgeLabels (vertex-object 𝒢) → Path D → List (Path D) → Set
   AdjacentIn G p C = Any (λ q → Adjacent G (at p) (at q)) C
 
-  adjacent-in? : (G : Relation (vertex-width B)) (p : Vertex (Graph.shape B))
-                 (C : List (Vertex (Graph.shape B))) → Dec (AdjacentIn G p C)
+  adjacent-in? : (G : EdgeLabels (vertex-object 𝒢)) (p : Path D)
+                 (C : List (Path D)) → Dec (AdjacentIn G p C)
   adjacent-in? G p C = any? (λ q → Adjacent? G (at p) (at q)) C
 
-  adjacent-O : (G : Relation (vertex-width B)) (x y : V B) → ¬ Adjacent G x y →
-               (∀ i j → G x y i j ≡ two.O) × (∀ i j → G y x i j ≡ two.O)
+  adjacent-O : (G : EdgeLabels (vertex-object 𝒢)) (x y : V 𝒢) → ¬ Adjacent G x y →
+               Prf ((G x y ≈ εₘ) ∧ₚ (G y x ≈ εₘ))
   adjacent-O G x y h =
-    (λ i j → NonZero-O (G x y) (λ k → h (inj₁ k)) i j) ,
-    (λ i j → NonZero-O (G y x) (λ k → h (inj₂ k)) i j)
+    ⟪ entry-ε x y (G x y) (NonZero-O (entry x y (G x y)) (λ k → h (inj₁ k))) ,ₚ
+      entry-ε y x (G y x) (NonZero-O (entry y x (G y x)) (λ k → h (inj₂ k))) ⟫
 
-  merge-region : Relation (vertex-width B) → Vertex (Graph.shape B) → List (List (Vertex (Graph.shape B))) →
-                 List (List (Vertex (Graph.shape B)))
+  merge-region : EdgeLabels (vertex-object 𝒢) → Path D → List (List (Path D)) →
+                 List (List (Path D))
   merge-region G w rss = (w ∷ concat (proj₁ tp)) ∷ proj₂ tp
     where tp = L.partition (adjacent-in? G w) rss
 
-  regions : Relation (vertex-width B) → List (Vertex (Graph.shape B)) → List (List (Vertex (Graph.shape B)))
+  regions : EdgeLabels (vertex-object 𝒢) → List (Path D) → List (List (Path D))
   regions G []       = []
   regions G (w ∷ ws) = merge-region G w (regions G ws)
 
   -- The inputs and the root are never hidden, so only an interior vertex can lie in a region.
-  VertexIn : V B → List (Vertex (Graph.shape B)) → Set
-  VertexIn (inj₁ _)        C = ⊥
-  VertexIn (inj₂ (inj₁ p)) C = p ∈ C
-  VertexIn (inj₂ (inj₂ _)) C = ⊥
+  VertexIn : V 𝒢 → List (Path D) → Set
+  VertexIn (inj₁ _) C = ⊥
+  VertexIn (inj₂ p) C = p ∈ C
 
-  _∈ᵥ?_ : (z : V B) (C : List (Vertex (Graph.shape B))) → Dec (VertexIn z C)
+  _∈ᵥ?_ : (z : V 𝒢) (C : List (Path D)) → Dec (VertexIn z C)
   inj₁ _        ∈ᵥ? C = no (λ ())
-  inj₂ (inj₁ p) ∈ᵥ? C = p ∈? C
-  inj₂ (inj₂ _) ∈ᵥ? C = no (λ ())
+  inj₂ p ∈ᵥ? C = p ∈? C
 
-  Adj-p : Vertex (Graph.shape B) → List (Vertex (Graph.shape B)) × Relation (vertex-width B) → Set
-  Adj-p p CH = AdjacentIn (fo-graph B) p (proj₁ CH)
+  Adj-p : Path D → List (Path D) × Tabulation → Set
+  Adj-p p CH = AdjacentIn fo-labels p (proj₁ CH)
 
-  adj-p? : (p : Vertex (Graph.shape B))
-           (CH : List (Vertex (Graph.shape B)) × Relation (vertex-width B)) → Dec (Adj-p p CH)
-  adj-p? p CH = adjacent-in? (fo-graph B) p (proj₁ CH)
+  adj-p? : (p : Path D)
+           (CH : List (Path D) × Tabulation) → Dec (Adj-p p CH)
+  adj-p? p CH = adjacent-in? fo-labels p (proj₁ CH)
 
-  restrict : Relation (vertex-width B) → List (Vertex (Graph.shape B)) → Relation (vertex-width B)
+  restrict : EdgeLabels (vertex-object 𝒢) → List (Path D) → EdgeLabels (vertex-object 𝒢)
   restrict G C x y = when (x ∈ᵥ? C ⊎-dec y ∈ᵥ? C) (G x y)
 
   -- The summary of a hidden region: the dependence routed through it, as relations between the
   -- vertices adjacent to it. Restriction first, so direct edges between boundary vertices are not
   -- carried by the summary.
-  summary : List (Vertex (Graph.shape B)) → Relation (vertex-width B)
-  summary C = hide-all (vertex-width B) (restrict (fo-graph B) C) (map at C)
+  summary : List (Path D) → EdgeLabels (vertex-object 𝒢)
+  summary C = hide-all (vertex-object 𝒢) (restrict fo-labels C) (map at C)
 
-  initial : Config B
-  initial .visible = []
-  initial .hidden  = map (λ C → C , summary C) (regions (fo-graph B) (FO B))
+  Summary : Set
+  Summary = List (Path D) → Tabulation
 
-  hidden-set : Config B → List (Vertex (Graph.shape B))
-  hidden-set K = concat (map proj₁ (K .hidden))
+  initial : Summary → Config 𝒢
+  initial summarise .visible = []
+  initial summarise .summaries  = map (λ C → C , summarise C) (regions fo-labels (FO 𝒢))
 
-  hidden-∈ : ∀ {p} (K : Config B) → p ∈ hidden-set K → Any (λ CH → p ∈ proj₁ CH) (K .hidden)
-  hidden-∈ K h = AnyPr.map⁻ (∈-concat⁻ (map proj₁ (K .hidden)) h)
+  hidden-set : Config 𝒢 → List (Path D)
+  hidden-set K = concat (map proj₁ (K .summaries))
 
-  hidden-∉ : ∀ {p} (K : Config B) → p ∉ hidden-set K → All (λ CH → p ∉ proj₁ CH) (K .hidden)
+  hidden-∈ : ∀ {p} (K : Config 𝒢) → p ∈ hidden-set K → Any (λ CH → p ∈ proj₁ CH) (K .summaries)
+  hidden-∈ K h = AnyPr.map⁻ (∈-concat⁻ (map proj₁ (K .summaries)) h)
+
+  hidden-∉ : ∀ {p} (K : Config 𝒢) → p ∉ hidden-set K → All (λ CH → p ∉ proj₁ CH) (K .summaries)
   hidden-∉ K h = All-tabulate (λ m k → h (∈-concat⁺′ k (∈-map⁺ proj₁ m)))
 
-  visible-graph : Config B → Relation (vertex-width B)
+  visible-graph : Config 𝒢 → EdgeLabels (vertex-object 𝒢)
   visible-graph K x y =
-    foldr M._+ₘ_
-          (when (¬? (x ∈ᵥ? hs) ×-dec ¬? (y ∈ᵥ? hs)) (fo-graph B x y))
-          (map (λ CH → proj₂ CH x y) (K .hidden))
+    foldr _+ₘ_
+          (when (¬? (x ∈ᵥ? hs) ×-dec ¬? (y ∈ᵥ? hs)) (fo-labels x y))
+          (map (λ CH → read-edge 𝒢 (proj₂ CH) x y) (K .summaries))
     where hs = hidden-set K
 
-  _+G_ : Relation (vertex-width B) → Relation (vertex-width B) → Relation (vertex-width B)
-  (G +G H) x y = G x y M.+ₘ H x y
+  region-slot : Tabulation → (x y : V 𝒢) → Maybe ℕ → Maybe ℕ → M.Table
+  region-slot T x y (just p) (just q) = read-table T p q
+  region-slot T x y _        _        = zero-table (vertex-width 𝒢 y) (vertex-width 𝒢 x)
 
-  hide-at : Vertex (Graph.shape B) → Config B → Config B
-  hide-at p K .visible = filter (p ≢?_) (K .visible)
-  hide-at p K .hidden  =
-    (p ∷ concat (map proj₁ (proj₁ tp)) , hide (vertex-width B) assembled (at p)) ∷ proj₂ tp
+  region-table : Tabulation → (x y : V 𝒢) → M.Table
+  region-table T x y = region-slot T x y (position T (index-of 𝒢 x)) (position T (index-of 𝒢 y))
+
+  -- F must be the graph fo-labels reads.
+  visible-table : Tabulation → Config 𝒢 → (x y : V 𝒢) → M.Table
+  visible-table F K x y =
+    foldr (add-table (vertex-width 𝒢 y) (vertex-width 𝒢 x))
+          (if ⌊ ¬? (x ∈ᵥ? hidden-set K) ×-dec ¬? (y ∈ᵥ? hidden-set K) ⌋
+           then region-table F x y
+           else zero-table (vertex-width 𝒢 y) (vertex-width 𝒢 x))
+          (map (λ CH → region-table (proj₂ CH) x y) (K .summaries))
+
+  region-table-rep : (T : Tabulation) (x y : V 𝒢) →
+                     mat (M.look {vertex-width 𝒢 y} {vertex-width 𝒢 x} (region-table T x y))
+                     ≈ read-edge 𝒢 T x y
+  region-table-rep T x y with position T (index-of 𝒢 x) | position T (index-of 𝒢 y)
+  ... | just p  | just q  = read-table-rep 𝒢 T x y p q
+  ... | just _  | nothing = zero-table-morphism 𝒢 x y (vertex-width 𝒢 y) (vertex-width 𝒢 x)
+  ... | nothing | just _  = zero-table-morphism 𝒢 x y (vertex-width 𝒢 y) (vertex-width 𝒢 x)
+  ... | nothing | nothing = zero-table-morphism 𝒢 x y (vertex-width 𝒢 y) (vertex-width 𝒢 x)
+
+  -- The rendered table computes the matrix of the visible graph, provided F stores the graph
+  -- fo-labels reads.
+  visible-table-rep : (F : Tabulation) →
+                      ((x' y' : V 𝒢) → read-edge 𝒢 F x' y' ≈ fo-labels x' y') →
+                      (K : Config 𝒢) (x y : V 𝒢) →
+                      mat (M.look {vertex-width 𝒢 y} {vertex-width 𝒢 x} (visible-table F K x y))
+                      ≈ visible-graph K x y
+  visible-table-rep F F-reads K x y = fold-rep (K .summaries)
     where
-      tp = L.partition (adj-p? p) (K .hidden)
-      assembled = foldr _+G_ (restrict (visible-graph K) (p ∷ [])) (map proj₂ (proj₁ tp))
+    both? = ¬? (x ∈ᵥ? hidden-set K) ×-dec ¬? (y ∈ᵥ? hidden-set K)
+    base' = if ⌊ both? ⌋ then region-table F x y
+            else zero-table (vertex-width 𝒢 y) (vertex-width 𝒢 x)
 
-  split-region : Vertex (Graph.shape B) → List (Vertex (Graph.shape B)) × Relation (vertex-width B) →
-                 List (List (Vertex (Graph.shape B)) × Relation (vertex-width B))
-  split-region p (C , H) with p ∈? C
-  ... | yes _ = map (λ C' → C' , summary C') (regions (fo-graph B) (filter (p ≢?_) C))
+    base-rep : mat (M.look {vertex-width 𝒢 y} {vertex-width 𝒢 x} base')
+               ≈ when both? (fo-labels x y)
+    base-rep with ¬? (x ∈ᵥ? hidden-set K) ×-dec ¬? (y ∈ᵥ? hidden-set K)
+    ... | yes _ = ≈-trans (region-table-rep F x y) (F-reads x y)
+    ... | no  _ = zero-table-morphism 𝒢 x y (vertex-width 𝒢 y) (vertex-width 𝒢 x)
+
+    fold-rep : (CHs : List (List (Path D) × Tabulation)) →
+               mat (M.look {vertex-width 𝒢 y} {vertex-width 𝒢 x}
+                    (foldr (add-table (vertex-width 𝒢 y) (vertex-width 𝒢 x)) base'
+                           (map (λ CH → region-table (proj₂ CH) x y) CHs)))
+               ≈ foldr _+ₘ_ (when both? (fo-labels x y))
+                            (map (λ CH → read-edge 𝒢 (proj₂ CH) x y) CHs)
+    fold-rep []         = base-rep
+    fold-rep (CH ∷ CHs) =
+      ≈-trans (mat-cong (λ i j → ≈-of-≡
+                (look-add (region-table (proj₂ CH) x y)
+                          (foldr (add-table (vertex-width 𝒢 y) (vertex-width 𝒢 x)) base'
+                                 (map (λ CH' → region-table (proj₂ CH') x y) CHs))
+                          i j)))
+      (≈-trans (mat-+ (M.look (region-table (proj₂ CH) x y))
+                      (M.look (foldr (add-table (vertex-width 𝒢 y) (vertex-width 𝒢 x)) base'
+                                     (map (λ CH' → region-table (proj₂ CH') x y) CHs))))
+               (+ₘ-cong (region-table-rep (proj₂ CH) x y) (fold-rep CHs)))
+
+  hide-at : Summary → Path D → Config 𝒢 → Config 𝒢
+  hide-at summarise p K .visible = filter (p ≢?_) (K .visible)
+  hide-at summarise p K .summaries  = (C , summarise C) ∷ proj₂ tp
+    where
+      tp = L.partition (adj-p? p) (K .summaries)
+      C  = p ∷ concat (map proj₁ (proj₁ tp))
+
+  split-region : Summary → Path D →
+                 List (Path D) × Tabulation →
+                 List (List (Path D) × Tabulation)
+  split-region summarise p (C , H) with p ∈? C
+  ... | yes _ = map (λ C' → C' , summarise C') (regions fo-labels (filter (p ≢?_) C))
   ... | no  _ = (C , H) ∷ []
 
-  split-region-∈ : ∀ p C (H : Relation (vertex-width B)) → p ∈ C →
-                   split-region p (C , H) ≡
-                   map (λ C' → C' , summary C') (regions (fo-graph B) (filter (p ≢?_) C))
-  split-region-∈ p C H h with p ∈? C
+  split-region-∈ : ∀ (summarise : Summary) p C (H : Tabulation) → p ∈ C →
+                   split-region summarise p (C , H) ≡
+                   map (λ C' → C' , summarise C') (regions fo-labels (filter (p ≢?_) C))
+  split-region-∈ summarise p C H h with p ∈? C
   ... | yes _ = ≡-refl
   ... | no ¬k = ⊥-elim (¬k h)
 
-  split-region-∉ : ∀ p C (H : Relation (vertex-width B)) → p ∉ C → split-region p (C , H) ≡ (C , H) ∷ []
-  split-region-∉ p C H h with p ∈? C
+  split-region-∉ : ∀ (summarise : Summary) p C (H : Tabulation) → p ∉ C →
+                   split-region summarise p (C , H) ≡ (C , H) ∷ []
+  split-region-∉ summarise p C H h with p ∈? C
   ... | yes k = ⊥-elim (h k)
   ... | no  _ = ≡-refl
 
-  reveal-at : Vertex (Graph.shape B) → Config B → Config B
-  reveal-at p K .visible = p ∷ K .visible
-  reveal-at p K .hidden  = concat (map (split-region p) (K .hidden))
+  reveal-at : Summary → Path D → Config 𝒢 → Config 𝒢
+  reveal-at summarise p K .visible = p ∷ K .visible
+  reveal-at summarise p K .summaries  = concat (map (split-region summarise p) (K .summaries))
 
-private
+module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
 
-  when-yes : ∀ {p} {P : Set p} (d : Dec P) → P →
-             ∀ {m n} (R : M.Matrix m n) (i : Fin m) (j : Fin n) → when d R i j ≡ R i j
-  when-yes (yes _)  h R i j = ≡-refl
-  when-yes (no  ¬h) h R i j = ⊥-elim (¬h h)
-
-  when-O : ∀ {p} {P : Set p} (d : Dec P) {m n} (R : M.Matrix m n) (i : Fin m) (j : Fin n) →
-           (P → R i j ≡ two.O) → when d R i j ≡ two.O
-  when-O (no  _) R i j h = ≡-refl
-  when-O (yes k) R i j h = h k
-
-  when-sub : ∀ {p q} {P : Set p} {Q : Set q} (d₁ : Dec P) (d₂ : Dec Q)
-             {m n} (R : M.Matrix m n) (i : Fin m) (j : Fin n) → (P → Q) →
-             (when d₁ R i j two.⊔ when d₂ R i j) ≡ when d₂ R i j
-  when-sub (no  _) d₂        R i j imp = ≡-refl
-  when-sub (yes k) (yes _)   R i j imp = two.⊔-idem
-  when-sub (yes k) (no  ¬k') R i j imp = ⊥-elim (¬k' (imp k))
-
-  when-I : ∀ {p} {P : Set p} (d : Dec P) {m n} (R : M.Matrix m n) (i : Fin m) (j : Fin n) →
-           when d R i j ≡ two.I → P × (R i j ≡ two.I)
-  when-I (yes k) R i j h = k , h
-
-  foldr-entryₘ : ∀ {m n} (B : M.Matrix m n) (Rs : List (M.Matrix m n)) (i : Fin m) (j : Fin n) →
-                 foldr M._+ₘ_ B Rs i j ≡ foldr two._⊔_ (B i j) (map (λ R' → R' i j) Rs)
-  foldr-entryₘ B []        i j = ≡-refl
-  foldr-entryₘ B (R' ∷ Rs) i j = ≡-cong (R' i j two.⊔_) (foldr-entryₘ B Rs i j)
-
-module _ {m n : ℕ} (𝒢 : Graph m n) where
-
-  open Graph 𝒢 using (shape)
-
-  Path : Set
-  Path = Vertex shape
-  open Interaction 𝒢
+  open Interaction 𝒢 (fo-graph 𝒢)
 
   private
-    module Hide-𝒢 = Hide (V 𝒢) (vertex-width 𝒢)
+    module Hide-𝒢 = Hide (V 𝒢) (vertex-object 𝒢)
 
-    at : Path → V 𝒢
-    at p = inj₂ (inj₁ p)
+    at : Path D → V 𝒢
+    at p = inj₂ p
 
+  restrict-forward : {G : EdgeLabels (vertex-object 𝒢)} (C : List (Path D)) → Fwd 𝒢 G → Fwd 𝒢 (restrict G C)
+  restrict-forward {G} C fwd x y with x ∈ᵥ? C ⊎-dec y ∈ᵥ? C
+  ... | yes _ = fwd x y
+  ... | no  _ = inj₂ ⟪ ≈-refl ⟫
 
-  restrict-forward : {G : Relation (vertex-width 𝒢)} (C : List (Path)) → Fwd 𝒢 G → Fwd 𝒢 (restrict G C)
-  restrict-forward {G} C fwd x y i j with x ∈ᵥ? C ⊎-dec y ∈ᵥ? C
-  ... | yes _ = fwd x y i j
-  ... | no  _ = inj₂ ⟪ S.refl {two.O} ⟫
+  private
+    module Vertex≤ = StrictTotalOrderP (vertex-order D)
+    module MS = MergeSort Vertex≤.decTotalOrder
+    open SortBase.SortingAlgorithm MS.mergeSort using (sort; sort-↭; sort-↗)
+    open IsStrictOrder (lt-order D) using (asym; irrefl)
 
-  adjacent-sym : (G : Relation (vertex-width 𝒢)) {x y : V 𝒢} → Adjacent G x y → Adjacent G y x
+  private
+    fo-hid : List (V 𝒢)
+    fo-hid = map at (sort (fo-hidden 𝒢))
+
+  fo-tabulation : (tick : {A : Set} → String → A → A) → Tabulation
+  fo-tabulation tick =
+    Tabulated.hide-graph (tabulation 𝒢 ε? tick) tick ε? (map (index-of 𝒢) fo-hid)
+
+  fo-edges : (tick : {A : Set} → String → A → A) → EdgeLabels (vertex-object 𝒢)
+  fo-edges tick = read-edge 𝒢 (fo-tabulation tick)
+
+  -- The region is sorted into evaluation order so that every nonzero edge among its vertices runs
+  -- forward; masking before hiding keeps direct boundary edges out of the summary.
+  tabulated-summary : (tick : {A : Set} → String → A → A) → Tabulation → Summary
+  tabulated-summary tick F C =
+    Tabulated.hide-graph (restrict-tabulation region F) tick ε? region
+    where
+    region : List ℕ
+    region = map (λ p → index-of 𝒢 (at p)) (sort C)
+
+  adjacent-sym : (G : EdgeLabels (vertex-object 𝒢)) {x y : V 𝒢} → Adjacent G x y → Adjacent G y x
   adjacent-sym G = [ inj₂ , inj₁ ]′
 
-  Apart : Relation (vertex-width 𝒢) → List (Path) → List (Path) → Set
+  Apart : EdgeLabels (vertex-object 𝒢) → List (Path D) → List (Path D) → Set
   Apart G C C' = All (λ q → All (λ q' → ¬ Adjacent G (at q) (at q')) C') C
 
-  apart-sym : (G : Relation (vertex-width 𝒢)) {C C' : List (Path)} → Apart G C C' → Apart G C' C
+  apart-sym : (G : EdgeLabels (vertex-object 𝒢)) {C C' : List (Path D)} → Apart G C C' → Apart G C' C
   apart-sym G h =
     All-tabulate (λ m' → All-tabulate (λ m a → All-lookup (All-lookup h m) m' (adjacent-sym G a)))
 
-  merge-separated : (G : Relation (vertex-width 𝒢)) (w : Path) {rs : List (List (Path))} →
+  merge-separated : (G : EdgeLabels (vertex-object 𝒢)) (w : Path D) {rs : List (List (Path D))} →
                     AllPairs (Apart G) rs →
                     let tp = L.partition (adjacent-in? G w) rs in
                     AllPairs (Apart G) ((w ∷ concat (proj₁ tp)) ∷ proj₂ tp)
@@ -273,35 +388,44 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
     tp = L.partition (adjacent-in? G w) rs
     apart-w : All (Apart G (w ∷ concat (proj₁ tp))) (proj₂ tp)
     apart-w =
-      All-zip (λ {C'} hf hc → AllP.¬Any⇒All¬ C' hf ∷ AllP.concat⁺ hc)
-              (part₂-¬ (adjacent-in? G w) rs) (proj₂ (proj₂ pa))
+      All.zipWith (λ {C'} (hf , hc) → AllP.¬Any⇒All¬ C' hf ∷ AllP.concat⁺ hc)
+                  (part₂-¬ (adjacent-in? G w) rs , proj₂ (proj₂ pa))
 
-  regions-separated : (G : Relation (vertex-width 𝒢)) (ws : List (Path)) → AllPairs (Apart G) (regions G ws)
+  regions-separated : (G : EdgeLabels (vertex-object 𝒢)) (ws : List (Path D)) → AllPairs (Apart G) (regions G ws)
   regions-separated G []       = []
   regions-separated G (w ∷ ws) = merge-separated G w (regions-separated G ws)
+
+  -- A region's stored summary reads back as the specified summary between vertices outside the
+  -- region and outside the first-order-hidden set, the pairs a view can expose.
+  Summarises : List (Path D) × Tabulation → Set
+  Summarises CH =
+    ∀ x y → ¬ VertexIn x (fo-hidden 𝒢) → ¬ VertexIn y (fo-hidden 𝒢) →
+    ¬ VertexIn x (proj₁ CH) → ¬ VertexIn y (proj₁ CH) →
+    Prf (read-edge 𝒢 (proj₂ CH) x y ≈ summary (proj₁ CH) x y)
+
+  Agrees : Summary → Set
+  Agrees summarise = ∀ C → C ⊆ FO 𝒢 → AllPairs _≢_ C → Summarises (C , summarise C)
 
   record Summarised (K : Config 𝒢) : Set where
     field
       partition : (K .visible ++ hidden-set K) ↭ FO 𝒢
-      canonical : map proj₁ (K .hidden) ↭↭ regions (fo-graph 𝒢) (hidden-set K)
-      summaries : All (λ CH → ∀ x y (i : Fin (vertex-width 𝒢 y)) (j : Fin (vertex-width 𝒢 x)) →
-                              proj₂ CH x y i j ≡ summary (proj₁ CH) x y i j)
-                      (K .hidden)
+      canonical : map proj₁ (K .summaries) ↭↭ regions (fo-graph 𝒢) (hidden-set K)
+      summaries : All Summarises (K .summaries)
 
   open Summarised public
 
-  separated : {K : Config 𝒢} → Summarised K → AllPairs (Apart (fo-graph 𝒢)) (map proj₁ (K .hidden))
+  separated : {K : Config 𝒢} → Summarised K → AllPairs (Apart (fo-graph 𝒢)) (map proj₁ (K .summaries))
   separated {K} S =
     perm-AllPairs (λ {C} {C'} → apart-sym (fo-graph 𝒢) {C} {C'})
                   (λ {C} {C'} {C''} → resp C C' C'')
                   (H.sym ↭-sym (S .canonical))
                   (regions-separated (fo-graph 𝒢) (hidden-set K))
     where
-    resp : (C C' C'' : List (Path)) → C ↭ C' → Apart (fo-graph 𝒢) C C'' →
+    resp : (C C' C'' : List (Path D)) → C ↭ C' → Apart (fo-graph 𝒢) C C'' →
            Apart (fo-graph 𝒢) C' C''
     resp C C' C'' r ap = All-resp-↭ r ap
 
-  regions-concat : (G : Relation (vertex-width 𝒢)) (ws : List (Path)) → concat (regions G ws) ↭ ws
+  regions-concat : (G : EdgeLabels (vertex-object 𝒢)) (ws : List (Path D)) → concat (regions G ws) ↭ ws
   regions-concat G []       = ↭.refl
   regions-concat G (w ∷ ws) =
     ↭.prep w (↭-trans (↭-reflexive (concat-++ (proj₁ tp) (proj₂ tp)))
@@ -309,393 +433,109 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
                       (regions-concat G ws)))
     where tp = L.partition (adjacent-in? G w) (regions G ws)
 
-  hide-at-hidden-set : (p : Path) (K : Config 𝒢) → hidden-set (hide-at p K) ↭ (p ∷ hidden-set K)
-  hide-at-hidden-set p K =
+  hide-at-hidden-set : (summarise : Summary) (p : Path D) (K : Config 𝒢) →
+                       hidden-set (hide-at summarise p K) ↭ (p ∷ hidden-set K)
+  hide-at-hidden-set summarise p K =
     ↭.prep p
       (↭-trans (↭-reflexive (concat-++ (map proj₁ (proj₁ tp)) (map proj₁ (proj₂ tp))))
       (↭-trans (↭-reflexive (≡-cong concat (≡-sym (map-++ proj₁ (proj₁ tp) (proj₂ tp)))))
-               (concat-resp (↭↭-of-↭ (map⁺ proj₁ (partition-↭ _ (K .hidden)))))))
-    where tp = L.partition (adj-p? p) (K .hidden)
+               (concat-resp (↭↭-of-↭ (map⁺ proj₁ (partition-↭ _ (K .summaries)))))))
+    where tp = L.partition (adj-p? p) (K .summaries)
 
   private
-    mv-mono : {C E : List (Path)} → C ⊆ E → ∀ {z} → VertexIn z C → VertexIn z E
-    mv-mono mono {inj₂ (inj₁ q)} h = mono h
+    mv-mono : {C E : List (Path D)} → C ⊆ E → ∀ {z} → VertexIn z C → VertexIn z E
+    mv-mono mono {inj₂ q} h = mono h
 
-  restrict-sub : (G : Relation (vertex-width 𝒢)) {C E : List (Path)} → C ⊆ E →
-                 ∀ x y (i : Fin (vertex-width 𝒢 y)) (j : Fin (vertex-width 𝒢 x)) →
-                 (restrict G C x y i j two.⊔ restrict G E x y i j) ≡ restrict G E x y i j
-  restrict-sub G {C} {E} mono x y i j =
-    when-sub (x ∈ᵥ? C ⊎-dec y ∈ᵥ? C) (x ∈ᵥ? E ⊎-dec y ∈ᵥ? E) (G x y) i j
+  restrict-sub : (G : EdgeLabels (vertex-object 𝒢)) {C E : List (Path D)} → C ⊆ E →
+                 ∀ x y → (restrict G C x y +ₘ restrict G E x y) ≈ restrict G E x y
+  restrict-sub G {C} {E} mono x y =
+    when-sub (x ∈ᵥ? C ⊎-dec y ∈ᵥ? C) (x ∈ᵥ? E ⊎-dec y ∈ᵥ? E) (G x y)
              [ (λ hx → inj₁ (mv-mono mono hx)) , (λ hy → inj₂ (mv-mono mono hy)) ]′
 
-  restrict-agree : (G : Relation (vertex-width 𝒢)) {C E : List (Path)} → C ⊆ E →
-                   All (λ r → Prf (((z : V 𝒢) (i : Fin (vertex-width 𝒢 z)) (j : Fin (vertex-width 𝒢 r)) →
-                                    restrict G E r z i j S.≈ restrict G C r z i j)
-                               ∧ₚ ((z : V 𝒢) (i : Fin (vertex-width 𝒢 r)) (j : Fin (vertex-width 𝒢 z)) →
-                                    restrict G E z r i j S.≈ restrict G C z r i j)))
+  restrict-agree : (G : EdgeLabels (vertex-object 𝒢)) {C E : List (Path D)} → C ⊆ E →
+                   All (λ r → Prf (((z : V 𝒢) → restrict G E r z ≈ restrict G C r z)
+                               ∧ₚ ((z : V 𝒢) → restrict G E z r ≈ restrict G C z r)))
                        (map at C)
   restrict-agree G {C} {E} mono =
     AllP.map⁺ (All-map (λ {q} h → ⟪
-      (λ z i j → ≈-of-≡ (≡-trans (when-yes (at q ∈ᵥ? E ⊎-dec z ∈ᵥ? E) (inj₁ (mono h)) (G (at q) z) i j)
-                                  (≡-sym (when-yes (at q ∈ᵥ? C ⊎-dec z ∈ᵥ? C) (inj₁ h) (G (at q) z) i j)))) ,ₚ
-      (λ z i j → ≈-of-≡ (≡-trans (when-yes (z ∈ᵥ? E ⊎-dec at q ∈ᵥ? E) (inj₂ (mono h)) (G z (at q)) i j)
-                                  (≡-sym (when-yes (z ∈ᵥ? C ⊎-dec at q ∈ᵥ? C) (inj₂ h) (G z (at q)) i j)))) ⟫)
+      (λ z → ≈-trans (when-yes (at q ∈ᵥ? E ⊎-dec z ∈ᵥ? E) (inj₁ (mono h)) (G (at q) z))
+                     (≈-sym (when-yes (at q ∈ᵥ? C ⊎-dec z ∈ᵥ? C) (inj₁ h) (G (at q) z)))) ,ₚ
+      (λ z → ≈-trans (when-yes (z ∈ᵥ? E ⊎-dec at q ∈ᵥ? E) (inj₂ (mono h)) (G z (at q)))
+                     (≈-sym (when-yes (z ∈ᵥ? C ⊎-dec at q ∈ᵥ? C) (inj₂ h) (G z (at q))))) ⟫)
       (All-tabulate (λ h → h)))
 
-  localise : {C E : List (Path)} → C ⊆ E →
-             ∀ x y (i : Fin (vertex-width 𝒢 y)) (j : Fin (vertex-width 𝒢 x)) →
-             hide-all (vertex-width 𝒢) (restrict (fo-graph 𝒢) E) (map at C) x y i j ≡
-             (restrict (fo-graph 𝒢) E x y i j two.⊔ summary C x y i j)
-  localise {C = C} {E = E} mono x y i j =
-    ≡-of-≈ (Hide-𝒢.agree-add {G = restrict (fo-graph 𝒢) C} {G' = restrict (fo-graph 𝒢) E} (map at C)
-               (λ x' y' i' j' → ≈-of-≡ (restrict-sub (fo-graph 𝒢) mono x' y' i' j'))
-               (restrict-agree (fo-graph 𝒢) mono)
-               x y i j)
+  localise : {C E : List (Path D)} → C ⊆ E →
+             ∀ x y →
+             hide-all (vertex-object 𝒢) (restrict (fo-graph 𝒢) E) (map at C) x y ≈
+             (restrict (fo-graph 𝒢) E x y +ₘ summary C x y)
+  localise {C = C} {E = E} mono x y =
+    Hide-𝒢.agree-add {G = restrict (fo-graph 𝒢) C} {G' = restrict (fo-graph 𝒢) E} (map at C)
+      (λ x' y' → restrict-sub (fo-graph 𝒢) mono x' y')
+      (restrict-agree (fo-graph 𝒢) mono)
+      x y
 
-  summary-zero : {C : List (Path)} (q : Path) → q ∉ C →
+  summary-zero : {C : List (Path D)} (q : Path D) → q ∉ C →
                  All (λ q' → ¬ Adjacent (fo-graph 𝒢) (at q) (at q')) C →
-                 (((z : V 𝒢) (i : Fin (vertex-width 𝒢 z)) (j : Fin (vertex-width 𝒢 (at q))) →
-                   summary C (at q) z i j ≡ two.O) ×
-                  ((z : V 𝒢) (i : Fin (vertex-width 𝒢 (at q))) (j : Fin (vertex-width 𝒢 z)) →
-                   summary C z (at q) i j ≡ two.O))
+                 Prf (((z : V 𝒢) → summary C (at q) z ≈ εₘ)
+                   ∧ₚ ((z : V 𝒢) → summary C z (at q) ≈ εₘ))
   summary-zero {C = C} q hm hadj =
-    (λ z i j → ≡-of-≈ (proj₁ₚ zf z i j)) , (λ z i j → ≡-of-≈ (proj₂ₚ zf z i j))
+    ⟪ Hide-𝒢.zero-fold {G = restrict (fo-graph 𝒢) C} (map at C) (at q) (base-row ,ₚ base-col) ⟫
     where
-    entry-row : ∀ {z} → VertexIn z C → ∀ i j → fo-graph 𝒢 (at q) z i j ≡ two.O
-    entry-row {inj₂ (inj₁ q')} hz i j =
-      proj₁ (adjacent-O (fo-graph 𝒢) (at q) (at q') (All-lookup hadj hz)) i j
+    entry-row : ∀ {z} → VertexIn z C → fo-graph 𝒢 (at q) z ≈ εₘ
+    entry-row {inj₂ q'} hz =
+      proj₁ₚ (Prf.prf (adjacent-O (fo-graph 𝒢) (at q) (at q') (All-lookup hadj hz)))
 
-    entry-col : ∀ {z} → VertexIn z C → ∀ i j → fo-graph 𝒢 z (at q) i j ≡ two.O
-    entry-col {inj₂ (inj₁ q')} hz i j =
-      proj₂ (adjacent-O (fo-graph 𝒢) (at q) (at q') (All-lookup hadj hz)) i j
+    entry-col : ∀ {z} → VertexIn z C → fo-graph 𝒢 z (at q) ≈ εₘ
+    entry-col {inj₂ q'} hz =
+      proj₂ₚ (Prf.prf (adjacent-O (fo-graph 𝒢) (at q) (at q') (All-lookup hadj hz)))
 
-    base-row : (z : V 𝒢) (i : Fin (vertex-width 𝒢 z)) (j : Fin (vertex-width 𝒢 (at q))) →
-               restrict (fo-graph 𝒢) C (at q) z i j ≡ two.O
-    base-row z i j =
-      when-O (at q ∈ᵥ? C ⊎-dec z ∈ᵥ? C) (fo-graph 𝒢 (at q) z) i j
-             [ (λ h → ⊥-elim (hm h)) , (λ hz → entry-row hz i j) ]′
+    base-row : (z : V 𝒢) → restrict (fo-graph 𝒢) C (at q) z ≈ εₘ
+    base-row z =
+      when-O (at q ∈ᵥ? C ⊎-dec z ∈ᵥ? C) (fo-graph 𝒢 (at q) z)
+             (set-elim.⊎-case (λ h → set-elim.⊥-elim (hm h)) (λ hz → entry-row hz))
 
-    base-col : (z : V 𝒢) (i : Fin (vertex-width 𝒢 (at q))) (j : Fin (vertex-width 𝒢 z)) →
-               restrict (fo-graph 𝒢) C z (at q) i j ≡ two.O
-    base-col z i j =
-      when-O (z ∈ᵥ? C ⊎-dec at q ∈ᵥ? C) (fo-graph 𝒢 z (at q)) i j
-             [ (λ hz → entry-col hz i j) , (λ h → ⊥-elim (hm h)) ]′
+    base-col : (z : V 𝒢) → restrict (fo-graph 𝒢) C z (at q) ≈ εₘ
+    base-col z =
+      when-O (z ∈ᵥ? C ⊎-dec at q ∈ᵥ? C) (fo-graph 𝒢 z (at q))
+             (set-elim.⊎-case (λ hz → entry-col hz) (λ h → set-elim.⊥-elim (hm h)))
 
-    zf = Hide-𝒢.zero-fold (map at C) (at q)
-           ((λ z i j → ≈-of-≡ (base-row z i j)) ,ₚ (λ z i j → ≈-of-≡ (base-col z i j)))
-
-  Distinct : List (Path) → List (Path) → Set
+  Distinct : List (Path D) → List (Path D) → Set
   Distinct C C' = All (_∉ C) C'
 
-  distinct-sym : {C C' : List (Path)} → Distinct C C' → Distinct C' C
+  distinct-sym : {C C' : List (Path D)} → Distinct C C' → Distinct C' C
   distinct-sym d = All-tabulate (λ m k → All-lookup d k m)
 
-  assemble : {E : List (Path)} (Cs : List (List (Path))) →
+  assemble : {E : List (Path D)} (Cs : List (List (Path D))) →
              All (_⊆ E) Cs →
              AllPairs (λ C C' → Apart (fo-graph 𝒢) C' C × Distinct C C') Cs →
-             ∀ x y (i : Fin (vertex-width 𝒢 y)) (j : Fin (vertex-width 𝒢 x)) →
-             hide-all (vertex-width 𝒢) (restrict (fo-graph 𝒢) E) (map at (concat Cs)) x y i j ≡
-             foldr two._⊔_ (restrict (fo-graph 𝒢) E x y i j)
-                           (map (λ C → summary C x y i j) Cs)
-  assemble []       []             []              x y i j = ≡-refl
-  assemble {E = E} (C ∷ Cs) (mono ∷ monos) (shead ∷ stail) x y i j =
-    ≡-trans (≡-cong (λ ws → hide-all (vertex-width 𝒢) R-E ws x y i j) (map-++ at C (concat Cs)))
-    (≡-trans (≡-cong (λ H → H x y i j) (foldl-++ (hide (vertex-width 𝒢)) R-E (map at C) (map at (concat Cs))))
-    (≡-trans (≡-of-≈ (Hide-𝒢.fold-cong (map at (concat Cs)) (λ x' y' i' j' → ≈-of-≡ (localise {C = C} mono x' y' i' j')) x y i j))
-    (≡-trans (≡-of-≈ (Hide-𝒢.add-inert {G = R-E} {T = summary C} (map at (concat Cs)) inert' x y i j))
-    (≡-trans (≡-cong (two._⊔ summary C x y i j) (assemble Cs monos stail x y i j))
-             (two.⊔-comm _ (summary C x y i j))))))
+             ∀ x y →
+             hide-all (vertex-object 𝒢) (restrict (fo-graph 𝒢) E) (map at (concat Cs)) x y ≈
+             foldr _+ₘ_ (restrict (fo-graph 𝒢) E x y) (map (λ C → summary C x y) Cs)
+  assemble []       []             []              x y = ≈-refl
+  assemble {E = E} (C ∷ Cs) (mono ∷ monos) (shead ∷ stail) x y =
+    ≈-trans (≡-to-≈ (≡-cong (λ ws → hide-all (vertex-object 𝒢) R-E ws x y) (map-++ at C (concat Cs))))
+    (≈-trans (≡-to-≈ (≡-cong (λ H → H x y) (foldl-++ (hide (vertex-object 𝒢)) R-E (map at C) (map at (concat Cs)))))
+    (≈-trans (Hide-𝒢.fold-cong (map at (concat Cs)) (λ x' y' → localise {C = C} mono x' y') x y)
+    (≈-trans (Hide-𝒢.add-inert {G = R-E} {T = summary C} (map at (concat Cs)) inert' x y)
+    (≈-trans (+ₘ-cong (assemble Cs monos stail x y) ≈-refl)
+             +ₘ-comm))))
     where
     R-E = restrict (fo-graph 𝒢) E
     inert' = AllP.map⁺ (AllP.concat⁺ (All-map
               (λ {C'} (ap , ds) →
-                All-zip (λ {q} ha hm →
-                          let (l , r) = summary-zero {C = C} q hm ha in
-                                       ⟪ ((λ z i j → ≈-of-≡ (l z i j)) ,ₚ (λ z i j → ≈-of-≡ (r z i j))) ⟫)
-                        ap ds)
+                All.zipWith (λ {q} (ha , hm) → summary-zero {C = C} q hm ha) (ap , ds))
               shead))
 
-  private
-    foldr-entry : (B : Relation (vertex-width 𝒢)) (Gs : List (Relation (vertex-width 𝒢))) →
-                  ∀ x y (i : Fin (vertex-width 𝒢 y)) (j : Fin (vertex-width 𝒢 x)) →
-                  foldr _+G_ B Gs x y i j ≡
-                  foldr two._⊔_ (B x y i j) (map (λ H → H x y i j) Gs)
-    foldr-entry B []       x y i j = ≡-refl
-    foldr-entry B (H ∷ Gs) x y i j = ≡-cong (H x y i j two.⊔_) (foldr-entry B Gs x y i j)
-
-  blocks-⊆ : (Css : List (List (Path))) → All (_⊆ concat Css) Css
+  blocks-⊆ : (Css : List (List (Path D))) → All (_⊆ concat Css) Css
   blocks-⊆ []        = []
   blocks-⊆ (C ∷ Css) = ∈-++⁺ˡ ∷ All-map (λ g {_} h → ∈-++⁺ʳ C (g h)) (blocks-⊆ Css)
 
-  summary-snoc : (p : Path) (C : List (Path)) →
-                 ∀ x y (i : Fin (vertex-width 𝒢 y)) (j : Fin (vertex-width 𝒢 x)) →
-                 summary (p ∷ C) x y i j ≡
-                 hide (vertex-width 𝒢) (hide-all (vertex-width 𝒢) (restrict (fo-graph 𝒢) (p ∷ C)) (map at C)) (at p) x y i j
-  summary-snoc p C x y i j =
-    ≡-trans (≡-of-≈ (hide-all-perm 𝒢 (restrict-forward (p ∷ C) (fo-forward 𝒢)) perm x y i j))
-            (≡-cong (λ H → H x y i j)
-                    (foldl-++ (hide (vertex-width 𝒢)) (restrict (fo-graph 𝒢) (p ∷ C)) (map at C) (at p ∷ [])))
-    where
-    perm : (at p ∷ map at C) ↭ (map at C ++ (at p ∷ []))
-    perm = ↭-sym (↭-trans (shift (at p) (map at C) [])
-                          (↭-reflexive (≡-cong (at p ∷_) (++-identityʳ (map at C)))))
-
   private
-    visible-entry : (K : Config 𝒢) →
-                    ∀ x y (i : Fin (vertex-width 𝒢 y)) (j : Fin (vertex-width 𝒢 x)) →
-                    visible-graph K x y i j ≡
-                    foldr two._⊔_
-                          (when (¬? (x ∈ᵥ? hidden-set K) ×-dec ¬? (y ∈ᵥ? hidden-set K))
-                                (fo-graph 𝒢 x y) i j)
-                          (map (λ CH → proj₂ CH x y i j) (K .hidden))
-    visible-entry K x y i j =
-      ≡-trans (foldr-entryₘ _ (map (λ CH → proj₂ CH x y) (K .hidden)) i j)
-              (≡-cong (foldr two._⊔_ _)
-                      (≡-sym (map-∘ {g = λ R' → R' i j} {f = λ CH → proj₂ CH x y} (K .hidden))))
-
-  merged-summary : (p : Path) (K : Config 𝒢) → Summarised K →
-                   p ∉ hidden-set K →
-                   AllPairs Distinct (map proj₁ (K .hidden)) →
-                   let tp = L.partition (adj-p? p) (K .hidden) in
-                   ∀ x y (i : Fin (vertex-width 𝒢 y)) (j : Fin (vertex-width 𝒢 x)) →
-                   hide (vertex-width 𝒢) (foldr _+G_ (restrict (visible-graph K) (p ∷ []))
-                                    (map proj₂ (proj₁ tp)))
-                        (at p) x y i j
-                   ≡ summary (p ∷ concat (map proj₁ (proj₁ tp))) x y i j
-  merged-summary p K S hp dist x y i j =
-    ≡-trans (≡-of-≈ (Hide-𝒢.h-cong (at p) (λ x' y' i' j' → ≈-of-≡ (core x' y' i' j')) x y i j))
-            (≡-sym (summary-snoc p (concat Ms) x y i j))
-    where
-    G  = fo-graph 𝒢
-    tp = L.partition (adj-p? p) (K .hidden)
-    Ms = map proj₁ (proj₁ tp)
-    C* = p ∷ concat Ms
-    B = restrict (visible-graph K) (p ∷ [])
-
-    sums-at : ∀ x' y' (i' : Fin (vertex-width 𝒢 y')) (j' : Fin (vertex-width 𝒢 x')) → List two.Two
-    sums-at x' y' i' j' = map (λ C → summary C x' y' i' j') Ms
-
-    base-agree : ∀ x' y' (i' : Fin (vertex-width 𝒢 y')) (j' : Fin (vertex-width 𝒢 x')) →
-                 (B x' y' i' j' two.⊔ foldr two._⊔_ two.O (sums-at x' y' i' j'))
-                 ≡ (restrict G C* x' y' i' j' two.⊔ foldr two._⊔_ two.O (sums-at x' y' i' j'))
-    base-agree x' y' i' j' =
-      two.I-antisym
-        (λ h → [ fwd-B x' y' i' j' , two.⊔-I-inr _ ]′
-                 (two.⊔-I (B x' y' i' j') (foldr two._⊔_ two.O (sums-at x' y' i' j')) h))
-        (λ h → [ bwd-B x' y' i' j' , two.⊔-I-inr _ ]′
-                 (two.⊔-I (restrict G C* x' y' i' j') (foldr two._⊔_ two.O (sums-at x' y' i' j')) h))
-      where
-      u-adj : All (λ CH → ¬ Adj-p p CH) (proj₂ tp)
-      u-adj = part₂-¬ (adj-p? p) (K .hidden)
-
-      u-szero : All (λ CH →
-                  (((z : V 𝒢) (i' : Fin (vertex-width 𝒢 z)) (j' : Fin (vertex-width 𝒢 (at p))) →
-                    summary (proj₁ CH) (at p) z i' j' ≡ two.O)
-                 × ((z : V 𝒢) (i' : Fin (vertex-width 𝒢 (at p))) (j' : Fin (vertex-width 𝒢 z)) →
-                    summary (proj₁ CH) z (at p) i' j' ≡ two.O))) (proj₂ tp)
-      u-szero = All-zip (λ {CH} hadj hm →
-                          summary-zero {C = proj₁ CH} p hm (AllP.¬Any⇒All¬ (proj₁ CH) hadj))
-                        u-adj
-                  (proj₂ (partition-All (adj-p? p) (hidden-∉ K hp)))
-
-      edge-O : ∀ {C : List (Path)} → All (λ q → ¬ Adjacent G (at p) (at q)) C →
-               ∀ q' → q' ∈ C →
-               ((∀ i' j' → G (at p) (at q') i' j' ≡ two.O) × (∀ i' j' → G (at q') (at p) i' j' ≡ two.O))
-      edge-O {C} hadj q' hq = adjacent-O G (at p) (at q') (All-lookup hadj hq)
-
-      hid-split : ∀ {q} → q ∈ hidden-set K →
-                  Any (λ CH → q ∈ proj₁ CH) (proj₁ tp) ⊎ Any (λ CH → q ∈ proj₁ CH) (proj₂ tp)
-      hid-split h =
-        AnyPr.++⁻ (proj₁ tp) (Any-resp-↭ (↭-sym (partition-↭ (adj-p? p) (K .hidden))) (hidden-∈ K h))
-
-      summary-I : ∀ (C : List (Path)) x' y' (i' : Fin (vertex-width 𝒢 y')) (j' : Fin (vertex-width 𝒢 x')) →
-             VertexIn x' C ⊎ VertexIn y' C →
-             G x' y' i' j' ≡ two.I → summary C x' y' i' j' ≡ two.I
-      summary-I C x' y' i' j' gd ge =
-        ≡-trans (≡-of-≈ (Hide-𝒢.increasing (map at C) x' y' i' j'))
-                (≡-cong (two._⊔ hide-all (vertex-width 𝒢) (restrict G C) (map at C) x' y' i' j')
-                        (≡-trans (when-yes (x' ∈ᵥ? C ⊎-dec y' ∈ᵥ? C) gd (G x' y') i' j') ge))
-
-      sums-I : ∀ x' y' (i' : Fin (vertex-width 𝒢 y')) (j' : Fin (vertex-width 𝒢 x')) (b : two.Two) →
-            Any (λ C → summary C x' y' i' j' ≡ two.I) Ms →
-            foldr two._⊔_ b (map (λ C → summary C x' y' i' j') Ms) ≡ two.I
-      sums-I x' y' i' j' b a = two.foldr-⊔-at b (AnyPr.map⁺ a)
-
-      mv-p-≡ : ∀ {z} → VertexIn z (p ∷ []) → z ≡ at p
-      mv-p-≡ {inj₂ (inj₁ q)} (here ≡-refl) = ≡-refl
-
-      pguard-≡ : ∀ x' y' → VertexIn x' (p ∷ []) ⊎ VertexIn y' (p ∷ []) → (x' ≡ at p) ⊎ (y' ≡ at p)
-      pguard-≡ x' y' = [ (λ e → inj₁ (mv-p-≡ e)) , (λ e → inj₂ (mv-p-≡ e)) ]′
-
-      p∈C* : VertexIn (at p) C*
-      p∈C* = here ≡-refl
-
-      vis-or : ∀ x' y' (i' : Fin (vertex-width 𝒢 y')) (j' : Fin (vertex-width 𝒢 x')) →
-               (x' ≡ at p) ⊎ (y' ≡ at p) → G x' y' i' j' ≡ two.I →
-               restrict G C* x' y' i' j' ≡ two.I
-      vis-or .(at p) y' i' j' (inj₁ ≡-refl) ge =
-        ≡-trans (when-yes (at p ∈ᵥ? C* ⊎-dec y' ∈ᵥ? C*) (inj₁ p∈C*) (G (at p) y') i' j') ge
-      vis-or x' .(at p) i' j' (inj₂ ≡-refl) ge =
-        ≡-trans (when-yes (x' ∈ᵥ? C* ⊎-dec at p ∈ᵥ? C*) (inj₂ p∈C*) (G x' (at p)) i' j') ge
-
-      stored-or : ∀ x' y' (i' : Fin (vertex-width 𝒢 y')) (j' : Fin (vertex-width 𝒢 x')) →
-                  (x' ≡ at p) ⊎ (y' ≡ at p) →
-                  (Any (λ CH → summary (proj₁ CH) x' y' i' j' ≡ two.I) (proj₁ tp)
-                   ⊎ Any (λ CH → summary (proj₁ CH) x' y' i' j' ≡ two.I) (proj₂ tp)) →
-                  (restrict G C* x' y' i' j' two.⊔ foldr two._⊔_ two.O (sums-at x' y' i' j')) ≡ two.I
-      stored-or x'      y' i' j' _             (inj₁ aM) =
-        two.⊔-I-inr _ (sums-I x' y' i' j' two.O (AnyPr.map⁺ aM))
-      stored-or .(at p) y' i' j' (inj₁ ≡-refl) (inj₂ aU) =
-        Any-contra (λ { (sI , (zr , _)) → two.O≢I (≡-trans (≡-sym (zr y' i' j')) sI) })
-                   (Any-All aU u-szero)
-      stored-or x' .(at p) i' j' (inj₂ ≡-refl) (inj₂ aU) =
-        Any-contra (λ { (sI , (_ , zc)) → two.O≢I (≡-trans (≡-sym (zc x' i' j')) sI) })
-                   (Any-All aU u-szero)
-
-      fwd-B : ∀ x' y' (i' : Fin (vertex-width 𝒢 y')) (j' : Fin (vertex-width 𝒢 x')) →
-              B x' y' i' j' ≡ two.I →
-              (restrict G C* x' y' i' j' two.⊔ foldr two._⊔_ two.O (sums-at x' y' i' j')) ≡ two.I
-      fwd-B x' y' i' j' h with when-I (x' ∈ᵥ? (p ∷ []) ⊎-dec y' ∈ᵥ? (p ∷ [])) (visible-graph K x' y') i' j' h
-      ... | (pgt , ve)
-        with two.foldr-⊔-I (when (¬? (x' ∈ᵥ? hidden-set K) ×-dec ¬? (y' ∈ᵥ? hidden-set K))
-                             (G x' y') i' j')
-                       (map (λ CH → proj₂ CH x' y' i' j') (K .hidden))
-                       (≡-trans (≡-sym (visible-entry K x' y' i' j')) ve)
-      ...   | inj₁ vb =
-        two.⊔-I-inl (vis-or x' y' i' j' (pguard-≡ x' y' pgt)
-                            (proj₂ (when-I (¬? (x' ∈ᵥ? hidden-set K) ×-dec ¬? (y' ∈ᵥ? hidden-set K))
-                                       (G x' y') i' j' vb)))
-      ...   | inj₂ aS =
-        stored-or x' y' i' j' (pguard-≡ x' y' pgt)
-          (AnyPr.++⁻ (proj₁ tp) (Any-resp-↭ (↭-sym (partition-↭ (adj-p? p) (K .hidden)))
-            (Any-map (λ (eI , inv) → ≡-trans (≡-sym (inv x' y' i' j')) eI)
-                     (Any-All (AnyPr.map⁻ aS) (S .summaries)))))
-
-      B-visible-x : ∀ y' (i' : Fin (vertex-width 𝒢 y')) (j' : Fin (vertex-width 𝒢 (at p))) →
-                     ¬ VertexIn y' (hidden-set K) → G (at p) y' i' j' ≡ two.I →
-                     B (at p) y' i' j' ≡ two.I
-      B-visible-x y' i' j' hy ge =
-        ≡-trans (when-yes (at p ∈ᵥ? (p ∷ []) ⊎-dec y' ∈ᵥ? (p ∷ [])) (inj₁ (here ≡-refl))
-                          (visible-graph K (at p) y') i' j')
-        (≡-trans (visible-entry K (at p) y' i' j')
-                 (two.foldr-⊔-here (map (λ CH → proj₂ CH (at p) y' i' j') (K .hidden))
-                   (≡-trans (when-yes (¬? (at p ∈ᵥ? hidden-set K) ×-dec ¬? (y' ∈ᵥ? hidden-set K))
-                                      (hp , hy) (G (at p) y') i' j') ge)))
-
-      B-visible-y : ∀ x' (i' : Fin (vertex-width 𝒢 (at p))) (j' : Fin (vertex-width 𝒢 x')) →
-                     ¬ VertexIn x' (hidden-set K) → G x' (at p) i' j' ≡ two.I →
-                     B x' (at p) i' j' ≡ two.I
-      B-visible-y x' i' j' hx ge =
-        ≡-trans (when-yes (x' ∈ᵥ? (p ∷ []) ⊎-dec at p ∈ᵥ? (p ∷ [])) (inj₂ (here ≡-refl))
-                          (visible-graph K x' (at p)) i' j')
-        (≡-trans (visible-entry K x' (at p) i' j')
-                 (two.foldr-⊔-here (map (λ CH → proj₂ CH x' (at p) i' j') (K .hidden))
-                   (≡-trans (when-yes (¬? (x' ∈ᵥ? hidden-set K) ×-dec ¬? (at p ∈ᵥ? hidden-set K))
-                                      (hx , hp) (G x' (at p)) i' j') ge)))
-
-      bwd-px : ∀ y' (i' : Fin (vertex-width 𝒢 y')) (j' : Fin (vertex-width 𝒢 (at p))) →
-               G (at p) y' i' j' ≡ two.I →
-               (B (at p) y' i' j' two.⊔ foldr two._⊔_ two.O (sums-at (at p) y' i' j')) ≡ two.I
-      bwd-px (inj₁ i) i' j' ge = two.⊔-I-inl (B-visible-x (inj₁ i) i' j' (λ ()) ge)
-      bwd-px (inj₂ (inj₂ r)) i' j' ge = two.⊔-I-inl (B-visible-x (inj₂ (inj₂ r)) i' j' (λ ()) ge)
-      bwd-px (inj₂ (inj₁ qy)) i' j' ge =
-        dec-case (qy ∈? hidden-set K)
-          (λ hy → [ (λ aM → two.⊔-I-inr _ (sums-I (at p) (at qy) i' j' two.O
-                      (AnyPr.map⁺ (Any-map (λ {CH} mem →
-                        summary-I (proj₁ CH) (at p) (at qy) i' j'
-                             (inj₂ mem) ge) aM))))
-                  , (λ aU → Any-contra
-                              (λ { {CH} (mem , adj) →
-                                   two.O≢I (≡-trans (≡-sym (proj₁ (edge-O {C = proj₁ CH} (AllP.¬Any⇒All¬ (proj₁ CH) adj) qy mem) i' j'))
-                                           ge) })
-                              (Any-All aU u-adj)) ]′ (hid-split hy))
-          (λ hy → two.⊔-I-inl (B-visible-x (at qy) i' j' hy ge))
-
-      bwd-py : ∀ x' (i' : Fin (vertex-width 𝒢 (at p))) (j' : Fin (vertex-width 𝒢 x')) →
-               G x' (at p) i' j' ≡ two.I →
-               (B x' (at p) i' j' two.⊔ foldr two._⊔_ two.O (sums-at x' (at p) i' j')) ≡ two.I
-      bwd-py (inj₁ i) i' j' ge = two.⊔-I-inl (B-visible-y (inj₁ i) i' j' (λ ()) ge)
-      bwd-py (inj₂ (inj₂ r)) i' j' ge = two.⊔-I-inl (B-visible-y (inj₂ (inj₂ r)) i' j' (λ ()) ge)
-      bwd-py (inj₂ (inj₁ qx)) i' j' ge =
-        dec-case (qx ∈? hidden-set K)
-          (λ hx → [ (λ aM → two.⊔-I-inr _ (sums-I (at qx) (at p) i' j' two.O
-                      (AnyPr.map⁺ (Any-map (λ {CH} mem →
-                        summary-I (proj₁ CH) (at qx) (at p) i' j'
-                             (inj₁ mem) ge) aM))))
-                  , (λ aU → Any-contra
-                              (λ { {CH} (mem , adj) →
-                                   two.O≢I (≡-trans (≡-sym (proj₂ (edge-O {C = proj₁ CH} (AllP.¬Any⇒All¬ (proj₁ CH) adj) qx mem) i' j'))
-                                           ge) })
-                              (Any-All aU u-adj)) ]′ (hid-split hx))
-          (λ hx → two.⊔-I-inl (B-visible-y (at qx) i' j' hx ge))
-
-      bwd-l : ∀ x' y' (i' : Fin (vertex-width 𝒢 y')) (j' : Fin (vertex-width 𝒢 x')) →
-              G x' y' i' j' ≡ two.I → VertexIn x' C* →
-              (B x' y' i' j' two.⊔ foldr two._⊔_ two.O (sums-at x' y' i' j')) ≡ two.I
-      bwd-l (inj₂ (inj₁ qx)) y' i' j' ge (here ≡-refl) = bwd-px y' i' j' ge
-      bwd-l (inj₂ (inj₁ qx)) y' i' j' ge (there m) =
-        two.⊔-I-inr _
-          (sums-I (at qx) y' i' j' two.O
-               (Any-map (λ {C} mem → summary-I C (at qx) y' i' j' (inj₁ mem) ge)
-                        (∈-concat⁻ Ms m)))
-
-      bwd-r : ∀ x' y' (i' : Fin (vertex-width 𝒢 y')) (j' : Fin (vertex-width 𝒢 x')) →
-              G x' y' i' j' ≡ two.I → VertexIn y' C* →
-              (B x' y' i' j' two.⊔ foldr two._⊔_ two.O (sums-at x' y' i' j')) ≡ two.I
-      bwd-r x' (inj₂ (inj₁ qy)) i' j' ge (here ≡-refl) = bwd-py x' i' j' ge
-      bwd-r x' (inj₂ (inj₁ qy)) i' j' ge (there m) =
-        two.⊔-I-inr _
-          (sums-I x' (at qy) i' j' two.O
-               (Any-map (λ {C} mem → summary-I C x' (at qy) i' j' (inj₂ mem) ge)
-                        (∈-concat⁻ Ms m)))
-
-      bwd-B : ∀ x' y' (i' : Fin (vertex-width 𝒢 y')) (j' : Fin (vertex-width 𝒢 x')) →
-              restrict G C* x' y' i' j' ≡ two.I →
-              (B x' y' i' j' two.⊔ foldr two._⊔_ two.O (sums-at x' y' i' j')) ≡ two.I
-      bwd-B x' y' i' j' h with when-I (x' ∈ᵥ? C* ⊎-dec y' ∈ᵥ? C*) (G x' y') i' j' h
-      ... | (inj₁ hx , ge) = bwd-l x' y' i' j' ge hx
-      ... | (inj₂ hy , ge) = bwd-r x' y' i' j' ge hy
-
-    base-swap : ∀ x' y' (i' : Fin (vertex-width 𝒢 y')) (j' : Fin (vertex-width 𝒢 x')) →
-                foldr two._⊔_ (B x' y' i' j') (sums-at x' y' i' j') ≡
-                foldr two._⊔_ (restrict G C* x' y' i' j') (sums-at x' y' i' j')
-    base-swap x' y' i' j' =
-      ≡-trans (two.foldr-⊔-base (B x' y' i' j') (sums-at x' y' i' j'))
-      (≡-trans (base-agree x' y' i' j')
-               (≡-sym (two.foldr-⊔-base (restrict G C* x' y' i' j') (sums-at x' y' i' j'))))
-
-    maps≡ : ∀ x' y' (i' : Fin (vertex-width 𝒢 y')) (j' : Fin (vertex-width 𝒢 x')) →
-            map (λ H → H x' y' i' j') (map proj₂ (proj₁ tp)) ≡ sums-at x' y' i' j'
-    maps≡ x' y' i' j' =
-      ≡-trans (≡-sym (map-∘ {g = λ H → H x' y' i' j'} {f = proj₂} (proj₁ tp)))
-      (≡-trans (map-All-cong (All-map (λ inv → inv x' y' i' j')
-                                      (proj₁ (partition-All (adj-p? p) (S .summaries)))))
-               (map-∘ {g = λ C → summary C x' y' i' j'} {f = proj₁} (proj₁ tp)))
-
-    monosC* : All (_⊆ C*) Ms
-    monosC* = All-map (λ g {_} h → there (g h)) (blocks-⊆ Ms)
-
-    sepsMs : AllPairs (λ C C' → Apart G C' C × Distinct C C') Ms
-    sepsMs =
-      AllPairs-map (λ {C} {C'} (ap , d) → (apart-sym G {C} {C'} ap , d))
-        (subst (AllPairs (λ C C' → Apart G C C' × Distinct C C'))
-               (map-partition₁ proj₁ (λ C → any? (λ q → Adjacent? G (at p) (at q)) C) (K .hidden))
-               (proj₁ (partition-AllPairs {S = λ C C' → Apart G C C' × Distinct C C'}
-                        (λ C → any? (λ q → Adjacent? G (at p) (at q)) C)
-                        (λ {C} {C'} (ap , d) → (apart-sym G {C} {C'} ap , distinct-sym d))
-                        (AllPairs-zip (separated S) dist))))
-
-    core : ∀ x' y' (i' : Fin (vertex-width 𝒢 y')) (j' : Fin (vertex-width 𝒢 x')) →
-           foldr _+G_ B (map proj₂ (proj₁ tp)) x' y' i' j' ≡
-           hide-all (vertex-width 𝒢) (restrict G C*) (map at (concat Ms)) x' y' i' j'
-    core x' y' i' j' =
-      ≡-trans (foldr-entry B (map proj₂ (proj₁ tp)) x' y' i' j')
-      (≡-trans (≡-cong (foldr two._⊔_ (B x' y' i' j')) (maps≡ x' y' i' j'))
-      (≡-trans (base-swap x' y' i' j')
-               (≡-sym (assemble {E = C*} Ms monosC* sepsMs x' y' i' j'))))
+    regions-⊆ : (G : EdgeLabels (vertex-object 𝒢)) (ws : List (Path D)) → All (_⊆ ws) (regions G ws)
+    regions-⊆ G ws = All-map (λ inc {_} h → ∈-resp-↭ (regions-concat G ws) (inc h)) (blocks-⊆ (regions G ws))
 
   FO-distinct : AllPairs _≢_ (FO 𝒢)
-  FO-distinct = AllPairsP.filter⁺ (λ q → T? (Graph.fo 𝒢 q)) (distinct (Graph.shape 𝒢))
+  FO-distinct = AllPairsP.filter⁺ (λ q → T? (fo-at D q)) (distinct D)
 
   private
     partition-distinct : (K : Config 𝒢) → (K .visible ++ hidden-set K) ↭ FO 𝒢 →
@@ -703,7 +543,7 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
     partition-distinct K part =
       AllPairs-perm (λ h e → h (≡-sym e)) (↭-sym part) FO-distinct
 
-    concat-distinct : (Css : List (List (Path))) → AllPairs _≢_ (concat Css) → AllPairs Distinct Css
+    concat-distinct : (Css : List (List (Path D))) → AllPairs _≢_ (concat Css) → AllPairs Distinct Css
     concat-distinct []        ps = []
     concat-distinct (C ∷ Css) ps with AllPairs-++⁻ C (concat Css) ps
     ... | (_ , aCss , cross) =
@@ -711,79 +551,96 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
               (AllP.All-swap (All-map AllP.concat⁻ cross))
       ∷ concat-distinct Css aCss
 
+    blocks-distinct : (Css : List (List (Path D))) → AllPairs _≢_ (concat Css) → All (AllPairs _≢_) Css
+    blocks-distinct []        _  = []
+    blocks-distinct (C ∷ Css) ps with AllPairs-++⁻ C (concat Css) ps
+    ... | (aC , aCss , _) = aC ∷ blocks-distinct Css aCss
+
+    regions-distinct : (G : EdgeLabels (vertex-object 𝒢)) (ws : List (Path D)) → AllPairs _≢_ ws →
+                       All (AllPairs _≢_) (regions G ws)
+    regions-distinct G ws dist =
+      blocks-distinct (regions G ws)
+                      (AllPairs-perm (λ h e → h (≡-sym e)) (↭-sym (regions-concat G ws)) dist)
+
     visible-hidden-split : (K : Config 𝒢) → Summarised K →
                            AllPairs _≢_ (K .visible) × AllPairs _≢_ (hidden-set K) ×
                              All (λ p → All (p ≢_) (hidden-set K)) (K .visible)
     visible-hidden-split K S = AllPairs-++⁻ (K .visible) (hidden-set K) (partition-distinct K (S .partition))
 
-    visible-not-hidden : (K : Config 𝒢) → Summarised K → ∀ {p} → p ∈ K .visible → p ∉ hidden-set K
-    visible-not-hidden K S {p} pv k =
-      All-lookup (All-lookup (proj₂ (proj₂ (visible-hidden-split K S)))
-                             pv)
-                 k ≡-refl
-
-  summarised-distinct : (K : Config 𝒢) → Summarised K → AllPairs Distinct (map proj₁ (K .hidden))
+  summarised-distinct : (K : Config 𝒢) → Summarised K → AllPairs Distinct (map proj₁ (K .summaries))
   summarised-distinct K S =
-    concat-distinct (map proj₁ (K .hidden))
+    concat-distinct (map proj₁ (K .summaries))
       (proj₁ (proj₂ (visible-hidden-split K S)))
 
-  hide-at-partition : (p : Path) (K : Config 𝒢) → Summarised K →
+  hide-at-partition : (summarise : Summary) (p : Path D) (K : Config 𝒢) → Summarised K →
                       p ∈ K .visible →
-                      (hide-at p K .visible ++ hidden-set (hide-at p K)) ↭ FO 𝒢
-  hide-at-partition p K S pv =
-    ↭-trans (++⁺ ↭-refl (hide-at-hidden-set p K))
-    (↭-trans (shift p (hide-at p K .visible) (hidden-set K))
-    (↭-trans (++⁺ (filter-out-↭ (_≟_ {shape})
+                      (hide-at summarise p K .visible ++ hidden-set (hide-at summarise p K)) ↭ FO 𝒢
+  hide-at-partition summarise p K S pv =
+    ↭-trans (++⁺ ↭-refl (hide-at-hidden-set summarise p K))
+    (↭-trans (shift p (hide-at summarise p K .visible) (hidden-set K))
+    (↭-trans (++⁺ (filter-out-↭ (_≟_ {D})
                     (proj₁ (visible-hidden-split K S))
                     pv)
                   ↭-refl)
              (S .partition)))
 
-  hide-at-summaries : (p : Path) (K : Config 𝒢) (S : Summarised K) →
-                      p ∈ K .visible →
-                      All (λ CH → ∀ x y (i : Fin (vertex-width 𝒢 y)) (j : Fin (vertex-width 𝒢 x)) →
-                                  proj₂ CH x y i j ≡ summary (proj₁ CH) x y i j)
-                          (hide-at p K .hidden)
-  hide-at-summaries p K S pv =
-    merged-summary p K S (visible-not-hidden K S {p = p} pv) (summarised-distinct K S) ∷
-    proj₂ (partition-All (adj-p? p) (S .summaries))
+  hide-at-summaries : (summarise : Summary) → Agrees summarise →
+                      (p : Path D) (K : Config 𝒢) (S : Summarised K) → p ∈ K .visible →
+                      All Summarises (hide-at summarise p K .summaries)
+  hide-at-summaries summarise agrees p K S pv =
+    agrees C' C'-mono C'-distinct ∷ proj₂ (partition-All (adj-p? p) (S .summaries))
+    where
+    C' = p ∷ concat (map proj₁ (proj₁ (L.partition (adj-p? p) (K .summaries))))
 
-  Apart-mono : {G : Relation (vertex-width 𝒢)} {C₁ C₂ C₁' C₂' : List (Path)} →
+    C'-mono : C' ⊆ FO 𝒢
+    C'-mono h with ∈-resp-↭ (hide-at-hidden-set summarise p K) (∈-++⁺ˡ h)
+    ... | here ≡-refl = ∈-resp-↭ (S .partition) (∈-++⁺ˡ pv)
+    ... | there k     = ∈-resp-↭ (S .partition) (∈-++⁺ʳ (K .visible) k)
+
+    C'-distinct : AllPairs _≢_ C'
+    C'-distinct =
+      proj₁ (AllPairs-++⁻ C' (concat (map proj₁ (proj₂ (L.partition (adj-p? p) (K .summaries)))))
+              (proj₁ (proj₂ (AllPairs-++⁻ (hide-at summarise p K .visible)
+                                          (hidden-set (hide-at summarise p K))
+                                          (partition-distinct (hide-at summarise p K)
+                                            (hide-at-partition summarise p K S pv))))))
+
+  Apart-mono : {G : EdgeLabels (vertex-object 𝒢)} {C₁ C₂ C₁' C₂' : List (Path D)} →
                C₁ ⊆ C₁' → C₂ ⊆ C₂' → Apart G C₁' C₂' → Apart G C₁ C₂
   Apart-mono m₁ m₂ ap = All-tabulate (λ h → All-tabulate (λ h' → All-lookup (All-lookup ap (m₁ h)) (m₂ h')))
 
   private
-    split-none : (p : Path)
-                 {CHs : List (List (Path) × Relation (vertex-width 𝒢))} →
+    split-none : (summarise : Summary) (p : Path D)
+                 {CHs : List (List (Path D) × Tabulation)} →
                  All (λ CH → p ∉ proj₁ CH) CHs →
-                 concat (map (split-region p) CHs) ≡ CHs
-    split-none p []                     = ≡-refl
-    split-none p (_∷_ {C , H} h hs) rewrite split-region-∉ p C H h =
-      ≡-cong ((C , H) ∷_) (split-none p hs)
+                 concat (map (split-region summarise p) CHs) ≡ CHs
+    split-none summarise p []                     = ≡-refl
+    split-none summarise p (_∷_ {C , H} h hs) rewrite split-region-∉ summarise p C H h =
+      ≡-cong ((C , H) ∷_) (split-none summarise p hs)
 
-  reveal-set : (p : Path)
-               (CHs : List (List (Path) × Relation (vertex-width 𝒢))) →
+  reveal-set : (summarise : Summary) (p : Path D)
+               (CHs : List (List (Path D) × Tabulation)) →
                AllPairs _≢_ (concat (map proj₁ CHs)) →
                Any (λ CH → p ∈ proj₁ CH) CHs →
-               (p ∷ concat (map proj₁ (concat (map (split-region p) CHs))))
+               (p ∷ concat (map proj₁ (concat (map (split-region summarise p) CHs))))
                ↭ concat (map proj₁ CHs)
-  reveal-set p ((C , H) ∷ CHs) ps h with AllPairs-++⁻ C (concat (map proj₁ CHs)) ps
+  reveal-set summarise p ((C , H) ∷ CHs) ps h with AllPairs-++⁻ C (concat (map proj₁ CHs)) ps
   ... | (aC , aRest , cross) with p ∈? C
   ...   | no ¬m =
-    ↭-trans (↭-sym (shift p C (concat (map proj₁ (concat (map (split-region p) CHs))))))
-            (++⁺ ↭-refl (reveal-set p CHs aRest (tail ¬m h)))
+    ↭-trans (↭-sym (shift p C (concat (map proj₁ (concat (map (split-region summarise p) CHs))))))
+            (++⁺ ↭-refl (reveal-set summarise p CHs aRest (tail ¬m h)))
   ...   | yes m =
-    ↭-trans (↭-reflexive (≡-cong (λ z → p ∷ concat z) (map-++ proj₁ X Z)))
-    (↭-trans (↭-reflexive (≡-cong (p ∷_) (≡-sym (concat-++ (map proj₁ X) (map proj₁ Z)))))
+    ↭-trans (↭-reflexive (≡-cong (λ z → p ∷ concat z) (map-++ proj₁ Xs Zs)))
+    (↭-trans (↭-reflexive (≡-cong (p ∷_) (≡-sym (concat-++ (map proj₁ Xs) (map proj₁ Zs)))))
     (↭-trans (↭-reflexive (≡-cong₂ (λ u v → p ∷ (concat u ++ concat (map proj₁ v)))
-                                   (map-proj₁-pair summary Regs)
-                                   (split-none p no-p-tail)))
+                                   (map-proj₁-pair summarise Regs)
+                                   (split-none summarise p no-p-tail)))
              (++⁺ head-perm ↭-refl)))
     where
     C∖p  = filter (p ≢?_) C
     Regs = regions (fo-graph 𝒢) C∖p
-    X    = map (λ C' → C' , summary C') Regs
-    Z    = concat (map (split-region p) CHs)
+    Xs   = map (λ C' → C' , summarise C') Regs
+    Zs   = concat (map (split-region summarise p) CHs)
 
     no-p-tail : All (λ CH → p ∉ proj₁ CH) CHs
     no-p-tail =
@@ -791,100 +648,114 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
         All-lookup (All-lookup cross m) (∈-concat⁺′ k (∈-map⁺ proj₁ mCH)) ≡-refl)
 
     head-perm : (p ∷ concat Regs) ↭ C
-    head-perm = ↭-trans (↭.prep p (regions-concat (fo-graph 𝒢) C∖p)) (filter-out-↭ (_≟_ {shape}) aC m)
+    head-perm = ↭-trans (↭.prep p (regions-concat (fo-graph 𝒢) C∖p)) (filter-out-↭ (_≟_ {D}) aC m)
 
   private
-    split-summaries : (p : Path)
-                      (CH : List (Path) × Relation (vertex-width 𝒢)) →
-                      (∀ x y (i : Fin (vertex-width 𝒢 y)) (j : Fin (vertex-width 𝒢 x)) →
-                       proj₂ CH x y i j ≡ summary (proj₁ CH) x y i j) →
-                      All (λ CH' → ∀ x y (i : Fin (vertex-width 𝒢 y)) (j : Fin (vertex-width 𝒢 x)) →
-                                   proj₂ CH' x y i j ≡ summary (proj₁ CH') x y i j)
-                          (split-region p CH)
-    split-summaries p (C , H) old with p ∈? C
+    split-summaries : (summarise : Summary) → Agrees summarise → (p : Path D)
+                      (CH : List (Path D) × Tabulation) →
+                      proj₁ CH ⊆ FO 𝒢 → AllPairs _≢_ (proj₁ CH) → Summarises CH →
+                      All Summarises (split-region summarise p CH)
+    split-summaries summarise agrees p (C , H) mono dist old with p ∈? C
     ... | no  _ = old ∷ []
     ... | yes _ =
-      AllP.map⁺ (universal (λ C' x y i j → ≡-refl)
-                           (regions (fo-graph 𝒢) (filter (p ≢?_) C)))
+      AllP.map⁺ (All-tabulate (λ {C'} m → agrees C' (All-lookup subs m) (All-lookup dists' m)))
+      where
+      subs : All (_⊆ FO 𝒢) (regions (fo-graph 𝒢) (filter (p ≢?_) C))
+      subs = All-map (λ inc {_} h → mono (proj₁ (∈-filter⁻ (p ≢?_) (inc h))))
+                     (regions-⊆ (fo-graph 𝒢) (filter (p ≢?_) C))
 
-  reveal-at-partition : (p : Path) (K : Config 𝒢) → Summarised K →
+      dists' : All (AllPairs _≢_) (regions (fo-graph 𝒢) (filter (p ≢?_) C))
+      dists' = regions-distinct (fo-graph 𝒢) (filter (p ≢?_) C) (AllPairsP.filter⁺ (p ≢?_) dist)
+
+  reveal-at-partition : (summarise : Summary) (p : Path D) (K : Config 𝒢) → Summarised K →
                         p ∈ hidden-set K →
-                        (reveal-at p K .visible ++ hidden-set (reveal-at p K)) ↭ FO 𝒢
-  reveal-at-partition p K S hp =
-    ↭-trans (↭-sym (shift p (K .visible) (hidden-set (reveal-at p K))))
+                        (reveal-at summarise p K .visible ++ hidden-set (reveal-at summarise p K)) ↭ FO 𝒢
+  reveal-at-partition summarise p K S hp =
+    ↭-trans (↭-sym (shift p (K .visible) (hidden-set (reveal-at summarise p K))))
     (↭-trans (++⁺ ↭-refl
-                (reveal-set p (K .hidden)
+                (reveal-set summarise p (K .summaries)
                    (proj₁ (proj₂ (visible-hidden-split K S)))
                    (hidden-∈ K hp)))
              (S .partition))
 
-  reveal-at-summaries : (p : Path) (K : Config 𝒢) (S : Summarised K) →
-                        p ∈ hidden-set K →
-                        All (λ CH → ∀ x y (i : Fin (vertex-width 𝒢 y)) (j : Fin (vertex-width 𝒢 x)) →
-                                    proj₂ CH x y i j ≡ summary (proj₁ CH) x y i j)
-                            (reveal-at p K .hidden)
-  reveal-at-summaries p K S hp =
-    AllP.concat⁺ (AllP.map⁺ (All-map (λ {CH} old → split-summaries p CH old) (S .summaries)))
+  reveal-at-summaries : (summarise : Summary) → Agrees summarise →
+                        (p : Path D) (K : Config 𝒢) → Summarised K →
+                        All Summarises (reveal-at summarise p K .summaries)
+  reveal-at-summaries summarise agrees p K S =
+    AllP.concat⁺ (AllP.map⁺ (All-tabulate (λ {CH} m →
+      split-summaries summarise agrees p CH (All-lookup monos m) (All-lookup dists m)
+                      (All-lookup (S .summaries) m))))
+    where
+    monos : All (λ CH → proj₁ CH ⊆ FO 𝒢) (K .summaries)
+    monos = All-map (λ inc {_} h → ∈-resp-↭ (S .partition) (∈-++⁺ʳ (K .visible) (inc h)))
+                    (AllP.map⁻ (blocks-⊆ (map proj₁ (K .summaries))))
+
+    dists : All (λ CH → AllPairs _≢_ (proj₁ CH)) (K .summaries)
+    dists = AllP.map⁻ (blocks-distinct (map proj₁ (K .summaries))
+                        (proj₁ (proj₂ (visible-hidden-split K S))))
 
   private
     visible-graph-summary : (K : Config 𝒢) → Summarised K →
-                            ∀ x y (i : Fin (vertex-width 𝒢 y)) (j : Fin (vertex-width 𝒢 x)) →
+                            ∀ x y →
+                            ¬ VertexIn x (fo-hidden 𝒢) → ¬ VertexIn y (fo-hidden 𝒢) →
                             ¬ VertexIn x (hidden-set K) → ¬ VertexIn y (hidden-set K) →
-                            visible-graph K x y i j ≡
-                            (fo-graph 𝒢 x y i j two.⊔ summary (hidden-set K) x y i j)
-    visible-graph-summary K S x y i j hx hy =
-      ≡-trans (visible-entry K x y i j)
-      (≡-trans (two.foldr-⊔-base _ (map (λ CH → proj₂ CH x y i j) (K .hidden)))
-               (≡-cong₂ two._⊔_ base-eq Σ-eq))
+                            visible-graph K x y ≈
+                            (fo-graph 𝒢 x y +ₘ summary (hidden-set K) x y)
+    visible-graph-summary K S x y hxf hyf hx hy =
+      ≈-trans (foldr-base (when both-visible? (G x y)) (map (λ CH → read-edge 𝒢 (proj₂ CH) x y) (K .summaries)))
+              (+ₘ-cong base-eq Σ-eq)
       where
       G  = fo-graph 𝒢
-      Cs = map proj₁ (K .hidden)
+      Cs = map proj₁ (K .summaries)
+
+      blocks-sub : All (λ CH → proj₁ CH ⊆ hidden-set K) (K .summaries)
+      blocks-sub = AllP.map⁻ (blocks-⊆ Cs)
 
       both-visible? = ¬? (x ∈ᵥ? hidden-set K) ×-dec ¬? (y ∈ᵥ? hidden-set K)
 
-      base-eq : when both-visible? (G x y) i j ≡ G x y i j
-      base-eq = when-yes both-visible? (hx , hy) (G x y) i j
-
-      stored-eq : map (λ CH → proj₂ CH x y i j) (K .hidden) ≡ map (λ C → summary C x y i j) Cs
-      stored-eq = ≡-trans (map-All-cong (All-map (λ inv → inv x y i j) (S .summaries)))
-                          (map-∘ {g = λ C → summary C x y i j} {f = proj₁} (K .hidden))
+      base-eq : when both-visible? (G x y) ≈ G x y
+      base-eq = when-yes both-visible? (hx , hy) (G x y)
 
       seps : AllPairs (λ C C' → Apart G C' C × Distinct C C') Cs
       seps = AllPairs-map (λ {C} {C'} (ap , d) → (apart-sym G {C} {C'} ap , d))
-                          (AllPairs-zip (separated S) (summarised-distinct K S))
+                          (AllPairs.zip (separated S , summarised-distinct K S))
 
-      restrict-O : restrict G (hidden-set K) x y i j ≡ two.O
-      restrict-O = when-O (x ∈ᵥ? hidden-set K ⊎-dec y ∈ᵥ? hidden-set K) (G x y) i j
-                          [ (λ h → ⊥-elim (hx h)) , (λ h → ⊥-elim (hy h)) ]′
+      restrict-O : restrict G (hidden-set K) x y ≈ εₘ
+      restrict-O = when-O (x ∈ᵥ? hidden-set K ⊎-dec y ∈ᵥ? hidden-set K) (G x y)
+                          (set-elim.⊎-case (λ h → set-elim.⊥-elim (hx h)) (λ h → set-elim.⊥-elim (hy h)))
 
-      Σ-eq : foldr two._⊔_ two.O (map (λ CH → proj₂ CH x y i j) (K .hidden)) ≡ summary (hidden-set K) x y i j
+      Σ-eq : foldr _+ₘ_ εₘ (map (λ CH → read-edge 𝒢 (proj₂ CH) x y) (K .summaries)) ≈ summary (hidden-set K) x y
       Σ-eq =
-        ≡-trans (≡-cong (foldr two._⊔_ two.O) stored-eq)
-        (≡-sym (≡-trans (assemble {E = hidden-set K} Cs (blocks-⊆ Cs) seps x y i j)
-               (≡-trans (two.foldr-⊔-base (restrict G (hidden-set K) x y i j)
-                                          (map (λ C → summary C x y i j) Cs))
-                        (≡-cong (two._⊔ foldr two._⊔_ two.O (map (λ C → summary C x y i j) Cs))
-                                restrict-O))))
+        ≈-trans (foldr-map-≈ εₘ (λ CH → read-edge 𝒢 (proj₂ CH) x y) (λ CH → summary (proj₁ CH) x y) (K .summaries)
+                  (All-tabulate (λ {CH} m →
+                     All-lookup (S .summaries) m x y hxf hyf
+                       (λ h → hx (mv-mono (All-lookup blocks-sub m) h))
+                       (λ h → hy (mv-mono (All-lookup blocks-sub m) h)))))
+        (≈-trans (≡-to-≈ (≡-cong (foldr _+ₘ_ εₘ) (map-∘ {g = λ C → summary C x y} {f = proj₁} (K .summaries))))
+        (≈-sym (≈-trans (assemble {E = hidden-set K} Cs (blocks-⊆ Cs) seps x y)
+               (≈-trans (foldr-base (restrict G (hidden-set K) x y) (map (λ C → summary C x y) Cs))
+               (≈-trans (+ₘ-cong restrict-O ≈-refl)
+                        (+ₘ-lunit (foldr _+ₘ_ εₘ (map (λ C → summary C x y) Cs))))))))
 
-  hide-reveal-visible : (p : Path) (K : Config 𝒢) → Summarised K →
+  hide-reveal-visible : (summarise : Summary) (p : Path D) (K : Config 𝒢) → Summarised K →
                         p ∈ K .visible →
-                        reveal-at p (hide-at p K) .visible ↭ K .visible
-  hide-reveal-visible p K S pv =
-    filter-out-↭ (_≟_ {shape})
+                        reveal-at summarise p (hide-at summarise p K) .visible ↭ K .visible
+  hide-reveal-visible summarise p K S pv =
+    filter-out-↭ (_≟_ {D})
                  (proj₁ (visible-hidden-split K S))
                  pv
 
-  hide-reveal-hidden-set : (p : Path) (K : Config 𝒢) → Summarised K →
+  hide-reveal-hidden-set : (summarise : Summary) (p : Path D) (K : Config 𝒢) → Summarised K →
                            p ∈ K .visible →
-                           hidden-set (reveal-at p (hide-at p K)) ↭ hidden-set K
-  hide-reveal-hidden-set p K S pv =
-    drop-∷ (↭-trans (reveal-set p (hide-at p K .hidden)
-                      (proj₁ (proj₂ (AllPairs-++⁻ (hide-at p K .visible)
-                                                  (hidden-set (hide-at p K))
-                                                  (partition-distinct (hide-at p K)
-                                                    (hide-at-partition p K S pv)))))
+                           hidden-set (reveal-at summarise p (hide-at summarise p K)) ↭ hidden-set K
+  hide-reveal-hidden-set summarise p K S pv =
+    drop-∷ (↭-trans (reveal-set summarise p (hide-at summarise p K .summaries)
+                      (proj₁ (proj₂ (AllPairs-++⁻ (hide-at summarise p K .visible)
+                                                  (hidden-set (hide-at summarise p K))
+                                                  (partition-distinct (hide-at summarise p K)
+                                                    (hide-at-partition summarise p K S pv)))))
                       (here (here ≡-refl)))
-                    (hide-at-hidden-set p K))
+                    (hide-at-hidden-set summarise p K))
 
   private
     hidden-not-visible : (K : Config 𝒢) → Summarised K → ∀ {p} →
@@ -895,73 +766,73 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
                              k)
                  hp ≡-refl
 
-  reveal-hide-visible : (p : Path) (K : Config 𝒢) → Summarised K →
+  reveal-hide-visible : (summarise : Summary) (p : Path D) (K : Config 𝒢) → Summarised K →
                         p ∈ hidden-set K →
-                        hide-at p (reveal-at p K) .visible ≡ K .visible
-  reveal-hide-visible p K S hp =
+                        hide-at summarise p (reveal-at summarise p K) .visible ≡ K .visible
+  reveal-hide-visible summarise p K S hp =
     ≡-trans (filter-reject (p ≢?_) (λ k → k ≡-refl))
             (filter-all (p ≢?_)
               (All-tabulate (λ {q} m e →
                  hidden-not-visible K S {p = p} hp (subst (_∈ K .visible) (≡-sym e) m))))
 
-  reveal-hide-hidden-set : (p : Path) (K : Config 𝒢) → Summarised K →
+  reveal-hide-hidden-set : (summarise : Summary) (p : Path D) (K : Config 𝒢) → Summarised K →
                            p ∈ hidden-set K →
-                           hidden-set (hide-at p (reveal-at p K)) ↭ hidden-set K
-  reveal-hide-hidden-set p K S hp =
-    ↭-trans (hide-at-hidden-set p (reveal-at p K))
-            (reveal-set p (K .hidden)
+                           hidden-set (hide-at summarise p (reveal-at summarise p K)) ↭ hidden-set K
+  reveal-hide-hidden-set summarise p K S hp =
+    ↭-trans (hide-at-hidden-set summarise p (reveal-at summarise p K))
+            (reveal-set summarise p (K .summaries)
                (proj₁ (proj₂ (visible-hidden-split K S)))
                (hidden-∈ K hp))
 
   private
-    restrict-≤ : (G : Relation (vertex-width 𝒢)) (C : List (Path)) →
-                 ∀ x y (i : Fin (vertex-width 𝒢 y)) (j : Fin (vertex-width 𝒢 x)) →
-                 (restrict G C x y i j two.⊔ G x y i j) ≡ G x y i j
-    restrict-≤ G C x y i j with x ∈ᵥ? C ⊎-dec y ∈ᵥ? C
-    ... | yes _ = two.⊔-idem
-    ... | no  _ = ≡-refl
+    restrict-≤ : (G : EdgeLabels (vertex-object 𝒢)) (C : List (Path D)) →
+                 ∀ x y → (restrict G C x y +ₘ G x y) ≈ G x y
+    restrict-≤ G C x y with x ∈ᵥ? C ⊎-dec y ∈ᵥ? C
+    ... | yes _ = +ₘ-idem (G x y)
+    ... | no  _ = +ₘ-lunit (G x y)
 
-    restrict-hidden-agree : (G : Relation (vertex-width 𝒢)) (C : List (Path)) →
-                            All (λ r → Prf (((z : V 𝒢) (i : Fin (vertex-width 𝒢 z)) (j : Fin (vertex-width 𝒢 r)) →
-                                             G r z i j S.≈ restrict G C r z i j)
-                                        ∧ₚ ((z : V 𝒢) (i : Fin (vertex-width 𝒢 r)) (j : Fin (vertex-width 𝒢 z)) →
-                                             G z r i j S.≈ restrict G C z r i j)))
+    restrict-hidden-agree : (G : EdgeLabels (vertex-object 𝒢)) (C : List (Path D)) →
+                            All (λ r → Prf (((z : V 𝒢) → G r z ≈ restrict G C r z)
+                                        ∧ₚ ((z : V 𝒢) → G z r ≈ restrict G C z r)))
                                 (map at C)
     restrict-hidden-agree G C =
       AllP.map⁺ (All-map (λ {q} h → ⟪
-        (λ z i j → ≈-of-≡ (≡-sym (when-yes (at q ∈ᵥ? C ⊎-dec z ∈ᵥ? C) (inj₁ h) (G (at q) z) i j))) ,ₚ
-        (λ z i j → ≈-of-≡ (≡-sym (when-yes (z ∈ᵥ? C ⊎-dec at q ∈ᵥ? C) (inj₂ h) (G z (at q)) i j))) ⟫)
+        (λ z → ≈-sym (when-yes (at q ∈ᵥ? C ⊎-dec z ∈ᵥ? C) (inj₁ h) (G (at q) z))) ,ₚ
+        (λ z → ≈-sym (when-yes (z ∈ᵥ? C ⊎-dec at q ∈ᵥ? C) (inj₂ h) (G z (at q)))) ⟫)
         (All-tabulate (λ h → h)))
 
   summaries-assemble : (K : Config 𝒢) → Summarised K →
-                       ∀ x y (i : Fin (vertex-width 𝒢 y)) (j : Fin (vertex-width 𝒢 x)) →
+                       ∀ x y →
+                       ¬ VertexIn x (fo-hidden 𝒢) → ¬ VertexIn y (fo-hidden 𝒢) →
                        ¬ VertexIn x (hidden-set K) → ¬ VertexIn y (hidden-set K) →
-                       visible-graph K x y i j ≡
-                       hide-all (vertex-width 𝒢) (fo-graph 𝒢) (map at (hidden-set K)) x y i j
-  summaries-assemble K S x y i j hx hy =
-    ≡-trans (visible-graph-summary K S x y i j hx hy)
-            (≡-sym (≡-of-≈ (Hide-𝒢.agree-add {G = restrict (fo-graph 𝒢) (hidden-set K)} {G' = fo-graph 𝒢}
+                       visible-graph K x y ≈
+                       hide-all (vertex-object 𝒢) (fo-graph 𝒢) (map at (hidden-set K)) x y
+  summaries-assemble K S x y hxf hyf hx hy =
+    ≈-trans (visible-graph-summary K S x y hxf hyf hx hy)
+            (≈-sym (Hide-𝒢.agree-add {G = restrict (fo-graph 𝒢) (hidden-set K)} {G' = fo-graph 𝒢}
                       (map at (hidden-set K))
-                      (λ x' y' i' j' → ≈-of-≡ (restrict-≤ (fo-graph 𝒢) (hidden-set K) x' y' i' j'))
+                      (λ x' y' → restrict-≤ (fo-graph 𝒢) (hidden-set K) x' y')
                       (restrict-hidden-agree (fo-graph 𝒢) (hidden-set K))
-                      x y i j)))
+                      x y))
 
-  record _≈_ (K K' : Config 𝒢) : Set where
+  record _≈K_ (K K' : Config 𝒢) : Set where
     field
       visible-≈ : K .visible ↭ K' .visible
       hidden-≈  : hidden-set K ↭ hidden-set K'
 
-  open _≈_ public
+  open _≈K_ public
 
-  hide-reveal : (p : Path) (K : Config 𝒢) → Summarised K → p ∈ K .visible → reveal-at p (hide-at p K) ≈ K
-  hide-reveal p K S pv .visible-≈ = hide-reveal-visible p K S pv
-  hide-reveal p K S pv .hidden-≈  = hide-reveal-hidden-set p K S pv
+  hide-reveal : (summarise : Summary) (p : Path D) (K : Config 𝒢) → Summarised K → p ∈ K .visible →
+                reveal-at summarise p (hide-at summarise p K) ≈K K
+  hide-reveal summarise p K S pv .visible-≈ = hide-reveal-visible summarise p K S pv
+  hide-reveal summarise p K S pv .hidden-≈  = hide-reveal-hidden-set summarise p K S pv
 
-  reveal-hide : (p : Path) (K : Config 𝒢) → Summarised K → p ∈ hidden-set K → hide-at p (reveal-at p K) ≈ K
-  reveal-hide p K S hp .visible-≈ = ↭-reflexive (reveal-hide-visible p K S hp)
-  reveal-hide p K S hp .hidden-≈  = reveal-hide-hidden-set p K S hp
+  reveal-hide : (summarise : Summary) (p : Path D) (K : Config 𝒢) → Summarised K → p ∈ hidden-set K →
+                hide-at summarise p (reveal-at summarise p K) ≈K K
+  reveal-hide summarise p K S hp .visible-≈ = ↭-reflexive (reveal-hide-visible summarise p K S hp)
+  reveal-hide summarise p K S hp .hidden-≈  = reveal-hide-hidden-set summarise p K S hp
 
-  merge-region-resp : (G : Relation (vertex-width 𝒢)) (w : Vertex shape) {rss rss' : List (List (Vertex shape))} →
+  merge-region-resp : (G : EdgeLabels (vertex-object 𝒢)) (w : Path D) {rss rss' : List (List (Path D))} →
                       rss ↭↭ rss' → merge-region G w rss ↭↭ merge-region G w rss'
   merge-region-resp G w {rss} {rss'} p =
     H.prep (↭.prep w (concat-resp (proj₁ tp-p))) (proj₂ tp-p)
@@ -969,14 +840,14 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
     tp-p = partition-permᴿ (adjacent-in? G w) Any-resp-↭ (λ pc → Any-resp-↭ (↭-sym pc)) p
 
   private
-    merge-region-filter : (G : Relation (vertex-width 𝒢)) (w : Vertex shape) (rss : List (List (Vertex shape))) →
+    merge-region-filter : (G : EdgeLabels (vertex-object 𝒢)) (w : Path D) (rss : List (List (Path D))) →
                           merge-region G w rss ≡
                           ((w ∷ concat (filter (adjacent-in? G w) rss)) ∷
                            filter (∁? (adjacent-in? G w)) rss)
     merge-region-filter G w rss =
       ≡-cong (λ u → (w ∷ concat (proj₁ u)) ∷ proj₂ u) (partition-defn (adjacent-in? G w) rss)
 
-    cross : (G : Relation (vertex-width 𝒢)) (u u' : Vertex shape) (rss : List (List (Vertex shape))) →
+    cross : (G : EdgeLabels (vertex-object 𝒢)) (u u' : Path D) (rss : List (List (Path D))) →
             AdjacentIn G u (u' ∷ concat (filter (adjacent-in? G u') rss)) →
             AdjacentIn G u' (u ∷ concat (filter (adjacent-in? G u) rss))
     cross G u u' rss (here a)  = here (adjacent-sym G a)
@@ -984,7 +855,7 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
       there (AnyPr.concat⁺ (Any-filter⁺ (adjacent-in? G u)
                (Any-filter⁻ (adjacent-in? G u') rss (AnyPr.concat⁻ (filter (adjacent-in? G u') rss) m))))
 
-  merge-region-comm : (G : Relation (vertex-width 𝒢)) (w w' : Vertex shape) (rss : List (List (Vertex shape))) →
+  merge-region-comm : (G : EdgeLabels (vertex-object 𝒢)) (w w' : Path D) (rss : List (List (Path D))) →
                       merge-region G w (merge-region G w' rss) ↭↭
                       merge-region G w' (merge-region G w rss)
   merge-region-comm G w w' rss =
@@ -1052,7 +923,7 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
       hb' : ¬ Any (λ C → AdjacentIn G w C × AdjacentIn G w' C) rss
       hb' m = ¬b' (there (AnyPr.concat⁺ (Any-filter⁺ A? m)))
 
-  regions-perm : (G : Relation (vertex-width 𝒢)) {ws ws' : List (Vertex shape)} → ws ↭ ws' →
+  regions-perm : (G : EdgeLabels (vertex-object 𝒢)) {ws ws' : List (Path D)} → ws ↭ ws' →
                  regions G ws ↭↭ regions G ws'
   regions-perm G ↭.refl         = ↭↭-refl
   regions-perm G (↭.prep w p)   = merge-region-resp G w (regions-perm G p)
@@ -1062,75 +933,105 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
   regions-perm G (↭.trans p q)  = H.trans (regions-perm G p) (regions-perm G q)
 
   private
-    stored≡ : map proj₁ (initial .hidden) ≡ regions (fo-graph 𝒢) (FO 𝒢)
-    stored≡ = map-proj₁-pair summary (regions (fo-graph 𝒢) (FO 𝒢))
+    stored≡ : (summarise : Summary) →
+              map proj₁ (initial summarise .summaries) ≡ regions (fo-graph 𝒢) (FO 𝒢)
+    stored≡ summarise = map-proj₁-pair summarise (regions (fo-graph 𝒢) (FO 𝒢))
 
-  initial-summarised : Summarised (initial)
-  initial-summarised .partition =
-    subst (λ z → concat z ↭ FO 𝒢) (≡-sym stored≡) (regions-concat (fo-graph 𝒢) (FO 𝒢))
-  initial-summarised .canonical =
+  initial-summarised : (summarise : Summary) → Agrees summarise → Summarised (initial summarise)
+  initial-summarised summarise agrees .partition =
+    subst (λ z → concat z ↭ FO 𝒢) (≡-sym (stored≡ summarise)) (regions-concat (fo-graph 𝒢) (FO 𝒢))
+  initial-summarised summarise agrees .canonical =
     subst (λ z → z ↭↭ regions (fo-graph 𝒢) (concat z))
-          (≡-sym stored≡)
+          (≡-sym (stored≡ summarise))
           (regions-perm (fo-graph 𝒢) (↭-sym (regions-concat (fo-graph 𝒢) (FO 𝒢))))
-  initial-summarised .summaries = AllP.map⁺ (universal (λ C x y i j → ≡-refl) (regions (fo-graph 𝒢) (FO 𝒢)))
+  initial-summarised summarise agrees .summaries =
+    AllP.map⁺ (All-tabulate (λ {C} m →
+      agrees C (All-lookup (regions-⊆ (fo-graph 𝒢) (FO 𝒢)) m)
+               (All-lookup (regions-distinct (fo-graph 𝒢) (FO 𝒢) FO-distinct) m)))
 
-  hide-at-summarised : (p : Vertex shape) (K : Config 𝒢) (S : Summarised K) →
+  -- From the inputs to the root, the visible graph of the initial state is the collapse of
+  -- the underlying graph: reading the stored region summaries computes the same dependence as
+  -- hiding every interior vertex.
+  root-not-hidden : (K : Config 𝒢) → Summarised K → ¬ VertexIn (inj₂ ε) (hidden-set K)
+  root-not-hidden K S mem =
+    All-lookup (vertices-no-ε D)
+               (∈-resp-↭ (filterᵇ-split (fo-at D) (vertices D))
+                         (∈-++⁺ʳ (fo-hidden 𝒢)
+                                 (∈-resp-↭ (S .partition) (∈-++⁺ʳ (K .visible) mem))))
+    ≡-refl
+
+  root-not-fo-hidden : ¬ VertexIn (inj₂ ε) (fo-hidden 𝒢)
+  root-not-fo-hidden mem =
+    All-lookup (vertices-no-ε D)
+               (∈-resp-↭ (filterᵇ-split (fo-at D) (vertices D)) (∈-++⁺ˡ mem))
+    ≡-refl
+
+  initial-collapse : (summarise : Summary) → Agrees summarise →
+                     visible-graph (initial summarise) (inj₁ input) (inj₂ ε) ≈ collapse 𝒢
+  initial-collapse summarise agrees =
+    ≈-trans (summaries-assemble (initial summarise) (initial-summarised summarise agrees)
+              (inj₁ input) (inj₂ ε) (λ ()) root-not-fo-hidden (λ ())
+              (root-not-hidden (initial summarise) (initial-summarised summarise agrees)))
+            (≈-trans (hide-all-perm 𝒢 (fo-forward 𝒢)
+                       (map⁺ at (initial-summarised summarise agrees .partition))
+                       (inj₁ input) (inj₂ ε))
+                     (fo-collapse 𝒢))
+
+  hide-at-summarised : (summarise : Summary) → Agrees summarise →
+                       (p : Path D) (K : Config 𝒢) (S : Summarised K) →
                        p ∈ K .visible →
-                       Summarised (hide-at p K)
-  hide-at-summarised p K S pv .partition = hide-at-partition p K S pv
-  hide-at-summarised p K S pv .canonical =
-    subst (λ z → z ↭↭ regions (fo-graph 𝒢) (hidden-set (hide-at p K)))
+                       Summarised (hide-at summarise p K)
+  hide-at-summarised summarise agrees p K S pv .partition = hide-at-partition summarise p K S pv
+  hide-at-summarised summarise agrees p K S pv .canonical =
+    subst (λ z → z ↭↭ regions (fo-graph 𝒢) (hidden-set (hide-at summarise p K)))
           lhs-eq
           (H.trans (merge-region-resp (fo-graph 𝒢) p (S .canonical))
-                   (H.sym ↭-sym (regions-perm (fo-graph 𝒢) (hide-at-hidden-set p K))))
+                   (H.sym ↭-sym (regions-perm (fo-graph 𝒢) (hide-at-hidden-set summarise p K))))
     where
-    lhs-eq : merge-region (fo-graph 𝒢) p (map proj₁ (K .hidden)) ≡
-             map proj₁ (hide-at p K .hidden)
+    lhs-eq : merge-region (fo-graph 𝒢) p (map proj₁ (K .summaries)) ≡
+             map proj₁ (hide-at summarise p K .summaries)
     lhs-eq =
       ≡-cong₂ (λ u v → (p ∷ concat u) ∷ v)
-              (map-partition₁ proj₁ (adjacent-in? (fo-graph 𝒢) p) (K .hidden))
-              (map-partition₂ proj₁ (adjacent-in? (fo-graph 𝒢) p) (K .hidden))
-  hide-at-summarised p K S pv .summaries = hide-at-summaries p K S pv
+              (map-partition₁ proj₁ (adjacent-in? (fo-graph 𝒢) p) (K .summaries))
+              (map-partition₂ proj₁ (adjacent-in? (fo-graph 𝒢) p) (K .summaries))
+  hide-at-summarised summarise agrees p K S pv .summaries = hide-at-summaries summarise agrees p K S pv
 
   private
-    regions-⊆ : (G : Relation (vertex-width 𝒢)) (ws : List (Vertex shape)) → All (_⊆ ws) (regions G ws)
-    regions-⊆ G ws = All-map (λ inc {_} h → ∈-resp-↭ (regions-concat G ws) (inc h)) (blocks-⊆ (regions G ws))
-
-    merge-region-inert : (G : Relation (vertex-width 𝒢)) (w : Vertex shape) (X Y : List (List (Vertex shape))) →
-                         All (λ C → ¬ AdjacentIn G w C) Y →
-                         merge-region G w (X ++ Y) ≡ merge-region G w X ++ Y
-    merge-region-inert G w X Y h =
-      ≡-trans (merge-region-filter G w (X ++ Y))
+    merge-region-inert : (G : EdgeLabels (vertex-object 𝒢)) (w : Path D) (X' Y' : List (List (Path D))) →
+                         All (λ C → ¬ AdjacentIn G w C) Y' →
+                         merge-region G w (X' ++ Y') ≡ merge-region G w X' ++ Y'
+    merge-region-inert G w X' Y' h =
+      ≡-trans (merge-region-filter G w (X' ++ Y'))
       (≡-trans (≡-cong₂ (λ u v → (w ∷ concat u) ∷ v)
-                 (≡-trans (filter-++ (adjacent-in? G w) X Y)
-                 (≡-trans (≡-cong (filter (adjacent-in? G w) X ++_) (filter-none (adjacent-in? G w) h))
-                          (++-identityʳ (filter (adjacent-in? G w) X))))
-                 (≡-trans (filter-++ (∁? (adjacent-in? G w)) X Y)
-                          (≡-cong (filter (∁? (adjacent-in? G w)) X ++_)
+                 (≡-trans (filter-++ (adjacent-in? G w) X' Y')
+                 (≡-trans (≡-cong (filter (adjacent-in? G w) X' ++_) (filter-none (adjacent-in? G w) h))
+                          (++-identityʳ (filter (adjacent-in? G w) X'))))
+                 (≡-trans (filter-++ (∁? (adjacent-in? G w)) X' Y')
+                          (≡-cong (filter (∁? (adjacent-in? G w)) X' ++_)
                                   (filter-all (∁? (adjacent-in? G w)) h))))
-               (≡-cong (_++ Y) (≡-sym (merge-region-filter G w X))))
+               (≡-cong (_++ Y') (≡-sym (merge-region-filter G w X'))))
 
-  regions-apart : (G : Relation (vertex-width 𝒢)) (B rest : List (Vertex shape)) → Apart G B rest →
-                  regions G (B ++ rest) ↭↭ (regions G B ++ regions G rest)
-  regions-apart G []      rest ap = ↭↭-refl
-  regions-apart G (b ∷ B) rest (hb ∷ hB) =
-    H.trans (merge-region-resp G b (regions-apart G B rest hB))
-            (↭↭-of-≡ (merge-region-inert G b (regions G B) (regions G rest)
+  regions-apart : (G : EdgeLabels (vertex-object 𝒢)) (B' rest : List (Path D)) → Apart G B' rest →
+                  regions G (B' ++ rest) ↭↭ (regions G B' ++ regions G rest)
+  regions-apart G []       rest ap = ↭↭-refl
+  regions-apart G (b ∷ B') rest (hb ∷ hB) =
+    H.trans (merge-region-resp G b (regions-apart G B' rest hB))
+            (↭↭-of-≡ (merge-region-inert G b (regions G B') (regions G rest)
               (All-map (λ {C} inc →
                  AllP.All¬⇒¬Any (All-tabulate (λ h → All-lookup hb (inc h))))
                 (regions-⊆ G rest))))
 
   private
-    apart-concat : {G : Relation (vertex-width 𝒢)} {C : List (Vertex shape)} {Cs : List (List (Vertex shape))} →
+    apart-concat : {G : EdgeLabels (vertex-object 𝒢)} {C : List (Path D)} {Cs : List (List (Path D))} →
                    All (Apart G C) Cs → Apart G C (concat Cs)
     apart-concat aps = All-tabulate (λ m → AllP.concat⁺ (All-map (λ ap → All-lookup ap m) aps))
 
-    regions-nonempty : (G : Relation (vertex-width 𝒢)) (ws : List (Vertex shape)) →
+    regions-nonempty : (G : EdgeLabels (vertex-object 𝒢)) (ws : List (Path D)) →
                        All (λ C → 1 ≤ length C) (regions G ws)
     regions-nonempty G []       = []
     regions-nonempty G (w ∷ ws) = s≤s z≤n ∷ proj₂ (partition-All (adjacent-in? G w) (regions-nonempty G ws))
 
-  regions-apart-concat : {G : Relation (vertex-width 𝒢)} {Cs : List (List (Vertex shape))} →
+  regions-apart-concat : {G : EdgeLabels (vertex-object 𝒢)} {Cs : List (List (Path D))} →
                          AllPairs (Apart G) Cs →
                          regions G (concat Cs) ↭↭ concat (map (regions G) Cs)
   regions-apart-concat {G = G}           []                    = ↭↭-refl
@@ -1140,11 +1041,11 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
 
   blocks-one-region : (K : Config 𝒢) → Summarised K →
                       All (λ C → regions (fo-graph 𝒢) C ↭↭ (C ∷ []))
-                          (map proj₁ (K .hidden))
+                          (map proj₁ (K .summaries))
   blocks-one-region K S = All-map (λ {C} e → one {C} e) lens1
     where
     G  = fo-graph 𝒢
-    Cs = map proj₁ (K .hidden)
+    Cs = map proj₁ (K .summaries)
 
     perm2 : Cs ↭↭ concat (map (regions G) Cs)
     perm2 = H.trans (S .canonical) (regions-apart-concat (separated S))
@@ -1154,7 +1055,7 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
                         (H.sym ↭-sym (S .canonical))
                         (regions-nonempty G (hidden-set K))
 
-    len-regions : ∀ (C : List (Vertex shape)) → 1 ≤ length C → 1 ≤ length (regions G C)
+    len-regions : ∀ (C : List (Path D)) → 1 ≤ length C → 1 ≤ length (regions G C)
     len-regions (q ∷ C') _ = s≤s z≤n
 
     atleast : All (λ C → 1 ≤ length (regions G C)) Cs
@@ -1170,7 +1071,7 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
     lens1 : All (λ C → length (regions G C) ≡ 1) Cs
     lens1 = AllP.map⁻ (sum-ones (AllP.map⁺ atleast) lens-eq)
 
-    one : ∀ {C : List (Vertex shape)} → length (regions G C) ≡ 1 → regions G C ↭↭ (C ∷ [])
+    one : ∀ {C : List (Path D)} → length (regions G C) ≡ 1 → regions G C ↭↭ (C ∷ [])
     one {C} e with singleton (regions G C) e
     ... | (C₀ , eq) =
       subst (_↭↭ (C ∷ [])) (≡-sym eq)
@@ -1178,15 +1079,16 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
                              (subst (λ z → concat z ↭ C) eq (regions-concat G C)))
                     (H.refl []))
 
-  reveal-at-summarised : (p : Vertex shape) (K : Config 𝒢) (S : Summarised K) →
+  reveal-at-summarised : (summarise : Summary) → Agrees summarise →
+                         (p : Path D) (K : Config 𝒢) (S : Summarised K) →
                          p ∈ hidden-set K →
-                         Summarised (reveal-at p K)
-  reveal-at-summarised p K S hp .partition = reveal-at-partition p K S hp
-  reveal-at-summarised p K S hp .summaries = reveal-at-summaries p K S hp
-  reveal-at-summarised p K S hp .canonical =
-    subst (λ z → z ↭↭ regions G (hidden-set (reveal-at p K)))
-          (≡-trans (≡-cong concat (map-∘ {g = map proj₁} {f = split-region p} (K .hidden)))
-                   (concat-map {f = proj₁} (map (split-region p) (K .hidden))))
+                         Summarised (reveal-at summarise p K)
+  reveal-at-summarised summarise agrees p K S hp .partition = reveal-at-partition summarise p K S hp
+  reveal-at-summarised summarise agrees p K S hp .summaries = reveal-at-summaries summarise agrees p K S
+  reveal-at-summarised summarise agrees p K S hp .canonical =
+    subst (λ z → z ↭↭ regions G (hidden-set (reveal-at summarise p K)))
+          (≡-trans (≡-cong concat (map-∘ {g = map proj₁} {f = split-region summarise p} (K .summaries)))
+                   (concat-map {f = proj₁} (map (split-region summarise p) (K .summaries))))
           (H.trans blocks-part
           (H.trans (↭↭-of-≡ (≡-cong concat maps-eq))
           (H.trans (H.sym ↭.↭-sym (regions-apart-concat {G = G} apart-filtered))
@@ -1194,16 +1096,16 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
                    (H.sym ↭.↭-sym (regions-perm G hrev))))))
     where
     G    = fo-graph 𝒢
-    Cs   = map proj₁ (K .hidden)
+    Cs   = map proj₁ (K .summaries)
     notp = p ≢?_
 
     distinct-hs : AllPairs _≢_ (hidden-set K)
     distinct-hs = proj₁ (proj₂ (visible-hidden-split K S))
 
-    hrev : hidden-set (reveal-at p K) ↭ filter notp (hidden-set K)
+    hrev : hidden-set (reveal-at summarise p K) ↭ filter notp (hidden-set K)
     hrev = drop-∷
-      (↭-trans (reveal-set p (K .hidden) distinct-hs (hidden-∈ K hp))
-               (↭.↭-sym (filter-out-↭ (_≟_ {shape}) distinct-hs hp)))
+      (↭-trans (reveal-set summarise p (K .summaries) distinct-hs (hidden-∈ K hp))
+               (↭.↭-sym (filter-out-↭ (_≟_ {D}) distinct-hs hp)))
 
     apart-filtered : AllPairs (Apart G) (map (filter notp) Cs)
     apart-filtered =
@@ -1216,25 +1118,208 @@ module _ {m n : ℕ} (𝒢 : Graph m n) where
                                     ap)
                       (separated S))
 
-    maps-eq : map (λ CH → regions G (filter notp (proj₁ CH))) (K .hidden) ≡
+    maps-eq : map (λ CH → regions G (filter notp (proj₁ CH))) (K .summaries) ≡
               map (regions G) (map (filter notp) Cs)
     maps-eq =
-      ≡-trans (map-∘ {g = λ C → regions G (filter notp C)} {f = proj₁} (K .hidden))
+      ≡-trans (map-∘ {g = λ C → regions G (filter notp C)} {f = proj₁} (K .summaries))
               (map-∘ {g = regions G} {f = filter notp} Cs)
 
     per-block : ∀ CH → regions G (proj₁ CH) ↭↭ (proj₁ CH ∷ []) →
-                map proj₁ (split-region p CH) ↭↭ regions G (filter notp (proj₁ CH))
+                map proj₁ (split-region summarise p CH) ↭↭ regions G (filter notp (proj₁ CH))
     per-block (C , H') one =
       dec-case (p ∈? C)
-        (λ k → ↭↭-of-≡ (≡-trans (≡-cong (map proj₁) (split-region-∈ p C H' k))
-                                (map-proj₁-pair summary (regions G (filter notp C)))))
+        (λ k → ↭↭-of-≡ (≡-trans (≡-cong (map proj₁) (split-region-∈ summarise p C H' k))
+                                (map-proj₁-pair summarise (regions G (filter notp C)))))
         (λ ¬k → subst₂ _↭↭_
-                  (≡-sym (≡-cong (map proj₁) (split-region-∉ p C H' ¬k)))
+                  (≡-sym (≡-cong (map proj₁) (split-region-∉ summarise p C H' ¬k)))
                   (≡-sym (≡-cong (regions G)
                            (filter-all (p ≢?_)
                              (All-tabulate (λ {q} m e' → ¬k (subst (_∈ C) (≡-sym e') m))))))
                   (H.sym ↭.↭-sym one))
 
-    blocks-part : concat (map (λ CH → map proj₁ (split-region p CH)) (K .hidden)) ↭↭
-                  concat (map (λ CH → regions G (filter notp (proj₁ CH))) (K .hidden))
+    blocks-part : concat (map (λ CH → map proj₁ (split-region summarise p CH)) (K .summaries)) ↭↭
+                  concat (map (λ CH → regions G (filter notp (proj₁ CH))) (K .summaries))
     blocks-part = concat-↭↭ (All-map (λ {CH} one → per-block CH one) (AllP.map⁻ (blocks-one-region K S)))
+
+  private
+    idt : {A' : Set} → String → A' → A'
+    idt _ a = a
+
+    ≡ᵇ-self : (n : ℕ) → (n ≡ᵇ n) ≡ true
+    ≡ᵇ-self zero    = ≡-refl
+    ≡ᵇ-self (suc n) = ≡ᵇ-self n
+
+    ≡ᵇ-to-≡ : (i j : ℕ) → (i ≡ᵇ j) ≡ true → i ≡ j
+    ≡ᵇ-to-≡ zero    zero    _  = ≡-refl
+    ≡ᵇ-to-≡ zero    (suc j) ()
+    ≡ᵇ-to-≡ (suc i) zero    ()
+    ≡ᵇ-to-≡ (suc i) (suc j) e  = ≡-cong suc (≡ᵇ-to-≡ i j e)
+
+    ∨-true : (a : Bool) {b : Bool} → (a ∨ b) ≡ true → (a ≡ true) ⊎ (b ≡ true)
+    ∨-true true  e = inj₁ ≡-refl
+    ∨-true false e = inj₂ e
+
+    ∨-trueˡ : {a b : Bool} → a ≡ true → (a ∨ b) ≡ true
+    ∨-trueˡ {a} {b} e = ≡-cong (_∨ b) e
+
+    ∨-trueʳ : (a : Bool) {b : Bool} → b ≡ true → (a ∨ b) ≡ true
+    ∨-trueʳ true  e = ≡-refl
+    ∨-trueʳ false e = e
+
+    not-both : {b : Bool} → b ≡ true → not b ≡ true → ⊥
+    not-both {true}  _  ()
+    not-both {false} () _
+
+    any-≡ᵇ-∈ : (n : ℕ) (L : List ℕ) → any (n ≡ᵇ_) L ≡ true → Any (n ≡_) L
+    any-≡ᵇ-∈ n []      ()
+    any-≡ᵇ-∈ n (j ∷ L) e with n ≡ᵇ j in nj
+    ... | true  = here (≡ᵇ-to-≡ n j nj)
+    ... | false = there (any-≡ᵇ-∈ n L e)
+
+    ∈-any-≡ᵇ : (n : ℕ) (L : List ℕ) → Any (n ≡_) L → any (n ≡ᵇ_) L ≡ true
+    ∈-any-≡ᵇ n (j ∷ L) (here ≡-refl) rewrite ≡ᵇ-self n = ≡-refl
+    ∈-any-≡ᵇ n (j ∷ L) (there m) with n ≡ᵇ j
+    ... | true  = ≡-refl
+    ... | false = ∈-any-≡ᵇ n L m
+
+    filterᵇ-true : {A' : Set} (f : A' → Bool) {x : A'} (xs : List A') →
+                   x ∈ₚ filterᵇ f xs → f x ≡ true
+    filterᵇ-true f []       ()
+    filterᵇ-true f (y ∷ xs) m with f y in fy | m
+    ... | true  | here e   = ≡-trans (≡-cong f e) fy
+    ... | true  | there m' = filterᵇ-true f xs m'
+    ... | false | m'       = filterᵇ-true f xs m'
+
+    F₀ : Tabulation
+    F₀ = fo-tabulation idt
+
+    sorted-pairs : (G : EdgeLabels (vertex-object 𝒢)) → Fwd 𝒢 G →
+                   (C : List (Path D)) → AllPairs _≢_ C →
+                   AllPairs (λ v u → Prf (G u v ≈ εₘ)) (map at (sort C))
+    sorted-pairs G fwd C dist =
+      AllPairsP.map⁺ (AllPairs-map step (AllPairs.zip (le-pairs , ne-pairs)))
+      where
+      le-pairs : AllPairs Vertex≤._≤_ (sort C)
+      le-pairs = LinkedP.Linked⇒AllPairs Vertex≤.trans (sort-↗ C)
+
+      ne-pairs : AllPairs _≢_ (sort C)
+      ne-pairs = AllPairs-perm (λ h e → h (≡-sym e)) (↭-sym (sort-↭ C)) dist
+
+      step : {p q : Path D} → Vertex≤._≤_ p q × p ≢ q → Prf (G (at q) (at p) ≈ εₘ)
+      step {p} {q} (inj₁ lt-pq , ne) with fwd (at q) (at p)
+      ... | inj₂ z  = z
+      ... | inj₁ qp = ⊥-elim (asym p q lt-pq qp)
+      step (inj₂ e , ne) = ⊥-elim (ne e)
+
+    fo-hidden-distinct : AllPairs _≢_ (fo-hidden 𝒢)
+    fo-hidden-distinct = AllPairsP.filter⁺ (λ q → T? (not (fo-at D q))) (distinct D)
+
+    fo-hid-mem : All (_∈ₚ all-vertices 𝒢) fo-hid
+    fo-hid-mem = All-tabulate (λ {w} _ → ∈-all-vertices 𝒢 w)
+
+    fo-hid-pairs : AllPairs (λ v u → Prf (edge-labels 𝒢 u v ≈ εₘ)) fo-hid
+    fo-hid-pairs = sorted-pairs (edge-labels 𝒢) (edge-labels-forward 𝒢) (fo-hidden 𝒢)
+                                fo-hidden-distinct
+
+    module FoHide = HideRepresents 𝒢 ε? (tabulation-rep 𝒢 ε?) fo-hid fo-hid-mem fo-hid-pairs
+
+    fo-rep : Represents 𝒢 F₀ FoHide.remaining (fo-graph 𝒢)
+    fo-rep = rep-cong 𝒢 (λ x y → hide-all-perm 𝒢 (edge-labels-forward 𝒢)
+                                                 (map⁺ at (sort-↭ (fo-hidden 𝒢))) x y)
+                     FoHide.hide-rep
+
+  -- The tabulated summariser at identity tick satisfies boundary agreement: the stored
+  -- fo-tabulation represents the first-order graph at its surviving vertices, restriction and
+  -- hiding preserve representation, and sorting the region is sound because the restricted graph
+  -- is forward.
+  tabulated-agrees : Agrees (tabulated-summary (λ _ x → x) (fo-tabulation (λ _ x → x)))
+  tabulated-agrees C C⊆FO C-dist x y hxf hyf hxC hyC =
+    ⟪ ≈-trans (≡-to-≈ region-eq)
+      (≈-trans (read-edge-rep 𝒢 RH.hide-rep x∈rem y∈rem)
+               (hide-all-perm 𝒢 (restrict-forward C (fo-forward 𝒢)) (map⁺ at (sort-↭ C)) x y)) ⟫
+    where
+    regionV : List (V 𝒢)
+    regionV = map at (sort C)
+
+    idxs : List ℕ
+    idxs = map (index-of 𝒢) regionV
+
+    side⁻ : (z : V 𝒢) → any (index-of 𝒢 z ≡ᵇ_) idxs ≡ true → VertexIn z C
+    side⁻ z e with ∈-map⁻ at (Any-map (λ ie → index-of-injective 𝒢 ie)
+                                   (AnyPr.map⁻ (any-≡ᵇ-∈ (index-of 𝒢 z) idxs e)))
+    ... | (p , pm , ze) = subst (λ v → VertexIn v C) (≡-sym ze) (∈-resp-↭ (sort-↭ C) pm)
+
+    side⁺ : (z : V 𝒢) → VertexIn z C → any (index-of 𝒢 z ≡ᵇ_) idxs ≡ true
+    side⁺ (inj₁ _) ()
+    side⁺ (inj₂ p) h =
+      ∈-any-≡ᵇ (index-of 𝒢 (at p)) idxs
+               (∈-map⁺ (index-of 𝒢) (∈-map⁺ at (∈-resp-↭ (↭-sym (sort-↭ C)) h)))
+
+    mask-restrict : (x' y' : V 𝒢) →
+                    restrict-mask 𝒢 regionV (fo-graph 𝒢) x' y' ≈ restrict (fo-graph 𝒢) C x' y'
+    mask-restrict x' y' with x' ∈ᵥ? C ⊎-dec y' ∈ᵥ? C
+    ... | yes k =
+      ≡-to-≈ (≡-cong (λ b → if b then fo-graph 𝒢 x' y' else εₘ) (mem-true k))
+      where
+      mem-true : (VertexIn x' C ⊎ VertexIn y' C) →
+                 (any (index-of 𝒢 x' ≡ᵇ_) idxs ∨ any (index-of 𝒢 y' ≡ᵇ_) idxs) ≡ true
+      mem-true (inj₁ h) = ∨-trueˡ (side⁺ x' h)
+      mem-true (inj₂ h) = ∨-trueʳ (any (index-of 𝒢 x' ≡ᵇ_) idxs) (side⁺ y' h)
+    ... | no ¬k with any (index-of 𝒢 x' ≡ᵇ_) idxs ∨ any (index-of 𝒢 y' ≡ᵇ_) idxs in bb
+    ...   | false = ≈-refl
+    ...   | true  = ⊥-elimₚ (¬k (bool-mem (∨-true (any (index-of 𝒢 x' ≡ᵇ_) idxs) bb)))
+      where
+      bool-mem : (any (index-of 𝒢 x' ≡ᵇ_) idxs ≡ true) ⊎ (any (index-of 𝒢 y' ≡ᵇ_) idxs ≡ true) →
+                 VertexIn x' C ⊎ VertexIn y' C
+      bool-mem (inj₁ ex) = inj₁ (side⁻ x' ex)
+      bool-mem (inj₂ ey) = inj₂ (side⁻ y' ey)
+
+    R-region : Represents 𝒢 (restrict-tabulation (map (index-of 𝒢) regionV) F₀)
+                          FoHide.remaining (restrict (fo-graph 𝒢) C)
+    R-region = rep-cong 𝒢 mask-restrict (restrict-rep 𝒢 fo-rep regionV)
+
+    C-mem : All (_∈ₚ FoHide.remaining) regionV
+    C-mem = All-tabulate in-rem
+      where
+      in-rem : {w : V 𝒢} → w ∈ₚ regionV → w ∈ₚ FoHide.remaining
+      in-rem {w} mw with ∈-map⁻ at mw
+      ... | (p , pm , eq) = FoHide.∈-remaining (∈-all-vertices 𝒢 w) not-hid
+        where
+        not-hid : ¬ (w ∈ₚ fo-hid)
+        not-hid mh with ∈-map⁻ at mh
+        ... | (q , qm , eq') =
+          not-both (filterᵇ-true (fo-at D) (vertices D) (C⊆FO (∈-resp-↭ (sort-↭ C) pm)))
+                   (filterᵇ-true (λ r → not (fo-at D r)) (vertices D)
+                     (subst (_∈ fo-hidden 𝒢)
+                            (≡-sym (inj₂-injective (≡-trans (≡-sym eq) eq')))
+                            (∈-resp-↭ (sort-↭ (fo-hidden 𝒢)) qm)))
+
+    region-pairs : AllPairs (λ v u → Prf (restrict (fo-graph 𝒢) C u v ≈ εₘ)) regionV
+    region-pairs = sorted-pairs (restrict (fo-graph 𝒢) C) (restrict-forward C (fo-forward 𝒢))
+                                C C-dist
+
+    module RH = HideRepresents 𝒢 ε? R-region regionV C-mem region-pairs
+
+    region-eq : read-edge 𝒢 (tabulated-summary (λ _ x' → x') (fo-tabulation (λ _ x' → x')) C) x y
+                ≡ read-edge 𝒢 (Tabulated.hide-graph
+                                (restrict-tabulation (map (index-of 𝒢) regionV) F₀)
+                                (λ _ c → c) ε? (map (index-of 𝒢) regionV)) x y
+    region-eq =
+      ≡-cong (λ l → read-edge 𝒢 (Tabulated.hide-graph (restrict-tabulation l F₀)
+                                  (λ _ c → c) ε? l) x y)
+             (map-∘ {g = index-of 𝒢} {f = at} (sort C))
+
+    not-in-map : {v : V 𝒢} (L : List (Path D)) → ¬ VertexIn v L → ¬ (v ∈ₚ map at (sort L))
+    not-in-map L nh mv with ∈-map⁻ at mv
+    ... | (p , pm , eq) =
+      nh (subst (λ v' → VertexIn v' L) (≡-sym eq) (∈-resp-↭ (sort-↭ L) pm))
+
+    x∈rem : x ∈ₚ RH.remaining
+    x∈rem = RH.∈-remaining
+              (FoHide.∈-remaining (∈-all-vertices 𝒢 x) (not-in-map (fo-hidden 𝒢) hxf))
+              (not-in-map C hxC)
+
+    y∈rem : y ∈ₚ RH.remaining
+    y∈rem = RH.∈-remaining
+              (FoHide.∈-remaining (∈-all-vertices 𝒢 y) (not-in-map (fo-hidden 𝒢) hyf))
+              (not-in-map C hyC)

@@ -4,7 +4,7 @@ open import Data.List using (List) renaming (_∷_ to _∷ₗ_; [] to []ₗ)
 open import Data.Nat using (ℕ; suc; _+_)
 open import Data.Product using (Σ; Σ-syntax; _,_)
 open import Data.Sum using (inj₁; inj₂; [_,_])
-open import Level using (0ℓ)
+open import Level using (0ℓ; _⊔_) renaming (suc to lsuc)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl)
 open import prop-setoid using (Setoid)
 open import commutative-semiring using (CommutativeSemiring)
@@ -12,102 +12,94 @@ open import signature using (Signature)
 open import signature.interpretation using (Interpretation)
 
 -- The value each vertex of a dependence graph produced, its width the vertex's width. A vertex of
--- a rule's shape is, for each premise, either a vertex inside it or that premise's root, so the
+-- a rule's derivation is, for each premise, either a vertex inside it or that premise's root, so the
 -- labelling follows the graph's construction rule by rule.
 module interaction.labelling {ℓ} (Sig : Signature ℓ) {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A)
   (ℐ : Interpretation S Sig) (ctrl-weight : Setoid.Carrier A)
   (let module S = CommutativeSemiring S) (+-idem : ∀ x → (x S.+ x) S.≈ x) where
 
 open Signature Sig
-open Interpretation ℐ
 open import Data.List.Relation.Unary.All using () renaming (All to Every)
 open import language-syntax Sig hiding (_[_]) renaming (_,_ to _▸_)
-open import language-operational.evaluation Sig S ℐ ctrl-weight
+open import language-operational.evaluation Sig S ℐ ctrl-weight hiding (Derivation)
 open import interaction.graph S +-idem
 open import interaction.dependence-graph Sig S ℐ ctrl-weight +-idem
 
 data Node : Set ℓ where
-  val  : ∀ {τ : type 0} → Val τ → Node
-  vals : ∀ {is} → sort-vals is → Node
+  val : ∀ {τ : type 0} → Val τ → Node
 
 node-width : Node → ℕ
-node-width (val v)       = width v
-node-width (vals {is} _) = bases-width is
+node-width (val v) = width v
 
-record Labelling (s : Shape) (w : Vertex s → ℕ) : Set ℓ where
-  field at : (p : Vertex s) → Σ[ x ∈ Node ] node-width x ≡ w p
+record Labelling (s : Derivation) : Set ℓ where
+  field at : (p : Path s) → Σ[ x ∈ Node ] node-width x ≡ width-at s p
 
 open Labelling public
 
-lab₀ : ∀ {w} → Labelling (node []ₗ) w
-lab₀ .at ()
+lab₀ : ∀ {k b} (x : Node) → node-width x ≡ k → Labelling (node k b []ₗ)
+lab₀ x e .at ε = x , e
+lab₀ x e .at (into () _)
 
-lab₁ : ∀ {s w n₀} → Labelling s w → (x : Node) → node-width x ≡ n₀ →
-       Labelling (node (s ∷ₗ []ₗ)) [ w , (λ _ → n₀) ]
-lab₁ f x e .at (inj₁ p)    = f .at p
-lab₁ f x e .at (inj₂ root) = x , e
+lab₁ : ∀ {k b s} → Labelling s → (x : Node) → node-width x ≡ k → Labelling (node k b (s ∷ₗ []ₗ))
+lab₁ f x e .at ε             = x , e
+lab₁ f x e .at (into here p) = f .at p
+lab₁ f x e .at (into (there ()) _)
 
-lab₂ : ∀ {s₁ w₁ n₁ s₂ w₂ n₂} →
-       Labelling s₁ w₁ → (x₁ : Node) → node-width x₁ ≡ n₁ →
-       Labelling s₂ w₂ → (x₂ : Node) → node-width x₂ ≡ n₂ →
-       Labelling (node (s₁ ∷ₗ s₂ ∷ₗ []ₗ)) [ [ w₁ , (λ _ → n₁) ] , [ w₂ , (λ _ → n₂) ] ]
-lab₂ f₁ x₁ e₁ f₂ x₂ e₂ .at (inj₁ (inj₁ p))    = f₁ .at p
-lab₂ f₁ x₁ e₁ f₂ x₂ e₂ .at (inj₁ (inj₂ root)) = x₁ , e₁
-lab₂ f₁ x₁ e₁ f₂ x₂ e₂ .at (inj₂ (inj₁ p))    = f₂ .at p
-lab₂ f₁ x₁ e₁ f₂ x₂ e₂ .at (inj₂ (inj₂ root)) = x₂ , e₂
+lab₂ : ∀ {k b s₁ s₂} → Labelling s₁ → Labelling s₂ → (x : Node) → node-width x ≡ k →
+       Labelling (node k b (s₁ ∷ₗ s₂ ∷ₗ []ₗ))
+lab₂ f₁ f₂ x e .at ε                     = x , e
+lab₂ f₁ f₂ x e .at (into here p)         = f₁ .at p
+lab₂ f₁ f₂ x e .at (into (there here) p) = f₂ .at p
+lab₂ f₁ f₂ x e .at (into (there (there ())) _)
 
-lab₃ : ∀ {s₁ w₁ n₁ s₂ w₂ n₂ s₃ w₃ n₃} →
-       Labelling s₁ w₁ → (x₁ : Node) → node-width x₁ ≡ n₁ →
-       Labelling s₂ w₂ → (x₂ : Node) → node-width x₂ ≡ n₂ →
-       Labelling s₃ w₃ → (x₃ : Node) → node-width x₃ ≡ n₃ →
-       Labelling (node (s₁ ∷ₗ s₂ ∷ₗ s₃ ∷ₗ []ₗ))
-                 [ [ w₁ , (λ _ → n₁) ] , [ [ w₂ , (λ _ → n₂) ] , [ w₃ , (λ _ → n₃) ] ] ]
-lab₃ f₁ x₁ e₁ f₂ x₂ e₂ f₃ x₃ e₃ .at (inj₁ (inj₁ p))           = f₁ .at p
-lab₃ f₁ x₁ e₁ f₂ x₂ e₂ f₃ x₃ e₃ .at (inj₁ (inj₂ root))        = x₁ , e₁
-lab₃ f₁ x₁ e₁ f₂ x₂ e₂ f₃ x₃ e₃ .at (inj₂ (inj₁ (inj₁ p)))    = f₂ .at p
-lab₃ f₁ x₁ e₁ f₂ x₂ e₂ f₃ x₃ e₃ .at (inj₂ (inj₁ (inj₂ root))) = x₂ , e₂
-lab₃ f₁ x₁ e₁ f₂ x₂ e₂ f₃ x₃ e₃ .at (inj₂ (inj₂ (inj₁ p)))    = f₃ .at p
-lab₃ f₁ x₁ e₁ f₂ x₂ e₂ f₃ x₃ e₃ .at (inj₂ (inj₂ (inj₂ root))) = x₃ , e₃
+lab₊ : ∀ {k b s t ts} → Labelling s → Labelling (node k b (t ∷ₗ ts)) →
+       Labelling (node k b (s ∷ₗ t ∷ₗ ts))
+lab₊ f g .at ε                  = g .at ε
+lab₊ f g .at (into here p)      = f .at p
+lab₊ f g .at (into (there i) p) = g .at (into i p)
+
+lab₃ : ∀ {k b s₁ s₂ s₃} → Labelling s₁ → Labelling s₂ → Labelling s₃ →
+       (x : Node) → node-width x ≡ k →
+       Labelling (node k b (s₁ ∷ₗ s₂ ∷ₗ s₃ ∷ₗ []ₗ))
+lab₃ f₁ f₂ f₃ x e .at ε                             = x , e
+lab₃ f₁ f₂ f₃ x e .at (into here p)                 = f₁ .at p
+lab₃ f₁ f₂ f₃ x e .at (into (there here) p)         = f₂ .at p
+lab₃ f₁ f₂ f₃ x e .at (into (there (there here)) p) = f₃ .at p
+lab₃ f₁ f₂ f₃ x e .at (into (there (there (there ()))) _)
 
 mutual
   label : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ]) →
-          Labelling (Graph.shape (graph D)) (Graph.width (graph D))
-  label (⇓-var x) = lab₀
-  label ⇓-unit = lab₀
-  label ⇓-lam = lab₀
-  label (⇓-inl {v = v} D) = lab₁ (label D) (val v) refl
-  label (⇓-inr {v = v} D) = lab₁ (label D) (val v) refl
-  label (⇓-case-l {τ₂ = τ₂} {v = v} {u = u} D₁ D₂) =
-    lab₂ (label D₁) (val (inl {τ₂ = τ₂} v)) refl (label D₂) (val u) refl
-  label (⇓-case-r {τ₁ = τ₁} {v = v} {u = u} D₁ D₂) =
-    lab₂ (label D₁) (val (inr {τ₁ = τ₁} v)) refl (label D₂) (val u) refl
-  label (⇓-pair {v = v} {u = u} D₁ D₂) =
-    lab₂ (label D₁) (val v) refl (label D₂) (val u) refl
-  label (⇓-fst {v = v} {u = u} D) = lab₁ (label D) (val (pair v u)) refl
-  label (⇓-snd {v = v} {u = u} D) = lab₁ (label D) (val (pair v u)) refl
-  label (⇓-app {γ' = γ'} {t' = t'} {v = v} {u = u} D₁ D₂ D₃) =
-    lab₃ (label D₁) (val (clo γ' t')) refl (label D₂) (val v) refl (label D₃) (val u) refl
-  label (⇓-bop {is = is} {vs = vs} D) = lab₁ (label-s D) (vals {is} vs) refl
-  label (⇓-brel {is = is} {vs = vs} D) = lab₁ (label-s D) (vals {is} vs) refl
-  label (⇓-roll {v = v} D) = lab₁ (label D) (val v) refl
-  label (⇓-fold {v = v} {u = u} D₁ D₂) =
-    lab₂ (label D₁) (val v) refl (label-m D₂) (val u) refl
+          Labelling (deriv D)
+  label {v = v} (⇓-var x)         = lab₀ (val v) refl
+  label {v = v} ⇓-unit            = lab₀ (val v) refl
+  label {v = v} ⇓-lam             = lab₀ (val v) refl
+  label {v = v} (⇓-inl D)         = lab₁ (label D) (val v) refl
+  label {v = v} (⇓-inr D)         = lab₁ (label D) (val v) refl
+  label {v = v} (⇓-case-l D₁ D₂)  = lab₂ (label D₁) (label D₂) (val v) refl
+  label {v = v} (⇓-case-r D₁ D₂)  = lab₂ (label D₁) (label D₂) (val v) refl
+  label {v = v} (⇓-pair D₁ D₂)    = lab₂ (label D₁) (label D₂) (val v) refl
+  label {v = v} (⇓-fst D)         = lab₁ (label D) (val v) refl
+  label {v = v} (⇓-snd D)         = lab₁ (label D) (val v) refl
+  label {v = v} (⇓-app D₁ D₂ D₃)  = lab₃ (label D₁) (label D₂) (label D₃) (val v) refl
+  label {v = v} (⇓-bop D)         = label-premises D (val v) refl
+  label {v = v} (⇓-brel D)        = label-premises D (val v) refl
+  label {v = v} (⇓-roll D)        = lab₁ (label D) (val v) refl
+  label {v = v} (⇓-fold D₁ D₂)    = lab₂ (label D₁) (label-m D₂) (val v) refl
 
-  label-s : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
-            (D : γ , Ms ⇓s vs [ R ]) → Labelling (Graph.shape (graph-s D)) (Graph.width (graph-s D))
-  label-s [] = lab₀
-  label-s (_∷_ {is = is} {v = v} {vs = vs} D₁ D₂) =
-    lab₂ (label D₁) (val (const v)) refl (label-s D₂) (vals {is} vs) refl
+  label-premises : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
+                   (D : γ , Ms ⇓s vs [ R ]) {k b} (x : Node) → node-width x ≡ k →
+                   Labelling (node k b (derivs D))
+  label-premises []                 x e = lab₀ x e
+  label-premises (D₁ ∷ [])          x e = lab₁ (label D₁) x e
+  label-premises (D₁ ∷ D₂@(_ ∷ _))  x e = lab₊ (label D₁) (label-premises D₂ x e)
 
   label-m : ∀ {Γ} {γ : Env Γ} {τ₀ σr s σ' v v' F} (D : Map γ {τ₀} {σr} s σ' v v' F) →
-            Labelling (Graph.shape (graph-m D)) (Graph.width (graph-m D))
-  label-m (m-rec {w' = w'} {u = u} D₁ D₂) =
-    lab₂ (label-m D₁) (val w') refl (label D₂) (val u) refl
-  label-m m-unit = lab₀
-  label-m m-base = lab₀
-  label-m m-arrow = lab₀
-  label-m (m-inl {v' = v'} D) = lab₁ (label-m D) (val v') refl
-  label-m (m-inr {v' = v'} D) = lab₁ (label-m D) (val v') refl
-  label-m (m-pair {v' = v'} {u' = u'} D₁ D₂) =
-    lab₂ (label-m D₁) (val v') refl (label-m D₂) (val u') refl
-  label-m (m-mu {w' = w'} D) = lab₁ (label-m D) (val w') refl
+            Labelling (deriv-m D)
+  label-m {v' = v'} (m-rec D₁ D₂)  = lab₂ (label-m D₁) (label D₂) (val v') refl
+  label-m {v' = v'} m-unit         = lab₀ (val v') refl
+  label-m {v' = v'} m-base         = lab₀ (val v') refl
+  label-m {v' = v'} m-arrow        = lab₀ (val v') refl
+  label-m {v' = v'} (m-inl D)      = lab₁ (label-m D) (val v') refl
+  label-m {v' = v'} (m-inr D)      = lab₁ (label-m D) (val v') refl
+  label-m {v' = v'} (m-pair D₁ D₂) = lab₂ (label-m D₁) (label-m D₂) (val v') refl
+  label-m {v' = v'} (m-mu D)       = lab₁ (label-m D) (val v') refl
