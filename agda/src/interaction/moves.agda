@@ -251,16 +251,16 @@ module Interaction {m : ℕ} {D : Derivation} (𝒢 : Graph m D)
           (map (λ CH → region-table (proj₂ CH) x y) (K .summaries))
 
   -- The edges of the visible graph among labelled endpoints: the ordered pairs whose dependence
-  -- matrix is nonzero.
+  -- matrix is nonzero, with the matrix.
   visible-edges : {A : Set} → Tabulation → Config 𝒢 → List (A × V 𝒢) →
-                  List ((A × V 𝒢) × (A × V 𝒢))
+                  List ((A × V 𝒢) × (A × V 𝒢) × M.Table)
   visible-edges {A} F K us = concat (map (λ u → mapMaybe (edge u) us) us)
     where
-    edge : A × V 𝒢 → A × V 𝒢 → Maybe ((A × V 𝒢) × (A × V 𝒢))
-    edge u v with NonZero? (M.look {vertex-width 𝒢 (proj₂ v)} {vertex-width 𝒢 (proj₂ u)}
-                              (visible-table F K (proj₂ u) (proj₂ v)))
-    ... | yes _ = just (u , v)
-    ... | no  _ = nothing
+    edge : A × V 𝒢 → A × V 𝒢 → Maybe ((A × V 𝒢) × (A × V 𝒢) × M.Table)
+    edge u v with visible-table F K (proj₂ u) (proj₂ v)
+    ... | t with NonZero? (M.look {vertex-width 𝒢 (proj₂ v)} {vertex-width 𝒢 (proj₂ u)} t)
+    ...   | yes _ = just (u , v , t)
+    ...   | no  _ = nothing
 
   region-table-rep : (T : Tabulation) (x y : V 𝒢) →
                      mat (M.look {vertex-width 𝒢 y} {vertex-width 𝒢 x} (region-table T x y))

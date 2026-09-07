@@ -137,8 +137,9 @@ private
 
       -- An edge whose weight lies only in the dropped control column presents as an all-zero
       -- table; suppressed.
-      edge-entry : (String × V dependence) × (String × V dependence) → Maybe (String × String)
-      edge-entry ((nu , u) , (nv , v)) with presented u v (M3.look {wd v} {wd u} (I.visible-table fo-tab K u v))
+      edge-entry : (String × V dependence) × (String × V dependence) × M3.Table →
+                   Maybe (String × String)
+      edge-entry ((nu , u) , (nv , v) , t) with presented u v (M3.look {wd v} {wd u} t)
       ... | M with NonZero? M
       ...   | no  _ = nothing
       ...   | yes _ = just
