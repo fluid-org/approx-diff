@@ -3,7 +3,7 @@
 open import Level using (0ℓ) renaming (suc to lsuc)
 open import Data.Fin using (Fin)
 open import Data.Nat using (ℕ; suc; _+_; _<_; _≤_; s≤s)
-open import Data.Nat.Properties using (≤-refl; m≤m+n; m≤n+m; n<1+n)
+open import Data.Nat.Properties using (≤-refl; ≤-trans; m≤m+n; m≤n+m; n<1+n)
 open import Data.Nat.Induction using (<-wellFounded)
 open import Induction.WellFounded using (Acc; acc)
 open import Data.Product using (Σ; _×_; _,_; proj₁; proj₂)
@@ -32,6 +32,9 @@ open Signature Sig
 open Interpretation ℐ
 open prop-setoid._⇒_ using (func)
 open import language-syntax Sig renaming (_,_ to _▸_)
+open import language-syntax.support Sig
+  using (thinning; emp; keep; drop; restrict; size; sizes; size-strengthen; body-thinning;
+         strengthen-body; keep-tail; ⊆-refl)
 open import language-operational.type-substitution Sig using (unfold₁; unfold₁-inst)
 open import language-operational.evaluation Sig S ℐ ctrl-weight
   renaming (size to vsize; size-subst to vsize-subst)
@@ -90,6 +93,11 @@ Total-cast refl t = t
 lookup-total : ∀ {Γ τ} (x : Γ ∋ τ) {γ : Env Γ} → TotalEnv Γ γ → Total τ (lookup x γ)
 lookup-total zero     {γ · v} (tγ , tv) = tv
 lookup-total (succ x) {γ · v} (tγ , tv) = lookup-total x tγ
+
+restrict-total : ∀ {Γ} (θ : thinning Γ) {γ : Env Γ} → TotalEnv Γ γ → TotalEnv (restrict θ) (restrict-env θ γ)
+restrict-total emp      {emp}   tγ        = tt
+restrict-total (keep θ) {γ · v} (tγ , tv) = restrict-total θ tγ , tv
+restrict-total (drop θ) {γ · v} (tγ , tv) = restrict-total θ tγ
 
 bool-total : ∀ (b : _) → Total (unit [+] unit) (bool→val b)
 bool-total (inj₁ _) = tt
@@ -151,59 +159,81 @@ map-total {γ = γ} {τ₀ = τ₀} {σr = σr} {s = s} f (μ τ') {v = roll w} 
 Eval : ∀ {Γ} (γ : Env Γ) {τ} (t : Γ ⊢ τ) → Set ℓT
 Eval γ {τ} t = Σ (Val τ) λ v → Σ (𝔽 (suc (width-env γ)) ⇒ 𝔽 (width v)) λ R → (γ , t ⇓ v [ R ]) × Total τ v
 
-fundamental : ∀ {Γ τ} (t : Γ ⊢ τ) (γ : Env Γ) → TotalEnv Γ γ → Eval γ t
-fundamental-s : ∀ {Γ is} (Ms : Every (λ s₁ → Γ ⊢ base s₁) is) (γ : Env Γ) → TotalEnv Γ γ → Derivations γ Ms
+private
+  m<1+m+n : ∀ {m n} → m < suc (m + n)
+  m<1+m+n = s≤s (m≤m+n _ _)
 
-fundamental (var x) γ tγ = lookup x γ , _ , ⇓-var x , lookup-total x tγ
-fundamental unit γ tγ = unit , _ , ⇓-unit , tt
-fundamental (inl {τ₁ = τ₁} t) γ tγ =
-  let (v , R , D , tv) = fundamental t γ tγ
+  n<1+m+n : ∀ {m n} → n < suc (m + n)
+  n<1+m+n = s≤s (m≤n+m _ _)
+
+  m<1+m+n+o : ∀ {m n o} → m < suc (m + n + o)
+  m<1+m+n+o = s≤s (≤-trans (m≤m+n _ _) (m≤m+n _ _))
+
+  n<1+m+n+o : ∀ {m n o} → n < suc (m + n + o)
+  n<1+m+n+o {m} {n} {o} = s≤s (≤-trans (m≤n+m n m) (m≤m+n (m + n) o))
+
+fundamental : ∀ {Γ τ} (t : Γ ⊢ τ) → Acc _<_ (size t) → (γ : Env Γ) → TotalEnv Γ γ → Eval γ t
+fundamental-s : ∀ {Γ is} (Ms : Every (λ s₁ → Γ ⊢ base s₁) is) → Acc _<_ (sizes Ms) → (γ : Env Γ) →
+                TotalEnv Γ γ → Derivations γ Ms
+
+fundamental (var x) _ γ tγ = lookup x γ , _ , ⇓-var x , lookup-total x tγ
+fundamental unit _ γ tγ = unit , _ , ⇓-unit , tt
+fundamental (inl {τ₁ = τ₁} t) (acc ra) γ tγ =
+  let (v , R , D , tv) = fundamental t (ra (n<1+n _)) γ tγ
   in inl v , _ , ⇓-inl D , Total-at-bound τ₁ tv
-fundamental (inr {τ₂ = τ₂} t) γ tγ =
-  let (v , R , D , tv) = fundamental t γ tγ
+fundamental (inr {τ₂ = τ₂} t) (acc ra) γ tγ =
+  let (v , R , D , tv) = fundamental t (ra (n<1+n _)) γ tγ
   in inr v , _ , ⇓-inr D , Total-at-bound τ₂ tv
-fundamental (case {τ₁ = τ₁} {τ₂ = τ₂} s t₁ t₂) γ tγ with fundamental s γ tγ
+fundamental (case {τ₁ = τ₁} {τ₂ = τ₂} s t₁ t₂) (acc ra) γ tγ with fundamental s (ra m<1+m+n+o) γ tγ
 ... | inl v , R , D , ts =
-  let (u , S , D₁ , tu) = fundamental t₁ (γ · v) (tγ , Total-at-bound τ₁ ts)
+  let (u , S , D₁ , tu) = fundamental t₁ (ra (n<1+m+n+o {size s} {size t₁} {size t₂}))
+                            (γ · v) (tγ , Total-at-bound τ₁ ts)
   in u , _ , ⇓-case-l D D₁ , tu
 ... | inr v , R , D , ts =
-  let (u , S , D₂ , tu) = fundamental t₂ (γ · v) (tγ , Total-at-bound τ₂ ts)
+  let (u , S , D₂ , tu) = fundamental t₂ (ra n<1+m+n) (γ · v) (tγ , Total-at-bound τ₂ ts)
   in u , _ , ⇓-case-r D D₂ , tu
-fundamental (pair {τ₁ = τ₁} {τ₂ = τ₂} s t) γ tγ =
-  let (v , R , D , tv) = fundamental s γ tγ
-      (u , S , D' , tu) = fundamental t γ tγ
+fundamental (pair {τ₁ = τ₁} {τ₂ = τ₂} s t) (acc ra) γ tγ =
+  let (v , R , D , tv) = fundamental s (ra m<1+m+n) γ tγ
+      (u , S , D' , tu) = fundamental t (ra n<1+m+n) γ tγ
   in pair v u , _ , ⇓-pair D D' , (Total-at-bound τ₁ tv , Total-at-bound τ₂ tu)
-fundamental (fst {τ₁ = τ₁} t) γ tγ with fundamental t γ tγ
+fundamental (fst {τ₁ = τ₁} t) (acc ra) γ tγ with fundamental t (ra (n<1+n _)) γ tγ
 ... | pair v u , R , D , tv = v , _ , ⇓-fst D , Total-at-bound τ₁ (proj₁ tv)
-fundamental (snd {τ₂ = τ₂} t) γ tγ with fundamental t γ tγ
+fundamental (snd {τ₂ = τ₂} t) (acc ra) γ tγ with fundamental t (ra (n<1+n _)) γ tγ
 ... | pair v u , R , D , tv = u , _ , ⇓-snd D , Total-at-bound τ₂ (proj₂ tv)
-fundamental (lam t) γ tγ = clo γ t , _ , ⇓-lam , arr-in (λ v tv → fundamental t (γ · v) (tγ , tv))
-fundamental (app s t) γ tγ with fundamental s γ tγ
+fundamental (lam t) (acc ra) γ tγ =
+  clo (restrict-env θ γ) (strengthen-body t) , _ , ⇓-lam ,
+  arr-in (λ v tv → fundamental (strengthen-body t) (ra body<) (restrict-env θ γ · v)
+                     (restrict-total θ tγ , tv))
+  where
+    θ = body-thinning t
+    body< : size (strengthen-body t) < size (lam t)
+    body< = ≡-subst (λ n → n < suc (size t)) (sym (size-strengthen t (keep-tail ⊆-refl))) (n<1+n _)
+fundamental (app s t) (acc ra) γ tγ with fundamental s (ra m<1+m+n) γ tγ
 ... | clo γ' t' , R , Ds , tf =
-  let (v , S , Dt , tv) = fundamental t γ tγ
+  let (v , S , Dt , tv) = fundamental t (ra n<1+m+n) γ tγ
       (u , T , D' , tu) = arr-out tf v tv
   in u , _ , ⇓-app Ds Dt D' , tu
-fundamental (bop ω Ms) γ tγ =
-  let (vs , Rs , Dss) = fundamental-s Ms γ tγ
+fundamental (bop ω Ms) (acc ra) γ tγ =
+  let (vs , Rs , Dss) = fundamental-s Ms (ra (n<1+n _)) γ tγ
   in const (op-fun ω .func vs) , _ , ⇓-bop Dss , tt
-fundamental (brel ω Ms) γ tγ =
-  let (vs , Rs , Dss) = fundamental-s Ms γ tγ
+fundamental (brel ω Ms) (acc ra) γ tγ =
+  let (vs , Rs , Dss) = fundamental-s Ms (ra (n<1+n _)) γ tγ
   in bool→val (rel-pred ω .func vs) , _ , ⇓-brel Dss ,
      bool-total (rel-pred ω .func vs)
-fundamental (roll {τ = τ₀} t) γ tγ =
-  let (v , R , D , tv) = fundamental t γ tγ
+fundamental (roll {τ = τ₀} t) (acc ra) γ tγ =
+  let (v , R , D , tv) = fundamental t (ra (n<1+n _)) γ tγ
   in roll v , _ , ⇓-roll D , Total-at-bound (τ₀ [ μ τ₀ ]) tv
-fundamental (fold s t) γ tγ =
-  let (v , R , D , tv) = fundamental t γ tγ
+fundamental (fold s t) (acc ra) γ tγ =
+  let (v , R , D , tv) = fundamental t (ra n<1+m+n) γ tγ
       (u , R' , Dm , tu) =
-        map-total (λ w' tw' → fundamental s (γ · w') (tγ , tw'))
+        map-total (λ w' tw' → fundamental s (ra m<1+m+n) (γ · w') (tγ , tw'))
                   (var Fin.zero) (<-wellFounded (vsize v)) tv
   in u , _ , ⇓-fold D Dm , tu
 
-fundamental-s [] γ tγ = _ , _ , []
-fundamental-s (M ∷ Ms) γ tγ with fundamental M γ tγ
+fundamental-s [] _ γ tγ = _ , _ , []
+fundamental-s (M ∷ Ms) (acc ra) γ tγ with fundamental M (ra m<1+m+n) γ tγ
 ... | const v , R , D , _ =
-  let (vs , Rs , Dss) = fundamental-s Ms γ tγ
+  let (vs , Rs , Dss) = fundamental-s Ms (ra n<1+m+n) γ tγ
   in (v , vs) , _ , (D ∷ Dss)
 
 val-total : ∀ {τ} (v : Val τ) → Total τ v
@@ -214,11 +244,11 @@ val-total (const _) = tt
 val-total (inl {τ₁ = τ₁} v) = Total-at-bound τ₁ (val-total v)
 val-total (inr {τ₂ = τ₂} v) = Total-at-bound τ₂ (val-total v)
 val-total (pair {τ₁ = τ₁} {τ₂ = τ₂} v u) = Total-at-bound τ₁ (val-total v) , Total-at-bound τ₂ (val-total u)
-val-total (clo γ t) = arr-in (λ v tv → fundamental t (γ · v) (env-total γ , tv))
+val-total (clo γ t) = arr-in (λ v tv → fundamental t (<-wellFounded (size t)) (γ · v) (env-total γ , tv))
 val-total (roll {τ = τ₀} v) = Total-at-bound (τ₀ [ μ τ₀ ]) (val-total v)
 
 env-total emp = tt
 env-total (γ · v) = env-total γ , val-total v
 
 eval : ∀ {Γ τ} (t : Γ ⊢ τ) (γ : Env Γ) → Derivation γ t
-eval t γ = let (v , R , D , _) = fundamental t γ (env-total γ) in v , R , D
+eval t γ = let (v , R , D , _) = fundamental t (<-wellFounded (size t)) γ (env-total γ) in v , R , D

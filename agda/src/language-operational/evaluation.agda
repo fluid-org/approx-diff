@@ -32,7 +32,7 @@ open Signature Sig
 open Interpretation ℐ
 open prop-setoid._⇒_ using (func; func-resp-≈)
 open import language-syntax Sig renaming (_,_ to _▸_)
-open import language-syntax.support Sig using (thinning; emp; keep; drop; restrict)
+open import language-syntax.support Sig using (thinning; emp; keep; drop; restrict; body-thinning; strengthen-body)
 open import language-operational.type-substitution Sig using (unfold₁; unfold₁-inst)
 
 mutual
@@ -206,8 +206,9 @@ built-out γ n = in₁ {1} {n} ∘ wctrl
 elim-out : ∀ {Γ τ} (γ : Env Γ) (w : Val τ) → 𝔽 (suc (width-env γ)) ⇒ 𝔽 (width w)
 elim-out γ w = unit-section w ∘ wctrl
 
-lam-out : ∀ {Γ σ τ} (γ : Env Γ) (t : Γ ▸ σ ⊢ τ) → 𝔽 (suc (width-env γ)) ⇒ 𝔽 (width (clo γ t))
-lam-out γ t = ctrl-scale ⊕ I {width-env γ}
+lam-out : ∀ {Γ σ τ} (γ : Env Γ) (t : Γ ▸ σ ⊢ τ) →
+          𝔽 (suc (width-env γ)) ⇒ 𝔽 (width (clo (restrict-env (body-thinning t) γ) (strengthen-body t)))
+lam-out γ t = ctrl-scale ⊕ proj-env (body-thinning t) γ
 
 proj-up : ∀ {m n τ} (w : Val τ) → 𝔽 (m + n) ⇒ 𝔽 (width w) → 𝔽 (suc (m + n)) ⇒ 𝔽 (width w)
 proj-up {m} {n} w P = (P ∘ p₂ {1} {m + n}) +m ((unit-section w ∘ ctrl-scale) ∘ p₁ {1} {m + n})
@@ -264,7 +265,8 @@ mutual
     ⇓-snd    : ∀ {Γ τ₁ τ₂} {γ : Env Γ} {t : Γ ⊢ τ₁ [×] τ₂} {v u R} →
                γ , t ⇓ pair v u [ R ] →
                γ , snd t ⇓ u [ elim-out γ u +m (proj-up {width v} {width u} u (p₂ {width v} {width u}) ∘ R) ]
-    ⇓-lam    : ∀ {Γ σ τ} {γ : Env Γ} {t : Γ ▸ σ ⊢ τ} → γ , lam t ⇓ clo γ t [ lam-out γ t ]
+    ⇓-lam    : ∀ {Γ σ τ} {γ : Env Γ} {t : Γ ▸ σ ⊢ τ} →
+               γ , lam t ⇓ clo (restrict-env (body-thinning t) γ) (strengthen-body t) [ lam-out γ t ]
     ⇓-app    : ∀ {Γ Γ' σ τ} {γ : Env Γ} {γ' : Env Γ'} {s : Γ ⊢ σ [→] τ} {t t' v u R T U} →
                γ , s ⇓ clo {Γ'} γ' t' [ R ] → γ , t ⇓ v [ T ] → γ' · v , t' ⇓ u [ U ] →
                γ , app s t ⇓ u
