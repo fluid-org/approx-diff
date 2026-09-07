@@ -1,5 +1,6 @@
 {-# OPTIONS --prop --postfix-projections --safe #-}
 
+open import Data.Nat using (ℕ; suc; _+_)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂)
 open import Data.List.Relation.Unary.All using ([]; _∷_) renaming (All to Every)
 open import signature using (Signature)
@@ -68,6 +69,27 @@ mutual
   supports : ∀ {Γ σs} → Every (λ σ → Γ ⊢ base σ) σs → thinning Γ
   supports []       = none
   supports (t ∷ ts) = support t ∪ supports ts
+
+mutual
+  size : ∀ {Γ τ} → Γ ⊢ τ → ℕ
+  size (var x)        = 1
+  size unit           = 1
+  size (inl t)        = suc (size t)
+  size (inr t)        = suc (size t)
+  size (case s t₁ t₂) = suc (size s + size t₁ + size t₂)
+  size (pair s t)     = suc (size s + size t)
+  size (fst t)        = suc (size t)
+  size (snd t)        = suc (size t)
+  size (lam t)        = suc (size t)
+  size (app s t)      = suc (size s + size t)
+  size (bop ω ts)     = suc (sizes ts)
+  size (brel ω ts)    = suc (sizes ts)
+  size (roll t)       = suc (size t)
+  size (fold s t)     = suc (size s + size t)
+
+  sizes : ∀ {Γ σs} → Every (λ σ → Γ ⊢ base σ) σs → ℕ
+  sizes []       = 0
+  sizes (t ∷ ts) = suc (size t + sizes ts)
 
 data _⊆_ : ∀ {Γ} → thinning Γ → thinning Γ → Set ℓ where
   emp  : emp ⊆ emp
@@ -142,6 +164,12 @@ mutual
   strengthens []       h = []
   strengthens (t ∷ ts) h = strengthen t (∪-bound₁ h) ∷ strengthens ts (∪-bound₂ h)
 
+body-thinning : ∀ {Γ σ τ} → Γ , σ ⊢ τ → thinning Γ
+body-thinning t = tail (support t)
+
+strengthen-body : ∀ {Γ σ τ} (t : Γ , σ ⊢ τ) → restrict (body-thinning t) , σ ⊢ τ
+strengthen-body t = strengthen t (keep-tail ⊆-refl)
+
 private
   cong₃ : ∀ {A B C D : Set ℓ} (f : A → B → C → D) {a a' b b' c c'} →
           a ≡ a' → b ≡ b' → c ≡ c' → f a b c ≡ f a' b' c'
@@ -180,3 +208,33 @@ mutual
                       (h : supports ts ⊆ θ) → embed θ ** strengthens ts h ≡ ts
   embed-strengthens []       h = refl
   embed-strengthens (t ∷ ts) h = cong₂ _∷_ (embed-strengthen t (∪-bound₁ h)) (embed-strengthens ts (∪-bound₂ h))
+
+mutual
+  size-strengthen : ∀ {Γ τ} (t : Γ ⊢ τ) {θ : thinning Γ} (h : support t ⊆ θ) →
+                    size (strengthen t h) ≡ size t
+  size-strengthen (var x)        h = refl
+  size-strengthen unit           h = refl
+  size-strengthen (inl t)        h = cong suc (size-strengthen t h)
+  size-strengthen (inr t)        h = cong suc (size-strengthen t h)
+  size-strengthen (case s t₁ t₂) h =
+    cong suc (cong₂ _+_ (cong₂ _+_ (size-strengthen s (∪-bound₁ (∪-bound₁ h)))
+                                   (size-strengthen t₁ (keep-tail (∪-bound₂ (∪-bound₁ h)))))
+                        (size-strengthen t₂ (keep-tail (∪-bound₂ h))))
+  size-strengthen (pair s t)     h =
+    cong suc (cong₂ _+_ (size-strengthen s (∪-bound₁ h)) (size-strengthen t (∪-bound₂ h)))
+  size-strengthen (fst t)        h = cong suc (size-strengthen t h)
+  size-strengthen (snd t)        h = cong suc (size-strengthen t h)
+  size-strengthen (lam t)        h = cong suc (size-strengthen t (keep-tail h))
+  size-strengthen (app s t)      h =
+    cong suc (cong₂ _+_ (size-strengthen s (∪-bound₁ h)) (size-strengthen t (∪-bound₂ h)))
+  size-strengthen (bop ω ts)     h = cong suc (sizes-strengthens ts h)
+  size-strengthen (brel ω ts)    h = cong suc (sizes-strengthens ts h)
+  size-strengthen (roll t)       h = cong suc (size-strengthen t h)
+  size-strengthen (fold s t)     h =
+    cong suc (cong₂ _+_ (size-strengthen s (keep-tail (∪-bound₁ h))) (size-strengthen t (∪-bound₂ h)))
+
+  sizes-strengthens : ∀ {Γ σs} (ts : Every (λ σ → Γ ⊢ base σ) σs) {θ : thinning Γ}
+                      (h : supports ts ⊆ θ) → sizes (strengthens ts h) ≡ sizes ts
+  sizes-strengthens []       h = refl
+  sizes-strengthens (t ∷ ts) h =
+    cong suc (cong₂ _+_ (size-strengthen t (∪-bound₁ h)) (sizes-strengthens ts (∪-bound₂ h)))
