@@ -1799,119 +1799,119 @@ module HidePremise
   open St public
 
   step : St → Path D → St
-  step H w .from-input q = H .from-input q +ₘ (H .interior w q ∘ H .from-input w)
-  step H w .interior p q = H .interior p q +ₘ (H .interior w q ∘ H .interior p w)
+  step st w .from-input q = st .from-input q +ₘ (st .interior w q ∘ st .from-input w)
+  step st w .interior p q = st .interior p q +ₘ (st .interior w q ∘ st .interior p w)
 
   steps : St → List (Path D) → St
   steps = foldl step
 
   folds : ∀ {A V' : Set} (prem : A → St) (ι : Path D → V') (h' : A → V' → A) →
-          (∀ G w → step (prem G) w ≡ prem (h' G (ι w))) →
-          (ws : List (Path D)) (G : A) → steps (prem G) ws ≡ prem (foldl h' G (map ι ws))
-  folds prem ι h' ok []       G = ≡-refl
-  folds prem ι h' ok (w ∷ ws) G =
-    ≡-trans (≡-cong (λ H → steps H ws) (ok G w)) (folds prem ι h' ok ws (h' G (ι w)))
+          (∀ a w → step (prem a) w ≡ prem (h' a (ι w))) →
+          (ws : List (Path D)) (a : A) → steps (prem a) ws ≡ prem (foldl h' a (map ι ws))
+  folds prem ι h' ok []       a = ≡-refl
+  folds prem ι h' ok (w ∷ ws) a =
+    ≡-trans (≡-cong (λ st → steps st ws) (ok a w)) (folds prem ι h' ok ws (h' a (ι w)))
 
   private
-    Φ-step : ∀ (H : St) (w : Path D) (q : Path D) →
-             (step H w .from-input q ∘ Φ)
-             ≈ ((H .from-input q ∘ Φ) +ₘ (H .interior w q ∘ (H .from-input w ∘ Φ)))
-    Φ-step H w q =
-      ≈-trans (CM.comp-bilinear₁ (H .from-input q) (H .interior w q ∘ H .from-input w) Φ)
-              (+ₘ-cong ≈-refl (assoc (H .interior w q) (H .from-input w) Φ))
+    Φ-step : ∀ (st : St) (w : Path D) (q : Path D) →
+             (step st w .from-input q ∘ Φ)
+             ≈ ((st .from-input q ∘ Φ) +ₘ (st .interior w q ∘ (st .from-input w ∘ Φ)))
+    Φ-step st w q =
+      ≈-trans (CM.comp-bilinear₁ (st .from-input q) (st .interior w q ∘ st .from-input w) Φ)
+              (+ₘ-cong ≈-refl (assoc (st .interior w q) (st .from-input w) Φ))
 
-  record Agrees (G : EdgeLabels object') (H : St) : Set where
+  record Agrees (G : EdgeLabels object') (st : St) : Set where
     field
-      into-ok   : ∀ q → G inp (blk q) ≈ (H .from-input q ∘ Φ)
-      interior-ok : ∀ p q → G (blk p) (blk q) ≈ H .interior p q
-      tgt-ok    : ∀ t → G inp (tgt t) ≈ (K t +ₘ (P t ∘ (H .from-input ε ∘ Φ)))
-      up-ok     : ∀ t (p : Path D) → p ≢ ε → G (blk p) (tgt t) ≈ (P t ∘ H .interior p ε)
+      into-ok   : ∀ q → G inp (blk q) ≈ (st .from-input q ∘ Φ)
+      interior-ok : ∀ p q → G (blk p) (blk q) ≈ st .interior p q
+      tgt-ok    : ∀ t → G inp (tgt t) ≈ (K t +ₘ (P t ∘ (st .from-input ε ∘ Φ)))
+      up-ok     : ∀ t (p : Path D) → p ≢ ε → G (blk p) (tgt t) ≈ (P t ∘ st .interior p ε)
 
   open Agrees public
 
-  agrees-hide : ∀ {G H} (w : Path D) → w ≢ ε → Agrees G H → Agrees (hide object' G (blk w)) (step H w)
-  agrees-hide {H = H} w _ s .into-ok q =
+  agrees-hide : ∀ {G st} (w : Path D) → w ≢ ε → Agrees G st → Agrees (hide object' G (blk w)) (step st w)
+  agrees-hide {st = st} w _ s .into-ok q =
     ≈-trans (+ₘ-cong (s .into-ok q) (∘-cong (s .interior-ok w q) (s .into-ok w)))
-            (≈-sym (Φ-step H w q))
+            (≈-sym (Φ-step st w q))
   agrees-hide w _ s .interior-ok p q =
     +ₘ-cong (s .interior-ok p q) (∘-cong (s .interior-ok w q) (s .interior-ok p w))
-  agrees-hide {H = H} w w≢ε s .tgt-ok t =
+  agrees-hide {st = st} w w≢ε s .tgt-ok t =
     ≈-trans (offset-step {Km = K t} {P = P t}
-                         {Xm = H .from-input ε ∘ Φ}
-                         {Ym = H .interior w ε}
-                         {Zm = H .from-input w ∘ Φ}
+                         {Xm = st .from-input ε ∘ Φ}
+                         {Ym = st .interior w ε}
+                         {Zm = st .from-input w ∘ Φ}
               (s .tgt-ok t) (s .up-ok t w w≢ε) (s .into-ok w))
-            (+ₘ-cong ≈-refl (∘-cong₂ {f = P t} (≈-sym (Φ-step H w ε))))
-  agrees-hide {H = H} w w≢ε s .up-ok t p p≢ε =
-    root-step {P = P t} {Xm = H .interior p ε}
-              {Ym = H .interior w ε} {Zm = H .interior p w}
+            (+ₘ-cong ≈-refl (∘-cong₂ {f = P t} (≈-sym (Φ-step st w ε))))
+  agrees-hide {st = st} w w≢ε s .up-ok t p p≢ε =
+    root-step {P = P t} {Xm = st .interior p ε}
+              {Ym = st .interior w ε} {Zm = st .interior p w}
       (s .up-ok t p p≢ε) (s .up-ok t w w≢ε) (s .interior-ok p w)
 
-  agrees-hide-all : ∀ {G H} (ws : List (Path D)) → All (_≢ ε) ws → Agrees G H →
-                    Agrees (hide-all object' G (map blk ws)) (steps H ws)
+  agrees-hide-all : ∀ {G st} (ws : List (Path D)) → All (_≢ ε) ws → Agrees G st →
+                    Agrees (hide-all object' G (map blk ws)) (steps st ws)
   agrees-hide-all []       []         s = s
   agrees-hide-all (w ∷ ws) (w≢ε ∷ hs) s = agrees-hide-all ws hs (agrees-hide w w≢ε s)
 
   -- The relations a rule contributes, before the graph's root is hidden. Every edge from the graph to
   -- a target leaves the graph's root, which here is a matter of the vertex set rather than a lemma.
-  record Start (G : EdgeLabels object') (H : St) : Set where
+  record Start (G : EdgeLabels object') (st : St) : Set where
     field
-      into-start   : ∀ q → G inp (blk q) ≈ (H .from-input q ∘ Φ)
-      interior-start : ∀ p q → G (blk p) (blk q) ≈ H .interior p q
+      into-start   : ∀ q → G inp (blk q) ≈ (st .from-input q ∘ Φ)
+      interior-start : ∀ p q → G (blk p) (blk q) ≈ st .interior p q
       tgt-start    : ∀ t → G inp (tgt t) ≈ K t
       up-start     : ∀ t → G (blk ε) (tgt t) ≈ P t
       off-start    : ∀ t (p : Path D) → p ≢ ε → G (blk p) (tgt t) ≈ εₘ
-      sink         : ∀ q → H .interior ε q ≈ εₘ
+      sink         : ∀ q → st .interior ε q ≈ εₘ
 
   open Start public
 
-  agrees-start : ∀ {G H} → Start G H → Agrees (hide object' G (blk ε)) (step H ε)
-  agrees-start {H = H} r .into-ok q =
+  agrees-start : ∀ {G st} → Start G st → Agrees (hide object' G (blk ε)) (step st ε)
+  agrees-start {st = st} r .into-ok q =
     ≈-trans (+ₘ-cong (r .into-start q)
                      (∘-cong (r .interior-start ε q) (r .into-start ε)))
-            (≈-sym (Φ-step H ε q))
+            (≈-sym (Φ-step st ε q))
   agrees-start r .interior-ok p q =
     +ₘ-cong (r .interior-start p q)
             (∘-cong (r .interior-start ε q) (r .interior-start p ε))
-  agrees-start {H = H} r .tgt-ok t =
+  agrees-start {st = st} r .tgt-ok t =
     ≈-trans (+ₘ-cong (r .tgt-start t)
                      (∘-cong (r .up-start t) (r .into-start ε)))
             (+ₘ-cong ≈-refl (∘-cong₂ {f = P t} (≈-sym unchanged)))
     where
-    unchanged : (step H ε .from-input ε ∘ Φ) ≈ (H .from-input ε ∘ Φ)
+    unchanged : (step st ε .from-input ε ∘ Φ) ≈ (st .from-input ε ∘ Φ)
     unchanged =
-      ≈-trans (Φ-step H ε ε)
-              (≈-trans (+ₘ-cong ≈-refl (∘-cong₁ {f₁ = H .interior ε ε} {f₂ = εₘ} {g = H .from-input ε ∘ Φ} (r .sink ε)))
-                       (absorb₁ (H .from-input ε ∘ Φ) (H .from-input ε ∘ Φ)))
-  agrees-start {H = H} r .up-ok t p p≢ε =
+      ≈-trans (Φ-step st ε ε)
+              (≈-trans (+ₘ-cong ≈-refl (∘-cong₁ {f₁ = st .interior ε ε} {f₂ = εₘ} {g = st .from-input ε ∘ Φ} (r .sink ε)))
+                       (absorb₁ (st .from-input ε ∘ Φ) (st .from-input ε ∘ Φ)))
+  agrees-start {st = st} r .up-ok t p p≢ε =
     ≈-trans (+ₘ-cong (r .off-start t p p≢ε)
                      (∘-cong (r .up-start t) (r .interior-start p ε)))
-    (≈-trans (+ₘ-lunit (P t ∘ H .interior p ε))
+    (≈-trans (+ₘ-lunit (P t ∘ st .interior p ε))
              (∘-cong₂ {f = P t} (≈-sym unchanged)))
     where
-    unchanged : step H ε .interior p ε ≈ H .interior p ε
+    unchanged : step st ε .interior p ε ≈ st .interior p ε
     unchanged =
-      ≈-trans (+ₘ-cong ≈-refl (∘-cong₁ {f₁ = H .interior ε ε} {f₂ = εₘ} {g = H .interior p ε} (r .sink ε)))
-              (absorb₁ (H .interior p ε) (H .interior p ε))
+      ≈-trans (+ₘ-cong ≈-refl (∘-cong₁ {f₁ = st .interior ε ε} {f₂ = εₘ} {g = st .interior p ε} (r .sink ε)))
+              (absorb₁ (st .interior p ε) (st .interior p ε))
 
   module Hidden (G₀ : EdgeLabels object') (prem : EdgeLabels (vertex-object 𝒢) → St)
                 (prem-step : ∀ G w → step (prem G) w ≡ prem (hide (vertex-object 𝒢) G (inj₂ w))) where
 
-    H⁰ : St
-    H⁰ = prem (edge-labels 𝒢)
+    st⁰ : St
+    st⁰ = prem (edge-labels 𝒢)
 
     G : EdgeLabels object'
     G = hide-all object' (hide object' G₀ (blk ε)) (map blk (vertices-result-first D))
 
-    H : St
-    H = steps (step H⁰ ε) (vertices-result-first D)
+    st : St
+    st = steps (step st⁰ ε) (vertices-result-first D)
 
-    done : Start G₀ H⁰ → Agrees G H
+    done : Start G₀ st⁰ → Agrees G st
     done start =
       agrees-hide-all (vertices-result-first D) (vertices-result-first-no-ε D) (agrees-start start)
 
-    κ : H .from-input ε ≡ prem (hide-all (vertex-object 𝒢) (edge-labels 𝒢) (map inj₂ (paths⁺ 𝒢))) .from-input ε
-    κ = ≡-cong (λ H' → H' .from-input ε) (folds prem inj₂ (hide (vertex-object 𝒢)) prem-step (paths⁺ 𝒢) (edge-labels 𝒢))
+    κ : st .from-input ε ≡ prem (hide-all (vertex-object 𝒢) (edge-labels 𝒢) (map inj₂ (paths⁺ 𝒢))) .from-input ε
+    κ = ≡-cong (λ st' → st' .from-input ε) (folds prem inj₂ (hide (vertex-object 𝒢)) prem-step (paths⁺ 𝒢) (edge-labels 𝒢))
 
 module NoEdgeIntoHidden
   {V : Set} (vertex-object : V → Semimodule)
@@ -2065,7 +2065,7 @@ module Rule₁
 
     module hidden = S.Hidden (edge-labels E) prem (λ G w → ≡-refl)
 
-    start : S.Start (edge-labels E) hidden.H⁰
+    start : S.Start (edge-labels E) hidden.st⁰
     start .S.into-start q = ≈-refl
     start .S.interior-start p q = ≈-refl
     start .S.tgt-start _ = ≈-refl {f = input-to-output}
@@ -2185,7 +2185,7 @@ module Rule₂
 
     module hidden₁ = S₁.Hidden (edge-labels E) prem₁ (λ G w → ≡-refl)
 
-    start₁ : S₁.Start (edge-labels E) hidden₁.H⁰
+    start₁ : S₁.Start (edge-labels E) hidden₁.st⁰
     start₁ .S₁.into-start q = ≈-refl
     start₁ .S₁.interior-start p q = ≈-refl
     start₁ .S₁.tgt-start (inj₁ q) = ≈-refl
@@ -2236,13 +2236,13 @@ module Rule₂
     fixed₁ : IntoHidden.Fixed hidden₁.G
     fixed₁ = IntoHidden.fixed-hide-all (λ w → w) ps₁ (IntoHidden.fixed-hide ε fixed₀)
 
-    start₂ : S₂.Start hidden₁.G hidden₂.H⁰
+    start₂ : S₂.Start hidden₁.G hidden₂.st⁰
     start₂ .S₂.into-start q =
       ≈-trans (done₁ .S₁.tgt-ok (inj₁ q))
-              (factor (Graph.from-input 𝒢₂ q) from-inputs₂ from-root₁ {h = hidden₁.H .S₁.from-input ε} {c = collapse 𝒢₁} inputs₁ κ₁)
+              (factor (Graph.from-input 𝒢₂ q) from-inputs₂ from-root₁ {h = hidden₁.st .S₁.from-input ε} {c = collapse 𝒢₁} inputs₁ κ₁)
     start₂ .S₂.interior-start p q = fixed₁ .IntoHidden.edge p (inj₁ q)
     start₂ .S₂.tgt-start _ =
-      ≈-trans {g = input-to-output +ₘ (up₁ ∘ (hidden₁.H .S₁.from-input ε ∘ inputs₁))}
+      ≈-trans {g = input-to-output +ₘ (up₁ ∘ (hidden₁.st .S₁.from-input ε ∘ inputs₁))}
               (done₁ .S₁.tgt-ok (inj₂ tt)) (+ₘ-cong ≈-refl (∘-cong₂ {f = up₁} (∘-cong₁ {g = inputs₁} κ₁)))
     start₂ .S₂.up-start _ = fixed₁ .IntoHidden.edge ε (inj₂ tt)
     start₂ .S₂.off-start _ ε          ne = ⊥-elimₚ (ne ≡-refl)
@@ -2270,7 +2270,7 @@ module Rule₂
   agree : collapse E ≈ ((input-to-output +ₘ (up₁ ∘ (collapse 𝒢₁ ∘ inputs₁))) +ₘ (up₂ ∘ (collapse 𝒢₂ ∘ Φ₂)))
   agree =
     ≈-trans (≡-to-≈ plumb)
-            (≈-trans {g = (input-to-output +ₘ (up₁ ∘ (collapse 𝒢₁ ∘ inputs₁))) +ₘ (up₂ ∘ (hidden₂.H .S₂.from-input ε ∘ Φ₂'))}
+            (≈-trans {g = (input-to-output +ₘ (up₁ ∘ (collapse 𝒢₁ ∘ inputs₁))) +ₘ (up₂ ∘ (hidden₂.st .S₂.from-input ε ∘ Φ₂'))}
                      (hidden₂.done start₂ .S₂.tgt-ok tt)
                      (+ₘ-cong ≈-refl (∘-cong₂ {f = up₂} (∘-cong (≈-trans (≡-to-≈ hidden₂.κ) (hide-paths⁺ 𝒢₂)) Φ₂-split))))
 
@@ -2416,7 +2416,7 @@ module Rule₃
 
     module hidden₁ = S₁.Hidden (edge-labels E) prem₁ (λ G w → ≡-refl)
 
-    start₁ : S₁.Start (edge-labels E) hidden₁.H⁰
+    start₁ : S₁.Start (edge-labels E) hidden₁.st⁰
     start₁ .S₁.into-start q = ≈-refl
     start₁ .S₁.interior-start p q = ≈-refl
     start₁ .S₁.tgt-start (inj₁ q) = ≈-refl
@@ -2482,14 +2482,14 @@ module Rule₃
 
     module hidden₂ = S₂.Hidden hidden₁.G prem₂ (λ G w → ≡-refl)
 
-    start₂ : S₂.Start hidden₁.G hidden₂.H⁰
+    start₂ : S₂.Start hidden₁.G hidden₂.st⁰
     start₂ .S₂.into-start q = fixed₁ .OutOfHidden.edge input q
     start₂ .S₂.interior-start p q = fixed₂ .IntoHidden₂.edge p (inj₁ q)
     start₂ .S₂.tgt-start (inj₁ q) =
       ≈-trans (done₁ .S₁.tgt-ok (inj₁ q))
-              (factor (Graph.from-input 𝒢₃ q) from-inputs₃ from-root₁ {h = hidden₁.H .S₁.from-input ε} {c = collapse 𝒢₁} inputs₁ κ₁)
+              (factor (Graph.from-input 𝒢₃ q) from-inputs₃ from-root₁ {h = hidden₁.st .S₁.from-input ε} {c = collapse 𝒢₁} inputs₁ κ₁)
     start₂ .S₂.tgt-start (inj₂ _) =
-      ≈-trans {g = input-to-output +ₘ (up₁ ∘ (hidden₁.H .S₁.from-input ε ∘ inputs₁))}
+      ≈-trans {g = input-to-output +ₘ (up₁ ∘ (hidden₁.st .S₁.from-input ε ∘ inputs₁))}
               (done₁ .S₁.tgt-ok (inj₂ tt))
               (+ₘ-cong ≈-refl (∘-cong₂ {f = up₁} (∘-cong₁ {g = inputs₁} κ₁)))
     start₂ .S₂.up-start (inj₁ q) = fixed₂ .IntoHidden₂.edge ε (inj₂ (inj₁ q))
@@ -2550,14 +2550,14 @@ module Rule₃
 
     module hidden₃ = S₃.Hidden hidden₂.G prem₃ (λ G w → ≡-refl)
 
-    start₃ : S₃.Start hidden₂.G hidden₃.H⁰
+    start₃ : S₃.Start hidden₂.G hidden₃.st⁰
     start₃ .S₃.into-start q =
-      ≈-trans {g = (Graph.from-input 𝒢₃ q ∘ Φ₃₁) +ₘ ((Graph.from-input 𝒢₃ q ∘ from-root₂) ∘ (hidden₂.H .S₂.from-input ε ∘ inputs₂))}
+      ≈-trans {g = (Graph.from-input 𝒢₃ q ∘ Φ₃₁) +ₘ ((Graph.from-input 𝒢₃ q ∘ from-root₂) ∘ (hidden₂.st .S₂.from-input ε ∘ inputs₂))}
               (done₂ .S₂.tgt-ok (inj₁ q))
-              (factor (Graph.from-input 𝒢₃ q) Φ₃₁ from-root₂ {h = hidden₂.H .S₂.from-input ε} {c = collapse 𝒢₂} inputs₂ κ₂)
+              (factor (Graph.from-input 𝒢₃ q) Φ₃₁ from-root₂ {h = hidden₂.st .S₂.from-input ε} {c = collapse 𝒢₂} inputs₂ κ₂)
     start₃ .S₃.interior-start p q = fixed₃ .IntoHidden₃.edge p (inj₁ q)
     start₃ .S₃.tgt-start _ =
-      ≈-trans {g = (input-to-output +ₘ (up₁ ∘ c₁)) +ₘ (up₂ ∘ (hidden₂.H .S₂.from-input ε ∘ inputs₂))}
+      ≈-trans {g = (input-to-output +ₘ (up₁ ∘ c₁)) +ₘ (up₂ ∘ (hidden₂.st .S₂.from-input ε ∘ inputs₂))}
               (done₂ .S₂.tgt-ok (inj₂ tt)) (+ₘ-cong ≈-refl (∘-cong₂ {f = up₂} (∘-cong₁ {g = inputs₂} κ₂)))
     start₃ .S₃.up-start _ = fixed₃ .IntoHidden₃.edge ε (inj₂ tt)
     start₃ .S₃.off-start _ ε          ne = ⊥-elimₚ (ne ≡-refl)
@@ -2601,7 +2601,7 @@ module Rule₃
   agree : collapse E ≈ (((input-to-output +ₘ (up₁ ∘ c₁)) +ₘ (up₂ ∘ c₂)) +ₘ (up₃ ∘ (collapse 𝒢₃ ∘ Φ₃)))
   agree =
     ≈-trans (≡-to-≈ plumb)
-            (≈-trans {g = ((input-to-output +ₘ (up₁ ∘ c₁)) +ₘ (up₂ ∘ c₂)) +ₘ (up₃ ∘ (hidden₃.H .S₃.from-input ε ∘ Φ₃'))}
+            (≈-trans {g = ((input-to-output +ₘ (up₁ ∘ c₁)) +ₘ (up₂ ∘ c₂)) +ₘ (up₃ ∘ (hidden₃.st .S₃.from-input ε ∘ Φ₃'))}
                      (hidden₃.done start₃ .S₃.tgt-ok tt)
                      (+ₘ-cong ≈-refl (∘-cong₂ {f = up₃} (∘-cong (≈-trans (≡-to-≈ hidden₃.κ) (hide-paths⁺ 𝒢₃)) Φ₃-split))))
 
@@ -2704,7 +2704,7 @@ module Ruleₛ {m n : ℕ} where
 
         module hidden₁ = S₁.Hidden (edge-labels whole) prem₁ (λ G w → ≡-refl)
 
-        start₁ : S₁.Start (edge-labels whole) hidden₁.H⁰
+        start₁ : S₁.Start (edge-labels whole) hidden₁.st⁰
         start₁ .S₁.into-start q = ≈-refl
         start₁ .S₁.interior-start p q = ≈-refl
         start₁ .S₁.tgt-start ε          = ≈-refl {f = input-to-output}
@@ -2790,7 +2790,7 @@ module Ruleₛ {m n : ℕ} where
         agree-rest (inj₁ _)          (inj₁ _)          = source₁ (inj₁ input)
         agree-rest (inj₁ _)          (inj₂ (into j q)) =
           ≈-trans (done₁ .S₁.tgt-ok (into j q))
-                  (absorb₁ (from-inputs Ps j q) (hidden₁.H .S₁.from-input ε ∘ inputs₁))
+                  (absorb₁ (from-inputs Ps j q) (hidden₁.st .S₁.from-input ε ∘ inputs₁))
         agree-rest (inj₁ _)          (inj₂ ε)          =
           ≈-trans (done₁ .S₁.tgt-ok ε)
                   (+ₘ-cong ≈-refl (∘-cong₂ {f = up₁} (∘-cong₁ {g = inputs₁} κ₁)))
