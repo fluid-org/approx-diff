@@ -32,6 +32,7 @@ open Signature Sig
 open Interpretation ℐ
 open prop-setoid._⇒_ using (func; func-resp-≈)
 open import language-syntax Sig renaming (_,_ to _▸_)
+open import language-syntax.support Sig using (thinning; emp; keep; drop; restrict)
 open import language-operational.type-substitution Sig using (unfold₁; unfold₁-inst)
 
 mutual
@@ -174,6 +175,16 @@ size-subst refl v = refl
 proj-var : ∀ {Γ τ} (x : Γ ∋ τ) (γ : Env Γ) → 𝔽 (width-env γ) ⇒ 𝔽 (width (lookup x γ))
 proj-var zero     (γ · v) = p₂ {width-env γ} {width v}
 proj-var (succ x) (γ · v) = proj-var x γ ∘ p₁ {width-env γ} {width v}
+
+restrict-env : ∀ {Γ} (θ : thinning Γ) → Env Γ → Env (restrict θ)
+restrict-env emp      emp     = emp
+restrict-env (keep θ) (γ · v) = restrict-env θ γ · v
+restrict-env (drop θ) (γ · v) = restrict-env θ γ
+
+proj-env : ∀ {Γ} (θ : thinning Γ) (γ : Env Γ) → 𝔽 (width-env γ) ⇒ 𝔽 (width-env (restrict-env θ γ))
+proj-env emp      emp     = I
+proj-env (keep θ) (γ · v) = proj-env θ γ ⊕ I {width v}
+proj-env (drop θ) (γ · v) = proj-env θ γ ∘ p₁ {width-env γ} {width v}
 
 brel-deps : ∀ {is} (ω : rel is) (vs : sort-vals is) (b : ⊤ {0ℓ} ⊎ ⊤ {0ℓ}) →
             𝔽 (bases-width is) ⇒ 𝔽 (width (bool→val b))
