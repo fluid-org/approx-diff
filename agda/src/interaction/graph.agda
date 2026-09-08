@@ -1033,6 +1033,118 @@ module Tabulated (T : Tabulation) (tick : {A : Set} → String → A → A) wher
   hide-graph : ((x : Semiring.Carrier) → Dec (x ≡ Semiring.ε)) → List ℕ → Tabulation
   hide-graph ε-dec hid = HideGraph.result ε-dec hid
 
+  -- Hiding by one sweep in evaluation order: the sweep state holds, per position, either a
+  -- surviving vertex's index among the survivors or a hidden vertex's block of summaries, one
+  -- slot per surviving row. Every nonzero edge into a vertex comes from an earlier position, so a
+  -- block is complete when the sweep reaches it; the zero test on each stored entry forces it, so
+  -- a block holds no thunks over earlier state. A result slot is the direct edge plus the paths
+  -- through the hidden set, read off the same column fold as the blocks. Shared lists are
+  -- threaded as arguments: a compiled module-level definition is re-evaluated at each reference.
+  module HideGraphSweep (ε-dec : (x : Semiring.Carrier) → Dec (x ≡ Semiring.ε)) (hid : List ℕ)
+    where
+    open HideGraph ε-dec hid using (hid-pos; keep)
+
+    -- Summaries into one vertex, one slot per surviving row; a short block reads as empty slots.
+    Block : Set
+    Block = List (Maybe M.Table)
+
+    data Origin : Set where
+      source  : ℕ → Origin
+      summary : Block → Origin
+
+    hd : Block → Maybe M.Table
+    hd []      = nothing
+    hd (t ∷ _) = t
+
+    tl : Block → Block
+    tl []       = []
+    tl (_ ∷ ts) = ts
+
+    survivors-of : List ℕ → List ℕ
+    survivors-of hp = filterᵇ (λ p → not (any (p ≡ᵇ_) hp)) (upTo (length (T .widths)))
+
+    transpose-by : List ℕ → List (List (Maybe M.Table)) → List (List (Maybe M.Table))
+    transpose-by []       _  = []
+    transpose-by (_ ∷ ws) rs = map hd rs ∷ transpose-by ws (map tl rs)
+
+    add-block : ℕ → List ℕ → Block → Block → Block
+    add-block wv []        _  _  = []
+    add-block wv (wa ∷ ws) B₁ B₂ = add? wv wa (hd B₁) (hd B₂) ∷ add-block wv ws (tl B₁) (tl B₂)
+
+    unit-block : ℕ → List ℕ → M.Table → Block
+    unit-block k       []       e = []
+    unit-block zero    (_ ∷ ws) e = just e ∷ map (λ _ → nothing) ws
+    unit-block (suc k) (_ ∷ ws) e = nothing ∷ unit-block k ws e
+
+    compose-block : ℕ → ℕ → M.Table → List ℕ → Block → Block
+    compose-block wv wu e []        _ = []
+    compose-block wv wu e (wa ∷ ws) B with hd B
+    ... | nothing = nothing ∷ compose-block wv wu e ws (tl B)
+    ... | just t  = just (mul wv wu wa e t) ∷ compose-block wv wu e ws (tl B)
+
+    -- Only a nonzero slot walks a block, so a column costs its scan plus work per stored edge.
+    column : List ℕ → ℕ → List ℕ → List (Maybe M.Table) → List Origin → Block
+    column wvs wv (wu ∷ pws) (nothing ∷ ss) (_ ∷ os) = column wvs wv pws ss os
+    column wvs wv (wu ∷ pws) (just e ∷ ss)  (o ∷ os) =
+      add-block wv wvs (contrib o) (column wvs wv pws ss os)
+      where
+      contrib : Origin → Block
+      contrib (source k)  = unit-block k wvs e
+      contrib (summary B) = compose-block wv wu e wvs B
+    column wvs _ _ _ _ = map (λ _ → nothing) wvs
+
+    set-at : ℕ → Origin → List Origin → List Origin
+    set-at _       _ []       = []
+    set-at zero    o (_ ∷ os) = o ∷ os
+    set-at (suc p) o (o' ∷ os) = o' ∷ set-at p o os
+
+    force-block : {A : Set} → Block → A → A
+    force-block []            x = x
+    force-block (nothing ∷ B) x = force-block B x
+    force-block (just _ ∷ B)  x = force-block B x
+
+    initial-state : List ℕ → List ℕ → List Origin
+    initial-state hp pws = build 0 0 pws
+      where
+      build : ℕ → ℕ → List ℕ → List Origin
+      build p k []       = []
+      build p k (_ ∷ ws) with any (p ≡ᵇ_) hp
+      ... | true  = summary [] ∷ build (suc p) k ws
+      ... | false = source k ∷ build (suc p) (suc k) ws
+
+    sweep : List ℕ → List ℕ → List (List (Maybe M.Table)) → ℕ → List ℕ → List Origin → List Origin
+    sweep wvs pws ts k []       st = st
+    sweep wvs pws ts k (p ∷ ps) st =
+      step (tick ("block " ++ₛ ℕ-Show.show k) (map keep (column wvs (wd p) pws (M.nth [] p ts) st)))
+      where
+      step : Block → List Origin
+      step B = force-block B (sweep wvs pws ts (suc k) ps (set-at p (summary B) st))
+
+    columns : List ℕ → List ℕ → List (List (Maybe M.Table)) → List Origin → ℕ → List ℕ → List Block
+    columns wvs pws ts st k []       = []
+    columns wvs pws ts st k (b ∷ bs) =
+      tick ("column " ++ₛ ℕ-Show.show k) (map keep (column wvs (wd b) pws (M.nth [] b ts) st))
+      ∷ columns wvs pws ts st (suc k) bs
+
+    edges-of : List ℕ → List (List (Maybe M.Table))
+    edges-of hp = shape (survivors-of hp)
+      where
+      build : List ℕ → List (List (Maybe M.Table)) → List ℕ → List (List (Maybe M.Table))
+      build wvs ts sv =
+        transpose-by wvs
+          (columns wvs (T .widths) ts (sweep wvs (T .widths) ts 0 hp (initial-state hp (T .widths))) 0 sv)
+
+      shape : List ℕ → List (List (Maybe M.Table))
+      shape sv = build (map wd sv) (transpose-by (T .widths) (T .edges)) sv
+
+    result : Tabulation
+    result .Tabulation.numbers = map (λ p → M.nth 0 p (Tabulation.numbers T)) (survivors-of hid-pos)
+    result .Tabulation.widths  = map wd (survivors-of hid-pos)
+    result .Tabulation.edges   = edges-of hid-pos
+
+  hide-graph-sweep : ((x : Semiring.Carrier) → Dec (x ≡ Semiring.ε)) → List ℕ → Tabulation
+  hide-graph-sweep ε-dec hid = HideGraphSweep.result ε-dec hid
+
 private
   nth? : {C : Set} → ℕ → List C → Maybe C
   nth? _       []       = nothing
