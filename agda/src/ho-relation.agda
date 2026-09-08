@@ -40,6 +40,7 @@ module ho-relation
 open Signature Sig
 open Interpretation ℐ
 open import language-syntax Sig renaming (_,_ to _▸_)
+open import language-syntax.support Sig using (thinning; emp; keep; drop; restrict; embed)
 open import language-operational.evaluation Sig S ℐ ctrl-weight
 
 open import value-interpretation S ctrl-weight Sig ℐ public using (module model; module interp; val-idx; env-idx)
@@ -71,7 +72,8 @@ private
     interp.δ∅𝒟 interp.𝒟𝟙ty interp.𝒟unit-pt interp.𝒟-Sig-model model.ctrl-weight-endo
     (λ {X} {Y} → model.exp-section {X} {Y}) interp.𝒟𝟙ty-section interp.𝒟-sort-section
 
-open LI public using (⟦_⟧ty; ⟦_⟧ctxt; ⟦_⟧tm; ⟦_⟧tms; ⟦_⟧var; ctrl-dep; roll-mor;
+open LI public using (⟦_⟧ty; ⟦_⟧ctxt; ⟦_⟧tm; ⟦_⟧tms; ⟦_⟧var; ⟦_⟧ren; ren-tm; ren-body; ren-succ; ren-ext;
+                      ctrl-dep; roll-mor;
                       unroll-mor; preserves-unroll-ctrl-dep; ≡-to-⇒; roll-unroll; unroll-roll;
                       fold-map; fold-map-var; fold-map-unit; fold-map-base; fold-map-arrow;
                       fold-map-rec; fold-map-mu; fold-map-pair; fold-map-pair-L;
@@ -318,18 +320,32 @@ ap-wctrl {m} {n} y k =
   ≈-trans (ap-ones (ctrl-scale .func (ap (M.p₁ {1} {m}) y)) k)
           (≈-trans (·-cong (ap-p₁₁ {m} y zero) ≈-refl) ·-comm)
 
-ap-⊕ : ∀ {m a b} (f : 𝔽 a ⇒ 𝔽 1) (g : 𝔽 m ⇒ 𝔽 b) (y : ∣ 𝔽 (a + m) ∣) (k : Fin (suc b)) →
-       (f ⊕ g) .func y k ≈s M.concat {1} {b} (f .func (ap (M.p₁ {a} {m}) y)) (g .func (ap (M.p₂ {a} {m}) y)) k
-ap-⊕ {m} {a} {b} f g y k = ap-pairₕ (f SemiMod.∘ p₁ {a} {m}) (g SemiMod.∘ p₂ {a} {m}) y k
+ap-⊕ : ∀ {m a a' b} (f : 𝔽 a ⇒ 𝔽 a') (g : 𝔽 m ⇒ 𝔽 b) (y : ∣ 𝔽 (a + m) ∣) (k : Fin (a' + b)) →
+       (f ⊕ g) .func y k ≈s M.concat {a'} {b} (f .func (ap (M.p₁ {a} {m}) y)) (g .func (ap (M.p₂ {a} {m}) y)) k
+ap-⊕ {m} {a} {a'} {b} f g y k = ap-pairₕ (f SemiMod.∘ p₁ {a} {m}) (g SemiMod.∘ p₂ {a} {m}) y k
 
 ap-⊕₁ : ∀ {m b} (f : 𝔽 1 ⇒ 𝔽 1) (g : 𝔽 m ⇒ 𝔽 b) (y : ∣ 𝔽 (suc m) ∣) (k : Fin (suc b)) →
         (f ⊕ g) .func y k ≈s M.concat {1} {b} (f .func (λ _ → y zero)) (g .func (λ l → y (suc l))) k
 ap-⊕₁ {m} {b} f g y k =
-  ≈-trans (ap-⊕ {m} {1} {b} f g y k)
+  ≈-trans (ap-⊕ {m} {1} {1} {b} f g y k)
           (M.concat-preserves _≈s_
              {u₁ = f .func (ap (M.p₁ {1} {m}) y)} {u₂ = f .func (λ _ → y zero)}
              {v₁ = g .func (ap (M.p₂ {1} {m}) y)} {v₂ = g .func (λ l → y (suc l))}
              (f .func-resp-≈ (ap-p₁₁ {m} y)) (g .func-resp-≈ (ap-p₂₁ {m} y)) k)
+
+ap-⊕-p₁ : ∀ {m a a' b} (f : 𝔽 a ⇒ 𝔽 a') (g : 𝔽 m ⇒ 𝔽 b) (y : ∣ 𝔽 (a + m) ∣) (k : Fin a') →
+          ap (M.p₁ {a'} {b}) ((f ⊕ g) .func y) k ≈s f .func (ap (M.p₁ {a} {m}) y) k
+ap-⊕-p₁ {m} {a} {a'} {b} f g y k =
+  ≈-trans (app-congᵥ (M.p₁ {a'} {b}) (ap-⊕ f g y) k)
+          (≈-trans (app-p₁ {a'} {b} (M.concat (f .func (ap (M.p₁ {a} {m}) y)) (g .func (ap (M.p₂ {a} {m}) y))) k)
+                   (M.split₁-concat (f .func (ap (M.p₁ {a} {m}) y)) (g .func (ap (M.p₂ {a} {m}) y)) k))
+
+ap-⊕-p₂ : ∀ {m a a' b} (f : 𝔽 a ⇒ 𝔽 a') (g : 𝔽 m ⇒ 𝔽 b) (y : ∣ 𝔽 (a + m) ∣) (k : Fin b) →
+          ap (M.p₂ {a'} {b}) ((f ⊕ g) .func y) k ≈s g .func (ap (M.p₂ {a} {m}) y) k
+ap-⊕-p₂ {m} {a} {a'} {b} f g y k =
+  ≈-trans (app-congᵥ (M.p₂ {a'} {b}) (ap-⊕ f g y) k)
+          (≈-trans (app-p₂ {a'} {b} (M.concat (f .func (ap (M.p₁ {a} {m}) y)) (g .func (ap (M.p₂ {a} {m}) y))) k)
+                   (M.split₂-concat (f .func (ap (M.p₁ {a} {m}) y)) (g .func (ap (M.p₂ {a} {m}) y)) k))
 
 ctrl-dep-unit : ∀ i s → ctrl-dep-at unit i s zero ≈s (ctrl ·ₛ s)
 ctrl-dep-unit i s =
@@ -1038,3 +1054,92 @@ ap-ccast-I refl o k = ≈-refl
 ap-rcast-I : ∀ {τ τ'} (e : τ ≡ τ') {v : Val τ} (o : ∣ 𝔽 (width v) ∣) k →
              Category.≡-to-⇒ SemiMod.cat (cong 𝔽 (sym (width-subst e v))) .func o k ≈s vec-cast e {v} o k
 ap-rcast-I refl o k = ≈-refl
+
+restrict-idx : ∀ {Γ} (θ : thinning Γ) → IxC Γ → IxC (restrict θ)
+restrict-idx emp      gi       = gi
+restrict-idx (keep θ) (gi , i) = restrict-idx θ gi , i
+restrict-idx (drop θ) (gi , i) = restrict-idx θ gi
+
+restrict-fib : ∀ {Γ} (θ : thinning Γ) {gi : IxC Γ} → ∣ FibC Γ gi ∣ →
+               ∣ FibC (restrict θ) (restrict-idx θ gi) ∣
+restrict-fib emp                g = g
+restrict-fib (keep θ) {gi , i} g = restrict-fib θ (proj₁ g) , proj₂ g
+restrict-fib (drop θ) {gi , i} g = restrict-fib θ (proj₁ g)
+
+restrict-val : ∀ {Γ} (θ : thinning Γ) {γ : Env Γ} {gi} → EnvValRel γ gi →
+               EnvValRel (restrict-env θ γ) (restrict-idx θ gi)
+restrict-val emp      emp      = emp
+restrict-val (keep θ) (rγ · r) = restrict-val θ rγ · r
+restrict-val (drop θ) (rγ · r) = restrict-val θ rγ
+
+restrict-dep : ∀ {Γ} (θ : thinning Γ) {γ : Env Γ} {gi} (rγ : EnvValRel γ gi) s {x g} →
+               EnvDepRel rγ s x g →
+               EnvDepRel (restrict-val θ rγ) s (proj-env θ γ .func x) (restrict-fib θ g)
+restrict-dep emp      emp s rel = prop.tt
+restrict-dep (keep θ) (_·_ {τ = τ} {γ = γ} {v = v} rγ r) s {x} (rel , h) =
+  EnvDepRel-resp (restrict-val θ rγ) s
+    (λ k → ≈-sym (ap-⊕-p₁ (proj-env θ γ) (I {width v}) x k)) (restrict-dep θ rγ s rel) ,
+  DepRel⊑-resp τ r s (λ k → ≈-sym (ap-⊕-p₂ (proj-env θ γ) (I {width v}) x k)) h
+restrict-dep (drop θ) (rγ · r) s (rel , _) = restrict-dep θ rγ s rel
+
+restrict-idx-ren : ∀ {Γ} (θ : thinning Γ) (gi : IxC Γ) →
+                   IxC._≈_ (restrict θ) (restrict-idx θ gi) (⟦ embed θ ⟧ren .idxf .sfunc gi)
+restrict-idx-ren emp              gi       = prop.tt
+restrict-idx-ren (keep {τ = τ} θ) (gi , i) =
+  IxC.trans (restrict θ) (restrict-idx-ren θ gi)
+    (IxC.sym (restrict θ) (idx-eq (ren-succ {τ' = τ} (embed θ)) (gi , i))) ,
+  Ix.refl τ {i}
+restrict-idx-ren (drop {τ = τ} θ) (gi , i) =
+  IxC.trans (restrict θ) (restrict-idx-ren θ gi)
+    (IxC.sym (restrict θ) (idx-eq (ren-succ {τ' = τ} (embed θ)) (gi , i)))
+
+private
+  succ-fib : ∀ {Γ} {τ' : type 0} (θ : thinning Γ) (gi : IxC Γ) {i : Ix τ'}
+             (g : ∣ FibC (Γ ▸ τ') (gi , i) ∣) →
+             FibC._≈_ (restrict θ) (⟦ embed θ ⟧ren .idxf .sfunc gi)
+               (⟦ restrict θ ⟧ctxt .fam .subst (restrict-idx-ren θ gi) .func (restrict-fib θ (proj₁ g)))
+               (⟦ embed θ ⟧ren .famf .transf gi .func (proj₁ g)) →
+             FibC._≈_ (restrict θ) (⟦ (λ x → succ {τ' = τ'} (embed θ x)) ⟧ren .idxf .sfunc (gi , i))
+               (⟦ restrict θ ⟧ctxt .fam .subst
+                  (IxC.trans (restrict θ) (restrict-idx-ren θ gi)
+                    (IxC.sym (restrict θ) (idx-eq (ren-succ {τ' = τ'} (embed θ)) (gi , i)))) .func
+                  (restrict-fib θ (proj₁ g)))
+               (⟦ (λ x → succ {τ' = τ'} (embed θ x)) ⟧ren .famf .transf (gi , i) .func g)
+  succ-fib {Γ} {τ'} θ gi {i} g ih =
+    FibC.trans (restrict θ) six
+      (subst-trans ⟦ restrict θ ⟧ctxt (restrict-idx-ren θ gi) (IxC.sym (restrict θ) E)
+        (restrict-fib θ (proj₁ g)))
+      (FibC.trans (restrict θ) six
+        (⟦ restrict θ ⟧ctxt .fam .subst (IxC.sym (restrict θ) E) .func-resp-≈ ih)
+        (FibC.trans (restrict θ) six
+          (⟦ restrict θ ⟧ctxt .fam .subst (IxC.sym (restrict θ) E) .func-resp-≈
+            (FibC.sym (restrict θ) (⟦ embed θ ⟧ren .idxf .sfunc gi)
+              (fam-eq (ren-succ {τ' = τ'} (embed θ)) (gi , i) g)))
+          (FibC.trans (restrict θ) six
+            (FibC.sym (restrict θ) six
+              (subst-trans ⟦ restrict θ ⟧ctxt E (IxC.sym (restrict θ) E) sfam))
+            (subst-refl ⟦ restrict θ ⟧ctxt (IxC.trans (restrict θ) E (IxC.sym (restrict θ) E)) sfam))))
+    where
+    E    = idx-eq (ren-succ {τ' = τ'} (embed θ)) (gi , i)
+    six  = ⟦ (λ x → succ {τ' = τ'} (embed θ x)) ⟧ren .idxf .sfunc (gi , i)
+    sfam = ⟦ (λ x → succ {τ' = τ'} (embed θ x)) ⟧ren .famf .transf (gi , i) .func g
+
+restrict-fib-ren : ∀ {Γ} (θ : thinning Γ) (gi : IxC Γ) (g : ∣ FibC Γ gi ∣) →
+                   FibC._≈_ (restrict θ) (⟦ embed θ ⟧ren .idxf .sfunc gi)
+                     (⟦ restrict θ ⟧ctxt .fam .subst (restrict-idx-ren θ gi) .func (restrict-fib θ g))
+                     (⟦ embed θ ⟧ren .famf .transf gi .func g)
+restrict-fib-ren emp              gi       g = prop.tt
+restrict-fib-ren (keep {τ = τ} θ) (gi , i) g =
+  FibC.trans (restrict θ ▸ τ) kix
+    (Fprod-subst-elt {⟦ restrict θ ⟧ctxt} {⟦ τ ⟧}
+      (IxC.trans (restrict θ) (restrict-idx-ren θ gi)
+        (IxC.sym (restrict θ) (idx-eq (ren-succ {τ' = τ} (embed θ)) (gi , i))))
+      (Ix.refl τ {i}) (restrict-fib θ (proj₁ g)) (proj₂ g))
+    (FibC.trans (restrict θ ▸ τ) kix
+      (succ-fib θ gi g (restrict-fib-ren θ gi (proj₁ g)) ,
+       subst-refl ⟦ τ ⟧ (Ix.refl τ {i}) (proj₂ g))
+      (FibC.sym (restrict θ ▸ τ) kix
+        (Fpair-elt ⟦ (λ x → succ {τ' = τ} (embed θ x)) ⟧ren Fam-P.p₂ (gi , i) g)))
+  where kix = ⟦ embed (keep {τ = τ} θ) ⟧ren .idxf .sfunc (gi , i)
+restrict-fib-ren (drop {τ = τ} θ) (gi , i) g =
+  succ-fib θ gi g (restrict-fib-ren θ gi (proj₁ g))
