@@ -189,6 +189,20 @@ elimF {Γ} {X} {C} cC f .famf .natural {γ₁ , x₁} {γ₂ , x₂} (γ≈ , x�
     (f .famf .transf (γ₁ , x₁)) (f .famf .transf (γ₂ , x₂))
     (f .famf .natural (γ≈ , x≈))
 
+elimF-reindex : ∀ {Γ Γ' X C : Obj} (cC : Section C) (u : Mor Γ Γ')
+                {f : Mor (Fam-P.prod Γ' X) C} {f' : Mor (Fam-P.prod Γ X) C} →
+                f' ≃ Fam-cat._∘_ f (Fam-P.prod-m u (Fam-cat.id X)) →
+                elimF cC f' ≃ Fam-cat._∘_ (elimF cC f) (Fam-P.prod-m u (Fam-cat.id (Lf X)))
+elimF-reindex cC u h .idxf-eq .func-eq e = h .idxf-eq .func-eq e
+elimF-reindex {Γ} {Γ'} {X} {C} cC u {f} {f'} h .famf-eq .transf-eq {γ , x} =
+  ≈-trans (≈-sym (elim-root-natural (u .famf .transf γ) (id _) (cC .at-natural _)
+                    (f' .famf .transf (γ , x)) (f .famf .transf (u .idxf .func γ , x))
+                    (≈-sym (≈-trans (h .famf-eq .transf-eq)
+                             (≈-trans id-left (∘-cong ≈-refl (pair-cong id-left id-left)))))))
+  (≈-trans (∘-cong ≈-refl (pair-cong (≈-sym id-left)
+                                     (≈-trans (∘-cong Lmap-id ≈-refl) (≈-sym id-left))))
+           (≈-sym id-left))
+
 -- Not every morphism preserves a section: the payload injection sends the element to a payload with
 -- zero root weight, not the lifted section's element.
 record preserves-section {X Y : Obj} (f : Mor X Y) (c : Section X) (d : Section Y) : Prop (os ⊔ e) where
