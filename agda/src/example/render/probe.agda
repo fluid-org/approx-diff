@@ -98,16 +98,26 @@ private
     ... | _      | _      = three.O
 
     at at-sweep : ℕ → String
-    at k       = show3 (ask (Tabulated.hide-graph T (λ _ x → x) three.ε? (map suc (upTo k))))
-    at-sweep k = show3 (ask (Tabulated.hide-graph-sweep T (λ _ x → x) three.ε? (map suc (upTo k))))
+    at k       = show3 (ask (Tabulated.hide-graph T trace three.ε? (map suc (upTo k))))
+    at-sweep k = show3 (ask (Tabulated.hide-graph-sweep T trace three.ε? (map suc (upTo k))))
 
   survey : String
   survey = scale.line "filter-sum" filter-sum-run ++ "\n" ++ scale.line "map" map-run ++ "\n"
            ++ scale.line "filter" filter-run ++ "\n" ++ scale.line "merge" merge-run
 
-  curve : List ℕ → ℕ
-  curve []       = 0
-  curve (k ∷ ks) = trace ("k=" ++ show k ++ " -> " ++ bench.at k) (curve ks)
+  curve : String → (ℕ → String) → List ℕ → ℕ
+  curve name f []       = 0
+  curve name f (k ∷ ks) =
+    trace ("begin " ++ name ++ " k=" ++ show k)
+          (trace (name ++ " k=" ++ show k ++ " -> " ++ f k) (curve name f ks))
+
+  seq2 : ℕ → ℕ → ℕ
+  seq2 zero    n = n
+  seq2 (suc m) n = seq2 m n
+
+  prefixes : List ℕ
+  prefixes = 5 ∷ 25 ∷ 100 ∷ 400 ∷ 800 ∷ []
 
 main : Main
-main = run (putStrLn (trace survey (show (curve (5 ∷ [])))))
+main = run (putStrLn (trace survey
+  (show (seq2 (curve "sweep" bench.at-sweep prefixes) (curve "old" bench.at prefixes)))))
