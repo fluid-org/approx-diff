@@ -633,6 +633,16 @@ subst-trans : ∀ (X : Obj) {x y z : IxO X} (e₁ : IxO._≈_ X x y) (e₂ : IxO
                                             (X .fam .subst e₂ .func (X .fam .subst e₁ .func d))
 subst-trans X {x} {y} {z} e₁ e₂ d = X .fam .indexed-family.Fam.trans* {x} {y} {z} e₂ e₁ .func-eq (FibO.refl X x {d})
 
+subst-inv : ∀ (X : Obj) {x x' : IxO X} (e : IxO._≈_ X x x') (d : ∣ FibO X x' ∣) (d' : ∣ FibO X x ∣) →
+            FibO._≈_ X x' (X .fam .subst e .func d') d →
+            FibO._≈_ X x (X .fam .subst (IxO.sym X e) .func d) d'
+subst-inv X {x} {x'} e d d' h =
+  FibO.trans X x
+    (X .fam .subst (IxO.sym X e) .func-resp-≈ (FibO.sym X x' h))
+    (FibO.trans X x
+      (FibO.sym X x (subst-trans X e (IxO.sym X e) d'))
+      (subst-refl X (IxO.trans X e (IxO.sym X e)) d'))
+
 transf-natural : ∀ {X Y : Obj} (f : Mor X Y) {x x' : IxO X} (e : IxO._≈_ X x x')
                  (z : ∣ FibO X x ∣) →
                  FibO._≈_ Y (f .idxf .sfunc x')
@@ -1111,14 +1121,8 @@ private
         (restrict-fib θ (proj₁ g)))
       (FibC.trans (restrict θ) six
         (⟦ restrict θ ⟧ctxt .fam .subst (IxC.sym (restrict θ) E) .func-resp-≈ ih)
-        (FibC.trans (restrict θ) six
-          (⟦ restrict θ ⟧ctxt .fam .subst (IxC.sym (restrict θ) E) .func-resp-≈
-            (FibC.sym (restrict θ) (⟦ embed θ ⟧ren .idxf .sfunc gi)
-              (fam-eq (ren-succ {τ' = τ'} (embed θ)) (gi , i) g)))
-          (FibC.trans (restrict θ) six
-            (FibC.sym (restrict θ) six
-              (subst-trans ⟦ restrict θ ⟧ctxt E (IxC.sym (restrict θ) E) sfam))
-            (subst-refl ⟦ restrict θ ⟧ctxt (IxC.trans (restrict θ) E (IxC.sym (restrict θ) E)) sfam))))
+        (subst-inv ⟦ restrict θ ⟧ctxt E (⟦ embed θ ⟧ren .famf .transf gi .func (proj₁ g)) sfam
+          (fam-eq (ren-succ {τ' = τ'} (embed θ)) (gi , i) g)))
     where
     E    = idx-eq (ren-succ {τ' = τ'} (embed θ)) (gi , i)
     six  = ⟦ (λ x → succ {τ' = τ'} (embed θ x)) ⟧ren .idxf .sfunc (gi , i)

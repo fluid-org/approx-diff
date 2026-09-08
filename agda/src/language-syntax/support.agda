@@ -2,6 +2,7 @@
 
 open import Data.Nat using (ℕ; suc; _+_)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂)
+import nat
 open import Data.List.Relation.Unary.All using ([]; _∷_) renaming (All to Every)
 open import signature using (Signature)
 
@@ -90,6 +91,22 @@ mutual
   sizes : ∀ {Γ σs} → Every (λ σ → Γ ⊢ base σ) σs → ℕ
   sizes []       = 0
   sizes (t ∷ ts) = suc (size t + sizes ts)
+
+size-positive : ∀ {Γ τ} (t : Γ ⊢ τ) → 1 nat.≤ size t
+size-positive (var x)        = nat.≤-refl
+size-positive unit           = nat.≤-refl
+size-positive (inl t)        = nat.s≤s nat.0≤n
+size-positive (inr t)        = nat.s≤s nat.0≤n
+size-positive (case s t₁ t₂) = nat.s≤s nat.0≤n
+size-positive (pair s t)     = nat.s≤s nat.0≤n
+size-positive (fst t)        = nat.s≤s nat.0≤n
+size-positive (snd t)        = nat.s≤s nat.0≤n
+size-positive (lam t)        = nat.s≤s nat.0≤n
+size-positive (app s t)      = nat.s≤s nat.0≤n
+size-positive (bop ω ts)     = nat.s≤s nat.0≤n
+size-positive (brel ω ts)    = nat.s≤s nat.0≤n
+size-positive (roll t)       = nat.s≤s nat.0≤n
+size-positive (fold s t)     = nat.s≤s nat.0≤n
 
 data _⊆_ : ∀ {Γ} → thinning Γ → thinning Γ → Set ℓ where
   emp  : emp ⊆ emp
