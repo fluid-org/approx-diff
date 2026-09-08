@@ -16,8 +16,7 @@ import language-operational.uniqueness
 -- Soundness of values at every type: soundness-val; of dependence at first-order types: soundness-dep.
 -- Injectivity of the value interpretation: val-idx-inj. Adequacy, for the derivation eval provides: adequacy.
 -- The collapsed dependence graph agrees with the fibre map: agreement.
--- Parked pending semantic renaming lemma for restricted closures (#71).
--- import ho-agreement
+import ho-agreement
 
 -- Hiding in any order gives the same relation: hide-all-perm.
 import interaction.graph
