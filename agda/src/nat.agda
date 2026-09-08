@@ -3,6 +3,7 @@
 module nat where
 
 open import Level using (0ℓ)
+open import Relation.Binary.PropositionalEquality using (_≡_; refl)
 open import Data.Product using (_,_)
 open import Data.Sum using (_⊎_; inj₁; inj₂)
 open import prop
@@ -33,9 +34,15 @@ succ-increasing {succ x} = s≤s succ-increasing
 ≤-refl {zero}   = 0≤n
 ≤-refl {succ x} = s≤s ≤-refl
 
+≤-reflexive : ∀ {x y} → x ≡ y → x ≤ y
+≤-reflexive refl = ≤-refl
+
 ≤-trans : ∀ {x y z} → x ≤ y → y ≤ z → x ≤ z
 ≤-trans 0≤n       y≤z       = 0≤n
 ≤-trans (s≤s x≤y) (s≤s y≤z) = s≤s (≤-trans x≤y y≤z)
+
+s≤s-inv : ∀ {x y} → succ x ≤ succ y → x ≤ y
+s≤s-inv (s≤s x≤y) = x≤y
 
 ≤-total : ∀ x y → (x ≤ y) ∨ (y ≤ x)
 ≤-total zero y = inj₁ 0≤n
@@ -183,6 +190,10 @@ open IsMeet ⊓-isMeet
 +-increasing : ∀ {x y} → y ≤ (x + y)
 +-increasing {zero} = ≤-refl
 +-increasing {succ x} = ≤-trans succ-increasing (s≤s (+-increasing {x}))
+
++-increasingʳ : ∀ {x y} → x ≤ (x + y)
++-increasingʳ {zero}   = 0≤n
++-increasingʳ {succ x} = s≤s (+-increasingʳ {x})
 
 +-mono : ∀ {x₁ x₂ y₁ y₂} → x₁ ≤ x₂ → y₁ ≤ y₂ → (x₁ + y₁) ≤ (x₂ + y₂)
 +-mono 0≤n     0≤n     = 0≤n

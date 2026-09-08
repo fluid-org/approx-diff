@@ -39,7 +39,7 @@ open Interpretation ℐ
 open import language-syntax Sig renaming (_,_ to _▸_) hiding (cons)
 open import language-syntax.support Sig
   using (thinning; emp; keep; drop; restrict; embed; body-thinning; strengthen-body;
-         keep-tail; ⊆-refl; embed-strengthen; size; sizes; size-strengthen)
+         keep-tail; ⊆-refl; embed-strengthen; size; sizes; size-strengthen; size-positive)
 import nat
 open import language-operational.type-substitution Sig using (unfold₁; unfold₁-inst)
 open import language-operational.evaluation Sig S ℐ ctrl-weight renaming (size to vsize)
@@ -934,11 +934,7 @@ private
       (subst-trans ⟦ τ ⟧ E-mid (Ix.sym τ E-body) dθ)
       (Fib.trans τ tix
         (⟦ τ ⟧ .fam .subst (Ix.sym τ E-body) .func-resp-≈ step-mid)
-        (Fib.trans τ tix
-          (⟦ τ ⟧ .fam .subst (Ix.sym τ E-body) .func-resp-≈ (Fib.sym τ mix step-body))
-          (Fib.trans τ tix
-            (Fib.sym τ tix (subst-trans ⟦ τ ⟧ E-body (Ix.sym τ E-body) tfam))
-            (subst-refl ⟦ τ ⟧ (Ix.trans τ E-body (Ix.sym τ E-body)) tfam))))
+        (subst-inv ⟦ τ ⟧ E-body mfam tfam step-body))
     where
     θ    = body-thinning t
     tθ   = strengthen-body t
@@ -947,11 +943,11 @@ private
     mix  = ⟦ tθ ⟧tm .idxf .sfunc (ρm .idxf .sfunc gi , j)
     dθ   = ⟦ tθ ⟧tm .famf .transf (restrict-idx θ gi , j) .func (restrict-fib θ g , y)
     tfam = ⟦ t ⟧tm .famf .transf (gi , j) .func (g , y)
+    mfam = ⟦ tθ ⟧tm .famf .transf (ρm .idxf .sfunc gi , j) .func (ρm .famf .transf gi .func g , y)
     E-body = idx-eq (body-tm t) (gi , j)
     E-mid : Ix._≈_ τ (⟦ tθ ⟧tm .idxf .sfunc (restrict-idx θ gi , j)) mix
     E-mid = ⟦ tθ ⟧tm .idxf .sfunc-resp-≈ (restrict-idx-ren θ gi , Ix.refl σ {j})
-    step-mid : Fib._≈_ τ mix (⟦ τ ⟧ .fam .subst E-mid .func dθ)
-                 (⟦ tθ ⟧tm .famf .transf (ρm .idxf .sfunc gi , j) .func (ρm .famf .transf gi .func g , y))
+    step-mid : Fib._≈_ τ mix (⟦ τ ⟧ .fam .subst E-mid .func dθ) mfam
     step-mid =
       Fib.trans τ mix
         (Fib.sym τ mix
@@ -961,8 +957,7 @@ private
             (Fprod-subst-elt {⟦ restrict θ ⟧ctxt} {⟦ σ ⟧} (restrict-idx-ren θ gi) (Ix.refl σ {j})
               (restrict-fib θ g) y)
             (restrict-fib-ren θ gi g , subst-refl ⟦ σ ⟧ (Ix.refl σ {j}) y)))
-    step-body : Fib._≈_ τ mix (⟦ τ ⟧ .fam .subst E-body .func tfam)
-                  (⟦ tθ ⟧tm .famf .transf (ρm .idxf .sfunc gi , j) .func (ρm .famf .transf gi .func g , y))
+    step-body : Fib._≈_ τ mix (⟦ τ ⟧ .fam .subst E-body .func tfam) mfam
     step-body =
       Fib.trans τ mix (fam-eq (body-tm t) (gi , j) (g , y))
         (⟦ tθ ⟧tm .famf .transf (ρm .idxf .sfunc gi , j) .func-resp-≈
@@ -975,79 +970,53 @@ private
   env-idx-restrict (drop θ)         (γ · v) = env-idx-restrict θ γ
 
 private
-  su-inv : ∀ {m n} → suc m nat.≤ suc n → m nat.≤ n
-  su-inv (nat.s≤s p) = p
-
-  ≤-left : ∀ {m n} → m nat.≤ m + n
-  ≤-left {zero}  = nat.0≤n
-  ≤-left {suc m} = nat.s≤s (≤-left {m})
-
-  ≤-cast : ∀ {m m' n} → m ≡ m' → m' nat.≤ n → m nat.≤ n
-  ≤-cast refl h = h
-
   ≰0 : ∀ {A : Set} {m} → suc m nat.≤ 0 → A
   ≰0 ()
 
   ≰0ₚ : ∀ {A : Prop} {m} → suc m nat.≤ 0 → A
   ≰0ₚ ()
 
-  size-pos : ∀ {Γ τ} (t : Γ ⊢ τ) → 1 nat.≤ size t
-  size-pos (var x)        = nat.≤-refl
-  size-pos unit           = nat.≤-refl
-  size-pos (inl t)        = nat.s≤s nat.0≤n
-  size-pos (inr t)        = nat.s≤s nat.0≤n
-  size-pos (case s t₁ t₂) = nat.s≤s nat.0≤n
-  size-pos (pair s t)     = nat.s≤s nat.0≤n
-  size-pos (fst t)        = nat.s≤s nat.0≤n
-  size-pos (snd t)        = nat.s≤s nat.0≤n
-  size-pos (lam t)        = nat.s≤s nat.0≤n
-  size-pos (app s t)      = nat.s≤s nat.0≤n
-  size-pos (bop ω ts)     = nat.s≤s nat.0≤n
-  size-pos (brel ω ts)    = nat.s≤s nat.0≤n
-  size-pos (roll t)       = nat.s≤s nat.0≤n
-  size-pos (fold s t)     = nat.s≤s nat.0≤n
-
 fundamental-val′ : ∀ {Γ τ} {t : Γ ⊢ τ} {γ : Env Γ} {v R} (n : ℕ) (bnd : size t nat.≤ n)
        (D : γ , t ⇓ v [ R ]) {gi} (rγ : EnvValRel γ gi) → ValRel τ v (⟦ t ⟧tm .idxf .sfunc gi)
 fundamental-vals′ : ∀ {Γ is} {Ms : Every (λ σ → Γ ⊢ base σ) is} {γ : Env Γ} {vs R} (n : ℕ)
         (bnd : sizes Ms nat.≤ n) (D : γ , Ms ⇓s vs [ R ]) {gi} (rγ : EnvValRel γ gi) →
         Prf (Setoid._≈_ (sort-vals-setoid sort-index is) (args-idx Ms gi) vs)
-fundamental-val′ {t = t} zero bnd D rγ = ≰0 (nat.≤-trans (size-pos t) bnd)
+fundamental-val′ {t = t} zero bnd D rγ = ≰0 (nat.≤-trans (size-positive t) bnd)
 fundamental-val′ (suc n) bnd (⇓-var x) rγ = lookup-val x rγ
 fundamental-val′ (suc n) bnd ⇓-unit rγ = tt
 fundamental-val′ {τ = τ₁ [+] τ₂} (suc n) bnd (⇓-inl {t = t} D) {gi} rγ =
-  ⟦ t ⟧tm .idxf .sfunc gi , ValRel-at-bound τ₁ (fundamental-val′ n (su-inv bnd) D rγ) ,
+  ⟦ t ⟧tm .idxf .sfunc gi , ValRel-at-bound τ₁ (fundamental-val′ n (nat.s≤s-inv bnd) D rγ) ,
   ⟪ Ix.refl (τ₁ [+] τ₂) {inj₁ (⟦ t ⟧tm .idxf .sfunc gi)} ⟫
 fundamental-val′ {τ = τ₁ [+] τ₂} (suc n) bnd (⇓-inr {t = t} D) {gi} rγ =
-  ⟦ t ⟧tm .idxf .sfunc gi , ValRel-at-bound τ₂ (fundamental-val′ n (su-inv bnd) D rγ) ,
+  ⟦ t ⟧tm .idxf .sfunc gi , ValRel-at-bound τ₂ (fundamental-val′ n (nat.s≤s-inv bnd) D rγ) ,
   ⟪ Ix.refl (τ₁ [+] τ₂) {inj₂ (⟦ t ⟧tm .idxf .sfunc gi)} ⟫
 fundamental-val′ {Γ = Γ} {τ = τ} (suc n) bnd (⇓-case-l {τ₁ = τ₁} {τ₂ = τ₂} {s = s} {t₁ = t₁} {t₂ = t₂} D₁ D₂) {gi} rγ =
-  let (i' , r , ⟪ e ⟫) = fundamental-val′ n (nat.≤-trans (nat.≤-trans ≤-left ≤-left) (su-inv bnd)) D₁ rγ in
+  let (i' , r , ⟪ e ⟫) = fundamental-val′ n (nat.≤-trans (nat.≤-trans nat.+-increasingʳ nat.+-increasingʳ) (nat.s≤s-inv bnd)) D₁ rγ in
   ValRel-resp τ (Ix.sym τ (case-idx s t₁ t₂ gi (inj₁ i') e))
-    (fundamental-val′ n (nat.≤-trans (nat.≤-trans (nat.+-increasing {x = size s}) ≤-left) (su-inv bnd)) D₂
+    (fundamental-val′ n (nat.≤-trans (nat.≤-trans (nat.+-increasing {x = size s}) nat.+-increasingʳ) (nat.s≤s-inv bnd)) D₂
       (rγ · ValRel-at-bound τ₁ r))
 fundamental-val′ {Γ = Γ} {τ = τ} (suc n) bnd (⇓-case-r {τ₁ = τ₁} {τ₂ = τ₂} {s = s} {t₁ = t₁} {t₂ = t₂} D₁ D₂) {gi} rγ =
-  let (i' , r , ⟪ e ⟫) = fundamental-val′ n (nat.≤-trans (nat.≤-trans ≤-left ≤-left) (su-inv bnd)) D₁ rγ in
+  let (i' , r , ⟪ e ⟫) = fundamental-val′ n (nat.≤-trans (nat.≤-trans nat.+-increasingʳ nat.+-increasingʳ) (nat.s≤s-inv bnd)) D₁ rγ in
   ValRel-resp τ (Ix.sym τ (case-idx s t₁ t₂ gi (inj₂ i') e))
-    (fundamental-val′ n (nat.≤-trans nat.+-increasing (su-inv bnd)) D₂ (rγ · ValRel-at-bound τ₂ r))
+    (fundamental-val′ n (nat.≤-trans nat.+-increasing (nat.s≤s-inv bnd)) D₂ (rγ · ValRel-at-bound τ₂ r))
 fundamental-val′ {τ = τ₁ [×] τ₂} (suc n) bnd (⇓-pair D₁ D₂) rγ =
-  ValRel-at-bound τ₁ (fundamental-val′ n (nat.≤-trans ≤-left (su-inv bnd)) D₁ rγ) ,
-  ValRel-at-bound τ₂ (fundamental-val′ n (nat.≤-trans nat.+-increasing (su-inv bnd)) D₂ rγ)
+  ValRel-at-bound τ₁ (fundamental-val′ n (nat.≤-trans nat.+-increasingʳ (nat.s≤s-inv bnd)) D₁ rγ) ,
+  ValRel-at-bound τ₂ (fundamental-val′ n (nat.≤-trans nat.+-increasing (nat.s≤s-inv bnd)) D₂ rγ)
 fundamental-val′ {τ = τ₁} (suc n) bnd (⇓-fst {τ₂ = τ₂} D) rγ =
-  ValRel-at-bound τ₁ (proj₁ (fundamental-val′ n (su-inv bnd) D rγ))
+  ValRel-at-bound τ₁ (proj₁ (fundamental-val′ n (nat.s≤s-inv bnd) D rγ))
 fundamental-val′ {τ = τ₂} (suc n) bnd (⇓-snd {τ₁ = τ₁} D) rγ =
-  ValRel-at-bound τ₂ (proj₂ (fundamental-val′ n (su-inv bnd) D rγ))
+  ValRel-at-bound τ₂ (proj₂ (fundamental-val′ n (nat.s≤s-inv bnd) D rγ))
 fundamental-val′ (suc n) bnd (⇓-lam {σ = σ} {τ = τ} {t = t}) {gi} rγ {v} {j} rv {u} {U} D =
   ValRel-at-bound τ
     (ValRel-resp τ (tm-idx-restrict t gi j)
-      (fundamental-val′ n (≤-cast (size-strengthen t (keep-tail ⊆-refl)) (su-inv bnd)) D
+      (fundamental-val′ n (nat.≤-trans (nat.≤-reflexive (size-strengthen t (keep-tail ⊆-refl))) (nat.s≤s-inv bnd)) D
         (restrict-val (body-thinning t) rγ · ValRel-at-bound σ rv)))
 fundamental-val′ (suc n) bnd (⇓-app {σ = σ} {τ = τ} D₁ D₂ D₃) rγ =
   ValRel-at-bound τ
-    (fundamental-val′ n (nat.≤-trans ≤-left (su-inv bnd)) D₁ rγ
-      (ValRel-at-bound σ (fundamental-val′ n (nat.≤-trans nat.+-increasing (su-inv bnd)) D₂ rγ)) D₃)
+    (fundamental-val′ n (nat.≤-trans nat.+-increasingʳ (nat.s≤s-inv bnd)) D₁ rγ
+      (ValRel-at-bound σ (fundamental-val′ n (nat.≤-trans nat.+-increasing (nat.s≤s-inv bnd)) D₂ rγ)) D₃)
 fundamental-val′ {τ = μ τ} (suc n) bnd (⇓-roll {t = t} D) {gi} rγ =
-  ValRel-at-bound (τ [ μ τ ]) (ValRel-resp (τ [ μ τ ]) e (fundamental-val′ n (su-inv bnd) D rγ))
+  ValRel-at-bound (τ [ μ τ ]) (ValRel-resp (τ [ μ τ ]) e (fundamental-val′ n (nat.s≤s-inv bnd) D rγ))
   where
   i  = ⟦ t ⟧tm .idxf .sfunc gi
   i₂ = unroll-mor τ .idxf .sfunc (roll-mor τ .idxf .sfunc i)
@@ -1056,20 +1025,20 @@ fundamental-val′ {τ = μ τ} (suc n) bnd (⇓-roll {t = t} D) {gi} rγ =
         (idx-eq (unroll-roll τ) i)
 fundamental-val′ (suc n) bnd (⇓-fold {τ = τ₀} {σ = σ} {s = s} {t = t} D M) {gi} rγ =
   ValRel-resp σ (idx-eq (fold-map-var τ₀ σ ⟦ s ⟧tm) (gi , ⟦ t ⟧tm .idxf .sfunc gi))
-    (map-val {s = s} (λ D' rγ' → fundamental-val′ n (nat.≤-trans ≤-left (su-inv bnd)) D' rγ') M rγ
+    (map-val {s = s} (λ D' rγ' → fundamental-val′ n (nat.≤-trans nat.+-increasingʳ (nat.s≤s-inv bnd)) D' rγ') M rγ
       {i = ⟦ t ⟧tm .idxf .sfunc gi}
-      (fundamental-val′ n (nat.≤-trans nat.+-increasing (su-inv bnd)) D rγ))
+      (fundamental-val′ n (nat.≤-trans nat.+-increasing (nat.s≤s-inv bnd)) D rγ))
 fundamental-val′ (suc n) bnd (⇓-bop {ω = ω} D) rγ =
-  ⟪ op-fun ω .sfunc-resp-≈ (Prf.prf (fundamental-vals′ n (su-inv bnd) D rγ)) ⟫
+  ⟪ op-fun ω .sfunc-resp-≈ (Prf.prf (fundamental-vals′ n (nat.s≤s-inv bnd) D rγ)) ⟫
 fundamental-val′ (suc n) bnd (⇓-brel {ω = ω} {Ms = Ms} {vs = vs} D) {gi} rγ =
   ValRel-bool (rel-pred ω .sfunc vs) (⟦ brel ω Ms ⟧tm .idxf .sfunc gi)
-    ⟪ brel-idx ω Ms gi vs (Prf.prf (fundamental-vals′ n (su-inv bnd) D rγ)) ⟫
+    ⟪ brel-idx ω Ms gi vs (Prf.prf (fundamental-vals′ n (nat.s≤s-inv bnd) D rγ)) ⟫
 
 fundamental-vals′ n bnd [] rγ = ⟪ prop.tt ⟫
 fundamental-vals′ zero bnd (D ∷ Ds) rγ = ≰0 bnd
 fundamental-vals′ (suc n) bnd (D ∷ Ds) rγ =
-  ⟪ Prf.prf (fundamental-val′ n (nat.≤-trans ≤-left (su-inv bnd)) D rγ) ,
-    Prf.prf (fundamental-vals′ n (nat.≤-trans nat.+-increasing (su-inv bnd)) Ds rγ) ⟫
+  ⟪ Prf.prf (fundamental-val′ n (nat.≤-trans nat.+-increasingʳ (nat.s≤s-inv bnd)) D rγ) ,
+    Prf.prf (fundamental-vals′ n (nat.≤-trans nat.+-increasing (nat.s≤s-inv bnd)) Ds rγ) ⟫
 
 fundamental-val : ∀ {Γ τ} {t : Γ ⊢ τ} {γ : Env Γ} {v R} (D : γ , t ⇓ v [ R ])
        {gi} (rγ : EnvValRel γ gi) → ValRel τ v (⟦ t ⟧tm .idxf .sfunc gi)
@@ -1137,8 +1106,7 @@ private
               (d : ∣ Fib τ ic ∣) →
               Fib._≈_ τ ic (⟦ τ ⟧ .fam .subst E .func (⟦ τ ⟧ .fam .subst Eidx .func d)) d
   roundtrip τ {i₁} {ic} E Eidx d =
-    Fib.trans τ ic (Fib.sym τ ic (subst-trans ⟦ τ ⟧ {ic} {i₁} {ic} Eidx E d))
-                 (subst-refl ⟦ τ ⟧ {ic} (Ix.trans τ {ic} {i₁} {ic} Eidx E) d)
+    subst-inv ⟦ τ ⟧ Eidx (⟦ τ ⟧ .fam .subst Eidx .func d) d (Fib.refl τ i₁)
 
   case-den : ∀ τ {i₁ ic : Ix τ} (E : Ix._≈_ τ i₁ ic) (Eidx : Ix._≈_ τ ic i₁)
              s a_s o_s₀ (B : ∣ Fib τ i₁ ∣) (CF : ∣ Fib τ ic ∣) →
@@ -1341,7 +1309,7 @@ fundamental-s′ : ∀ {Γ is} {Ms : Every (λ σ → Γ ⊢ base σ) is} {γ : 
                 (D : γ , Ms ⇓s vs [ R ]) {gi} (rγ : EnvValRel γ gi) (s : Setoid.Carrier A)
                 (x : ∣ 𝔽 (width-env γ) ∣) (g : ∣ FibC Γ gi ∣) → EnvDepRel rγ s x g →
                 ∀ k → R .func (inputs γ s x) k ≈s ((ctrl ·ₛ s) +ₛ args-vec Ms gi g k)
-fundamental′ {t = t} zero bnd D rγ s x g rel = ≰0ₚ (nat.≤-trans (size-pos t) bnd)
+fundamental′ {t = t} zero bnd D rγ s x g rel = ≰0ₚ (nat.≤-trans (size-positive t) bnd)
 fundamental′ {τ = τ} {γ = γ} (suc n) bnd (⇓-var x) {gi} rγ s xs g rel =
   DepRel-resp τ (lookup-val x rγ)
     (λ k → ≈-sym (ap-∥ (unit-section (lookup x γ) ∘ ctrl-scale) (proj-var x γ) (inputs γ s xs) k))
@@ -1364,7 +1332,7 @@ fundamental′ {Γ = Γ} {τ = τ₁ [+] τ₂} {γ = γ} (suc n) bnd (⇓-inl {
                                   (Fib.+-cong τ₁ i' (proj₂ (ctrl-dep-inj₁ {τ₁} {τ₂} i' s)) (Fib.refl τ₁ i'))))
       (fundamental′ n bndD D rγ s x g rel))
   where
-  bndD = su-inv bnd
+  bndD = nat.s≤s-inv bnd
   i' = ⟦ t ⟧tm .idxf .sfunc gi
   d = Fib._+_ (τ₁ [+] τ₂) (inj₁ i') (ctrl-dep-at (τ₁ [+] τ₂) (inj₁ i') s) (⟦ inl {τ₂ = τ₂} t ⟧tm .famf .transf gi .func g)
   root-den : proj₁ d ≈s (ctrl ·ₛ s)
@@ -1378,7 +1346,7 @@ fundamental′ {Γ = Γ} {τ = τ₁ [+] τ₂} {γ = γ} (suc n) bnd (⇓-inr {
                                   (Fib.+-cong τ₂ i' (proj₂ (ctrl-dep-inj₂ {τ₁} {τ₂} i' s)) (Fib.refl τ₂ i'))))
       (fundamental′ n bndD D rγ s x g rel))
   where
-  bndD = su-inv bnd
+  bndD = nat.s≤s-inv bnd
   i' = ⟦ t ⟧tm .idxf .sfunc gi
   d = Fib._+_ (τ₁ [+] τ₂) (inj₂ i') (ctrl-dep-at (τ₁ [+] τ₂) (inj₂ i') s) (⟦ inr {τ₁ = τ₁} t ⟧tm .famf .transf gi .func g)
   root-den : proj₁ d ≈s (ctrl ·ₛ s)
@@ -1394,8 +1362,8 @@ fundamental′ {Γ = Γ} {τ = τ} {γ = γ}
        (fundamental′ n bndT D₂ (_·_ {τ = τ₁} {v = v} {i = i'} rγ rv') (R_s .func (inputs γ s x) zero +ₛ (ctrl ·ₛ s)) X (g , y_v)
                               (branch-env {τk = τ₁} rγ {v = v} {i' = i'} rv' s x g (R_s .func (inputs γ s x)) y_v rel payload₁)))
   where
-  bndS = nat.≤-trans (nat.≤-trans ≤-left ≤-left) (su-inv bnd)
-  bndT = nat.≤-trans (nat.≤-trans (nat.+-increasing {x = size sc}) ≤-left) (su-inv bnd)
+  bndS = nat.≤-trans (nat.≤-trans nat.+-increasingʳ nat.+-increasingʳ) (nat.s≤s-inv bnd)
+  bndT = nat.≤-trans (nat.≤-trans (nat.+-increasing {x = size sc}) nat.+-increasingʳ) (nat.s≤s-inv bnd)
   rs = fundamental-val′ n bndS D₁ rγ
   i' = proj₁ rs
   r_v = proj₁ (proj₂ rs)
@@ -1432,8 +1400,8 @@ fundamental′ {Γ = Γ} {τ = τ} {γ = γ}
        (fundamental′ n bndT D₂ (_·_ {τ = τ₂} {v = v} {i = i'} rγ rv') (R_s .func (inputs γ s x) zero +ₛ (ctrl ·ₛ s)) X (g , y_v)
                               (branch-env {τk = τ₂} rγ {v = v} {i' = i'} rv' s x g (R_s .func (inputs γ s x)) y_v rel payload₁)))
   where
-  bndS = nat.≤-trans (nat.≤-trans ≤-left ≤-left) (su-inv bnd)
-  bndT = nat.≤-trans nat.+-increasing (su-inv bnd)
+  bndS = nat.≤-trans (nat.≤-trans nat.+-increasingʳ nat.+-increasingʳ) (nat.s≤s-inv bnd)
+  bndT = nat.≤-trans nat.+-increasing (nat.s≤s-inv bnd)
   rs = fundamental-val′ n bndS D₁ rγ
   i' = proj₁ rs
   r_v = proj₁ (proj₂ rs)
@@ -1466,8 +1434,8 @@ fundamental′ {Γ = Γ} {τ = σ [×] τ} {γ = γ} (suc n) bnd (⇓-pair {s = 
    DepRel-at-bound τ (fundamental-val′ n bnd₂ D₂ rγ)
      (DepRel-resp τ (fundamental-val′ n bnd₂ D₂ rγ) (λ k → ≈-sym (comp₂ k)) den₂ (fundamental′ n bnd₂ D₂ rγ s x g rel)))
   where
-  bnd₁ = nat.≤-trans ≤-left (su-inv bnd)
-  bnd₂ = nat.≤-trans nat.+-increasing (su-inv bnd)
+  bnd₁ = nat.≤-trans nat.+-increasingʳ (nat.s≤s-inv bnd)
+  bnd₂ = nat.≤-trans nat.+-increasing (nat.s≤s-inv bnd)
   i = ⟦ M ⟧tm .idxf .sfunc gi
   j = ⟦ N ⟧tm .idxf .sfunc gi
   o = (built-out γ (width v + width u) +m (in₂ {1} ∘ ⟨ R₁ , R₂ ⟩)) .func (inputs γ s x)
@@ -1500,7 +1468,7 @@ fundamental′ {Γ = Γ} {τ = σ} {γ = γ} (suc n) bnd (⇓-fst {τ₂ = τ} {
     (ctrl-add σ (ValRel-at-bound σ (proj₁ (fundamental-val′ n bndD D rγ))) (s +ₛ R' .func (inputs γ s x) zero)
       (DepRel-at-bound σ (proj₁ (fundamental-val′ n bndD D rγ)) (proj₁ (proj₂ (fundamental′ n bndD D rγ s x g rel)))))
   where
-  bndD = su-inv bnd
+  bndD = nat.s≤s-inv bnd
   ij = ⟦ t ⟧tm .idxf .sfunc gi
   i = proj₁ ij
   a₀ = proj₁ (⟦ t ⟧tm .famf .transf gi .func g)
@@ -1517,7 +1485,7 @@ fundamental′ {Γ = Γ} {τ = τ} {γ = γ} (suc n) bnd (⇓-snd {τ₁ = σ} {
     (ctrl-add τ (ValRel-at-bound τ (proj₂ (fundamental-val′ n bndD D rγ))) (s +ₛ R' .func (inputs γ s x) zero)
       (DepRel-at-bound τ (proj₂ (fundamental-val′ n bndD D rγ)) (proj₂ (proj₂ (fundamental′ n bndD D rγ s x g rel)))))
   where
-  bndD = su-inv bnd
+  bndD = nat.s≤s-inv bnd
   ij = ⟦ t ⟧tm .idxf .sfunc gi
   j = proj₂ ij
   a₀ = proj₁ (⟦ t ⟧tm .famf .transf gi .func g)
@@ -1531,7 +1499,7 @@ fundamental′ {Γ = Γ} {τ = σ [→] τ} {γ = γ} (suc n) bnd (⇓-lam {t = 
   where
   θ  = body-thinning t'
   γθ = restrict-env θ γ
-  bndλ = ≤-cast (size-strengthen t' (keep-tail ⊆-refl)) (su-inv bnd)
+  bndλ = nat.≤-trans (nat.≤-reflexive (size-strengthen t' (keep-tail ⊆-refl))) (nat.s≤s-inv bnd)
 
   o : ∣ 𝔽 (suc (width-env γθ)) ∣
   o = lam-out γ t' .func (inputs γ s x)
@@ -1627,8 +1595,8 @@ fundamental′ {Γ = Γ} {τ = τ} {γ = γ}
     (DepRel-at-bound τ (fundamental-val′ n bnd₁ D₁ rγ (ValRel-at-bound σ (fundamental-val′ n bnd₂ D₂ rγ)) D₃)
       (proj₂ (fundamental′ n bnd₁ D₁ rγ s x g rel) (ctrl ·ₛ s) (ValRel-at-bound σ (fundamental-val′ n bnd₂ D₂ rγ)) z yN arg D₃))
   where
-  bnd₁ = nat.≤-trans ≤-left (su-inv bnd)
-  bnd₂ = nat.≤-trans nat.+-increasing (su-inv bnd)
+  bnd₁ = nat.≤-trans nat.+-increasingʳ (nat.s≤s-inv bnd)
+  bnd₂ = nat.≤-trans nat.+-increasing (nat.s≤s-inv bnd)
   f = ⟦ M ⟧tm .idxf .sfunc gi
   j = ⟦ N ⟧tm .idxf .sfunc gi
   i₁ = f .idxf .sfunc j
@@ -1695,7 +1663,7 @@ fundamental′ {Γ = Γ} {τ = μ τ} {γ = γ} (suc n) bnd (⇓-roll {t = t} {v
     (DepRel-resp (τ [ μ τ ]) (ValRel-resp (τ [ μ τ ]) e r) (λ k → ≈-refl) ed
       (DepRel-transport (τ [ μ τ ]) e r (fundamental′ n bndD D rγ s x g rel)))
   where
-  bndD = su-inv bnd
+  bndD = nat.s≤s-inv bnd
   r  = fundamental-val′ n bndD D rγ
   i  = ⟦ t ⟧tm .idxf .sfunc gi
   Iᵣ = roll-mor τ .idxf .sfunc i
@@ -1741,8 +1709,8 @@ fundamental′ {Γ = Γ} {γ = γ} (suc n) bnd (⇓-fold {τ = τ₀} {σ = σ} 
         (λ D' rγ' w' x' g' rel' → fundamental′ n bndS D' rγ' w' x' g' rel')
         M rγ {i = it} rv w x g rel (R .func y) dt (fundamental′ n bndT D rγ w x g rel)))
   where
-  bndS = nat.≤-trans ≤-left (su-inv bnd)
-  bndT = nat.≤-trans nat.+-increasing (su-inv bnd)
+  bndS = nat.≤-trans nat.+-increasingʳ (nat.s≤s-inv bnd)
+  bndT = nat.≤-trans nat.+-increasing (nat.s≤s-inv bnd)
   it = ⟦ t ⟧tm .idxf .sfunc gi
   Fv = fold-map τ₀ σ (var zero) ⟦ s ⟧tm
   IF = Fv .idxf .sfunc (gi , it)
@@ -1764,7 +1732,7 @@ fundamental′ {Γ = Γ} {γ = γ} (suc n) bnd (⇓-fold {τ = τ₀} {σ = σ} 
       (Fib.+-cong σ J (Fib.refl σ J) (fold-fibre {τ₀ = τ₀} s t gi g))
 fundamental′ {Γ = Γ} {τ = base o} {γ = γ} (suc n) bnd (⇓-bop {is = is} {ω = ω} {Ms = Ms} {vs = vs} {R = Rs} D) {gi} rγ s x g rel k =
   ≈-trans (+-cong (ap-wctrl {width-env γ} {sort-width o} (inputs γ s x) k)
-                   (≈-trans (app-congᵥ (op-deps ω .sfunc vs) (fundamental-s′ n (su-inv bnd) D rγ s x g rel) k)
+                   (≈-trans (app-congᵥ (op-deps ω .sfunc vs) (fundamental-s′ n (nat.s≤s-inv bnd) D rγ s x g rel) k)
                    (≈-trans (app-+ (op-deps ω .sfunc vs) (λ _ → ctrl ·ₛ s) (args-vec Ms gi g) k)
                             (+-cong (≈-trans (app-congᵥ (op-deps ω .sfunc vs) (λ _ → ≈-sym ·-runit) k)
                                              (≈-trans (model.app-· (op-deps ω .sfunc vs) (ctrl ·ₛ s) (λ _ → ι) k) (·-cong ·-comm ≈-refl)))
@@ -1779,19 +1747,19 @@ fundamental′ {Γ = Γ} {τ = base o} {γ = γ} (suc n) bnd (⇓-bop {is = is} 
   den = ≈-trans (app-∘ M.I (op-deps ω .sfunc (args-idx Ms gi) M.∘ C) tp-elt k)
         (≈-trans (app-I (ap (op-deps ω .sfunc (args-idx Ms gi) M.∘ C) tp-elt) k)
         (≈-trans (app-∘ (op-deps ω .sfunc (args-idx Ms gi)) C tp-elt k)
-                 (app-congₘ (op-deps ω .sfunc-resp-≈ (Prf.prf (fundamental-vals′ n (su-inv bnd) D rγ))) (args-vec Ms gi g) k)))
+                 (app-congₘ (op-deps ω .sfunc-resp-≈ (Prf.prf (fundamental-vals′ n (nat.s≤s-inv bnd) D rγ))) (args-vec Ms gi g) k)))
 fundamental′ {Γ = Γ} {γ = γ} (suc n) bnd (⇓-brel {is = is} {ω = ω} {Ms = Ms} {vs = vs} {R = Rs} D) {gi} rγ s x g rel =
   DepRel-bool ω vs b {i} e ((wctrl +m (brel-deps ω vs b ∘ Rs)) .func (inputs γ s x))
     (Fib._+_ (unit [+] unit) i (ctrl-dep-at (unit [+] unit) i s) (⟦ brel ω Ms ⟧tm .famf .transf gi .func g)) s (args-vec Ms gi g) op-side model-side
   where
   b = rel-pred ω .sfunc vs
   i = ⟦ brel ω Ms ⟧tm .idxf .sfunc gi
-  e = brel-idx ω Ms gi vs (Prf.prf (fundamental-vals′ n (su-inv bnd) D rγ))
+  e = brel-idx ω Ms gi vs (Prf.prf (fundamental-vals′ n (nat.s≤s-inv bnd) D rγ))
   op-side : ∀ k → (wctrl +m (brel-deps ω vs b ∘ Rs)) .func (inputs γ s x) k
                   ≈s ((ctrl ·ₛ s) +ₛ brel-deps ω vs b .func (λ l → (ctrl ·ₛ s) +ₛ (args-vec Ms gi g) l) k)
   op-side k =
     +-cong (ap-wctrl {width-env γ} {width (bool→val b)} (inputs γ s x) k)
-           (brel-deps ω vs b .func-resp-≈ (fundamental-s′ n (su-inv bnd) D rγ s x g rel) k)
+           (brel-deps ω vs b .func-resp-≈ (fundamental-s′ n (nat.s≤s-inv bnd) D rγ s x g rel) k)
   model-side : Fib._≈_ (unit [+] unit) b
                  (⟦ unit [+] unit ⟧ .fam .subst {i} {b} e .func (Fib._+_ (unit [+] unit) i (ctrl-dep-at (unit [+] unit) i s) (⟦ brel ω Ms ⟧tm .famf .transf gi .func g)))
                  (Fib._+_ (unit [+] unit) b (ctrl-dep-at (unit [+] unit) b s) (interp.bool-elt b (ap (rel-deps ω .sfunc vs) (args-vec Ms gi g) zero)))
@@ -1800,14 +1768,14 @@ fundamental′ {Γ = Γ} {γ = γ} (suc n) bnd (⇓-brel {is = is} {ω = ω} {Ms
       (Fib.+-cong (unit [+] unit) b (ctrl-dep-natural (unit [+] unit) {i} {b} e s)
         (Fib.trans (unit [+] unit) b
           (interp.test.test-elt ω (⟦ Ms ⟧tms .idxf .sfunc gi) (⟦ Ms ⟧tms .famf .transf gi .func g) b e)
-          (interp.bool-elt-cong b (app-congₘ (rel-deps ω .sfunc-resp-≈ (Prf.prf (fundamental-vals′ n (su-inv bnd) D rγ))) (args-vec Ms gi g) zero))))
+          (interp.bool-elt-cong b (app-congₘ (rel-deps ω .sfunc-resp-≈ (Prf.prf (fundamental-vals′ n (nat.s≤s-inv bnd) D rγ))) (args-vec Ms gi g) zero))))
 
 fundamental-s′ n bnd [] rγ s x g rel ()
 fundamental-s′ zero bnd (D ∷ Ds) rγ s x g rel = ≰0ₚ bnd
 fundamental-s′ {γ = γ} (suc n) bnd (_∷_ {i = i} {is = is} {v = v} {R = R₁} {Rs = Rs} {M = M} {Ms = Ms} D Ds) {gi}
               rγ s x g rel k =
   ≈-trans (+-cong (≈-trans (app-congᵥ u₁ IH₁ k) (app-+ u₁ (λ _ → ctrl ·ₛ s) (⟦ M ⟧tm .famf .transf gi .func g) k))
-                   (≈-trans (app-congᵥ u₂ (fundamental-s′ n (nat.≤-trans nat.+-increasing (su-inv bnd)) Ds rγ s x g rel) k) (app-+ u₂ (λ _ → ctrl ·ₛ s) (args-vec Ms gi g) k)))
+                   (≈-trans (app-congᵥ u₂ (fundamental-s′ n (nat.≤-trans nat.+-increasing (nat.s≤s-inv bnd)) Ds rγ s x g rel) k) (app-+ u₂ (λ _ → ctrl ·ₛ s) (args-vec Ms gi g) k)))
   (≈-trans S.+-interchange
            (+-cong (in-const {sort-width i} {bases-width is} (ctrl ·ₛ s) k)
                    (≈-sym (args-vec-cons M Ms gi g k))))
@@ -1815,7 +1783,7 @@ fundamental-s′ {γ = γ} (suc n) bnd (_∷_ {i = i} {is = is} {v = v} {R = R�
   u₁ = M.in₁ {sort-width i} {bases-width is}
   u₂ = M.in₂ {sort-width i} {bases-width is}
   IH₁ : ∀ l → R₁ .func (inputs γ s x) l ≈s ((ctrl ·ₛ s) +ₛ (⟦ M ⟧tm .famf .transf gi .func g) l)
-  IH₁ l = ≈-trans (fundamental′ n (nat.≤-trans ≤-left (su-inv bnd)) D rγ s x g rel l) (+-cong (ctrl-dep-base (⟦ M ⟧tm .idxf .sfunc gi) s l) ≈-refl)
+  IH₁ l = ≈-trans (fundamental′ n (nat.≤-trans nat.+-increasingʳ (nat.s≤s-inv bnd)) D rγ s x g rel l) (+-cong (ctrl-dep-base (⟦ M ⟧tm .idxf .sfunc gi) s l) ≈-refl)
 
 
 fundamental : ∀ {Γ τ} {t : Γ ⊢ τ} {γ : Env Γ} {v R} (D : γ , t ⇓ v [ R ])
