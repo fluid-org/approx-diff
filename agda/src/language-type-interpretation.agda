@@ -46,7 +46,7 @@ open Fam using (Obj; Lf; Lf-map; Lf-map-cong; Lf-map-id; Lf-map-comp; injF; injF
                 strong-Lf-map; strong-Lf-map-cong; strong-Lf-map-comp; strong-Lf-map-p₂;
                 strong-Lf-map-pre; strong-Lf-map-post; strong-Lf-map-injF;
                 extend; extend-mor; fobj; HasMu; hasMu; HasMuLaws; hasMuLaws; _∘co_;
-                Section; elimF; scale-section; Lf-section; coprod-section; prod-section; PolySection;
+                Section; elimF; elimF-reindex; scale-section; Lf-section; coprod-section; prod-section; PolySection;
                 poly-section; extend-section; preserves-section; preserves-section-id;
                 preserves-section-∘; preserves-section-resp; preserves-section-inv;
                 preserves-coprod-m; preserves-prod-m; preserves-Lf-map; preserves-scale;
@@ -64,14 +64,15 @@ open HasCoproducts Fam.coproducts using (coprod; coprod-m; coprod-m-cong; coprod
 open HasStrongCoproducts Fam.strongCoproducts
   using () renaming (copair to scopair; copair-cong to scopair-cong;
                      copair-in₁ to scopair-in₁; copair-in₂ to scopair-in₂;
-                     copair-ext to scopair-ext; copair-ext0 to scopair-ext0) public
-open HasExponentials 𝒞E using (lambda; eval) renaming (exp to _⟦→⟧_) public
+                     copair-ext to scopair-ext; copair-ext0 to scopair-ext0;
+                     copair-reindex to scopair-reindex) public
+open HasExponentials 𝒞E using (lambda; eval; lambda-cong; lambda-natural) renaming (exp to _⟦→⟧_) public
 open language-syntax Sig public
 import language-operational.type-substitution
 open language-operational.type-substitution Sig using (unfold₁-sub; unfold₁; unfold₁-inst; ren-ren; sub-ren; ren-sub; sub-sub; sub-id; sub-ren-comm) public
 open HasMu hasMu public
 open HasMuLaws hasMuLaws
-  using (⦅⦆-cong; ⦅⦆-β; ⦅⦆-reflect; ∘co-push; copair-comp;
+  using (⦅⦆-cong; ⦅⦆-β; ⦅⦆-reflect; ⦅⦆-reindex; ∘co-push; copair-comp;
          strong-fmor-comp; strong-fmor-cong; strong-fmor-p₂; strong-fmor-ext-p₂; strong-extend-mor-comp;
          fusion-inMap) public
 

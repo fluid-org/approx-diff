@@ -1533,3 +1533,115 @@ mutual
   ⟦_⟧tms : ∀ {Γ σs} → Every (λ σ → Γ ⊢ base σ) σs → ⟦ Γ ⟧ctxt ⇒ list→product ⟦sort⟧ σs
   ⟦ [] ⟧tms     = to-terminal
   ⟦ M ∷ Ms ⟧tms = ⟨ ⟦ M ⟧tm , ⟦ Ms ⟧tms ⟩
+
+⟦_⟧ren : ∀ {Γ Γ'} → Ren Γ Γ' → ⟦ Γ' ⟧ctxt ⇒ ⟦ Γ ⟧ctxt
+⟦_⟧ren {emp}   ρ = to-terminal
+⟦_⟧ren {Γ , τ} ρ = ⟨ ⟦ (λ x → ρ (succ x)) ⟧ren , ⟦ ρ zero ⟧var ⟩
+
+ren-var : ∀ {Γ Γ' τ} (ρ : Ren Γ Γ') (x : Γ ∋ τ) → ⟦ ρ x ⟧var ≈ (⟦ x ⟧var ∘ ⟦ ρ ⟧ren)
+ren-var ρ zero     = ≈-sym (pair-p₂ _ _)
+ren-var ρ (succ x) =
+  ≈-trans (ren-var (λ y → ρ (succ y)) x)
+          (≈-trans (∘-cong ≈-refl (≈-sym (pair-p₁ _ _))) (≈-sym (assoc _ _ _)))
+
+ren-succ : ∀ {Γ Γ' τ'} (ρ : Ren Γ Γ') →
+           ⟦ (λ x → succ {τ' = τ'} (ρ x)) ⟧ren ≈ (⟦ ρ ⟧ren ∘ p₁ {⟦ Γ' ⟧ctxt} {⟦ τ' ⟧ty (λ ())})
+ren-succ {emp}   ρ = to-terminal-ext _
+ren-succ {Γ , τ} ρ =
+  ≈-trans (pair-cong (ren-succ (λ x → ρ (succ x))) ≈-refl) (≈-sym (pair-natural _ _ _))
+
+ren-ext : ∀ {Γ Γ' τ'} (ρ : Ren Γ Γ') →
+          ⟦ ext {τ = τ'} ρ ⟧ren ≈ prod-m ⟦ ρ ⟧ren (id (⟦ τ' ⟧ty (λ ())))
+ren-ext ρ = pair-cong (ren-succ ρ) (≈-sym id-left)
+
+private
+  ren-tail : ∀ {W X Y Z} {r : W ⇒ X} {f : W ⇒ Y} {g : X ⇒ Y} (h : Y ⇒ Z) →
+             f ≈ (g ∘ r) → (h ∘ f) ≈ ((h ∘ g) ∘ r)
+  ren-tail h e = ≈-trans (∘-cong ≈-refl e) (≈-sym (assoc _ _ _))
+
+  ren-scrutinee : ∀ {G G' W Z} (r : G' ⇒ G) {h : prod G W ⇒ Z} {h' : prod G' W ⇒ Z}
+                  {n : G ⇒ W} {n' : G' ⇒ W} →
+                  h' ≈ (h ∘ prod-m r (id W)) → n' ≈ (n ∘ r) →
+                  (h' ∘ ⟨ id G' , n' ⟩) ≈ ((h ∘ ⟨ id G , n ⟩) ∘ r)
+  ren-scrutinee r {h} {h'} {n} {n'} eh en =
+    ≈-trans (∘-cong eh (pair-cong ≈-refl en))
+    (≈-trans (assoc _ _ _)
+    (≈-trans (∘-cong ≈-refl mid) (≈-sym (assoc _ _ _))))
+    where
+    mid : (prod-m r (id _) ∘ ⟨ id _ , n ∘ r ⟩) ≈ (⟨ id _ , n ⟩ ∘ r)
+    mid =
+      ≈-trans (pair-natural _ _ _)
+      (≈-trans (pair-cong (≈-trans (assoc _ _ _) (≈-trans (∘-cong ≈-refl (pair-p₁ _ _)) id-right))
+                          (≈-trans (assoc _ _ _) (≈-trans (∘-cong ≈-refl (pair-p₂ _ _)) id-left)))
+               (≈-sym (≈-trans (pair-natural _ _ _) (pair-cong id-left ≈-refl))))
+
+mutual
+  ren-tm : ∀ {Γ Γ' τ} (ρ : Ren Γ Γ') (t : Γ ⊢ τ) → ⟦ ρ * t ⟧tm ≈ (⟦ t ⟧tm ∘ ⟦ ρ ⟧ren)
+  ren-tm ρ (var x) = ren-var ρ x
+  ren-tm ρ unit    = ren-tail unit-pt (to-terminal-ext _)
+  ren-tm ρ (inl t) = ren-tail (in₁ ∘ injF) (ren-tm ρ t)
+  ren-tm ρ (inr t) = ren-tail (in₂ ∘ injF) (ren-tm ρ t)
+  ren-tm ρ (case {τ = τ} s t₁ t₂) =
+    ren-scrutinee ⟦ ρ ⟧ren
+      (≈-trans (scopair-cong (elimF-reindex (ctrl-dep τ) ⟦ ρ ⟧ren (ren-body ρ t₁))
+                             (elimF-reindex (ctrl-dep τ) ⟦ ρ ⟧ren (ren-body ρ t₂)))
+               (≈-sym (scopair-reindex ⟦ ρ ⟧ren (elimF (ctrl-dep τ) ⟦ t₁ ⟧tm)
+                                                (elimF (ctrl-dep τ) ⟦ t₂ ⟧tm))))
+      (ren-tm ρ s)
+  ren-tm ρ (pair s t) =
+    ren-tail injF (≈-trans (pair-cong (ren-tm ρ s) (ren-tm ρ t)) (≈-sym (pair-natural _ _ _)))
+  ren-tm ρ (fst {τ₁ = τ₁} t) =
+    ren-scrutinee ⟦ ρ ⟧ren
+      (elimF-reindex (ctrl-dep τ₁) ⟦ ρ ⟧ren
+        (≈-sym (≈-trans (assoc _ _ _) (∘-cong ≈-refl (≈-trans (pair-p₂ _ _) id-left)))))
+      (ren-tm ρ t)
+  ren-tm ρ (snd {τ₂ = τ₂} t) =
+    ren-scrutinee ⟦ ρ ⟧ren
+      (elimF-reindex (ctrl-dep τ₂) ⟦ ρ ⟧ren
+        (≈-sym (≈-trans (assoc _ _ _) (∘-cong ≈-refl (≈-trans (pair-p₂ _ _) id-left)))))
+      (ren-tm ρ t)
+  ren-tm ρ (lam t) =
+    ren-tail injF (≈-trans (lambda-cong (ren-body ρ t)) (≈-sym (lambda-natural ⟦ ρ ⟧ren ⟦ t ⟧tm)))
+  ren-tm ρ (app {τ = τ} s t) =
+    ren-scrutinee ⟦ ρ ⟧ren (elimF-reindex (ctrl-dep τ) ⟦ ρ ⟧ren body-eq) (ren-tm ρ s)
+    where
+    body-eq : (eval ∘ ⟨ p₂ , ⟦ ρ * t ⟧tm ∘ p₁ ⟩)
+              ≈ ((eval ∘ ⟨ p₂ , ⟦ t ⟧tm ∘ p₁ ⟩) ∘ prod-m ⟦ ρ ⟧ren (id _))
+    body-eq =
+      ≈-trans (∘-cong ≈-refl (pair-cong ≈-refl (∘-cong (ren-tm ρ t) ≈-refl)))
+      (≈-sym (≈-trans (assoc _ _ _)
+             (∘-cong ≈-refl
+               (≈-trans (pair-natural _ _ _)
+                 (pair-cong (≈-trans (pair-p₂ _ _) id-left)
+                            (≈-trans (assoc _ _ _)
+                                     (≈-trans (∘-cong ≈-refl (pair-p₁ _ _)) (≈-sym (assoc _ _ _)))))))))
+  ren-tm ρ (bop ω ts)  = ren-tail (⟦op⟧ ω) (ren-tms ρ ts)
+  ren-tm ρ (brel ω ts) = ren-tail (⟦rel⟧ ω) (ren-tms ρ ts)
+  ren-tm ρ (roll {τ = τ} t) = ren-tail (roll-mor τ) (ren-tm ρ t)
+  ren-tm ρ (fold {τ = τ₀} {σ = σ} s t) =
+    ren-scrutinee ⟦ ρ ⟧ren
+      (≈-trans (⦅⦆-cong (as-poly {0} {1} τ₀ (λ ())) δ∅ alg-eq)
+               (≈-sym (⦅⦆-reindex ⟦ ρ ⟧ren (⟦ s ⟧tm ∘ prod-m (id _) (sub-as-apply-bwd τ₀ σ)))))
+      (ren-tm ρ t)
+    where
+    alg-eq : (⟦ ext ρ * s ⟧tm ∘ prod-m (id _) (sub-as-apply-bwd τ₀ σ))
+             ≈ ((⟦ s ⟧tm ∘ prod-m (id _) (sub-as-apply-bwd τ₀ σ)) ∘ prod-m ⟦ ρ ⟧ren (id _))
+    alg-eq =
+      ≈-trans (∘-cong (ren-body ρ s) ≈-refl)
+      (≈-trans (assoc _ _ _)
+      (≈-trans (∘-cong ≈-refl
+                 (≈-trans (≈-sym (prod-m-comp _ _ _ _))
+                 (≈-trans (prod-m-cong (≈-trans id-right (≈-sym id-left))
+                                       (≈-trans id-left (≈-sym id-right)))
+                          (prod-m-comp _ _ _ _))))
+               (≈-sym (assoc _ _ _))))
+
+  ren-body : ∀ {Γ Γ' σ τ} (ρ : Ren Γ Γ') (t : Γ , σ ⊢ τ) →
+             ⟦ ext ρ * t ⟧tm ≈ (⟦ t ⟧tm ∘ prod-m ⟦ ρ ⟧ren (id (⟦ σ ⟧ty (λ ()))))
+  ren-body ρ t = ≈-trans (ren-tm (ext ρ) t) (∘-cong ≈-refl (ren-ext ρ))
+
+  ren-tms : ∀ {Γ Γ' σs} (ρ : Ren Γ Γ') (ts : Every (λ σ → Γ ⊢ base σ) σs) →
+            ⟦ ρ ** ts ⟧tms ≈ (⟦ ts ⟧tms ∘ ⟦ ρ ⟧ren)
+  ren-tms ρ []       = to-terminal-ext _
+  ren-tms ρ (t ∷ ts) =
+    ≈-trans (pair-cong (ren-tm ρ t) (ren-tms ρ ts)) (≈-sym (pair-natural _ _ _))
