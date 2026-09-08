@@ -92,13 +92,14 @@ private
     join-table : M3.Table → Three
     join-table t = join-list (concat t)
 
-    at : ℕ → String
-    at k = show3 (ask (Tabulated.hide-graph T (λ _ x → x) three.ε? (map suc (upTo k))))
-      where
-      ask : Tabulation → Three
-      ask H with position H 0 | position H root-index
-      ... | just p | just q = join-table (read-table H p q)
-      ... | _      | _      = three.O
+    ask : Tabulation → Three
+    ask H with position H 0 | position H root-index
+    ... | just p | just q = join-table (read-table H p q)
+    ... | _      | _      = three.O
+
+    at at-sweep : ℕ → String
+    at k       = show3 (ask (Tabulated.hide-graph T (λ _ x → x) three.ε? (map suc (upTo k))))
+    at-sweep k = show3 (ask (Tabulated.hide-graph-sweep T (λ _ x → x) three.ε? (map suc (upTo k))))
 
   survey : String
   survey = scale.line "filter-sum" filter-sum-run ++ "\n" ++ scale.line "map" map-run ++ "\n"
