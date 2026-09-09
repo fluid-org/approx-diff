@@ -1366,12 +1366,12 @@ module FunctionHide {m : ℕ} {D : Derivation} (𝒢 : Graph m D)
     survivors : List ℕ
     survivors = filterᵇ (λ p → not (any (p ≡ᵇ_) hid)) (upTo total-positions)
 
-    Block : Set
-    Block = List (Maybe M.Table)
+    InEdges : Set
+    InEdges = List (Maybe M.Table)
 
     data Origin : Set where
       source  : ℕ → Origin
-      summary : Block → Origin
+      summary : InEdges → Origin
 
     or! : Bool → Bool → Bool
     or! false b     = b
@@ -1390,10 +1390,10 @@ module FunctionHide {m : ℕ} {D : Derivation} (𝒢 : Graph m D)
     keep! nothing  = nothing
     keep! (just t) = if nonzero-table t then just t else nothing
 
-    force-block : {A : Set} → Block → A → A
-    force-block []            x = x
-    force-block (nothing ∷ B) x = force-block B x
-    force-block (just _ ∷ B)  x = force-block B x
+    force-in-edges : {A : Set} → InEdges → A → A
+    force-in-edges []            x = x
+    force-in-edges (nothing ∷ B) x = force-in-edges B x
+    force-in-edges (just _ ∷ B)  x = force-in-edges B x
 
     scale-row : Semiring.Carrier → List Semiring.Carrier → List Semiring.Carrier
     scale-row s = map (s Semiring.·_)
@@ -1422,10 +1422,10 @@ module FunctionHide {m : ℕ} {D : Derivation} (𝒢 : Graph m D)
     add-slot t        nothing  = t
     add-slot (just t) (just u) = just (addT t u)
 
-    add-blocks : Block → Block → Block
-    add-blocks []       C        = C
-    add-blocks B        []       = B
-    add-blocks (s ∷ B) (s' ∷ C) = add-slot s s' ∷ add-blocks B C
+    add-in-edges : InEdges → InEdges → InEdges
+    add-in-edges []       C        = C
+    add-in-edges B        []       = B
+    add-in-edges (s ∷ B) (s' ∷ C) = add-slot s s' ∷ add-in-edges B C
 
     hd-row : List (List Semiring.Carrier) → List Semiring.Carrier
     hd-row []      = []
@@ -1452,19 +1452,19 @@ module FunctionHide {m : ℕ} {D : Derivation} (𝒢 : Graph m D)
     basis-table w =
       applyUpTo (λ i → applyUpTo (λ j → if i ≡ᵇ j then Semiring.ι else Semiring.ε) w) w
 
-    apply-slotsₜ : M.Table → Block → Block
+    apply-slotsₜ : M.Table → InEdges → InEdges
     apply-slotsₜ W = map (λ { nothing → nothing ; (just t) → just (tick "apply" (mulT W t)) })
 
-    apply-slotsₘ : ∀ {a b : ℕ} → 𝔽 a ⇒ 𝔽 b → Block → Block
+    apply-slotsₘ : ∀ {a b : ℕ} → 𝔽 a ⇒ 𝔽 b → InEdges → InEdges
     apply-slotsₘ ℓ = map (λ { nothing → nothing ; (just t) → just (tick "apply" (apply-morph ℓ t)) })
 
-    nothing-block : List ℕ → Block
-    nothing-block sv = map (λ _ → nothing) sv
+    no-in-edges : List ℕ → InEdges
+    no-in-edges sv = map (λ _ → nothing) sv
 
-    unit-at : List ℕ → ℕ → M.Table → Block
+    unit-at : List ℕ → ℕ → M.Table → InEdges
     unit-at sv r t = place r sv
       where
-      place : ℕ → List ℕ → Block
+      place : ℕ → List ℕ → InEdges
       place _       []       = []
       place zero    (_ ∷ ss) = just t ∷ map (λ _ → nothing) ss
       place (suc r) (_ ∷ ss) = nothing ∷ place r ss
@@ -1479,18 +1479,18 @@ module FunctionHide {m : ℕ} {D : Derivation} (𝒢 : Graph m D)
     origin-at zero    (o ∷ _)  = o
     origin-at (suc p) (_ ∷ os) = origin-at p os
 
-    from-origin : List ℕ → M.Table → Origin → Block
+    from-origin : List ℕ → M.Table → Origin → InEdges
     from-origin sv W (source r)  = unit-at sv r W
     from-origin sv W (summary B) = apply-slotsₜ W B
 
-    root-contributions : List ℕ → List (Path D × M.Table) → List Origin → Block
-    root-contributions sv []             st = nothing-block sv
+    root-contributions : List ℕ → List (Path D × M.Table) → List Origin → InEdges
+    root-contributions sv []             st = no-in-edges sv
     root-contributions sv ((r , W) ∷ fs) st =
-      add-blocks
+      add-in-edges
         (from-origin sv (tick "wiring" W) (origin-at (suc (path-position D r)) st))
         (root-contributions sv fs st)
 
-    up-contribution : List ℕ → Path D → Path D → Origin → Block
+    up-contribution : List ℕ → Path D → Path D → Origin → InEdges
     up-contribution sv rp vp (source r) =
       unit-at sv r
         (tick "apply" (apply-morph (Graph.interior 𝒢 rp vp) (basis-table (width-at D rp))))
@@ -1509,44 +1509,44 @@ module FunctionHide {m : ℕ} {D : Derivation} (𝒢 : Graph m D)
       constructor res
       field
         racc : X
-        rups : Block
+        rups : InEdges
         rpos : ℕ
         rk   : ℕ
         rst  : List Origin
 
-    go-node : {X : Set} → (X → Block → X) → (s : Derivation) → (Path s → Path D) → List ℕ →
-              ℕ → ℕ → List Origin → Block → X → Out X
-    go-prems : {X : Set} → (X → Block → X) → (ss : List Derivation) →
+    go-node : {X : Set} → (X → InEdges → X) → (s : Derivation) → (Path s → Path D) → List ℕ →
+              ℕ → ℕ → List Origin → InEdges → X → Out X
+    go-prems : {X : Set} → (X → InEdges → X) → (ss : List Derivation) →
                (∀ {s'} → ss ∋ s' → Path s' → Path D) → Path D → List ℕ →
-               ℕ → ℕ → List Origin → Block → X → Res X
+               ℕ → ℕ → List Origin → InEdges → X → Res X
     go-node consume (node n' b' ss) emb sv pos k st A acc =
       emit (go-prems consume ss (λ i p → emb (into i p)) (emb ε) sv pos k st A acc)
       where
       emit : Res _ → Out _
       emit (res acc' ups vpos k' st') =
-        decide (add-blocks (apply-slotsₜ (tick "wiring" (Graph.local-output-table 𝒢 (emb ε))) A)
+        decide (add-in-edges (apply-slotsₜ (tick "wiring" (Graph.local-output-table 𝒢 (emb ε))) A)
                            ups)
         where
-        decide : Block → Out _
+        decide : InEdges → Out _
         decide B with any (vpos ≡ᵇ_) hid
         ... | true  = store (tick ("block " ++ₛ ℕ-Show.show vpos) (map keep! B))
           where
-          store : Block → Out _
+          store : InEdges → Out _
           store Bk =
-            force-block Bk (out acc' (summary Bk) (suc vpos) k' (set-at vpos (summary Bk) st'))
+            force-in-edges Bk (out acc' (summary Bk) (suc vpos) k' (set-at vpos (summary Bk) st'))
         ... | false = give (tick ("column " ++ₛ ℕ-Show.show vpos) (map keep! B))
           where
-          give : Block → Out _
+          give : InEdges → Out _
           give Ck =
             primForce (consume acc' Ck)
               (λ a → out a (source k') (suc vpos) (suc k') (set-at vpos (source k') st'))
-    go-prems consume []          emb vp sv pos k st A acc = res acc (nothing-block sv) pos k st
+    go-prems consume []          emb vp sv pos k st A acc = res acc (no-in-edges sv) pos k st
     go-prems consume (s' ∷ rest) emb vp sv pos k st A acc = enter (emb here ε)
       where
       enter : Path D → Res _
       enter rp =
         step (go-node consume s' (λ p → emb here p) sv pos k st
-                (add-blocks (apply-slotsₜ (tick "wiring" (Graph.input-wiring-table 𝒢 rp)) A)
+                (add-in-edges (apply-slotsₜ (tick "wiring" (Graph.input-wiring-table 𝒢 rp)) A)
                             (root-contributions sv (Graph.root-wiring-tables 𝒢 rp) st))
                 acc)
         where
@@ -1555,9 +1555,9 @@ module FunctionHide {m : ℕ} {D : Derivation} (𝒢 : Graph m D)
           pack (up-contribution sv rp vp org)
                (go-prems consume rest (λ i p → emb (there i) p) vp sv pos' k' st' A acc')
           where
-          pack : Block → Res _ → Res _
+          pack : InEdges → Res _ → Res _
           pack up (res acc₂ ups pos₂ k₂ st₂) =
-            res acc₂ (add-blocks up ups) pos₂ k₂ st₂
+            res acc₂ (add-in-edges up ups) pos₂ k₂ st₂
 
   -- Fold over the surviving columns in evaluation order, entries by surviving row; each column is
   -- handed to the consumer as it is emitted and nothing retains it afterwards.
@@ -1569,7 +1569,7 @@ module FunctionHide {m : ℕ} {D : Derivation} (𝒢 : Graph m D)
       Out.oacc (go-node consume D (λ p → p) sv 1 1
                   (set-at 0 (source 0) (applyUpTo (λ _ → summary []) total-positions))
                   (unit-at sv 0 (basis-table m))
-                  (primForce (consume x₀ (tick "column 0" (nothing-block sv))) (λ a → a)))
+                  (primForce (consume x₀ (tick "column 0" (no-in-edges sv))) (λ a → a)))
 
   result : List (List (Maybe M.Table))
   result = reverse (fold-result (λ acc c → c ∷ acc) [])
