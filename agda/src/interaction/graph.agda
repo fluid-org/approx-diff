@@ -1457,11 +1457,16 @@ module FunctionHide {m : ℕ} {D : Derivation} (𝒢 : Graph m D)
     basis-table w =
       applyUpTo (λ i → applyUpTo (λ j → if i ≡ᵇ j then Semiring.ι else Semiring.ε) w) w
 
+    keep-in-edge : ℕ → M.Table → InEdges → InEdges
+    keep-in-edge i t es = if nonzero-table t then (i , t) ∷ es else tick "dead" es
+
     apply-table : M.Table → InEdges → InEdges
-    apply-table W = map (λ { (i , t) → i , tick "apply" (table-product W t) })
+    apply-table W []             = []
+    apply-table W ((i , t) ∷ es) = keep-in-edge i (tick "apply" (table-product W t)) (apply-table W es)
 
     apply-label : ∀ {a b : ℕ} → 𝔽 a ⇒ 𝔽 b → InEdges → InEdges
-    apply-label ℓ = map (λ { (i , t) → i , tick "apply" (label-on-table ℓ t) })
+    apply-label ℓ []             = []
+    apply-label ℓ ((i , t) ∷ es) = keep-in-edge i (tick "apply" (label-on-table ℓ t)) (apply-label ℓ es)
 
     no-in-edges : InEdges
     no-in-edges = []
@@ -1496,7 +1501,7 @@ module FunctionHide {m : ℕ} {D : Derivation} (𝒢 : Graph m D)
     from-roots []             st = no-in-edges
     from-roots ((r , W) ∷ fs) st =
       add-in-edges
-        (from-origin (tick "wiring" W)
+        (from-origin (tick "wiring-root" W)
                      (tick ("state " ++ₛ ℕ-Show.show (suc (path-position D r)))
                            (origin-at (suc (path-position D r)) st)))
         (from-roots fs st)
@@ -1534,7 +1539,7 @@ module FunctionHide {m : ℕ} {D : Derivation} (𝒢 : Graph m D)
       where
       emit : Res _ → Out _
       emit (res acc' ups vpos k' st') =
-        decide (add-in-edges (apply-table (tick "wiring" (Graph.local-output-table 𝒢 (emb ε))) A)
+        decide (add-in-edges (apply-table (tick "wiring-out" (Graph.local-output-table 𝒢 (emb ε))) A)
                              ups)
         where
         decide : InEdges → Out _
@@ -1559,7 +1564,7 @@ module FunctionHide {m : ℕ} {D : Derivation} (𝒢 : Graph m D)
       enter : Path D → Res _
       enter rp =
         step (go-node consume s' (λ p → emb here p) pos k st
-                (add-in-edges (apply-table (tick "wiring" (Graph.input-wiring-table 𝒢 rp)) A)
+                (add-in-edges (apply-table (tick "wiring-in" (Graph.input-wiring-table 𝒢 rp)) A)
                               (from-roots (Graph.root-wiring-tables 𝒢 rp) st))
                 acc)
         where
