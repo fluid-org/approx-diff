@@ -122,7 +122,8 @@ private
 
     all-old all-blocks all-sparse all-listed all-stepwise all-functional : ℕ → String
     all-functional k =
-      show3 (join-store (hide-graph-functional dependence three.ε? trace (map suc (upTo k))))
+      show3 (hide-graph-fold dependence three.ε? trace (map suc (upTo k))
+               (λ a c → join! a (join-row c)) three.O)
     all-old k    = show3 (ask-all (Tabulated.hide-graph T trace three.ε? (map suc (upTo k))))
     all-blocks k = show3 (ask-all (Tabulated.hide-graph-blocks T trace three.ε? (map suc (upTo k))))
     all-sparse k = show3 (join-store (Tabulated.hide-graph-sparse T trace three.ε? (map suc (upTo k))))
@@ -148,6 +149,4 @@ private
   prefixes = 5 ∷ 25 ∷ 100 ∷ 194 ∷ []
 
 main : Main
-main = run (putStrLn (trace survey (show
-  (curve "functional" benchF.all-functional prefixes
-    (curve "listed" benchF.all-listed prefixes 0)))))
+main = run (putStrLn (trace survey (show (curve "functional" benchF.all-functional prefixes 0))))

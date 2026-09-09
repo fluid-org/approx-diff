@@ -3,7 +3,9 @@
 open import Data.Bool using (Bool; true; false; not; _∨_; if_then_else_)
 open import Data.Empty using (⊥; ⊥-elim)
 open import Data.Fin using (Fin; toℕ; zero; suc)
-open import Data.List using (List; []; _∷_; _++_; map; mapMaybe; foldl; filterᵇ; length; upTo; applyUpTo)
+open import Data.List using (List; []; _∷_; _++_; map; mapMaybe; foldl; filterᵇ; length; upTo;
+                             applyUpTo; reverse)
+open import Agda.Builtin.Strict using (primForce)
 open import Data.Bool.ListAction using (any)
 open import Data.List.Properties using (++-identityʳ; map-++; map-∘; foldl-++; length-map)
 open import Data.List.Relation.Unary.All using (All; []; _∷_; universal)
@@ -1494,80 +1496,94 @@ module FunctionHide {m : ℕ} {D : Derivation} (𝒢 : Graph m D)
         (tick "apply" (apply-morph (Graph.interior 𝒢 rp vp) (basis-table (width-at D rp))))
     up-contribution sv rp vp (summary B) = apply-slotsₘ (Graph.interior 𝒢 rp vp) B
 
-    record Out : Set where
+    record Out (X : Set) : Set where
       constructor out
       field
-        ocols : List Block
-        org   : Origin
-        opos  : ℕ
-        ok    : ℕ
-        ost   : List Origin
+        oacc : X
+        org  : Origin
+        opos : ℕ
+        ok   : ℕ
+        ost  : List Origin
 
-    record Res : Set where
+    record Res (X : Set) : Set where
       constructor res
       field
-        rcols : List Block
-        rups  : Block
-        rpos  : ℕ
-        rk    : ℕ
-        rst   : List Origin
+        racc : X
+        rups : Block
+        rpos : ℕ
+        rk   : ℕ
+        rst  : List Origin
 
-    go-node : (s : Derivation) → (Path s → Path D) → List ℕ → ℕ → ℕ → List Origin → Block → Out
-    go-prems : (ss : List Derivation) → (∀ {s'} → ss ∋ s' → Path s' → Path D) → Path D → List ℕ →
-               ℕ → ℕ → List Origin → Block → Res
-    go-node (node n' b' ss) emb sv pos k st A =
-      emit (go-prems ss (λ i p → emb (into i p)) (emb ε) sv pos k st A)
+    go-node : {X : Set} → (X → Block → X) → (s : Derivation) → (Path s → Path D) → List ℕ →
+              ℕ → ℕ → List Origin → Block → X → Out X
+    go-prems : {X : Set} → (X → Block → X) → (ss : List Derivation) →
+               (∀ {s'} → ss ∋ s' → Path s' → Path D) → Path D → List ℕ →
+               ℕ → ℕ → List Origin → Block → X → Res X
+    go-node consume (node n' b' ss) emb sv pos k st A acc =
+      emit (go-prems consume ss (λ i p → emb (into i p)) (emb ε) sv pos k st A acc)
       where
-      emit : Res → Out
-      emit (res cs ups vpos k' st') =
+      emit : Res _ → Out _
+      emit (res acc' ups vpos k' st') =
         decide (add-blocks (apply-slotsₜ (tick "wiring" (Graph.local-output-table 𝒢 (emb ε))) A)
                            ups)
         where
-        decide : Block → Out
+        decide : Block → Out _
         decide B with any (vpos ≡ᵇ_) hid
         ... | true  = store (tick ("block " ++ₛ ℕ-Show.show vpos) (map keep! B))
           where
-          store : Block → Out
+          store : Block → Out _
           store Bk =
-            force-block Bk (out cs (summary Bk) (suc vpos) k' (set-at vpos (summary Bk) st'))
+            force-block Bk (out acc' (summary Bk) (suc vpos) k' (set-at vpos (summary Bk) st'))
         ... | false = give (tick ("column " ++ₛ ℕ-Show.show vpos) (map keep! B))
           where
-          give : Block → Out
+          give : Block → Out _
           give Ck =
-            out (cs ++ (Ck ∷ [])) (source k') (suc vpos) (suc k') (set-at vpos (source k') st')
-    go-prems []          emb vp sv pos k st A = res [] (nothing-block sv) pos k st
-    go-prems (s' ∷ rest) emb vp sv pos k st A = enter (emb here ε)
+            primForce (consume acc' Ck)
+              (λ a → out a (source k') (suc vpos) (suc k') (set-at vpos (source k') st'))
+    go-prems consume []          emb vp sv pos k st A acc = res acc (nothing-block sv) pos k st
+    go-prems consume (s' ∷ rest) emb vp sv pos k st A acc = enter (emb here ε)
       where
-      enter : Path D → Res
+      enter : Path D → Res _
       enter rp =
-        step (go-node s' (λ p → emb here p) sv pos k st
+        step (go-node consume s' (λ p → emb here p) sv pos k st
                 (add-blocks (apply-slotsₜ (tick "wiring" (Graph.input-wiring-table 𝒢 rp)) A)
-                            (root-contributions sv (Graph.root-wiring-tables 𝒢 rp) st)))
+                            (root-contributions sv (Graph.root-wiring-tables 𝒢 rp) st))
+                acc)
         where
-        step : Out → Res
-        step (out cs org pos' k' st') =
+        step : Out _ → Res _
+        step (out acc' org pos' k' st') =
           pack (up-contribution sv rp vp org)
-               (go-prems rest (λ i p → emb (there i) p) vp sv pos' k' st' A)
+               (go-prems consume rest (λ i p → emb (there i) p) vp sv pos' k' st' A acc')
           where
-          pack : Block → Res → Res
-          pack up (res cs₂ ups pos₂ k₂ st₂) =
-            res (cs ++ cs₂) (add-blocks up ups) pos₂ k₂ st₂
+          pack : Block → Res _ → Res _
+          pack up (res acc₂ ups pos₂ k₂ st₂) =
+            res acc₂ (add-blocks up ups) pos₂ k₂ st₂
 
-  -- One list per surviving column, entries by surviving row.
-  result : List (List (Maybe M.Table))
-  result = start survivors
+  -- Fold over the surviving columns in evaluation order, entries by surviving row; each column is
+  -- handed to the consumer as it is emitted and nothing retains it afterwards.
+  fold-result : {X : Set} → (X → List (Maybe M.Table) → X) → X → X
+  fold-result {X} consume x₀ = start survivors
     where
-    start : List ℕ → List (List (Maybe M.Table))
+    start : List ℕ → X
     start sv =
-      tick "column 0" (nothing-block sv)
-      ∷ Out.ocols (go-node D (λ p → p) sv 1 1
-                     (set-at 0 (source 0) (applyUpTo (λ _ → summary []) total-positions))
-                     (unit-at sv 0 (basis-table m)))
+      Out.oacc (go-node consume D (λ p → p) sv 1 1
+                  (set-at 0 (source 0) (applyUpTo (λ _ → summary []) total-positions))
+                  (unit-at sv 0 (basis-table m))
+                  (primForce (consume x₀ (tick "column 0" (nothing-block sv))) (λ a → a)))
+
+  result : List (List (Maybe M.Table))
+  result = reverse (fold-result (λ acc c → c ∷ acc) [])
 
 hide-graph-functional : {m : ℕ} {D : Derivation} (𝒢 : Graph m D) →
                         ((x : Semiring.Carrier) → Dec (x ≡ Semiring.ε)) →
                         ({A : Set} → String → A → A) → List ℕ → List (List (Maybe M.Table))
 hide-graph-functional 𝒢 ε-dec tick hid = FunctionHide.result 𝒢 ε-dec tick hid
+
+hide-graph-fold : {m : ℕ} {D : Derivation} (𝒢 : Graph m D) →
+                  ((x : Semiring.Carrier) → Dec (x ≡ Semiring.ε)) →
+                  ({A : Set} → String → A → A) → List ℕ →
+                  {X : Set} → (X → List (Maybe M.Table) → X) → X → X
+hide-graph-fold 𝒢 ε-dec tick hid = FunctionHide.fold-result 𝒢 ε-dec tick hid
 
 private
   nth? : {C : Set} → ℕ → List C → Maybe C
