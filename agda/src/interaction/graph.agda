@@ -863,6 +863,21 @@ vertex-count (node n b ss)   = vertex-count-of ss
 vertex-count-of []           = 0
 vertex-count-of (s ∷ ss)     = suc (vertex-count s) + vertex-count-of ss
 
+path-depth : ∀ {s} → Path s → ℕ
+path-depth ε          = 0
+path-depth (into i q) = suc (path-depth q)
+
+-- Wiring maps traversed in evaluating the label of an edge: one per rule level from the point
+-- where the source and target paths diverge down to the target.
+label-steps : ∀ {s} → Path s → Path s → ℕ
+steps-∋ : ∀ {ss s₁ s₂} → ss ∋ s₁ → Path s₁ → ss ∋ s₂ → Path s₂ → ℕ
+label-steps _          ε          = 1
+label-steps ε          q          = suc (path-depth q)
+label-steps (into i p) (into j q) = steps-∋ i p j q
+steps-∋ here      p here      q = label-steps p q
+steps-∋ (there i) p (there j) q = steps-∋ i p j q
+steps-∋ _         _ _         q = suc (suc (path-depth q))
+
 -- Index of a path in (vertices s ++ (ε ∷ [])).
 path-position : (s : Derivation) → Path s → ℕ
 path-position-of : (ss : List Derivation) {s : Derivation} → ss ∋ s → Path s → ℕ
@@ -922,9 +937,21 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D)
   source-positions (inj₁ _) = []
   source-positions (inj₂ q) = map vertex-position (Graph.in-neighbours 𝒢 q)
 
+  tick-compose : {A : Set} → ℕ → A → A
+  tick-compose zero    x = x
+  tick-compose (suc k) x = tick "compose" (tick-compose k x)
+
+  slot-steps : V 𝒢 → V 𝒢 → ℕ
+  slot-steps (inj₁ _) (inj₂ q) = suc (path-depth q)
+  slot-steps (inj₂ p) (inj₂ q) = label-steps p q
+  slot-steps _        (inj₁ _) = 0
+
   listed-row : List (V 𝒢 × List ℕ) → ℕ → V 𝒢 → List (Maybe M.Table)
   listed-row tgts i x =
-    map (λ { (y , is) → if any (i ≡ᵇ_) is then edge-slot (edge-table x y) else nothing }) tgts
+    map (λ { (y , is) → if any (i ≡ᵇ_) is
+                        then tick-compose (slot-steps x y) (edge-slot (edge-table x y))
+                        else nothing })
+        tgts
 
   listed-rows : List (V 𝒢 × List ℕ) → ℕ → List (V 𝒢) → List (List (Maybe M.Table))
   listed-rows tgts i []       = []

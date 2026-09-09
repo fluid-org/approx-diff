@@ -141,6 +141,4 @@ private
   prefixes = 5 ∷ 25 ∷ 100 ∷ 194 ∷ []
 
 main : Main
-main = run (putStrLn (trace survey (show
-  (curve "listed" benchF.all-listed prefixes
-    (curve "sparse" benchF.all-sparse prefixes 0)))))
+main = run (putStrLn (trace survey (show (curve "listed" benchF.all-listed prefixes 0))))
