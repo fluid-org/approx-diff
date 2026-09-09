@@ -10,6 +10,7 @@ open import IO.Finite using (putStrLn)
 open import Data.List using (List; []; _∷_; map; length; concat; upTo)
 open import Data.Maybe using (Maybe; just; nothing)
 open import Data.Nat using (ℕ; zero; suc; _+_; _*_; _⊔_)
+open import Data.Product using (_×_; _,_)
 import Data.Nat.Show as ℕ-Show
 open import Data.String using (String; _++_)
 open import Data.Sum using (inj₁; inj₂)
@@ -121,9 +122,13 @@ private
     T𝓌 = stepwise-tabulation dependence three.ε? trace
 
     all-old all-blocks all-sparse all-listed all-stepwise all-functional : ℕ → String
+    join-entries : List (ℕ × M3.Table) → Three
+    join-entries []             = three.O
+    join-entries ((_ , t) ∷ es) = join! (join-table t) (join-entries es)
+
     all-functional k =
       show3 (hide-graph-fold dependence three.ε? trace (map suc (upTo k))
-               (λ a c → join! a (join-row c)) three.O)
+               (λ a c → join! a (join-entries c)) three.O)
     all-old k    = show3 (ask-all (Tabulated.hide-graph T trace three.ε? (map suc (upTo k))))
     all-blocks k = show3 (ask-all (Tabulated.hide-graph-blocks T trace three.ε? (map suc (upTo k))))
     all-sparse k = show3 (join-store (Tabulated.hide-graph-sparse T trace three.ε? (map suc (upTo k))))
