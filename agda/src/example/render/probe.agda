@@ -8,7 +8,7 @@ module example.render.probe where
 open import IO
 open import IO.Finite using (putStrLn)
 open import Data.List using (List; []; _∷_; map; length; concat; upTo)
-open import Data.Maybe using (just; nothing)
+open import Data.Maybe using (Maybe; just; nothing)
 open import Data.Nat using (ℕ; zero; suc; _+_; _*_; _⊔_)
 import Data.Nat.Show as ℕ-Show
 open import Data.String using (String; _++_)
@@ -80,26 +80,43 @@ private
            ++ ", widths 0/1/2/3+: " ++ show (count is0 ws) ++ "/" ++ show (count is1 ws)
            ++ "/" ++ show (count is2 ws) ++ "/" ++ show (count big ws)
 
-  module bench where
-    open Evaluated (env merge-run) (term merge-run)
+  module bench (r : Run) where
+    open Evaluated (env r) (term r)
 
     T : Tabulation
     T = tabulation dependence three.ε? trace
 
-    root-index : ℕ
-    root-index = suc (length (vertices D))
-
     join-table : M3.Table → Three
     join-table t = join-list (concat t)
 
-    ask : Tabulation → Three
-    ask H with position H 0 | position H root-index
-    ... | just p | just q = join-table (read-table H p q)
-    ... | _      | _      = three.O
+    join-slot : Maybe M3.Table → Three
+    join-slot nothing  = three.O
+    join-slot (just t) = join-table t
 
-    at at-blocks : ℕ → String
-    at k        = show3 (ask (Tabulated.hide-graph T trace three.ε? (map suc (upTo k))))
-    at-blocks k = show3 (ask (Tabulated.hide-graph-blocks T trace three.ε? (map suc (upTo k))))
+    -- Strict in both arguments, so joining forces every slot.
+    join! : Three → Three → Three
+    join! three.O y       = y
+    join! three.C three.O = three.C
+    join! three.C three.C = three.C
+    join! three.C three.D = three.D
+    join! three.D three.O = three.D
+    join! three.D three.C = three.D
+    join! three.D three.D = three.D
+
+    join-row : List (Maybe M3.Table) → Three
+    join-row []       = three.O
+    join-row (s ∷ ss) = join! (join-slot s) (join-row ss)
+
+    ask-all : Tabulation → Three
+    ask-all H = go (H .edges)
+      where
+      go : List (List (Maybe M3.Table)) → Three
+      go []       = three.O
+      go (row ∷ rs) = join! (join-row row) (go rs)
+
+    all-old all-blocks : ℕ → String
+    all-old k    = show3 (ask-all (Tabulated.hide-graph T trace three.ε? (map suc (upTo k))))
+    all-blocks k = show3 (ask-all (Tabulated.hide-graph-blocks T trace three.ε? (map suc (upTo k))))
 
   survey : String
   survey = scale.line "filter-sum" filter-sum-run ++ "\n" ++ scale.line "map" map-run ++ "\n"
@@ -113,9 +130,11 @@ private
     trace ("begin " ++ name ++ " k=" ++ show k)
           (trace (name ++ " k=" ++ show k ++ " -> " ++ f k) (curve name f ks r))
 
+  module benchFS = bench filter-sum-run
+
   prefixes : List ℕ
-  prefixes = 5 ∷ 25 ∷ 100 ∷ 400 ∷ 800 ∷ []
+  prefixes = 5 ∷ 25 ∷ 100 ∷ 194 ∷ []
 
 main : Main
 main = run (putStrLn (trace survey
-  (show (curve "blocks" bench.at-blocks prefixes (curve "old" bench.at prefixes 0)))))
+  (show (curve "blocks" benchFS.all-blocks prefixes (curve "old" benchFS.all-old prefixes 0)))))
