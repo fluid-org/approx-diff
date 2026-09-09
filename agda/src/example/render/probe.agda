@@ -114,10 +114,14 @@ private
     ask-all : Tabulation → Three
     ask-all H = join-store (H .edges)
 
-    all-old all-blocks all-sparse : ℕ → String
+    Tₛ : Tabulation
+    Tₛ = sparse-tabulation dependence three.ε? trace
+
+    all-old all-blocks all-sparse all-listed : ℕ → String
     all-old k    = show3 (ask-all (Tabulated.hide-graph T trace three.ε? (map suc (upTo k))))
     all-blocks k = show3 (ask-all (Tabulated.hide-graph-blocks T trace three.ε? (map suc (upTo k))))
     all-sparse k = show3 (join-store (Tabulated.hide-graph-sparse T trace three.ε? (map suc (upTo k))))
+    all-listed k = show3 (join-store (Tabulated.hide-graph-sparse Tₛ trace three.ε? (map suc (upTo k))))
 
   survey : String
   survey = scale.line "filter-sum" filter-sum-run ++ "\n" ++ scale.line "map" map-run ++ "\n"
@@ -131,12 +135,12 @@ private
     trace ("begin " ++ name ++ " k=" ++ show k)
           (trace (name ++ " k=" ++ show k ++ " -> " ++ f k) (curve name f ks r))
 
-  module benchFS = bench filter-sum-run
+  module benchF = bench filter-sum-run
 
   prefixes : List ℕ
   prefixes = 5 ∷ 25 ∷ 100 ∷ 194 ∷ []
 
 main : Main
-main = run (putStrLn (trace survey
-  (show (curve "sparse" benchFS.all-sparse prefixes
-    (curve "blocks" benchFS.all-blocks prefixes (curve "old" benchFS.all-old prefixes 0))))))
+main = run (putStrLn (trace survey (show
+  (curve "listed" benchF.all-listed prefixes
+    (curve "sparse" benchF.all-sparse prefixes 0)))))

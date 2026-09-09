@@ -392,6 +392,9 @@ record Graph (m : ℕ) (D : Derivation) : Set₁ where
     -- Every non-zero relation runs strictly forward in the evaluation order. The inputs are below
     -- everything, and the conclusion above everything, so it is a sink by construction.
     <-interior : ∀ p q → lt D p q ⊎ Prf (interior p q ≈ εₘ)
+    -- In-neighbours of each vertex, the inputs vertex marked inj₁: a source not listed relates to
+    -- the vertex by zero, while a listed edge may still be zero.
+    in-neighbours : (q : Path D) → List (Input ⊎ Path D)
 
 hide : {V : Set} (vertex-object : V → Semimodule) → EdgeLabels vertex-object → V → EdgeLabels vertex-object
 hide vertex-object G r x y = G x y +ₘ (G r y ∘ G x r)
@@ -854,6 +857,20 @@ record Tabulation : Set where
 
 open Tabulation public using (widths; edges)
 
+vertex-count : Derivation → ℕ
+vertex-count-of : List Derivation → ℕ
+vertex-count (node n b ss)   = vertex-count-of ss
+vertex-count-of []           = 0
+vertex-count-of (s ∷ ss)     = suc (vertex-count s) + vertex-count-of ss
+
+-- Index of a path in (vertices s ++ (ε ∷ [])).
+path-position : (s : Derivation) → Path s → ℕ
+path-position-of : (ss : List Derivation) {s : Derivation} → ss ∋ s → Path s → ℕ
+path-position (node n b ss) ε             = vertex-count-of ss
+path-position (node n b ss) (into i q)    = path-position-of ss i q
+path-position-of (s ∷ ss) here      q = path-position s q
+path-position-of (s ∷ ss) (there i) q = suc (vertex-count s) + path-position-of ss i q
+
 module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
 
   all-vertices : List (V 𝒢)
@@ -896,6 +913,28 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D)
   tabulation .Tabulation.numbers = upTo (length (all-vertices 𝒢))
   tabulation .Tabulation.widths   = map (vertex-width 𝒢) (all-vertices 𝒢)
   tabulation .Tabulation.edges    = map edge-row (all-vertices 𝒢)
+
+  vertex-position : V 𝒢 → ℕ
+  vertex-position (inj₁ _) = 0
+  vertex-position (inj₂ q) = suc (path-position D q)
+
+  source-positions : V 𝒢 → List ℕ
+  source-positions (inj₁ _) = []
+  source-positions (inj₂ q) = map vertex-position (Graph.in-neighbours 𝒢 q)
+
+  listed-row : List (V 𝒢 × List ℕ) → ℕ → V 𝒢 → List (Maybe M.Table)
+  listed-row tgts i x =
+    map (λ { (y , is) → if any (i ≡ᵇ_) is then edge-slot (edge-table x y) else nothing }) tgts
+
+  listed-rows : List (V 𝒢 × List ℕ) → ℕ → List (V 𝒢) → List (List (Maybe M.Table))
+  listed-rows tgts i []       = []
+  listed-rows tgts i (x ∷ xs) = listed-row tgts i x ∷ listed-rows tgts (suc i) xs
+
+  sparse-tabulation : Tabulation
+  sparse-tabulation .Tabulation.numbers = upTo (length (all-vertices 𝒢))
+  sparse-tabulation .Tabulation.widths  = map (vertex-width 𝒢) (all-vertices 𝒢)
+  sparse-tabulation .Tabulation.edges   =
+    listed-rows (map (λ y → y , source-positions y) (all-vertices 𝒢)) 0 (all-vertices 𝒢)
 
 find-number : ℕ → ℕ → List ℕ → Maybe ℕ
 find-number i k []       = nothing
@@ -2178,6 +2217,14 @@ module NoEdgeOutOfHidden
   fixed-hide-all f []       k = k
   fixed-hide-all f (w ∷ ws) k = fixed-hide-all f ws (fixed-hide (f w) k)
 
+-- In-neighbours of a premise vertex lifted to the enclosing rule, with the premise's inputs
+-- vertex replaced by the given feeds.
+premise-ins : ∀ {n b ss s} (i : ss ∋ s) → List (Input ⊎ Path (node n b ss)) →
+              List (Input ⊎ Path s) → List (Input ⊎ Path (node n b ss))
+premise-ins i feeds []            = []
+premise-ins i feeds (inj₁ _ ∷ xs) = feeds ++ premise-ins i feeds xs
+premise-ins i feeds (inj₂ p ∷ xs) = inj₂ (into i p) ∷ premise-ins i feeds xs
+
 module Rule₀
   {m n : ℕ} (fo-output : Bool)
   (input-to-output : 𝔽 m ⇒ 𝔽 n)
@@ -2192,6 +2239,8 @@ module Rule₀
   E .Graph.<-interior ε ε = inj₂ ⟪ ≈-refl ⟫
   E .Graph.<-interior ε (into () _)
   E .Graph.<-interior (into () _) _
+  E .Graph.in-neighbours ε = inj₁ input ∷ []
+  E .Graph.in-neighbours (into () _)
 
   agree : collapse E ≈ input-to-output
   agree = ≈-refl {f = input-to-output}
@@ -2233,6 +2282,10 @@ module Rule₁
   E .Graph.<-interior ε             (into here q) = inj₂ ⟪ ≈-refl ⟫
   E .Graph.<-interior (into (there ()) _) _
   E .Graph.<-interior _ (into (there ()) _)
+  E .Graph.in-neighbours ε             = inj₁ input ∷ inj₂ (into here ε) ∷ []
+  E .Graph.in-neighbours (into here q) =
+    premise-ins here (inj₁ input ∷ []) (Graph.in-neighbours 𝒢 q)
+  E .Graph.in-neighbours (into (there ()) _)
 
   private
     b : Path D₁ → V E
@@ -2338,6 +2391,13 @@ module Rule₂
   E .Graph.<-interior ε (into (there here) q) = inj₂ ⟪ ≈-refl ⟫
   E .Graph.<-interior (into (there (there ())) _) _
   E .Graph.<-interior _ (into (there (there ())) _)
+  E .Graph.in-neighbours ε =
+    inj₁ input ∷ inj₂ (into here ε) ∷ inj₂ (into (there here) ε) ∷ []
+  E .Graph.in-neighbours (into here q) =
+    premise-ins here (inj₁ input ∷ []) (Graph.in-neighbours 𝒢₁ q)
+  E .Graph.in-neighbours (into (there here) q) =
+    premise-ins (there here) (inj₁ input ∷ inj₂ (into here ε) ∷ []) (Graph.in-neighbours 𝒢₂ q)
+  E .Graph.in-neighbours (into (there (there ())) _)
 
   private
     b1 : Path D₁ → V E
@@ -2560,6 +2620,18 @@ module Rule₃
   E .Graph.<-interior ε (into (there (there here)) q) = inj₂ ⟪ ≈-refl ⟫
   E .Graph.<-interior (into (there (there (there ()))) _) _
   E .Graph.<-interior _ (into (there (there (there ()))) _)
+  E .Graph.in-neighbours ε =
+    inj₁ input ∷ inj₂ (into here ε) ∷ inj₂ (into (there here) ε) ∷
+    inj₂ (into (there (there here)) ε) ∷ []
+  E .Graph.in-neighbours (into here q) =
+    premise-ins here (inj₁ input ∷ []) (Graph.in-neighbours 𝒢₁ q)
+  E .Graph.in-neighbours (into (there here) q) =
+    premise-ins (there here) (inj₁ input ∷ []) (Graph.in-neighbours 𝒢₂ q)
+  E .Graph.in-neighbours (into (there (there here)) q) =
+    premise-ins (there (there here))
+                (inj₁ input ∷ inj₂ (into here ε) ∷ inj₂ (into (there here) ε) ∷ [])
+                (Graph.in-neighbours 𝒢₃ q)
+  E .Graph.in-neighbours (into (there (there (there ()))) _)
 
   private
     b1 : Path D₁ → V E
@@ -2835,6 +2907,21 @@ module Ruleₛ {m n : ℕ} where
   <-interiors (P ∷ Ps) (there i) p here      q = inj₂ ⟪ ≈-refl ⟫
   <-interiors (P ∷ Ps) (there i) p (there j) q = <-interiors Ps i p j q
 
+  weaken-in : ∀ {b s ss} → Input ⊎ Path (node n b ss) → Input ⊎ Path (node n b (s ∷ ss))
+  weaken-in (inj₁ x) = inj₁ x
+  weaken-in (inj₂ p) = inj₂ (weaken p)
+
+  premise-in-neighbours : ∀ {b Ds s} (Ps : All (Premise m n) Ds) (i : Ds ∋ s) (q : Path s) →
+                          List (Input ⊎ Path (node n b Ds))
+  premise-in-neighbours []       ()        _
+  premise-in-neighbours (P ∷ Ps) here      q =
+    premise-ins here (inj₁ input ∷ []) (Graph.in-neighbours (P .𝒢) q)
+  premise-in-neighbours (P ∷ Ps) (there i) q = map weaken-in (premise-in-neighbours Ps i q)
+
+  root-in-neighbours : ∀ {b Ds} → All (Premise m n) Ds → List (Input ⊎ Path (node n b Ds))
+  root-in-neighbours []       = []
+  root-in-neighbours (P ∷ Ps) = inj₂ (into here ε) ∷ map weaken-in (root-in-neighbours Ps)
+
   E : ∀ {Ds} (fo-output : Bool) → 𝔽 m ⇒ 𝔽 n → All (Premise m n) Ds → Graph m (node n fo-output Ds)
   E fo-output input-to-output Ps .Graph.from-input ε          = input-to-output
   E fo-output input-to-output Ps .Graph.from-input (into i q) = from-inputs Ps i q
@@ -2845,6 +2932,8 @@ module Ruleₛ {m n : ℕ} where
   E fo-output input-to-output Ps .Graph.<-interior (into i p) ε          = inj₁ tt
   E fo-output input-to-output Ps .Graph.<-interior ε ε          = inj₂ ⟪ ≈-refl ⟫
   E fo-output input-to-output Ps .Graph.<-interior ε (into j q) = inj₂ ⟪ ≈-refl ⟫
+  E fo-output input-to-output Ps .Graph.in-neighbours ε          = inj₁ input ∷ root-in-neighbours Ps
+  E fo-output input-to-output Ps .Graph.in-neighbours (into i q) = premise-in-neighbours Ps i q
 
   rel : ∀ {Ds} → All (Premise m n) Ds → 𝔽 m ⇒ 𝔽 n
   rel []       = εₘ
