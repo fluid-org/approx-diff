@@ -120,7 +120,9 @@ private
     T𝓌 : Tabulation
     T𝓌 = stepwise-tabulation dependence three.ε? trace
 
-    all-old all-blocks all-sparse all-listed all-stepwise : ℕ → String
+    all-old all-blocks all-sparse all-listed all-stepwise all-functional : ℕ → String
+    all-functional k =
+      show3 (join-store (hide-graph-functional dependence three.ε? trace (map suc (upTo k))))
     all-old k    = show3 (ask-all (Tabulated.hide-graph T trace three.ε? (map suc (upTo k))))
     all-blocks k = show3 (ask-all (Tabulated.hide-graph-blocks T trace three.ε? (map suc (upTo k))))
     all-sparse k = show3 (join-store (Tabulated.hide-graph-sparse T trace three.ε? (map suc (upTo k))))
@@ -147,5 +149,5 @@ private
 
 main : Main
 main = run (putStrLn (trace survey (show
-  (curve "stepwise" benchF.all-stepwise prefixes
+  (curve "functional" benchF.all-functional prefixes
     (curve "listed" benchF.all-listed prefixes 0)))))

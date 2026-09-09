@@ -1350,6 +1350,225 @@ module Tabulated (T : Tabulation) (tick : {A : Set} → String → A → A) wher
                       List (List (Maybe M.Table))
   hide-graph-sparse ε-dec hid = SparseBlocks.result-columns ε-dec hid
 
+-- Hiding with edge labels applied as functions to the row blocks propagated from the region's
+-- sources; tables are assembled only for stored summaries and emitted columns. Hidden vertices
+-- are given by position.
+module FunctionHide {m : ℕ} {D : Derivation} (𝒢 : Graph m D)
+  (ε-dec : (x : Semiring.Carrier) → Dec (x ≡ Semiring.ε))
+  (tick : {A : Set} → String → A → A) (hid : List ℕ) where
+
+  private
+    total-positions : ℕ
+    total-positions = suc (suc (vertex-count D))
+
+    survivors : List ℕ
+    survivors = filterᵇ (λ p → not (any (p ≡ᵇ_) hid)) (upTo total-positions)
+
+    Block : Set
+    Block = List (Maybe M.Table)
+
+    data Origin : Set where
+      source  : ℕ → Origin
+      summary : Block → Origin
+
+    or! : Bool → Bool → Bool
+    or! false b     = b
+    or! true  false = true
+    or! true  true  = true
+
+    nonzero-row : List Semiring.Carrier → Bool
+    nonzero-row []       = false
+    nonzero-row (x ∷ xs) = or! (not ⌊ ε-dec x ⌋) (nonzero-row xs)
+
+    nonzero-table : M.Table → Bool
+    nonzero-table []       = false
+    nonzero-table (r ∷ rs) = or! (nonzero-row r) (nonzero-table rs)
+
+    keep! : Maybe M.Table → Maybe M.Table
+    keep! nothing  = nothing
+    keep! (just t) = if nonzero-table t then just t else nothing
+
+    force-block : {A : Set} → Block → A → A
+    force-block []            x = x
+    force-block (nothing ∷ B) x = force-block B x
+    force-block (just _ ∷ B)  x = force-block B x
+
+    scale-row : Semiring.Carrier → List Semiring.Carrier → List Semiring.Carrier
+    scale-row s = map (s Semiring.·_)
+
+    add-rows : List Semiring.Carrier → List Semiring.Carrier → List Semiring.Carrier
+    add-rows []       ys       = ys
+    add-rows xs       []       = xs
+    add-rows (x ∷ xs) (y ∷ ys) = (x Semiring.+ y) ∷ add-rows xs ys
+
+    row-mul : List Semiring.Carrier → List (List Semiring.Carrier) → List Semiring.Carrier
+    row-mul []       _        = []
+    row-mul _        []       = []
+    row-mul (w ∷ ws) (r ∷ rs) = add-rows (scale-row w r) (row-mul ws rs)
+
+    -- Product by traversal: rows of the left table weight and sum the rows of the right.
+    mulT : M.Table → M.Table → M.Table
+    mulT W T = map (λ wr → row-mul wr T) W
+
+    addT : M.Table → M.Table → M.Table
+    addT []       us       = us
+    addT ts       []       = ts
+    addT (t ∷ ts) (u ∷ us) = add-rows t u ∷ addT ts us
+
+    add-slot : Maybe M.Table → Maybe M.Table → Maybe M.Table
+    add-slot nothing  u        = u
+    add-slot t        nothing  = t
+    add-slot (just t) (just u) = just (addT t u)
+
+    add-blocks : Block → Block → Block
+    add-blocks []       C        = C
+    add-blocks B        []       = B
+    add-blocks (s ∷ B) (s' ∷ C) = add-slot s s' ∷ add-blocks B C
+
+    hd-row : List (List Semiring.Carrier) → List Semiring.Carrier
+    hd-row []      = []
+    hd-row (r ∷ _) = r
+
+    tl-rows : List (List Semiring.Carrier) → List (List Semiring.Carrier)
+    tl-rows = map (λ { [] → [] ; (_ ∷ r) → r })
+
+    heads : List (List Semiring.Carrier) → List Semiring.Carrier
+    heads = map (λ { [] → Semiring.ε ; (x ∷ _) → x })
+
+    trN : ℕ → List (List Semiring.Carrier) → List (List Semiring.Carrier)
+    trN zero    _  = []
+    trN (suc n) rs = heads rs ∷ trN n (tl-rows rs)
+
+    -- Label applied to a block entry, one function application per column.
+    apply-morph : ∀ {a b : ℕ} → 𝔽 a ⇒ 𝔽 b → M.Table → M.Table
+    apply-morph {a} {b} ℓ T = trN b (map app-col (trN (length (hd-row T)) T))
+      where
+      app-col : List Semiring.Carrier → List Semiring.Carrier
+      app-col cl = toList (tabulate (ℓ .func (λ i → M.nth Semiring.ε (toℕ i) cl)))
+
+    basis-table : ℕ → M.Table
+    basis-table w =
+      applyUpTo (λ i → applyUpTo (λ j → if i ≡ᵇ j then Semiring.ι else Semiring.ε) w) w
+
+    apply-slotsₜ : M.Table → Block → Block
+    apply-slotsₜ W = map (λ { nothing → nothing ; (just t) → just (tick "apply" (mulT W t)) })
+
+    apply-slotsₘ : ∀ {a b : ℕ} → 𝔽 a ⇒ 𝔽 b → Block → Block
+    apply-slotsₘ ℓ = map (λ { nothing → nothing ; (just t) → just (tick "apply" (apply-morph ℓ t)) })
+
+    nothing-block : List ℕ → Block
+    nothing-block sv = map (λ _ → nothing) sv
+
+    unit-at : List ℕ → ℕ → M.Table → Block
+    unit-at sv r t = place r sv
+      where
+      place : ℕ → List ℕ → Block
+      place _       []       = []
+      place zero    (_ ∷ ss) = just t ∷ map (λ _ → nothing) ss
+      place (suc r) (_ ∷ ss) = nothing ∷ place r ss
+
+    set-at : ℕ → Origin → List Origin → List Origin
+    set-at _       _ []        = []
+    set-at zero    o (_ ∷ os)  = o ∷ os
+    set-at (suc p) o (o' ∷ os) = o' ∷ set-at p o os
+
+    origin-at : ℕ → List Origin → Origin
+    origin-at _       []       = summary []
+    origin-at zero    (o ∷ _)  = o
+    origin-at (suc p) (_ ∷ os) = origin-at p os
+
+    from-origin : List ℕ → M.Table → Origin → Block
+    from-origin sv W (source r)  = unit-at sv r W
+    from-origin sv W (summary B) = apply-slotsₜ W B
+
+    root-contributions : List ℕ → List (Path D × M.Table) → List Origin → Block
+    root-contributions sv []             st = nothing-block sv
+    root-contributions sv ((r , W) ∷ fs) st =
+      add-blocks
+        (from-origin sv (tick "wiring" W) (origin-at (suc (path-position D r)) st))
+        (root-contributions sv fs st)
+
+    up-contribution : List ℕ → Path D → Path D → Origin → Block
+    up-contribution sv rp vp (source r) =
+      unit-at sv r
+        (tick "apply" (apply-morph (Graph.interior 𝒢 rp vp) (basis-table (width-at D rp))))
+    up-contribution sv rp vp (summary B) = apply-slotsₘ (Graph.interior 𝒢 rp vp) B
+
+    record Out : Set where
+      constructor out
+      field
+        ocols : List Block
+        org   : Origin
+        opos  : ℕ
+        ok    : ℕ
+        ost   : List Origin
+
+    record Res : Set where
+      constructor res
+      field
+        rcols : List Block
+        rups  : Block
+        rpos  : ℕ
+        rk    : ℕ
+        rst   : List Origin
+
+    go-node : (s : Derivation) → (Path s → Path D) → List ℕ → ℕ → ℕ → List Origin → Block → Out
+    go-prems : (ss : List Derivation) → (∀ {s'} → ss ∋ s' → Path s' → Path D) → Path D → List ℕ →
+               ℕ → ℕ → List Origin → Block → Res
+    go-node (node n' b' ss) emb sv pos k st A =
+      emit (go-prems ss (λ i p → emb (into i p)) (emb ε) sv pos k st A)
+      where
+      emit : Res → Out
+      emit (res cs ups vpos k' st') =
+        decide (add-blocks (apply-slotsₜ (tick "wiring" (Graph.local-output-table 𝒢 (emb ε))) A)
+                           ups)
+        where
+        decide : Block → Out
+        decide B with any (vpos ≡ᵇ_) hid
+        ... | true  = store (tick ("block " ++ₛ ℕ-Show.show vpos) (map keep! B))
+          where
+          store : Block → Out
+          store Bk =
+            force-block Bk (out cs (summary Bk) (suc vpos) k' (set-at vpos (summary Bk) st'))
+        ... | false = give (tick ("column " ++ₛ ℕ-Show.show vpos) (map keep! B))
+          where
+          give : Block → Out
+          give Ck =
+            out (cs ++ (Ck ∷ [])) (source k') (suc vpos) (suc k') (set-at vpos (source k') st')
+    go-prems []          emb vp sv pos k st A = res [] (nothing-block sv) pos k st
+    go-prems (s' ∷ rest) emb vp sv pos k st A = enter (emb here ε)
+      where
+      enter : Path D → Res
+      enter rp =
+        step (go-node s' (λ p → emb here p) sv pos k st
+                (add-blocks (apply-slotsₜ (tick "wiring" (Graph.input-wiring-table 𝒢 rp)) A)
+                            (root-contributions sv (Graph.root-wiring-tables 𝒢 rp) st)))
+        where
+        step : Out → Res
+        step (out cs org pos' k' st') =
+          pack (up-contribution sv rp vp org)
+               (go-prems rest (λ i p → emb (there i) p) vp sv pos' k' st' A)
+          where
+          pack : Block → Res → Res
+          pack up (res cs₂ ups pos₂ k₂ st₂) =
+            res (cs ++ cs₂) (add-blocks up ups) pos₂ k₂ st₂
+
+  -- One list per surviving column, entries by surviving row.
+  result : List (List (Maybe M.Table))
+  result = start survivors
+    where
+    start : List ℕ → List (List (Maybe M.Table))
+    start sv =
+      tick "column 0" (nothing-block sv)
+      ∷ Out.ocols (go-node D (λ p → p) sv 1 1
+                     (set-at 0 (source 0) (applyUpTo (λ _ → summary []) total-positions))
+                     (unit-at sv 0 (basis-table m)))
+
+hide-graph-functional : {m : ℕ} {D : Derivation} (𝒢 : Graph m D) →
+                        ((x : Semiring.Carrier) → Dec (x ≡ Semiring.ε)) →
+                        ({A : Set} → String → A → A) → List ℕ → List (List (Maybe M.Table))
+hide-graph-functional 𝒢 ε-dec tick hid = FunctionHide.result 𝒢 ε-dec tick hid
+
 private
   nth? : {C : Set} → ℕ → List C → Maybe C
   nth? _       []       = nothing
