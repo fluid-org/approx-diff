@@ -1415,7 +1415,7 @@ module FunctionHide {m : ℕ} {D : Derivation} (𝒢 : Graph m D)
     -- Product by traversal: rows of the left table weight and sum the rows of the right.
     table-product : M.Table → M.Table → M.Table
     table-product W T =
-      tick ("cells " ++ₛ ℕ-Show.show (length W * length T * length (first-row T)))
+      tick ("cells-product " ++ₛ ℕ-Show.show (length W * length T * length (first-row T)))
            (map (λ wr → weighted-rows wr T) W)
 
     table-sum : M.Table → M.Table → M.Table
@@ -1447,7 +1447,7 @@ module FunctionHide {m : ℕ} {D : Derivation} (𝒢 : Graph m D)
     -- Label applied to a block entry, one function application per column.
     label-on-table : ∀ {a b : ℕ} → 𝔽 a ⇒ 𝔽 b → M.Table → M.Table
     label-on-table {a} {b} ℓ T =
-      tick ("cells " ++ₛ ℕ-Show.show (length (first-row T) * (a + b)))
+      tick ("cells-label " ++ₛ ℕ-Show.show (length (first-row T) * (a * b + a + b)))
            (transpose-to b (map app-col (transpose-to (length (first-row T)) T)))
       where
       app-col : List Semiring.Carrier → List Semiring.Carrier

@@ -152,7 +152,7 @@ private
   module benchM = bench merge-run
 
   prefixes : List ℕ
-  prefixes = 800 ∷ []
+  prefixes = 800 ∷ 3936 ∷ []
 
 main : Main
 main = run (putStrLn (trace survey (show (curve "functional" benchM.all-functional prefixes 0))))
