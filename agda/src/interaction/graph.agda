@@ -1033,14 +1033,10 @@ module Tabulated (T : Tabulation) (tick : {A : Set} → String → A → A) wher
   hide-graph : ((x : Semiring.Carrier) → Dec (x ≡ Semiring.ε)) → List ℕ → Tabulation
   hide-graph ε-dec hid = HideGraph.result ε-dec hid
 
-  -- Hiding by one pass over the hidden list, memoising per hidden vertex a block of summaries
-  -- from every surviving row at once. The pass state holds, per position, either a surviving
-  -- vertex's index among the survivors or a hidden vertex's block, one slot per surviving row.
-  -- Every nonzero edge into a vertex comes from an earlier position, so a block is complete when
-  -- the pass reaches it; the zero test on each stored entry forces it, so a block holds no thunks
-  -- over earlier state. A result slot is the direct edge plus the paths through the hidden set,
-  -- read off the same column fold as the blocks. Shared lists are threaded as arguments: a
-  -- compiled module-level definition is re-evaluated at each reference.
+  -- One pass over the hidden list. Each hidden vertex gets a block of summaries, one slot per
+  -- surviving row; edges run forward, so a block is complete when the pass reaches its vertex,
+  -- and the zero test forces each entry as it is stored. Shared lists are threaded as arguments:
+  -- a compiled module-level definition is re-evaluated at each reference.
   module HideGraphBlocks (ε-dec : (x : Semiring.Carrier) → Dec (x ≡ Semiring.ε)) (hid : List ℕ)
     where
     open HideGraph ε-dec hid using (hid-pos; keep)
