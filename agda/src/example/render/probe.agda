@@ -8,7 +8,6 @@ module example.render.probe where
 open import IO
 open import IO.Finite using (putStrLn)
 open import Data.List using (List; []; _∷_; map; length; concat; upTo)
-open import Data.Maybe using (Maybe; just; nothing)
 open import Data.Nat using (ℕ; zero; suc; _+_; _*_; _⊔_)
 open import Data.Product using (_×_; _,_)
 import Data.Nat.Show as ℕ-Show
@@ -85,17 +84,10 @@ private
   module bench (r : Run) where
     open Evaluated (env r) (term r)
 
-    T : Tabulation
-    T = tabulation dependence three.ε? trace
-
     join-table : M3.Table → Three
     join-table t = join-list (concat t)
 
-    join-slot : Maybe M3.Table → Three
-    join-slot nothing  = three.O
-    join-slot (just t) = join-table t
-
-    -- Strict in both arguments, so joining forces every slot.
+    -- Strict in both arguments, so joining forces every entry.
     join! : Three → Three → Three
     join! three.O y       = y
     join! three.C three.O = three.C
@@ -105,37 +97,14 @@ private
     join! three.D three.C = three.D
     join! three.D three.D = three.D
 
-    join-row : List (Maybe M3.Table) → Three
-    join-row []       = three.O
-    join-row (s ∷ ss) = join! (join-slot s) (join-row ss)
-
-    join-store : List (List (Maybe M3.Table)) → Three
-    join-store []         = three.O
-    join-store (row ∷ rs) = join! (join-row row) (join-store rs)
-
-    ask-all : Tabulation → Three
-    ask-all H = join-store (H .edges)
-
-    Tₛ : Tabulation
-    Tₛ = sparse-tabulation dependence three.ε? trace
-
-    T𝓌 : Tabulation
-    T𝓌 = stepwise-tabulation dependence three.ε? trace
-
-    all-old all-blocks all-sparse all-listed all-stepwise all-functional : ℕ → String
     join-entries : List (ℕ × M3.Table) → Three
     join-entries []             = three.O
     join-entries ((_ , t) ∷ es) = join! (join-table t) (join-entries es)
 
+    all-functional : ℕ → String
     all-functional k =
       show3 (hide-graph-fold dependence three.ε? trace (map suc (upTo k))
                (λ a c → join! a (join-entries c)) three.O)
-    all-old k    = show3 (ask-all (Tabulated.hide-graph T trace three.ε? (map suc (upTo k))))
-    all-blocks k = show3 (ask-all (Tabulated.hide-graph-blocks T trace three.ε? (map suc (upTo k))))
-    all-sparse k = show3 (join-store (Tabulated.hide-graph-sparse T trace three.ε? (map suc (upTo k))))
-    all-listed k = show3 (join-store (Tabulated.hide-graph-sparse Tₛ trace three.ε? (map suc (upTo k))))
-    all-stepwise k =
-      show3 (join-store (Tabulated.hide-graph-sparse T𝓌 trace three.ε? (map suc (upTo k))))
 
   survey : String
   survey = scale.line "filter-sum" filter-sum-run ++ "\n" ++ scale.line "map" map-run ++ "\n"

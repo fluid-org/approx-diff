@@ -399,11 +399,10 @@ record Graph (m : ℕ) (D : Derivation) : Set₁ where
     <-interior : ∀ p q → lt D p q ⊎ Prf (interior p q ≈ εₘ)
     -- In-neighbours of each vertex (inj₁ the inputs vertex): unlisted sources relate to it by zero.
     in-neighbours : (q : Path D) → List (Input ⊎ Path D)
-    -- Wiring of the rule concluding at q, as tables; from-input and the cross-premise labels
-    -- are their compositions, one step per rule level.
-    rule-input-width   : Path D → ℕ
-    input-wiring-table     : Path D → M.Table
-    root-wiring-tables   : Path D → List (Path D × M.Table)
+    -- Wiring of the rule concluding at q, as tables: its input from the enclosing rule's input,
+    -- its input from each earlier premise's conclusion, and its conclusion from its own input.
+    input-wiring-table : Path D → M.Table
+    root-wiring-tables : Path D → List (Path D × M.Table)
     local-output-table : Path D → M.Table
 
 hide : {V : Set} (vertex-object : V → Semimodule) → EdgeLabels vertex-object → V → EdgeLabels vertex-object
@@ -886,21 +885,6 @@ vertex-count (node n b ss)   = vertex-count-of ss
 vertex-count-of []           = 0
 vertex-count-of (s ∷ ss)     = suc (vertex-count s) + vertex-count-of ss
 
-path-depth : ∀ {s} → Path s → ℕ
-path-depth ε          = 0
-path-depth (into i q) = suc (path-depth q)
-
--- Wiring maps traversed in evaluating an edge label: one per rule level below the divergence
--- of source and target.
-label-steps : ∀ {s} → Path s → Path s → ℕ
-steps-∋ : ∀ {ss s₁ s₂} → ss ∋ s₁ → Path s₁ → ss ∋ s₂ → Path s₂ → ℕ
-label-steps _          ε          = 1
-label-steps ε          q          = suc (path-depth q)
-label-steps (into i p) (into j q) = steps-∋ i p j q
-steps-∋ here      p here      q = label-steps p q
-steps-∋ (there i) p (there j) q = steps-∋ i p j q
-steps-∋ _         _ _         q = suc (suc (path-depth q))
-
 -- Index of a path in (vertices s ++ (ε ∷ [])).
 path-position : (s : Derivation) → Path s → ℕ
 path-position-of : (ss : List Derivation) {s : Derivation} → ss ∋ s → Path s → ℕ
@@ -913,9 +897,6 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
 
   all-vertices : List (V 𝒢)
   all-vertices = inj₁ input ∷ map inj₂ (vertices D) ++ (inj₂ ε ∷ [])
-
-  vertex-at : ℕ → V 𝒢
-  vertex-at i = M.nth (inj₂ ε) i (all-vertices)
 
   private
     _≟ᵥ_ : DecidableEquality (V 𝒢)
@@ -952,113 +933,6 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D)
   tabulation .Tabulation.widths   = map (vertex-width 𝒢) (all-vertices 𝒢)
   tabulation .Tabulation.edges    = map edge-row (all-vertices 𝒢)
 
-  vertex-position : V 𝒢 → ℕ
-  vertex-position (inj₁ _) = 0
-  vertex-position (inj₂ q) = suc (path-position D q)
-
-  source-positions : V 𝒢 → List ℕ
-  source-positions (inj₁ _) = []
-  source-positions (inj₂ q) = map vertex-position (Graph.in-neighbours 𝒢 q)
-
-  tick-compose : {A : Set} → ℕ → A → A
-  tick-compose zero    x = x
-  tick-compose (suc k) x = tick "compose" (tick-compose k x)
-
-  slot-steps : V 𝒢 → V 𝒢 → ℕ
-  slot-steps (inj₁ _) (inj₂ q) = suc (path-depth q)
-  slot-steps (inj₂ p) (inj₂ q) = label-steps p q
-  slot-steps _        (inj₁ _) = 0
-
-  listed-row : List (V 𝒢 × List ℕ) → ℕ → V 𝒢 → List (Maybe M.Table)
-  listed-row tgts i x =
-    map (λ { (y , is) → if any (i ≡ᵇ_) is
-                        then tick-compose (slot-steps x y) (edge-slot (edge-table x y))
-                        else nothing })
-        tgts
-
-  listed-rows : List (V 𝒢 × List ℕ) → ℕ → List (V 𝒢) → List (List (Maybe M.Table))
-  listed-rows tgts i []       = []
-  listed-rows tgts i (x ∷ xs) = listed-row tgts i x ∷ listed-rows tgts (suc i) xs
-
-  sparse-tabulation : Tabulation
-  sparse-tabulation .Tabulation.numbers = upTo (length (all-vertices 𝒢))
-  sparse-tabulation .Tabulation.widths  = map (vertex-width 𝒢) (all-vertices 𝒢)
-  sparse-tabulation .Tabulation.edges   =
-    listed-rows (map (λ y → y , source-positions y) (all-vertices 𝒢)) 0 (all-vertices 𝒢)
-
-  -- An edge into the input of the rule being walked: source position, source width, table.
-  InputEdge : Set
-  InputEdge = ℕ × ℕ × M.Table
-
-  compose-edges : ℕ → ℕ → M.Table → List InputEdge → List InputEdge
-  compose-edges ms' ms st []                = []
-  compose-edges ms' ms st ((p , w , t) ∷ F) =
-    (p , w , tick "compose" (mul ms' ms w st t)) ∷ compose-edges ms' ms st F
-
-  root-edges : List (Path D × M.Table) → List InputEdge
-  root-edges []             = []
-  root-edges ((r , t) ∷ fs) = (suc (path-position D r) , width-at D r , tick "wiring" t) ∷ root-edges fs
-
-  emit-col : ℕ → ℕ → M.Table → List InputEdge → List (ℕ × M.Table)
-  emit-col wq ms lo []                = []
-  emit-col wq ms lo ((p , w , t) ∷ F) with edge-slot (tick "compose" (mul wq ms w lo t))
-  ... | just t' = (p , t') ∷ emit-col wq ms lo F
-  ... | nothing = emit-col wq ms lo F
-
-  local-slots : Path D → List (ℕ × M.Table)
-  local-slots q = collect (Graph.in-neighbours 𝒢 q)
-    where
-    collect : List (Input ⊎ Path D) → List (ℕ × M.Table)
-    collect []            = []
-    collect (inj₁ _ ∷ xs) = collect xs
-    collect (inj₂ p ∷ xs) with label-steps p q ≡ᵇ 1
-    ... | false = collect xs
-    ... | true with edge-slot (edge-table (inj₂ p) (inj₂ q))
-    ...   | just t  = (suc (path-position D p) , t) ∷ collect xs
-    ...   | nothing = collect xs
-
-  col-for : Path D → ℕ → List InputEdge → List (ℕ × M.Table)
-  col-for q ms F =
-    local-slots q ++ emit-col (width-at D q) ms (tick "wiring" (Graph.local-output-table 𝒢 q)) F
-
-  -- Columns per vertex in evaluation order; the edges into the current rule's input thread down.
-  walk-node : (s : Derivation) → (Path s → Path D) → ℕ → List InputEdge → List (List (ℕ × M.Table))
-  walk-ss : (ss : List Derivation) → (∀ {s'} → ss ∋ s' → Path s' → Path D) → ℕ → List InputEdge →
-            List (List (ℕ × M.Table))
-  walk-node (node _ _ ss) emb ms F = walk-ss ss (λ i p → emb (into i p)) ms F
-  walk-ss []          emb ms F = []
-  walk-ss (s' ∷ rest) emb ms F =
-    walk-node s' (λ p → emb here p) ms' F'
-    ++ (col-for rp ms' F' ∷ [])
-    ++ walk-ss rest (λ i p → emb (there i) p) ms F
-    where
-    rp : Path D
-    rp = emb here ε
-    ms' : ℕ
-    ms' = Graph.rule-input-width 𝒢 rp
-    F' : List InputEdge
-    F' = compose-edges ms' ms (tick "wiring" (Graph.input-wiring-table 𝒢 rp)) F
-         ++ root-edges (Graph.root-wiring-tables 𝒢 rp)
-
-  stepwise-columns : List (List (ℕ × M.Table))
-  stepwise-columns = ([] ∷ walk-node D (λ p → p) m F0) ++ (col-for ε m F0 ∷ [])
-    where
-    F0 : List InputEdge
-    F0 = (0 , m , table-of (I {𝔽 m})) ∷ []
-
-  find-slot : ℕ → List (ℕ × M.Table) → Maybe M.Table
-  find-slot i []             = nothing
-  find-slot i ((j , t) ∷ es) = if i ≡ᵇ j then just t else find-slot i es
-
-  stepwise-rows : List (List (ℕ × M.Table)) → List ℕ → List (List (Maybe M.Table))
-  stepwise-rows cols []       = []
-  stepwise-rows cols (i ∷ is) = map (find-slot i) cols ∷ stepwise-rows cols is
-
-  stepwise-tabulation : Tabulation
-  stepwise-tabulation .Tabulation.numbers = upTo (length (all-vertices 𝒢))
-  stepwise-tabulation .Tabulation.widths  = map (vertex-width 𝒢) (all-vertices 𝒢)
-  stepwise-tabulation .Tabulation.edges   =
-    stepwise-rows stepwise-columns (upTo (length (all-vertices 𝒢)))
 
 find-number : ℕ → ℕ → List ℕ → Maybe ℕ
 find-number i k []       = nothing
@@ -1183,174 +1057,6 @@ module Tabulated (T : Tabulation) (tick : {A : Set} → String → A → A) wher
 
   hide-graph : ((x : Semiring.Carrier) → Dec (x ≡ Semiring.ε)) → List ℕ → Tabulation
   hide-graph ε-dec hid = HideGraph.result ε-dec hid
-
-  -- One pass over the hidden list. Each hidden vertex gets a block of summaries, one slot per
-  -- surviving row; edges run forward, so a block is complete when the pass reaches its vertex,
-  -- and the zero test forces each entry as it is stored. Shared lists are threaded as arguments:
-  -- a compiled module-level definition is re-evaluated at each reference.
-  module HideGraphBlocks (ε-dec : (x : Semiring.Carrier) → Dec (x ≡ Semiring.ε)) (hid : List ℕ)
-    where
-    open HideGraph ε-dec hid using (hid-pos; keep)
-
-    -- Summaries into one vertex, one slot per surviving row; a short block reads as empty slots.
-    Block : Set
-    Block = List (Maybe M.Table)
-
-    data Origin : Set where
-      source  : ℕ → Origin
-      summary : Block → Origin
-
-    hd : Block → Maybe M.Table
-    hd []      = nothing
-    hd (t ∷ _) = t
-
-    tl : Block → Block
-    tl []       = []
-    tl (_ ∷ ts) = ts
-
-    survivors-of : List ℕ → List ℕ
-    survivors-of hp = filterᵇ (λ p → not (any (p ≡ᵇ_) hp)) (upTo (length (T .widths)))
-
-    transpose-by : List ℕ → List (List (Maybe M.Table)) → List (List (Maybe M.Table))
-    transpose-by []       _  = []
-    transpose-by (_ ∷ ws) rs = map hd rs ∷ transpose-by ws (map tl rs)
-
-    add-block : ℕ → List ℕ → Block → Block → Block
-    add-block wv []        _  _  = []
-    add-block wv (wa ∷ ws) B₁ B₂ = add? wv wa (hd B₁) (hd B₂) ∷ add-block wv ws (tl B₁) (tl B₂)
-
-    unit-block : ℕ → List ℕ → M.Table → Block
-    unit-block k       []       e = []
-    unit-block zero    (_ ∷ ws) e = just e ∷ map (λ _ → nothing) ws
-    unit-block (suc k) (_ ∷ ws) e = nothing ∷ unit-block k ws e
-
-    compose-block : ℕ → ℕ → M.Table → List ℕ → Block → Block
-    compose-block wv wu e []        _ = []
-    compose-block wv wu e (wa ∷ ws) B with hd B
-    ... | nothing = nothing ∷ compose-block wv wu e ws (tl B)
-    ... | just t  = just (mul wv wu wa e t) ∷ compose-block wv wu e ws (tl B)
-
-    column : List ℕ → ℕ → List ℕ → List (Maybe M.Table) → List Origin → Block
-    column wvs wv (wu ∷ pws) (nothing ∷ ss) (_ ∷ os) = column wvs wv pws ss os
-    column wvs wv (wu ∷ pws) (just e ∷ ss)  (o ∷ os) =
-      add-block wv wvs (contrib o) (column wvs wv pws ss os)
-      where
-      contrib : Origin → Block
-      contrib (source k)  = unit-block k wvs e
-      contrib (summary B) = compose-block wv wu e wvs B
-    column wvs _ _ _ _ = map (λ _ → nothing) wvs
-
-    set-at : ℕ → Origin → List Origin → List Origin
-    set-at _       _ []       = []
-    set-at zero    o (_ ∷ os) = o ∷ os
-    set-at (suc p) o (o' ∷ os) = o' ∷ set-at p o os
-
-    force-block : {A : Set} → Block → A → A
-    force-block []            x = x
-    force-block (nothing ∷ B) x = force-block B x
-    force-block (just _ ∷ B)  x = force-block B x
-
-    initial-state : List ℕ → List ℕ → List Origin
-    initial-state hp pws = build 0 0 pws
-      where
-      build : ℕ → ℕ → List ℕ → List Origin
-      build p k []       = []
-      build p k (_ ∷ ws) with any (p ≡ᵇ_) hp
-      ... | true  = summary [] ∷ build (suc p) k ws
-      ... | false = source k ∷ build (suc p) (suc k) ws
-
-    pass : List ℕ → List ℕ → List (List (Maybe M.Table)) → ℕ → List ℕ → List Origin → List Origin
-    pass wvs pws ts k []       st = st
-    pass wvs pws ts k (p ∷ ps) st =
-      step (tick ("block " ++ₛ ℕ-Show.show k) (map keep (column wvs (wd p) pws (M.nth [] p ts) st)))
-      where
-      step : Block → List Origin
-      step B = force-block B (pass wvs pws ts (suc k) ps (set-at p (summary B) st))
-
-    columns : List ℕ → List ℕ → List (List (Maybe M.Table)) → List Origin → ℕ → List ℕ → List Block
-    columns wvs pws ts st k []       = []
-    columns wvs pws ts st k (b ∷ bs) =
-      tick ("column " ++ₛ ℕ-Show.show k) (map keep (column wvs (wd b) pws (M.nth [] b ts) st))
-      ∷ columns wvs pws ts st (suc k) bs
-
-    edges-of : List ℕ → List (List (Maybe M.Table))
-    edges-of hp = shape (survivors-of hp)
-      where
-      build : List ℕ → List (List (Maybe M.Table)) → List ℕ → List (List (Maybe M.Table))
-      build wvs ts sv =
-        transpose-by wvs
-          (columns wvs (T .widths) ts (pass wvs (T .widths) ts 0 hp (initial-state hp (T .widths))) 0 sv)
-
-      shape : List ℕ → List (List (Maybe M.Table))
-      shape sv = build (map wd sv) (transpose-by (T .widths) (T .edges)) sv
-
-    result : Tabulation
-    result .Tabulation.numbers = map (λ p → M.nth 0 p (Tabulation.numbers T)) (survivors-of hid-pos)
-    result .Tabulation.widths  = map wd (survivors-of hid-pos)
-    result .Tabulation.edges   = edges-of hid-pos
-
-  hide-graph-blocks : ((x : Semiring.Carrier) → Dec (x ≡ Semiring.ε)) → List ℕ → Tabulation
-  hide-graph-blocks ε-dec hid = HideGraphBlocks.result ε-dec hid
-
-  -- The block pass over rows stripped to their stored slots. Positions are consumed in order,
-  -- each carrying a pending block of contributions pushed by earlier positions, so a position's
-  -- pending block is complete when reached: a hidden vertex stores it as its summaries, a
-  -- surviving vertex emits it as its result column. The empty block reads as all empty slots.
-  module SparseBlocks (ε-dec : (x : Semiring.Carrier) → Dec (x ≡ Semiring.ε)) (hid : List ℕ)
-    where
-    open HideGraph ε-dec hid using (hid-pos; keep)
-    open HideGraphBlocks ε-dec hid
-      using (Block; survivors-of; add-block; unit-block; compose-block; force-block)
-
-    SparseRow : Set
-    SparseRow = List (ℕ × M.Table)
-
-    sparse-row : ℕ → List (Maybe M.Table) → SparseRow
-    sparse-row j []             = []
-    sparse-row j (nothing ∷ ss) = sparse-row (suc j) ss
-    sparse-row j (just t ∷ ss)  = (j , t) ∷ sparse-row (suc j) ss
-
-    push : List ℕ → (ℕ → Block) → ℕ → List ℕ → List Block → List Block
-    push wvs mk zero    (wv ∷ ws) (P ∷ pend) = add-block wv wvs (mk wv) P ∷ pend
-    push wvs mk (suc r) (w ∷ ws)  (P ∷ pend) = P ∷ push wvs mk r ws pend
-    push wvs mk _       _         pend       = pend
-
-    pushes : List ℕ → ℕ → (M.Table → ℕ → Block) → SparseRow → List ℕ → List Block → List Block
-    pushes wvs u mk []            ws pend = pend
-    pushes wvs u mk ((j , e) ∷ r) ws pend =
-      pushes wvs u mk r ws (if u <ᵇ j then push wvs (mk e) (j ∸ suc u) ws pend else pend)
-
-    go : List ℕ → List ℕ → ℕ → ℕ → List ℕ → List SparseRow → List Block →
-         List (List (Maybe M.Table))
-    go wvs hp u k []       _            _          = []
-    go wvs hp u k (_ ∷ _)  []           _          = []
-    go wvs hp u k (_ ∷ _)  (_ ∷ _)      []         = []
-    go wvs hp u k (w ∷ ws) (row ∷ rows) (P ∷ pend) with any (u ≡ᵇ_) hp
-    ... | true  = step (tick ("block " ++ₛ ℕ-Show.show u) (map keep P))
-      where
-      step : Block → List (List (Maybe M.Table))
-      step B =
-        force-block B
-          (go wvs hp (suc u) k ws rows
-              (pushes wvs u (λ e wv → compose-block wv w e wvs B) row ws pend))
-    ... | false =
-      tick ("column " ++ₛ ℕ-Show.show u) (map keep P)
-      ∷ go wvs hp (suc u) (suc k) ws rows (pushes wvs u (λ e wv → unit-block k wvs e) row ws pend)
-
-    -- One list per surviving column, entries by surviving row.
-    result-columns : List (List (Maybe M.Table))
-    result-columns = start hid-pos
-      where
-      launch : List ℕ → List ℕ → List (List (Maybe M.Table))
-      launch hp wvs =
-        go wvs hp 0 0 (T .widths) (map (sparse-row 0) (T .edges)) (map (λ _ → []) (T .widths))
-
-      start : List ℕ → List (List (Maybe M.Table))
-      start hp = launch hp (map wd (survivors-of hp))
-
-  hide-graph-sparse : ((x : Semiring.Carrier) → Dec (x ≡ Semiring.ε)) → List ℕ →
-                      List (List (Maybe M.Table))
-  hide-graph-sparse ε-dec hid = SparseBlocks.result-columns ε-dec hid
 
 -- Hiding with edge labels applied as functions to the row blocks propagated from the region's
 -- sources; tables are assembled only for stored summaries and emitted columns. Hidden vertices
@@ -2612,8 +2318,6 @@ module Rule₀
   E .Graph.<-interior (into () _) _
   E .Graph.in-neighbours ε = inj₁ input ∷ []
   E .Graph.in-neighbours (into () _)
-  E .Graph.rule-input-width ε = m
-  E .Graph.rule-input-width (into () _)
   E .Graph.input-wiring-table ε = table-of (I {𝔽 m})
   E .Graph.input-wiring-table (into () _)
   E .Graph.root-wiring-tables ε = []
@@ -2665,9 +2369,6 @@ module Rule₁
   E .Graph.in-neighbours (into here q) =
     premise-ins here (inj₁ input ∷ []) (Graph.in-neighbours 𝒢 q)
   E .Graph.in-neighbours (into (there ()) _)
-  E .Graph.rule-input-width ε             = m
-  E .Graph.rule-input-width (into here q) = Graph.rule-input-width 𝒢 q
-  E .Graph.rule-input-width (into (there ()) _)
   E .Graph.input-wiring-table ε                      = table-of (I {𝔽 m})
   E .Graph.input-wiring-table (into here ε)          = table-of inputs
   E .Graph.input-wiring-table (into here (into j q)) = Graph.input-wiring-table 𝒢 (into j q)
@@ -2790,10 +2491,6 @@ module Rule₂
   E .Graph.in-neighbours (into (there here) q) =
     premise-ins (there here) (inj₁ input ∷ inj₂ (into here ε) ∷ []) (Graph.in-neighbours 𝒢₂ q)
   E .Graph.in-neighbours (into (there (there ())) _)
-  E .Graph.rule-input-width ε                     = m
-  E .Graph.rule-input-width (into here q)         = Graph.rule-input-width 𝒢₁ q
-  E .Graph.rule-input-width (into (there here) q) = Graph.rule-input-width 𝒢₂ q
-  E .Graph.rule-input-width (into (there (there ())) _)
   E .Graph.input-wiring-table ε                              = table-of (I {𝔽 m})
   E .Graph.input-wiring-table (into here ε)                  = table-of inputs₁
   E .Graph.input-wiring-table (into here (into j q))         = Graph.input-wiring-table 𝒢₁ (into j q)
@@ -3044,11 +2741,6 @@ module Rule₃
                 (inj₁ input ∷ inj₂ (into here ε) ∷ inj₂ (into (there here) ε) ∷ [])
                 (Graph.in-neighbours 𝒢₃ q)
   E .Graph.in-neighbours (into (there (there (there ()))) _)
-  E .Graph.rule-input-width ε                             = m
-  E .Graph.rule-input-width (into here q)                 = Graph.rule-input-width 𝒢₁ q
-  E .Graph.rule-input-width (into (there here) q)         = Graph.rule-input-width 𝒢₂ q
-  E .Graph.rule-input-width (into (there (there here)) q) = Graph.rule-input-width 𝒢₃ q
-  E .Graph.rule-input-width (into (there (there (there ()))) _)
   E .Graph.input-wiring-table ε                                      = table-of (I {𝔽 m})
   E .Graph.input-wiring-table (into here ε)                          = table-of inputs₁
   E .Graph.input-wiring-table (into here (into j q))                 = Graph.input-wiring-table 𝒢₁ (into j q)
@@ -3361,11 +3053,6 @@ module Ruleₛ {m n : ℕ} where
   root-in-neighbours []       = []
   root-in-neighbours (P ∷ Ps) = inj₂ (into here ε) ∷ map weaken-in (root-in-neighbours Ps)
 
-  riw-of : ∀ {Ds s} → All (Premise m n) Ds → Ds ∋ s → Path s → ℕ
-  riw-of []       ()        _
-  riw-of (P ∷ Ps) here      q = Graph.rule-input-width (P .𝒢) q
-  riw-of (P ∷ Ps) (there i) q = riw-of Ps i q
-
   step-of : ∀ {Ds s} → All (Premise m n) Ds → Ds ∋ s → Path s → M.Table
   step-of []       ()        _
   step-of (P ∷ Ps) here      ε          = table-of (P .inputs)
@@ -3395,8 +3082,6 @@ module Ruleₛ {m n : ℕ} where
   E fo-output input-to-output Ps .Graph.<-interior ε (into j q) = inj₂ ⟪ ≈-refl ⟫
   E fo-output input-to-output Ps .Graph.in-neighbours ε          = inj₁ input ∷ root-in-neighbours Ps
   E fo-output input-to-output Ps .Graph.in-neighbours (into i q) = premise-in-neighbours Ps i q
-  E fo-output input-to-output Ps .Graph.rule-input-width ε          = m
-  E fo-output input-to-output Ps .Graph.rule-input-width (into i q) = riw-of Ps i q
   E fo-output input-to-output Ps .Graph.input-wiring-table ε          = table-of (I {𝔽 m})
   E fo-output input-to-output Ps .Graph.input-wiring-table (into i q) = step-of Ps i q
   E fo-output input-to-output Ps .Graph.root-wiring-tables ε          = []
