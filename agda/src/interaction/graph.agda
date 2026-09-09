@@ -1033,14 +1033,15 @@ module Tabulated (T : Tabulation) (tick : {A : Set} → String → A → A) wher
   hide-graph : ((x : Semiring.Carrier) → Dec (x ≡ Semiring.ε)) → List ℕ → Tabulation
   hide-graph ε-dec hid = HideGraph.result ε-dec hid
 
-  -- Hiding by one sweep in evaluation order: the sweep state holds, per position, either a
-  -- surviving vertex's index among the survivors or a hidden vertex's block of summaries, one
-  -- slot per surviving row. Every nonzero edge into a vertex comes from an earlier position, so a
-  -- block is complete when the sweep reaches it; the zero test on each stored entry forces it, so
-  -- a block holds no thunks over earlier state. A result slot is the direct edge plus the paths
-  -- through the hidden set, read off the same column fold as the blocks. Shared lists are
-  -- threaded as arguments: a compiled module-level definition is re-evaluated at each reference.
-  module HideGraphSweep (ε-dec : (x : Semiring.Carrier) → Dec (x ≡ Semiring.ε)) (hid : List ℕ)
+  -- Hiding by one pass over the hidden list, memoising per hidden vertex a block of summaries
+  -- from every surviving row at once. The pass state holds, per position, either a surviving
+  -- vertex's index among the survivors or a hidden vertex's block, one slot per surviving row.
+  -- Every nonzero edge into a vertex comes from an earlier position, so a block is complete when
+  -- the pass reaches it; the zero test on each stored entry forces it, so a block holds no thunks
+  -- over earlier state. A result slot is the direct edge plus the paths through the hidden set,
+  -- read off the same column fold as the blocks. Shared lists are threaded as arguments: a
+  -- compiled module-level definition is re-evaluated at each reference.
+  module HideGraphBlocks (ε-dec : (x : Semiring.Carrier) → Dec (x ≡ Semiring.ε)) (hid : List ℕ)
     where
     open HideGraph ε-dec hid using (hid-pos; keep)
 
@@ -1082,7 +1083,6 @@ module Tabulated (T : Tabulation) (tick : {A : Set} → String → A → A) wher
     ... | nothing = nothing ∷ compose-block wv wu e ws (tl B)
     ... | just t  = just (mul wv wu wa e t) ∷ compose-block wv wu e ws (tl B)
 
-    -- Only a nonzero slot walks a block, so a column costs its scan plus work per stored edge.
     column : List ℕ → ℕ → List ℕ → List (Maybe M.Table) → List Origin → Block
     column wvs wv (wu ∷ pws) (nothing ∷ ss) (_ ∷ os) = column wvs wv pws ss os
     column wvs wv (wu ∷ pws) (just e ∷ ss)  (o ∷ os) =
@@ -1112,13 +1112,13 @@ module Tabulated (T : Tabulation) (tick : {A : Set} → String → A → A) wher
       ... | true  = summary [] ∷ build (suc p) k ws
       ... | false = source k ∷ build (suc p) (suc k) ws
 
-    sweep : List ℕ → List ℕ → List (List (Maybe M.Table)) → ℕ → List ℕ → List Origin → List Origin
-    sweep wvs pws ts k []       st = st
-    sweep wvs pws ts k (p ∷ ps) st =
+    pass : List ℕ → List ℕ → List (List (Maybe M.Table)) → ℕ → List ℕ → List Origin → List Origin
+    pass wvs pws ts k []       st = st
+    pass wvs pws ts k (p ∷ ps) st =
       step (tick ("block " ++ₛ ℕ-Show.show k) (map keep (column wvs (wd p) pws (M.nth [] p ts) st)))
       where
       step : Block → List Origin
-      step B = force-block B (sweep wvs pws ts (suc k) ps (set-at p (summary B) st))
+      step B = force-block B (pass wvs pws ts (suc k) ps (set-at p (summary B) st))
 
     columns : List ℕ → List ℕ → List (List (Maybe M.Table)) → List Origin → ℕ → List ℕ → List Block
     columns wvs pws ts st k []       = []
@@ -1132,7 +1132,7 @@ module Tabulated (T : Tabulation) (tick : {A : Set} → String → A → A) wher
       build : List ℕ → List (List (Maybe M.Table)) → List ℕ → List (List (Maybe M.Table))
       build wvs ts sv =
         transpose-by wvs
-          (columns wvs (T .widths) ts (sweep wvs (T .widths) ts 0 hp (initial-state hp (T .widths))) 0 sv)
+          (columns wvs (T .widths) ts (pass wvs (T .widths) ts 0 hp (initial-state hp (T .widths))) 0 sv)
 
       shape : List ℕ → List (List (Maybe M.Table))
       shape sv = build (map wd sv) (transpose-by (T .widths) (T .edges)) sv
@@ -1142,8 +1142,8 @@ module Tabulated (T : Tabulation) (tick : {A : Set} → String → A → A) wher
     result .Tabulation.widths  = map wd (survivors-of hid-pos)
     result .Tabulation.edges   = edges-of hid-pos
 
-  hide-graph-sweep : ((x : Semiring.Carrier) → Dec (x ≡ Semiring.ε)) → List ℕ → Tabulation
-  hide-graph-sweep ε-dec hid = HideGraphSweep.result ε-dec hid
+  hide-graph-blocks : ((x : Semiring.Carrier) → Dec (x ≡ Semiring.ε)) → List ℕ → Tabulation
+  hide-graph-blocks ε-dec hid = HideGraphBlocks.result ε-dec hid
 
 private
   nth? : {C : Set} → ℕ → List C → Maybe C

@@ -97,16 +97,16 @@ private
     ... | just p | just q = join-table (read-table H p q)
     ... | _      | _      = three.O
 
-    at at-sweep : ℕ → String
-    at k       = show3 (ask (Tabulated.hide-graph T trace three.ε? (map suc (upTo k))))
-    at-sweep k = show3 (ask (Tabulated.hide-graph-sweep T trace three.ε? (map suc (upTo k))))
+    at at-blocks : ℕ → String
+    at k        = show3 (ask (Tabulated.hide-graph T trace three.ε? (map suc (upTo k))))
+    at-blocks k = show3 (ask (Tabulated.hide-graph-blocks T trace three.ε? (map suc (upTo k))))
 
   survey : String
   survey = scale.line "filter-sum" filter-sum-run ++ "\n" ++ scale.line "map" map-run ++ "\n"
            ++ scale.line "filter" filter-run ++ "\n" ++ scale.line "merge" merge-run
 
   -- The result threads through the continuation, so unused-argument erasure cannot drop the
-  -- chain ahead of it; segments run in list order, the continuation after them.
+  -- chain ahead of it.
   curve : String → (ℕ → String) → List ℕ → ℕ → ℕ
   curve name f []       r = r
   curve name f (k ∷ ks) r =
@@ -118,4 +118,4 @@ private
 
 main : Main
 main = run (putStrLn (trace survey
-  (show (curve "sweep" bench.at-sweep prefixes (curve "old" bench.at prefixes 0)))))
+  (show (curve "blocks" bench.at-blocks prefixes (curve "old" bench.at prefixes 0)))))
