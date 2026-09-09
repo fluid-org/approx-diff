@@ -14,7 +14,7 @@ open import Data.List.Membership.Propositional using (_∈_)
 open import Data.List.Membership.Propositional.Properties using (∈-map⁺; ∈-++⁺ˡ; ∈-++⁺ʳ)
 import Data.List.Relation.Unary.All.Properties as AllP
 import Data.List.Relation.Unary.AllPairs.Properties as AllPairsP
-open import Data.Nat using (ℕ; zero; suc; _≡ᵇ_; _+_; _<_; _≤_; z≤n; s≤s)
+open import Data.Nat using (ℕ; zero; suc; _≡ᵇ_; _<ᵇ_; _+_; _∸_; _<_; _≤_; z≤n; s≤s)
 open import Data.Nat.Properties using (+-suc; +-identityʳ; <⇒≢)
 open import Data.Product using (Σ; _×_; _,_)
 open import Data.Maybe using (Maybe; just; nothing)
@@ -1140,6 +1140,66 @@ module Tabulated (T : Tabulation) (tick : {A : Set} → String → A → A) wher
 
   hide-graph-blocks : ((x : Semiring.Carrier) → Dec (x ≡ Semiring.ε)) → List ℕ → Tabulation
   hide-graph-blocks ε-dec hid = HideGraphBlocks.result ε-dec hid
+
+  -- The block pass over rows stripped to their stored slots. Positions are consumed in order,
+  -- each carrying a pending block of contributions pushed by earlier positions, so a position's
+  -- pending block is complete when reached: a hidden vertex stores it as its summaries, a
+  -- surviving vertex emits it as its result column. The empty block reads as all empty slots.
+  module SparseBlocks (ε-dec : (x : Semiring.Carrier) → Dec (x ≡ Semiring.ε)) (hid : List ℕ)
+    where
+    open HideGraph ε-dec hid using (hid-pos; keep)
+    open HideGraphBlocks ε-dec hid
+      using (Block; survivors-of; add-block; unit-block; compose-block; force-block)
+
+    SparseRow : Set
+    SparseRow = List (ℕ × M.Table)
+
+    sparse-row : ℕ → List (Maybe M.Table) → SparseRow
+    sparse-row j []             = []
+    sparse-row j (nothing ∷ ss) = sparse-row (suc j) ss
+    sparse-row j (just t ∷ ss)  = (j , t) ∷ sparse-row (suc j) ss
+
+    push : List ℕ → (ℕ → Block) → ℕ → List ℕ → List Block → List Block
+    push wvs mk zero    (wv ∷ ws) (P ∷ pend) = add-block wv wvs (mk wv) P ∷ pend
+    push wvs mk (suc r) (w ∷ ws)  (P ∷ pend) = P ∷ push wvs mk r ws pend
+    push wvs mk _       _         pend       = pend
+
+    pushes : List ℕ → ℕ → (M.Table → ℕ → Block) → SparseRow → List ℕ → List Block → List Block
+    pushes wvs u mk []            ws pend = pend
+    pushes wvs u mk ((j , e) ∷ r) ws pend =
+      pushes wvs u mk r ws (if u <ᵇ j then push wvs (mk e) (j ∸ suc u) ws pend else pend)
+
+    go : List ℕ → List ℕ → ℕ → ℕ → List ℕ → List SparseRow → List Block →
+         List (List (Maybe M.Table))
+    go wvs hp u k []       _            _          = []
+    go wvs hp u k (_ ∷ _)  []           _          = []
+    go wvs hp u k (_ ∷ _)  (_ ∷ _)      []         = []
+    go wvs hp u k (w ∷ ws) (row ∷ rows) (P ∷ pend) with any (u ≡ᵇ_) hp
+    ... | true  = step (tick ("block " ++ₛ ℕ-Show.show u) (map keep P))
+      where
+      step : Block → List (List (Maybe M.Table))
+      step B =
+        force-block B
+          (go wvs hp (suc u) k ws rows
+              (pushes wvs u (λ e wv → compose-block wv w e wvs B) row ws pend))
+    ... | false =
+      tick ("column " ++ₛ ℕ-Show.show u) (map keep P)
+      ∷ go wvs hp (suc u) (suc k) ws rows (pushes wvs u (λ e wv → unit-block k wvs e) row ws pend)
+
+    -- One list per surviving column, entries by surviving row.
+    result-columns : List (List (Maybe M.Table))
+    result-columns = start hid-pos
+      where
+      launch : List ℕ → List ℕ → List (List (Maybe M.Table))
+      launch hp wvs =
+        go wvs hp 0 0 (T .widths) (map (sparse-row 0) (T .edges)) (map (λ _ → []) (T .widths))
+
+      start : List ℕ → List (List (Maybe M.Table))
+      start hp = launch hp (map wd (survivors-of hp))
+
+  hide-graph-sparse : ((x : Semiring.Carrier) → Dec (x ≡ Semiring.ε)) → List ℕ →
+                      List (List (Maybe M.Table))
+  hide-graph-sparse ε-dec hid = SparseBlocks.result-columns ε-dec hid
 
 private
   nth? : {C : Set} → ℕ → List C → Maybe C

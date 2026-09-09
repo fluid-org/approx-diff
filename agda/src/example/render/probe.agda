@@ -107,16 +107,17 @@ private
     join-row []       = three.O
     join-row (s ∷ ss) = join! (join-slot s) (join-row ss)
 
-    ask-all : Tabulation → Three
-    ask-all H = go (H .edges)
-      where
-      go : List (List (Maybe M3.Table)) → Three
-      go []       = three.O
-      go (row ∷ rs) = join! (join-row row) (go rs)
+    join-store : List (List (Maybe M3.Table)) → Three
+    join-store []         = three.O
+    join-store (row ∷ rs) = join! (join-row row) (join-store rs)
 
-    all-old all-blocks : ℕ → String
+    ask-all : Tabulation → Three
+    ask-all H = join-store (H .edges)
+
+    all-old all-blocks all-sparse : ℕ → String
     all-old k    = show3 (ask-all (Tabulated.hide-graph T trace three.ε? (map suc (upTo k))))
     all-blocks k = show3 (ask-all (Tabulated.hide-graph-blocks T trace three.ε? (map suc (upTo k))))
+    all-sparse k = show3 (join-store (Tabulated.hide-graph-sparse T trace three.ε? (map suc (upTo k))))
 
   survey : String
   survey = scale.line "filter-sum" filter-sum-run ++ "\n" ++ scale.line "map" map-run ++ "\n"
@@ -137,4 +138,5 @@ private
 
 main : Main
 main = run (putStrLn (trace survey
-  (show (curve "blocks" benchFS.all-blocks prefixes (curve "old" benchFS.all-old prefixes 0)))))
+  (show (curve "sparse" benchFS.all-sparse prefixes
+    (curve "blocks" benchFS.all-blocks prefixes (curve "old" benchFS.all-old prefixes 0))))))
