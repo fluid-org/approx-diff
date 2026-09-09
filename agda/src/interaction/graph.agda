@@ -16,7 +16,7 @@ open import Data.List.Membership.Propositional using (_∈_)
 open import Data.List.Membership.Propositional.Properties using (∈-map⁺; ∈-++⁺ˡ; ∈-++⁺ʳ)
 import Data.List.Relation.Unary.All.Properties as AllP
 import Data.List.Relation.Unary.AllPairs.Properties as AllPairsP
-open import Data.Nat using (ℕ; zero; suc; _≡ᵇ_; _<ᵇ_; _+_; _∸_; _<_; _≤_; z≤n; s≤s)
+open import Data.Nat using (ℕ; zero; suc; _≡ᵇ_; _<ᵇ_; _+_; _*_; _∸_; _<_; _≤_; z≤n; s≤s)
 open import Data.Nat.Properties using (+-suc; +-identityʳ; <⇒≢)
 open import Data.Product using (Σ; _×_; _,_)
 open import Data.Maybe using (Maybe; just; nothing)
@@ -1408,9 +1408,15 @@ module FunctionHide {m : ℕ} {D : Derivation} (𝒢 : Graph m D)
     weighted-rows _        []       = []
     weighted-rows (w ∷ ws) (r ∷ rs) = add-rows (scale-row w r) (weighted-rows ws rs)
 
+    first-row : List (List Semiring.Carrier) → List Semiring.Carrier
+    first-row []      = []
+    first-row (r ∷ _) = r
+
     -- Product by traversal: rows of the left table weight and sum the rows of the right.
     table-product : M.Table → M.Table → M.Table
-    table-product W T = map (λ wr → weighted-rows wr T) W
+    table-product W T =
+      tick ("cells " ++ₛ ℕ-Show.show (length W * length T * length (first-row T)))
+           (map (λ wr → weighted-rows wr T) W)
 
     table-sum : M.Table → M.Table → M.Table
     table-sum []       us       = us
@@ -1428,10 +1434,6 @@ module FunctionHide {m : ℕ} {D : Derivation} (𝒢 : Graph m D)
       ... | false | true  = (i , t) ∷ add-in-edges B ((j , u) ∷ C)
       ... | false | false = (j , u) ∷ merge-one i t B C
 
-    first-row : List (List Semiring.Carrier) → List Semiring.Carrier
-    first-row []      = []
-    first-row (r ∷ _) = r
-
     drop-first-column : List (List Semiring.Carrier) → List (List Semiring.Carrier)
     drop-first-column = map (λ { [] → [] ; (_ ∷ r) → r })
 
@@ -1444,7 +1446,9 @@ module FunctionHide {m : ℕ} {D : Derivation} (𝒢 : Graph m D)
 
     -- Label applied to a block entry, one function application per column.
     label-on-table : ∀ {a b : ℕ} → 𝔽 a ⇒ 𝔽 b → M.Table → M.Table
-    label-on-table {a} {b} ℓ T = transpose-to b (map app-col (transpose-to (length (first-row T)) T))
+    label-on-table {a} {b} ℓ T =
+      tick ("cells " ++ₛ ℕ-Show.show (length (first-row T) * (a + b)))
+           (transpose-to b (map app-col (transpose-to (length (first-row T)) T)))
       where
       app-col : List Semiring.Carrier → List Semiring.Carrier
       app-col cl = toList (tabulate (ℓ .func (λ i → M.nth Semiring.ε (toℕ i) cl)))
@@ -1492,7 +1496,9 @@ module FunctionHide {m : ℕ} {D : Derivation} (𝒢 : Graph m D)
     from-roots []             st = no-in-edges
     from-roots ((r , W) ∷ fs) st =
       add-in-edges
-        (from-origin (tick "wiring" W) (origin-at (suc (path-position D r)) st))
+        (from-origin (tick "wiring" W)
+                     (tick ("state " ++ₛ ℕ-Show.show (suc (path-position D r)))
+                           (origin-at (suc (path-position D r)) st)))
         (from-roots fs st)
 
     to-conclusion : Path D → Path D → Origin → InEdges
@@ -1537,13 +1543,16 @@ module FunctionHide {m : ℕ} {D : Derivation} (𝒢 : Graph m D)
           where
           store : InEdges → Out _
           store Bk =
-            force-in-edges Bk (out acc' (summary Bk) (suc vpos) k' (set-at vpos (summary Bk) st'))
+            force-in-edges Bk
+              (out acc' (summary Bk) (suc vpos) k'
+                   (tick ("state " ++ₛ ℕ-Show.show vpos) (set-at vpos (summary Bk) st')))
         ... | false = give (tick ("column " ++ₛ ℕ-Show.show vpos) (drop-zeros B))
           where
           give : InEdges → Out _
           give Ck =
             primForce (consume acc' Ck)
-              (λ a → out a (source k') (suc vpos) (suc k') (set-at vpos (source k') st'))
+              (λ a → out a (source k') (suc vpos) (suc k')
+                         (tick ("state " ++ₛ ℕ-Show.show vpos) (set-at vpos (source k') st')))
     go-prems consume []          emb vp pos k st A acc = res acc no-in-edges pos k st
     go-prems consume (s' ∷ rest) emb vp pos k st A acc = enter (emb here ε)
       where

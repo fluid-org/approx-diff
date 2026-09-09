@@ -77,6 +77,7 @@ private
 
     line : String
     line = name ++ ": " ++ show (length hid) ++ " vertices, width sum " ++ show (sum ws)
+           ++ ", inputs width " ++ show (vertex-width dependence (inj₁ input))
            ++ ", max " ++ show (max ws)
            ++ ", widths 0/1/2/3+: " ++ show (count is0 ws) ++ "/" ++ show (count is1 ws)
            ++ "/" ++ show (count is2 ws) ++ "/" ++ show (count big ws)
@@ -148,10 +149,10 @@ private
     trace ("begin " ++ name ++ " k=" ++ show k)
           (trace (name ++ " k=" ++ show k ++ " -> " ++ f k) (curve name f ks r))
 
-  module benchF = bench filter-sum-run
+  module benchM = bench merge-run
 
   prefixes : List ℕ
-  prefixes = 5 ∷ 25 ∷ 100 ∷ 194 ∷ []
+  prefixes = 3936 ∷ []
 
 main : Main
-main = run (putStrLn (trace survey (show (curve "functional" benchF.all-functional prefixes 0))))
+main = run (putStrLn (trace survey (show (curve "functional" benchM.all-functional prefixes 0))))
