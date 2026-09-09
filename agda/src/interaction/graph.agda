@@ -385,6 +385,9 @@ vertex-order s .StrictTotalOrder.isStrictTotalOrder = lt-strict-total s
 EdgeLabels : {V : Set} → (V → Semimodule) → Set
 EdgeLabels {V} vertex-object = (x y : V) → vertex-object x ⇒ vertex-object y
 
+table-of : ∀ {a b : ℕ} → 𝔽 a ⇒ 𝔽 b → M.Table
+table-of f = M.to-table (∃ₛ.fst (𝔽F-full f))
+
 record Graph (m : ℕ) (D : Derivation) : Set₁ where
   field
     from-input : (q : Path D) → 𝔽 m ⇒ object D q
@@ -392,9 +395,14 @@ record Graph (m : ℕ) (D : Derivation) : Set₁ where
     -- Every non-zero relation runs strictly forward in the evaluation order. The inputs are below
     -- everything, and the conclusion above everything, so it is a sink by construction.
     <-interior : ∀ p q → lt D p q ⊎ Prf (interior p q ≈ εₘ)
-    -- In-neighbours of each vertex, the inputs vertex marked inj₁: a source not listed relates to
-    -- the vertex by zero, while a listed edge may still be zero.
+    -- In-neighbours of each vertex (inj₁ the inputs vertex): unlisted sources relate to it by zero.
     in-neighbours : (q : Path D) → List (Input ⊎ Path D)
+    -- Wiring of the rule concluding at q, as tables; from-input and the cross-premise labels
+    -- are their compositions, one step per rule level.
+    rule-input-width   : Path D → ℕ
+    input-wiring-table     : Path D → M.Table
+    root-wiring-tables   : Path D → List (Path D × M.Table)
+    local-output-table : Path D → M.Table
 
 hide : {V : Set} (vertex-object : V → Semimodule) → EdgeLabels vertex-object → V → EdgeLabels vertex-object
 hide vertex-object G r x y = G x y +ₘ (G r y ∘ G x r)
@@ -857,6 +865,19 @@ record Tabulation : Set where
 
 open Tabulation public using (widths; edges)
 
+private
+  sum : List Semiring.Carrier → Semiring.Carrier
+  sum []       = Semiring.ε
+  sum (x ∷ xs) = x Semiring.+ sum xs
+
+  mul : ℕ → ℕ → ℕ → M.Table → M.Table → M.Table
+  mul r k c t u =
+    map (λ i → map (λ j → sum (map (λ l → M.nth Semiring.ε l (M.nth [] i t) Semiring.·
+                                          M.nth Semiring.ε j (M.nth [] l u))
+                                   (upTo k)))
+                   (upTo c))
+        (upTo r)
+
 vertex-count : Derivation → ℕ
 vertex-count-of : List Derivation → ℕ
 vertex-count (node n b ss)   = vertex-count-of ss
@@ -867,8 +888,8 @@ path-depth : ∀ {s} → Path s → ℕ
 path-depth ε          = 0
 path-depth (into i q) = suc (path-depth q)
 
--- Wiring maps traversed in evaluating the label of an edge: one per rule level from the point
--- where the source and target paths diverge down to the target.
+-- Wiring maps traversed in evaluating an edge label: one per rule level below the divergence
+-- of source and target.
 label-steps : ∀ {s} → Path s → Path s → ℕ
 steps-∋ : ∀ {ss s₁ s₂} → ss ∋ s₁ → Path s₁ → ss ∋ s₂ → Path s₂ → ℕ
 label-steps _          ε          = 1
@@ -963,6 +984,80 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D)
   sparse-tabulation .Tabulation.edges   =
     listed-rows (map (λ y → y , source-positions y) (all-vertices 𝒢)) 0 (all-vertices 𝒢)
 
+  -- An edge into the input of the rule being walked: source position, source width, table.
+  InputEdge : Set
+  InputEdge = ℕ × ℕ × M.Table
+
+  compose-edges : ℕ → ℕ → M.Table → List InputEdge → List InputEdge
+  compose-edges ms' ms st []                = []
+  compose-edges ms' ms st ((p , w , t) ∷ F) =
+    (p , w , tick "compose" (mul ms' ms w st t)) ∷ compose-edges ms' ms st F
+
+  root-edges : List (Path D × M.Table) → List InputEdge
+  root-edges []             = []
+  root-edges ((r , t) ∷ fs) = (suc (path-position D r) , width-at D r , tick "wiring" t) ∷ root-edges fs
+
+  emit-col : ℕ → ℕ → M.Table → List InputEdge → List (ℕ × M.Table)
+  emit-col wq ms lo []                = []
+  emit-col wq ms lo ((p , w , t) ∷ F) with edge-slot (tick "compose" (mul wq ms w lo t))
+  ... | just t' = (p , t') ∷ emit-col wq ms lo F
+  ... | nothing = emit-col wq ms lo F
+
+  local-slots : Path D → List (ℕ × M.Table)
+  local-slots q = collect (Graph.in-neighbours 𝒢 q)
+    where
+    collect : List (Input ⊎ Path D) → List (ℕ × M.Table)
+    collect []            = []
+    collect (inj₁ _ ∷ xs) = collect xs
+    collect (inj₂ p ∷ xs) with label-steps p q ≡ᵇ 1
+    ... | false = collect xs
+    ... | true with edge-slot (edge-table (inj₂ p) (inj₂ q))
+    ...   | just t  = (suc (path-position D p) , t) ∷ collect xs
+    ...   | nothing = collect xs
+
+  col-for : Path D → ℕ → List InputEdge → List (ℕ × M.Table)
+  col-for q ms F =
+    local-slots q ++ emit-col (width-at D q) ms (tick "wiring" (Graph.local-output-table 𝒢 q)) F
+
+  -- Columns per vertex in evaluation order; the edges into the current rule's input thread down.
+  walk-node : (s : Derivation) → (Path s → Path D) → ℕ → List InputEdge → List (List (ℕ × M.Table))
+  walk-ss : (ss : List Derivation) → (∀ {s'} → ss ∋ s' → Path s' → Path D) → ℕ → List InputEdge →
+            List (List (ℕ × M.Table))
+  walk-node (node _ _ ss) emb ms F = walk-ss ss (λ i p → emb (into i p)) ms F
+  walk-ss []          emb ms F = []
+  walk-ss (s' ∷ rest) emb ms F =
+    walk-node s' (λ p → emb here p) ms' F'
+    ++ (col-for rp ms' F' ∷ [])
+    ++ walk-ss rest (λ i p → emb (there i) p) ms F
+    where
+    rp : Path D
+    rp = emb here ε
+    ms' : ℕ
+    ms' = Graph.rule-input-width 𝒢 rp
+    F' : List InputEdge
+    F' = compose-edges ms' ms (tick "wiring" (Graph.input-wiring-table 𝒢 rp)) F
+         ++ root-edges (Graph.root-wiring-tables 𝒢 rp)
+
+  stepwise-columns : List (List (ℕ × M.Table))
+  stepwise-columns = ([] ∷ walk-node D (λ p → p) m F0) ++ (col-for ε m F0 ∷ [])
+    where
+    F0 : List InputEdge
+    F0 = (0 , m , table-of (I {𝔽 m})) ∷ []
+
+  find-slot : ℕ → List (ℕ × M.Table) → Maybe M.Table
+  find-slot i []             = nothing
+  find-slot i ((j , t) ∷ es) = if i ≡ᵇ j then just t else find-slot i es
+
+  stepwise-rows : List (List (ℕ × M.Table)) → List ℕ → List (List (Maybe M.Table))
+  stepwise-rows cols []       = []
+  stepwise-rows cols (i ∷ is) = map (find-slot i) cols ∷ stepwise-rows cols is
+
+  stepwise-tabulation : Tabulation
+  stepwise-tabulation .Tabulation.numbers = upTo (length (all-vertices 𝒢))
+  stepwise-tabulation .Tabulation.widths  = map (vertex-width 𝒢) (all-vertices 𝒢)
+  stepwise-tabulation .Tabulation.edges   =
+    stepwise-rows stepwise-columns (upTo (length (all-vertices 𝒢)))
+
 find-number : ℕ → ℕ → List ℕ → Maybe ℕ
 find-number i k []       = nothing
 find-number i k (j ∷ js) = if i ≡ᵇ j then just k else find-number i (suc k) js
@@ -1028,18 +1123,6 @@ module Tabulated (T : Tabulation) (tick : {A : Set} → String → A → A) wher
 
   edge : ℕ → ℕ → Maybe M.Table
   edge i j = M.nth nothing j (M.nth [] i (T .edges))
-
-  sum : List Semiring.Carrier → Semiring.Carrier
-  sum []       = Semiring.ε
-  sum (x ∷ xs) = x Semiring.+ sum xs
-
-  mul : ℕ → ℕ → ℕ → M.Table → M.Table → M.Table
-  mul r k c t u =
-    map (λ i → map (λ j → sum (map (λ l → M.nth Semiring.ε l (M.nth [] i t) Semiring.·
-                                          M.nth Semiring.ε j (M.nth [] l u))
-                                   (upTo k)))
-                   (upTo c))
-        (upTo r)
 
   add? : ℕ → ℕ → Maybe M.Table → Maybe M.Table → Maybe M.Table
   add? r c nothing  u        = u
@@ -1739,12 +1822,12 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
                Prf (S ≈ εₘ) → Acc x acc Ts → Acc x acc (_∷_ {x = y} S Ts)
 
       sum-Σ : (g : ℕ → Semiring.Carrier) {r : ℕ} (h : ℕ → ℕ) →
-              TB.sum (map g (applyUpTo h r)) ≡ M.Σ {r} (λ k → g (h (toℕ k)))
+              sum (map g (applyUpTo h r)) ≡ M.Σ {r} (λ k → g (h (toℕ k)))
       sum-Σ g {zero}  h = ≡-refl
       sum-Σ g {suc r} h = ≡-cong (λ z → g (h 0) Semiring.+ z) (sum-Σ g {r} (λ k → h (suc k)))
 
       look-mul : ∀ {r s c} (t u : M.Table) (i : Fin r) (j : Fin c) →
-                 M.look (TB.mul r s c t u) i j ≡ M._∘_ (M.look {r} {s} t) (M.look {s} {c} u) i j
+                 M.look (mul r s c t u) i j ≡ M._∘_ (M.look {r} {s} t) (M.look {s} {c} u) i j
       look-mul {s = s} t u i j =
         ≡-trans (≡-cong (M.nth Semiring.ε (toℕ j)) (nth-applyUpTo [] _ (λ k → k) i))
                 (≡-trans (nth-applyUpTo Semiring.ε _ (λ k → k) j)
@@ -1773,21 +1856,21 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
                   (≈-sym (≈-trans (+ₘ-cong ≈-refl (≈-sym ihz)) (+ₘ-runit (G y' y ∘ S)))) ⟫
         where
         mul-rep : mat (M.look {vertex-width 𝒢 y} {vertex-width 𝒢 x}
-                       (TB.mul (vertex-width 𝒢 y) (vertex-width 𝒢 y') (vertex-width 𝒢 x) e t))
+                       (mul (vertex-width 𝒢 y) (vertex-width 𝒢 y') (vertex-width 𝒢 x) e t))
                   ≈ (G y' y ∘ S)
         mul-rep =
           ≈-trans (mat-cong (λ i j → ≈-of-≡ (look-mul {s = vertex-width 𝒢 y'} e t i j)))
                   (≈-trans (mat-comp (M.look e) (M.look t)) (∘-cong z tr))
       ...   | just t' | ihe =
         ⟪ ≈-trans (mat-cong (λ i j → ≈-of-≡
-                    (look-add (TB.mul (vertex-width 𝒢 y) (vertex-width 𝒢 y') (vertex-width 𝒢 x) e t)
+                    (look-add (mul (vertex-width 𝒢 y) (vertex-width 𝒢 y') (vertex-width 𝒢 x) e t)
                               t' i j)))
-          (≈-trans (mat-+ (M.look (TB.mul (vertex-width 𝒢 y) (vertex-width 𝒢 y') (vertex-width 𝒢 x) e t))
+          (≈-trans (mat-+ (M.look (mul (vertex-width 𝒢 y) (vertex-width 𝒢 y') (vertex-width 𝒢 x) e t))
                           (M.look t'))
                    (+ₘ-cong mul-rep ihe)) ⟫
         where
         mul-rep : mat (M.look {vertex-width 𝒢 y} {vertex-width 𝒢 x}
-                       (TB.mul (vertex-width 𝒢 y) (vertex-width 𝒢 y') (vertex-width 𝒢 x) e t))
+                       (mul (vertex-width 𝒢 y) (vertex-width 𝒢 y') (vertex-width 𝒢 x) e t))
                   ≈ (G y' y ∘ S)
         mul-rep =
           ≈-trans (mat-cong (λ i j → ≈-of-≡ (look-mul {s = vertex-width 𝒢 y'} e t i j)))
@@ -2244,13 +2327,22 @@ module NoEdgeOutOfHidden
   fixed-hide-all f []       k = k
   fixed-hide-all f (w ∷ ws) k = fixed-hide-all f ws (fixed-hide (f w) k)
 
--- In-neighbours of a premise vertex lifted to the enclosing rule, with the premise's inputs
--- vertex replaced by the given feeds.
+-- In-neighbours of a premise vertex lifted to the enclosing rule.
 premise-ins : ∀ {n b ss s} (i : ss ∋ s) → List (Input ⊎ Path (node n b ss)) →
               List (Input ⊎ Path s) → List (Input ⊎ Path (node n b ss))
-premise-ins i feeds []            = []
-premise-ins i feeds (inj₁ _ ∷ xs) = feeds ++ premise-ins i feeds xs
-premise-ins i feeds (inj₂ p ∷ xs) = inj₂ (into i p) ∷ premise-ins i feeds xs
+premise-ins i srcs []            = []
+premise-ins i srcs (inj₁ _ ∷ xs) = srcs ++ premise-ins i srcs xs
+premise-ins i srcs (inj₂ p ∷ xs) = inj₂ (into i p) ∷ premise-ins i srcs xs
+
+lift-wirings : ∀ {n b ss s} (i : ss ∋ s) → List (Path s × M.Table) →
+             List (Path (node n b ss) × M.Table)
+lift-wirings i []             = []
+lift-wirings i ((r , t) ∷ fs) = (into i r , t) ∷ lift-wirings i fs
+
+weaken-wirings : ∀ {n b s ss} → List (Path (node n b ss) × M.Table) →
+               List (Path (node n b (s ∷ ss)) × M.Table)
+weaken-wirings []             = []
+weaken-wirings ((r , t) ∷ fs) = (weaken r , t) ∷ weaken-wirings fs
 
 module Rule₀
   {m n : ℕ} (fo-output : Bool)
@@ -2268,6 +2360,14 @@ module Rule₀
   E .Graph.<-interior (into () _) _
   E .Graph.in-neighbours ε = inj₁ input ∷ []
   E .Graph.in-neighbours (into () _)
+  E .Graph.rule-input-width ε = m
+  E .Graph.rule-input-width (into () _)
+  E .Graph.input-wiring-table ε = table-of (I {𝔽 m})
+  E .Graph.input-wiring-table (into () _)
+  E .Graph.root-wiring-tables ε = []
+  E .Graph.root-wiring-tables (into () _)
+  E .Graph.local-output-table ε = table-of input-to-output
+  E .Graph.local-output-table (into () _)
 
   agree : collapse E ≈ input-to-output
   agree = ≈-refl {f = input-to-output}
@@ -2313,6 +2413,19 @@ module Rule₁
   E .Graph.in-neighbours (into here q) =
     premise-ins here (inj₁ input ∷ []) (Graph.in-neighbours 𝒢 q)
   E .Graph.in-neighbours (into (there ()) _)
+  E .Graph.rule-input-width ε             = m
+  E .Graph.rule-input-width (into here q) = Graph.rule-input-width 𝒢 q
+  E .Graph.rule-input-width (into (there ()) _)
+  E .Graph.input-wiring-table ε                      = table-of (I {𝔽 m})
+  E .Graph.input-wiring-table (into here ε)          = table-of inputs
+  E .Graph.input-wiring-table (into here (into j q)) = Graph.input-wiring-table 𝒢 (into j q)
+  E .Graph.input-wiring-table (into (there ()) _)
+  E .Graph.root-wiring-tables ε             = []
+  E .Graph.root-wiring-tables (into here q) = lift-wirings here (Graph.root-wiring-tables 𝒢 q)
+  E .Graph.root-wiring-tables (into (there ()) _)
+  E .Graph.local-output-table ε             = table-of input-to-output
+  E .Graph.local-output-table (into here q) = Graph.local-output-table 𝒢 q
+  E .Graph.local-output-table (into (there ()) _)
 
   private
     b : Path D₁ → V E
@@ -2425,6 +2538,26 @@ module Rule₂
   E .Graph.in-neighbours (into (there here) q) =
     premise-ins (there here) (inj₁ input ∷ inj₂ (into here ε) ∷ []) (Graph.in-neighbours 𝒢₂ q)
   E .Graph.in-neighbours (into (there (there ())) _)
+  E .Graph.rule-input-width ε                     = m
+  E .Graph.rule-input-width (into here q)         = Graph.rule-input-width 𝒢₁ q
+  E .Graph.rule-input-width (into (there here) q) = Graph.rule-input-width 𝒢₂ q
+  E .Graph.rule-input-width (into (there (there ())) _)
+  E .Graph.input-wiring-table ε                              = table-of (I {𝔽 m})
+  E .Graph.input-wiring-table (into here ε)                  = table-of inputs₁
+  E .Graph.input-wiring-table (into here (into j q))         = Graph.input-wiring-table 𝒢₁ (into j q)
+  E .Graph.input-wiring-table (into (there here) ε)          = table-of from-inputs₂
+  E .Graph.input-wiring-table (into (there here) (into j q)) = Graph.input-wiring-table 𝒢₂ (into j q)
+  E .Graph.input-wiring-table (into (there (there ())) _)
+  E .Graph.root-wiring-tables ε                     = []
+  E .Graph.root-wiring-tables (into here q)         = lift-wirings here (Graph.root-wiring-tables 𝒢₁ q)
+  E .Graph.root-wiring-tables (into (there here) ε) = (into here ε , table-of from-root₁) ∷ []
+  E .Graph.root-wiring-tables (into (there here) (into j q)) =
+    lift-wirings (there here) (Graph.root-wiring-tables 𝒢₂ (into j q))
+  E .Graph.root-wiring-tables (into (there (there ())) _)
+  E .Graph.local-output-table ε                     = table-of input-to-output
+  E .Graph.local-output-table (into here q)         = Graph.local-output-table 𝒢₁ q
+  E .Graph.local-output-table (into (there here) q) = Graph.local-output-table 𝒢₂ q
+  E .Graph.local-output-table (into (there (there ())) _)
 
   private
     b1 : Path D₁ → V E
@@ -2659,6 +2792,33 @@ module Rule₃
                 (inj₁ input ∷ inj₂ (into here ε) ∷ inj₂ (into (there here) ε) ∷ [])
                 (Graph.in-neighbours 𝒢₃ q)
   E .Graph.in-neighbours (into (there (there (there ()))) _)
+  E .Graph.rule-input-width ε                             = m
+  E .Graph.rule-input-width (into here q)                 = Graph.rule-input-width 𝒢₁ q
+  E .Graph.rule-input-width (into (there here) q)         = Graph.rule-input-width 𝒢₂ q
+  E .Graph.rule-input-width (into (there (there here)) q) = Graph.rule-input-width 𝒢₃ q
+  E .Graph.rule-input-width (into (there (there (there ()))) _)
+  E .Graph.input-wiring-table ε                                      = table-of (I {𝔽 m})
+  E .Graph.input-wiring-table (into here ε)                          = table-of inputs₁
+  E .Graph.input-wiring-table (into here (into j q))                 = Graph.input-wiring-table 𝒢₁ (into j q)
+  E .Graph.input-wiring-table (into (there here) ε)                  = table-of inputs₂
+  E .Graph.input-wiring-table (into (there here) (into j q))         = Graph.input-wiring-table 𝒢₂ (into j q)
+  E .Graph.input-wiring-table (into (there (there here)) ε)          = table-of from-inputs₃
+  E .Graph.input-wiring-table (into (there (there here)) (into j q)) = Graph.input-wiring-table 𝒢₃ (into j q)
+  E .Graph.input-wiring-table (into (there (there (there ()))) _)
+  E .Graph.root-wiring-tables ε                             = []
+  E .Graph.root-wiring-tables (into here q)                 = lift-wirings here (Graph.root-wiring-tables 𝒢₁ q)
+  E .Graph.root-wiring-tables (into (there here) q)         =
+    lift-wirings (there here) (Graph.root-wiring-tables 𝒢₂ q)
+  E .Graph.root-wiring-tables (into (there (there here)) ε) =
+    (into here ε , table-of from-root₁) ∷ (into (there here) ε , table-of from-root₂) ∷ []
+  E .Graph.root-wiring-tables (into (there (there here)) (into j q)) =
+    lift-wirings (there (there here)) (Graph.root-wiring-tables 𝒢₃ (into j q))
+  E .Graph.root-wiring-tables (into (there (there (there ()))) _)
+  E .Graph.local-output-table ε                             = table-of input-to-output
+  E .Graph.local-output-table (into here q)                 = Graph.local-output-table 𝒢₁ q
+  E .Graph.local-output-table (into (there here) q)         = Graph.local-output-table 𝒢₂ q
+  E .Graph.local-output-table (into (there (there here)) q) = Graph.local-output-table 𝒢₃ q
+  E .Graph.local-output-table (into (there (there (there ()))) _)
 
   private
     b1 : Path D₁ → V E
@@ -2949,6 +3109,28 @@ module Ruleₛ {m n : ℕ} where
   root-in-neighbours []       = []
   root-in-neighbours (P ∷ Ps) = inj₂ (into here ε) ∷ map weaken-in (root-in-neighbours Ps)
 
+  riw-of : ∀ {Ds s} → All (Premise m n) Ds → Ds ∋ s → Path s → ℕ
+  riw-of []       ()        _
+  riw-of (P ∷ Ps) here      q = Graph.rule-input-width (P .𝒢) q
+  riw-of (P ∷ Ps) (there i) q = riw-of Ps i q
+
+  step-of : ∀ {Ds s} → All (Premise m n) Ds → Ds ∋ s → Path s → M.Table
+  step-of []       ()        _
+  step-of (P ∷ Ps) here      ε          = table-of (P .inputs)
+  step-of (P ∷ Ps) here      (into j q) = Graph.input-wiring-table (P .𝒢) (into j q)
+  step-of (P ∷ Ps) (there i) q          = step-of Ps i q
+
+  wirings-of : ∀ {b Ds s} → All (Premise m n) Ds → Ds ∋ s → Path s →
+             List (Path (node n b Ds) × M.Table)
+  wirings-of []       ()        _
+  wirings-of (P ∷ Ps) here      q = lift-wirings here (Graph.root-wiring-tables (P .𝒢) q)
+  wirings-of (P ∷ Ps) (there i) q = weaken-wirings (wirings-of Ps i q)
+
+  local-of : ∀ {Ds s} → All (Premise m n) Ds → Ds ∋ s → Path s → M.Table
+  local-of []       ()        _
+  local-of (P ∷ Ps) here      q = Graph.local-output-table (P .𝒢) q
+  local-of (P ∷ Ps) (there i) q = local-of Ps i q
+
   E : ∀ {Ds} (fo-output : Bool) → 𝔽 m ⇒ 𝔽 n → All (Premise m n) Ds → Graph m (node n fo-output Ds)
   E fo-output input-to-output Ps .Graph.from-input ε          = input-to-output
   E fo-output input-to-output Ps .Graph.from-input (into i q) = from-inputs Ps i q
@@ -2961,6 +3143,14 @@ module Ruleₛ {m n : ℕ} where
   E fo-output input-to-output Ps .Graph.<-interior ε (into j q) = inj₂ ⟪ ≈-refl ⟫
   E fo-output input-to-output Ps .Graph.in-neighbours ε          = inj₁ input ∷ root-in-neighbours Ps
   E fo-output input-to-output Ps .Graph.in-neighbours (into i q) = premise-in-neighbours Ps i q
+  E fo-output input-to-output Ps .Graph.rule-input-width ε          = m
+  E fo-output input-to-output Ps .Graph.rule-input-width (into i q) = riw-of Ps i q
+  E fo-output input-to-output Ps .Graph.input-wiring-table ε          = table-of (I {𝔽 m})
+  E fo-output input-to-output Ps .Graph.input-wiring-table (into i q) = step-of Ps i q
+  E fo-output input-to-output Ps .Graph.root-wiring-tables ε          = []
+  E fo-output input-to-output Ps .Graph.root-wiring-tables (into i q) = wirings-of Ps i q
+  E fo-output input-to-output Ps .Graph.local-output-table ε          = table-of input-to-output
+  E fo-output input-to-output Ps .Graph.local-output-table (into i q) = local-of Ps i q
 
   rel : ∀ {Ds} → All (Premise m n) Ds → 𝔽 m ⇒ 𝔽 n
   rel []       = εₘ

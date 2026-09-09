@@ -117,11 +117,16 @@ private
     Tₛ : Tabulation
     Tₛ = sparse-tabulation dependence three.ε? trace
 
-    all-old all-blocks all-sparse all-listed : ℕ → String
+    T𝓌 : Tabulation
+    T𝓌 = stepwise-tabulation dependence three.ε? trace
+
+    all-old all-blocks all-sparse all-listed all-stepwise : ℕ → String
     all-old k    = show3 (ask-all (Tabulated.hide-graph T trace three.ε? (map suc (upTo k))))
     all-blocks k = show3 (ask-all (Tabulated.hide-graph-blocks T trace three.ε? (map suc (upTo k))))
     all-sparse k = show3 (join-store (Tabulated.hide-graph-sparse T trace three.ε? (map suc (upTo k))))
     all-listed k = show3 (join-store (Tabulated.hide-graph-sparse Tₛ trace three.ε? (map suc (upTo k))))
+    all-stepwise k =
+      show3 (join-store (Tabulated.hide-graph-sparse T𝓌 trace three.ε? (map suc (upTo k))))
 
   survey : String
   survey = scale.line "filter-sum" filter-sum-run ++ "\n" ++ scale.line "map" map-run ++ "\n"
@@ -141,4 +146,6 @@ private
   prefixes = 5 ∷ 25 ∷ 100 ∷ 194 ∷ []
 
 main : Main
-main = run (putStrLn (trace survey (show (curve "listed" benchF.all-listed prefixes 0))))
+main = run (putStrLn (trace survey (show
+  (curve "stepwise" benchF.all-stepwise prefixes
+    (curve "listed" benchF.all-listed prefixes 0)))))
