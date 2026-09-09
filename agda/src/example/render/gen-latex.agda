@@ -244,8 +244,7 @@ private
 all-tables : List (String × String)
 all-tables =
   concat (map emit-test tests) ++ₗ (("score-signed/env-root" , signed.fragment) ∷ [])
-  -- merge and merge-forward omitted: fo-tabulation hides over a table of every vertex pair,
-  -- which merge's graph is too large for.
+  -- merge and merge-forward omitted: fo-tabulation does not complete on merge's graph.
 
 main : Main
 main = run (foldr (λ t io → writeFile ("test-baselines/matrices/" ++ proj₁ t ++ ".tex") (proj₂ t) >> io)
