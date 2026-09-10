@@ -14,7 +14,7 @@ open import signature.interpretation using (Interpretation)
 import sd-semimodule-primitives
 
 -- The dependence graph of a derivation with a control input. Each rule builds its graph from its
--- premises' graphs using the wiring that also defines the rule's relation, so collapsing the graph
+-- premises' graphs using the edges that also define the rule's relation, so collapsing the graph
 -- recovers the relation rule by rule. Vertices carry free semimodules; the relation is a morphism
 -- and enters the graph directly, with join comparing the vertex pairing with the width sum.
 module interaction.dependence-graph {ℓ} (Sig : Signature ℓ) {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A)

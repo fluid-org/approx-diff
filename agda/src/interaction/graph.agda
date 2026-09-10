@@ -399,11 +399,10 @@ record Graph (m : ℕ) (D : Derivation) : Set₁ where
     <-interior : ∀ p q → lt D p q ⊎ Prf (interior p q ≈ εₘ)
     -- In-neighbours of each vertex (inj₁ the inputs vertex): unlisted sources relate to it by zero.
     in-neighbours : (q : Path D) → List (Input ⊎ Path D)
-    -- Wiring of the rule concluding at q, as tables: its input from the enclosing rule's input,
-    -- its input from each earlier premise's conclusion, and its conclusion from its own input.
-    input-wiring-table : Path D → M.Table
-    root-wiring-tables : Path D → List (Path D × M.Table)
-    local-output-table : Path D → M.Table
+    -- "input" here is the input of the rule concluding at q, not the graph's inputs vertex.
+    parent-to-input : Path D → M.Table
+    roots-to-input  : Path D → List (Path D × M.Table)
+    input-to-output : Path D → M.Table
 
 hide : {V : Set} (vertex-object : V → Semimodule) → EdgeLabels vertex-object → V → EdgeLabels vertex-object
 hide vertex-object G r x y = G x y +ₘ (G r y ∘ G x r)
@@ -1207,7 +1206,7 @@ module FunctionHide {m : ℕ} {D : Derivation} (𝒢 : Graph m D)
     from-roots []             st = no-in-edges
     from-roots ((r , W) ∷ fs) st =
       add-in-edges
-        (from-origin (tick "wiring-root" W)
+        (from-origin (tick "root-to-input" W)
                      (tick ("state " ++ₛ ℕ-Show.show (suc (path-position D r)))
                            (origin-at (suc (path-position D r)) st)))
         (from-roots fs st)
@@ -1245,7 +1244,7 @@ module FunctionHide {m : ℕ} {D : Derivation} (𝒢 : Graph m D)
       where
       emit : Res _ → Out _
       emit (res acc' ups vpos k' st') =
-        decide (add-in-edges (apply-table (tick "wiring-out" (Graph.local-output-table 𝒢 (emb ε))) A)
+        decide (add-in-edges (apply-table (tick "to-output" (Graph.input-to-output 𝒢 (emb ε))) A)
                              ups)
         where
         decide : InEdges → Out _
@@ -1270,8 +1269,8 @@ module FunctionHide {m : ℕ} {D : Derivation} (𝒢 : Graph m D)
       enter : Path D → Res _
       enter rp =
         step (go-node consume s' (λ p → emb here p) pos k st
-                (add-in-edges (apply-table (tick "wiring-in" (Graph.input-wiring-table 𝒢 rp)) A)
-                              (from-roots (Graph.root-wiring-tables 𝒢 rp) st))
+                (add-in-edges (apply-table (tick "to-input" (Graph.parent-to-input 𝒢 rp)) A)
+                              (from-roots (Graph.roots-to-input 𝒢 rp) st))
                 acc)
         where
         step : Out _ → Res _
@@ -2292,15 +2291,15 @@ premise-ins i srcs []            = []
 premise-ins i srcs (inj₁ _ ∷ xs) = srcs ++ premise-ins i srcs xs
 premise-ins i srcs (inj₂ p ∷ xs) = inj₂ (into i p) ∷ premise-ins i srcs xs
 
-lift-wirings : ∀ {n b ss s} (i : ss ∋ s) → List (Path s × M.Table) →
+lift-roots : ∀ {n b ss s} (i : ss ∋ s) → List (Path s × M.Table) →
              List (Path (node n b ss) × M.Table)
-lift-wirings i []             = []
-lift-wirings i ((r , t) ∷ fs) = (into i r , t) ∷ lift-wirings i fs
+lift-roots i []             = []
+lift-roots i ((r , t) ∷ fs) = (into i r , t) ∷ lift-roots i fs
 
-weaken-wirings : ∀ {n b s ss} → List (Path (node n b ss) × M.Table) →
+weaken-roots : ∀ {n b s ss} → List (Path (node n b ss) × M.Table) →
                List (Path (node n b (s ∷ ss)) × M.Table)
-weaken-wirings []             = []
-weaken-wirings ((r , t) ∷ fs) = (weaken r , t) ∷ weaken-wirings fs
+weaken-roots []             = []
+weaken-roots ((r , t) ∷ fs) = (weaken r , t) ∷ weaken-roots fs
 
 module Rule₀
   {m n : ℕ} (fo-output : Bool)
@@ -2318,12 +2317,12 @@ module Rule₀
   E .Graph.<-interior (into () _) _
   E .Graph.in-neighbours ε = inj₁ input ∷ []
   E .Graph.in-neighbours (into () _)
-  E .Graph.input-wiring-table ε = table-of (I {𝔽 m})
-  E .Graph.input-wiring-table (into () _)
-  E .Graph.root-wiring-tables ε = []
-  E .Graph.root-wiring-tables (into () _)
-  E .Graph.local-output-table ε = table-of input-to-output
-  E .Graph.local-output-table (into () _)
+  E .Graph.parent-to-input ε = table-of (I {𝔽 m})
+  E .Graph.parent-to-input (into () _)
+  E .Graph.roots-to-input ε = []
+  E .Graph.roots-to-input (into () _)
+  E .Graph.input-to-output ε = table-of input-to-output
+  E .Graph.input-to-output (into () _)
 
   agree : collapse E ≈ input-to-output
   agree = ≈-refl {f = input-to-output}
@@ -2369,16 +2368,16 @@ module Rule₁
   E .Graph.in-neighbours (into here q) =
     premise-ins here (inj₁ input ∷ []) (Graph.in-neighbours 𝒢 q)
   E .Graph.in-neighbours (into (there ()) _)
-  E .Graph.input-wiring-table ε                      = table-of (I {𝔽 m})
-  E .Graph.input-wiring-table (into here ε)          = table-of inputs
-  E .Graph.input-wiring-table (into here (into j q)) = Graph.input-wiring-table 𝒢 (into j q)
-  E .Graph.input-wiring-table (into (there ()) _)
-  E .Graph.root-wiring-tables ε             = []
-  E .Graph.root-wiring-tables (into here q) = lift-wirings here (Graph.root-wiring-tables 𝒢 q)
-  E .Graph.root-wiring-tables (into (there ()) _)
-  E .Graph.local-output-table ε             = table-of input-to-output
-  E .Graph.local-output-table (into here q) = Graph.local-output-table 𝒢 q
-  E .Graph.local-output-table (into (there ()) _)
+  E .Graph.parent-to-input ε                      = table-of (I {𝔽 m})
+  E .Graph.parent-to-input (into here ε)          = table-of inputs
+  E .Graph.parent-to-input (into here (into j q)) = Graph.parent-to-input 𝒢 (into j q)
+  E .Graph.parent-to-input (into (there ()) _)
+  E .Graph.roots-to-input ε             = []
+  E .Graph.roots-to-input (into here q) = lift-roots here (Graph.roots-to-input 𝒢 q)
+  E .Graph.roots-to-input (into (there ()) _)
+  E .Graph.input-to-output ε             = table-of input-to-output
+  E .Graph.input-to-output (into here q) = Graph.input-to-output 𝒢 q
+  E .Graph.input-to-output (into (there ()) _)
 
   private
     b : Path D₁ → V E
@@ -2491,22 +2490,22 @@ module Rule₂
   E .Graph.in-neighbours (into (there here) q) =
     premise-ins (there here) (inj₁ input ∷ inj₂ (into here ε) ∷ []) (Graph.in-neighbours 𝒢₂ q)
   E .Graph.in-neighbours (into (there (there ())) _)
-  E .Graph.input-wiring-table ε                              = table-of (I {𝔽 m})
-  E .Graph.input-wiring-table (into here ε)                  = table-of inputs₁
-  E .Graph.input-wiring-table (into here (into j q))         = Graph.input-wiring-table 𝒢₁ (into j q)
-  E .Graph.input-wiring-table (into (there here) ε)          = table-of from-inputs₂
-  E .Graph.input-wiring-table (into (there here) (into j q)) = Graph.input-wiring-table 𝒢₂ (into j q)
-  E .Graph.input-wiring-table (into (there (there ())) _)
-  E .Graph.root-wiring-tables ε                     = []
-  E .Graph.root-wiring-tables (into here q)         = lift-wirings here (Graph.root-wiring-tables 𝒢₁ q)
-  E .Graph.root-wiring-tables (into (there here) ε) = (into here ε , table-of from-root₁) ∷ []
-  E .Graph.root-wiring-tables (into (there here) (into j q)) =
-    lift-wirings (there here) (Graph.root-wiring-tables 𝒢₂ (into j q))
-  E .Graph.root-wiring-tables (into (there (there ())) _)
-  E .Graph.local-output-table ε                     = table-of input-to-output
-  E .Graph.local-output-table (into here q)         = Graph.local-output-table 𝒢₁ q
-  E .Graph.local-output-table (into (there here) q) = Graph.local-output-table 𝒢₂ q
-  E .Graph.local-output-table (into (there (there ())) _)
+  E .Graph.parent-to-input ε                              = table-of (I {𝔽 m})
+  E .Graph.parent-to-input (into here ε)                  = table-of inputs₁
+  E .Graph.parent-to-input (into here (into j q))         = Graph.parent-to-input 𝒢₁ (into j q)
+  E .Graph.parent-to-input (into (there here) ε)          = table-of from-inputs₂
+  E .Graph.parent-to-input (into (there here) (into j q)) = Graph.parent-to-input 𝒢₂ (into j q)
+  E .Graph.parent-to-input (into (there (there ())) _)
+  E .Graph.roots-to-input ε                     = []
+  E .Graph.roots-to-input (into here q)         = lift-roots here (Graph.roots-to-input 𝒢₁ q)
+  E .Graph.roots-to-input (into (there here) ε) = (into here ε , table-of from-root₁) ∷ []
+  E .Graph.roots-to-input (into (there here) (into j q)) =
+    lift-roots (there here) (Graph.roots-to-input 𝒢₂ (into j q))
+  E .Graph.roots-to-input (into (there (there ())) _)
+  E .Graph.input-to-output ε                     = table-of input-to-output
+  E .Graph.input-to-output (into here q)         = Graph.input-to-output 𝒢₁ q
+  E .Graph.input-to-output (into (there here) q) = Graph.input-to-output 𝒢₂ q
+  E .Graph.input-to-output (into (there (there ())) _)
 
   private
     b1 : Path D₁ → V E
@@ -2741,28 +2740,28 @@ module Rule₃
                 (inj₁ input ∷ inj₂ (into here ε) ∷ inj₂ (into (there here) ε) ∷ [])
                 (Graph.in-neighbours 𝒢₃ q)
   E .Graph.in-neighbours (into (there (there (there ()))) _)
-  E .Graph.input-wiring-table ε                                      = table-of (I {𝔽 m})
-  E .Graph.input-wiring-table (into here ε)                          = table-of inputs₁
-  E .Graph.input-wiring-table (into here (into j q))                 = Graph.input-wiring-table 𝒢₁ (into j q)
-  E .Graph.input-wiring-table (into (there here) ε)                  = table-of inputs₂
-  E .Graph.input-wiring-table (into (there here) (into j q))         = Graph.input-wiring-table 𝒢₂ (into j q)
-  E .Graph.input-wiring-table (into (there (there here)) ε)          = table-of from-inputs₃
-  E .Graph.input-wiring-table (into (there (there here)) (into j q)) = Graph.input-wiring-table 𝒢₃ (into j q)
-  E .Graph.input-wiring-table (into (there (there (there ()))) _)
-  E .Graph.root-wiring-tables ε                             = []
-  E .Graph.root-wiring-tables (into here q)                 = lift-wirings here (Graph.root-wiring-tables 𝒢₁ q)
-  E .Graph.root-wiring-tables (into (there here) q)         =
-    lift-wirings (there here) (Graph.root-wiring-tables 𝒢₂ q)
-  E .Graph.root-wiring-tables (into (there (there here)) ε) =
+  E .Graph.parent-to-input ε                                      = table-of (I {𝔽 m})
+  E .Graph.parent-to-input (into here ε)                          = table-of inputs₁
+  E .Graph.parent-to-input (into here (into j q))                 = Graph.parent-to-input 𝒢₁ (into j q)
+  E .Graph.parent-to-input (into (there here) ε)                  = table-of inputs₂
+  E .Graph.parent-to-input (into (there here) (into j q))         = Graph.parent-to-input 𝒢₂ (into j q)
+  E .Graph.parent-to-input (into (there (there here)) ε)          = table-of from-inputs₃
+  E .Graph.parent-to-input (into (there (there here)) (into j q)) = Graph.parent-to-input 𝒢₃ (into j q)
+  E .Graph.parent-to-input (into (there (there (there ()))) _)
+  E .Graph.roots-to-input ε                             = []
+  E .Graph.roots-to-input (into here q)                 = lift-roots here (Graph.roots-to-input 𝒢₁ q)
+  E .Graph.roots-to-input (into (there here) q)         =
+    lift-roots (there here) (Graph.roots-to-input 𝒢₂ q)
+  E .Graph.roots-to-input (into (there (there here)) ε) =
     (into here ε , table-of from-root₁) ∷ (into (there here) ε , table-of from-root₂) ∷ []
-  E .Graph.root-wiring-tables (into (there (there here)) (into j q)) =
-    lift-wirings (there (there here)) (Graph.root-wiring-tables 𝒢₃ (into j q))
-  E .Graph.root-wiring-tables (into (there (there (there ()))) _)
-  E .Graph.local-output-table ε                             = table-of input-to-output
-  E .Graph.local-output-table (into here q)                 = Graph.local-output-table 𝒢₁ q
-  E .Graph.local-output-table (into (there here) q)         = Graph.local-output-table 𝒢₂ q
-  E .Graph.local-output-table (into (there (there here)) q) = Graph.local-output-table 𝒢₃ q
-  E .Graph.local-output-table (into (there (there (there ()))) _)
+  E .Graph.roots-to-input (into (there (there here)) (into j q)) =
+    lift-roots (there (there here)) (Graph.roots-to-input 𝒢₃ (into j q))
+  E .Graph.roots-to-input (into (there (there (there ()))) _)
+  E .Graph.input-to-output ε                             = table-of input-to-output
+  E .Graph.input-to-output (into here q)                 = Graph.input-to-output 𝒢₁ q
+  E .Graph.input-to-output (into (there here) q)         = Graph.input-to-output 𝒢₂ q
+  E .Graph.input-to-output (into (there (there here)) q) = Graph.input-to-output 𝒢₃ q
+  E .Graph.input-to-output (into (there (there (there ()))) _)
 
   private
     b1 : Path D₁ → V E
@@ -2992,7 +2991,7 @@ module Rule₃
                      (hidden₃.done start₃ .S₃.tgt-ok tt)
                      (+ₘ-cong ≈-refl (∘-cong₂ {f = up₃} (∘-cong (≈-trans (≡-to-≈ hidden₃.κ) (hide-paths⁺ 𝒢₃)) Φ₃-split))))
 
--- A premise of a rule whose premises run in parallel, with its wiring into the rule's inputs and root.
+-- A premise of a rule whose premises run in parallel.
 record Premise (m n : ℕ) (D : Derivation) : Set₁ where
   constructor premise
   field
@@ -3053,22 +3052,22 @@ module Ruleₛ {m n : ℕ} where
   root-in-neighbours []       = []
   root-in-neighbours (P ∷ Ps) = inj₂ (into here ε) ∷ map weaken-in (root-in-neighbours Ps)
 
-  step-of : ∀ {Ds s} → All (Premise m n) Ds → Ds ∋ s → Path s → M.Table
-  step-of []       ()        _
-  step-of (P ∷ Ps) here      ε          = table-of (P .inputs)
-  step-of (P ∷ Ps) here      (into j q) = Graph.input-wiring-table (P .𝒢) (into j q)
-  step-of (P ∷ Ps) (there i) q          = step-of Ps i q
+  parent-of : ∀ {Ds s} → All (Premise m n) Ds → Ds ∋ s → Path s → M.Table
+  parent-of []       ()        _
+  parent-of (P ∷ Ps) here      ε          = table-of (P .inputs)
+  parent-of (P ∷ Ps) here      (into j q) = Graph.parent-to-input (P .𝒢) (into j q)
+  parent-of (P ∷ Ps) (there i) q          = parent-of Ps i q
 
-  wirings-of : ∀ {b Ds s} → All (Premise m n) Ds → Ds ∋ s → Path s →
+  roots-of : ∀ {b Ds s} → All (Premise m n) Ds → Ds ∋ s → Path s →
              List (Path (node n b Ds) × M.Table)
-  wirings-of []       ()        _
-  wirings-of (P ∷ Ps) here      q = lift-wirings here (Graph.root-wiring-tables (P .𝒢) q)
-  wirings-of (P ∷ Ps) (there i) q = weaken-wirings (wirings-of Ps i q)
+  roots-of []       ()        _
+  roots-of (P ∷ Ps) here      q = lift-roots here (Graph.roots-to-input (P .𝒢) q)
+  roots-of (P ∷ Ps) (there i) q = weaken-roots (roots-of Ps i q)
 
-  local-of : ∀ {Ds s} → All (Premise m n) Ds → Ds ∋ s → Path s → M.Table
-  local-of []       ()        _
-  local-of (P ∷ Ps) here      q = Graph.local-output-table (P .𝒢) q
-  local-of (P ∷ Ps) (there i) q = local-of Ps i q
+  output-of : ∀ {Ds s} → All (Premise m n) Ds → Ds ∋ s → Path s → M.Table
+  output-of []       ()        _
+  output-of (P ∷ Ps) here      q = Graph.input-to-output (P .𝒢) q
+  output-of (P ∷ Ps) (there i) q = output-of Ps i q
 
   E : ∀ {Ds} (fo-output : Bool) → 𝔽 m ⇒ 𝔽 n → All (Premise m n) Ds → Graph m (node n fo-output Ds)
   E fo-output input-to-output Ps .Graph.from-input ε          = input-to-output
@@ -3082,12 +3081,12 @@ module Ruleₛ {m n : ℕ} where
   E fo-output input-to-output Ps .Graph.<-interior ε (into j q) = inj₂ ⟪ ≈-refl ⟫
   E fo-output input-to-output Ps .Graph.in-neighbours ε          = inj₁ input ∷ root-in-neighbours Ps
   E fo-output input-to-output Ps .Graph.in-neighbours (into i q) = premise-in-neighbours Ps i q
-  E fo-output input-to-output Ps .Graph.input-wiring-table ε          = table-of (I {𝔽 m})
-  E fo-output input-to-output Ps .Graph.input-wiring-table (into i q) = step-of Ps i q
-  E fo-output input-to-output Ps .Graph.root-wiring-tables ε          = []
-  E fo-output input-to-output Ps .Graph.root-wiring-tables (into i q) = wirings-of Ps i q
-  E fo-output input-to-output Ps .Graph.local-output-table ε          = table-of input-to-output
-  E fo-output input-to-output Ps .Graph.local-output-table (into i q) = local-of Ps i q
+  E fo-output input-to-output Ps .Graph.parent-to-input ε          = table-of (I {𝔽 m})
+  E fo-output input-to-output Ps .Graph.parent-to-input (into i q) = parent-of Ps i q
+  E fo-output input-to-output Ps .Graph.roots-to-input ε          = []
+  E fo-output input-to-output Ps .Graph.roots-to-input (into i q) = roots-of Ps i q
+  E fo-output input-to-output Ps .Graph.input-to-output ε          = table-of input-to-output
+  E fo-output input-to-output Ps .Graph.input-to-output (into i q) = output-of Ps i q
 
   rel : ∀ {Ds} → All (Premise m n) Ds → 𝔽 m ⇒ 𝔽 n
   rel []       = εₘ
