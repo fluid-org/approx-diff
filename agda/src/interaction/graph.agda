@@ -988,12 +988,18 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
   table-morphism x y (just t) = mat (M.look {vertex-width 𝒢 y} {vertex-width 𝒢 x} t)
   table-morphism x y nothing  = εₘ
 
-  read-slot : DepTables → (x y : V 𝒢) → Maybe ℕ → Maybe ℕ → vertex-object 𝒢 x ⇒ vertex-object 𝒢 y
-  read-slot T x y (just a) (just b) = table-morphism x y (table-at T a b)
-  read-slot T x y _        _        = εₘ
+  Edges : Set
+  Edges = (x y : V 𝒢) → Maybe M.Table
+
+  read-slot : DepTables → Maybe ℕ → Maybe ℕ → Maybe M.Table
+  read-slot T (just a) (just b) = table-at T a b
+  read-slot T _        _        = nothing
+
+  edge-at : DepTables → Edges
+  edge-at T x y = read-slot T (position T (index-of 𝒢 x)) (position T (index-of 𝒢 y))
 
   dep-rel-at : DepTables → (x y : V 𝒢) → vertex-object 𝒢 x ⇒ vertex-object 𝒢 y
-  dep-rel-at T x y = read-slot T x y (position T (index-of 𝒢 x)) (position T (index-of 𝒢 y))
+  dep-rel-at T x y = table-morphism x y (edge-at T x y)
 
 -- Hiding over stored tables, with the hidden vertices listed so that every edge among
 -- them runs forward.
@@ -1549,7 +1555,7 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
                   dep-rel-at 𝒢 T x y ≈ G x y
   dep-rel-at-rep {T} {vs} {G} R {x} {y} mx my with ∈-nth? mx | ∈-nth? my
   ... | (p , hp) | (q , hq) =
-    ≈-trans (≡-to-≈ (≡-cong₂ (λ u v → read-slot 𝒢 T x y u v) (locate R hp) (locate R hq)))
+    ≈-trans (≡-to-≈ (≡-cong₂ (λ u v → table-morphism 𝒢 x y (read-slot 𝒢 T u v)) (locate R hp) (locate R hq)))
             (Prf.prf (R .slots hp hq))
 
   private

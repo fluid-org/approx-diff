@@ -90,6 +90,7 @@ module render-eval {Γ τ} (γ : Env Γ) (t : Γ ⊢ τ) where
   open Evaluated γ t public
 
   fo-tab = fo-tabulation dependence (λ _ x → x)
+  fo-tables = edge-at dependence fo-tab
   fo     = dep-rel-at dependence fo-tab
   summarise = tabulated-summary dependence (λ _ x → x) fo-tab
 
@@ -119,7 +120,7 @@ module render-eval {Γ τ} (γ : Env Γ) (t : Γ ⊢ τ) where
       where
       cols : List (ℕ × ℕ × V dependence) → List Edge
       cols []                 = []
-      cols ((j , gy , y) ∷ js) = keep i j (visible-table fo-tab K x y) ++L cols js
+      cols ((j , gy , y) ∷ js) = keep i j (visible-table fo-tables K x y) ++L cols js
 
   full : Config dependence
   full = foldl (λ K p → reveal-at summarise p K) (initial summarise) (FO dependence)

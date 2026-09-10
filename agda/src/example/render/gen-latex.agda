@@ -75,13 +75,14 @@ private
       o-labels = val-labels 0 value
 
       fo-tab = fo-tabulation dependence (λ _ x → x)
+      fo-tables = edge-at dependence fo-tab
       fo = dep-rel-at dependence fo-tab
       summarise = tabulated-summary dependence (λ _ x → x) fo-tab
       module I = Interaction dependence fo
 
       -- Dependence matrix of the degenerate configuration.
       R = M3.look {vertex-width dependence (inj₂ ε)} {vertex-width dependence (inj₁ input)}
-            (I.visible-table fo-tab (I.initial summarise) (inj₁ input) (inj₂ ε))
+            (I.visible-table fo-tables (I.initial summarise) (inj₁ input) (inj₂ ε))
 
       -- Control column of the environment vertex dropped.
       drop-ctrl : ∀ {m n} → M3.Matrix m (Nat.suc n) → M3.Matrix m n
@@ -106,7 +107,7 @@ private
     -- One table per edge of the visible graph after the reveals, between the environment, the
     -- revealed vertices and the root.
     emit : String → String → List (String × List ℕ) → Presentation → List (String × String)
-    emit key title reveals (matrices si so) = mapMaybe edge-entry (I.visible-edges fo-tab K endpoints)
+    emit key title reveals (matrices si so) = mapMaybe edge-entry (I.visible-edges fo-tables K endpoints)
       where
       resolve : String × List ℕ → Maybe (String × Path D)
       resolve (s , ks) with path-at D ks
@@ -225,6 +226,7 @@ private
                         signed-ε?
 
       fo-tab = smoves.fo-tabulation dependence (λ _ x → x)
+      fo-tables = graph.edge-at dependence fo-tab
       fo = graph.dep-rel-at dependence fo-tab
       summarise = smoves.tabulated-summary dependence (λ _ x → x) fo-tab
       module I = smoves.Interaction dependence fo
@@ -232,7 +234,7 @@ private
       score-rows : mat.Table
       score-rows = drop-ctrl (mat.look {graph.vertex-width dependence (inj₂ graph.ε)}
                                        {graph.vertex-width dependence (inj₁ graph.input)}
-                     (I.visible-table fo-tab (I.initial summarise) (inj₁ graph.input) (inj₂ graph.ε)))
+                     (I.visible-table fo-tables (I.initial summarise) (inj₁ graph.input) (inj₂ graph.ε)))
         where
         drop-ctrl : ∀ {m n} → mat.Matrix m (Nat.suc n) → mat.Table
         drop-ctrl R = toList (tabulate (λ q → toList (tabulate (λ p → R q (suc p)))))
