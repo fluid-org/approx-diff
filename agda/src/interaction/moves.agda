@@ -126,6 +126,10 @@ private
 -- A configuration: the visible set, and one pair per hidden region of a set of vertices and a
 -- graph. No invariant is imposed; that the pairs are the view of the visible set is a property
 -- the moves preserve.
+
+idt : {A : Set} → String → A → A
+idt _ x = x
+
 record Config {m : ℕ} {D : Derivation} (𝒢 : Graph m D) : Set₁ where
   field
     visible : List (Path D)
@@ -230,11 +234,11 @@ module Interaction {m : ℕ} {D : Derivation} (𝒢 : Graph m D)
   visible-graph K x y =
     foldr _+ₘ_
           (when (¬? (x ∈ᵥ? hs) ×-dec ¬? (y ∈ᵥ? hs)) (fo-labels x y))
-          (map (λ CH → table-morphism 𝒢 x y (proj₂ CH x y)) (K .summaries))
+          (map (λ CH → table-morphism 𝒢 x y (edge-at 𝒢 ε? idt (proj₂ CH) x y)) (K .summaries))
     where hs = hidden-set K
 
   edge-table : Edges 𝒢 → (x y : V 𝒢) → M.Table
-  edge-table E x y with E x y
+  edge-table E x y with edge-at 𝒢 ε? idt E x y
   ... | just t  = t
   ... | nothing = zero-table (vertex-width 𝒢 y) (vertex-width 𝒢 x)
 
@@ -261,15 +265,15 @@ module Interaction {m : ℕ} {D : Derivation} (𝒢 : Graph m D)
 
   edge-table-rep : (E : Edges 𝒢) (x y : V 𝒢) →
                    mat (M.look {vertex-width 𝒢 y} {vertex-width 𝒢 x} (edge-table E x y))
-                   ≈ table-morphism 𝒢 x y (E x y)
-  edge-table-rep E x y with E x y
+                   ≈ table-morphism 𝒢 x y (edge-at 𝒢 ε? idt E x y)
+  edge-table-rep E x y with edge-at 𝒢 ε? idt E x y
   ... | just t  = ≈-refl
   ... | nothing = zero-table-morphism 𝒢 x y (vertex-width 𝒢 y) (vertex-width 𝒢 x)
 
   -- The rendered table computes the matrix of the visible graph, provided F stores the graph
   -- fo-labels reads.
   visible-table-rep : (F : Edges 𝒢) →
-                      ((x' y' : V 𝒢) → table-morphism 𝒢 x' y' (F x' y') ≈ fo-labels x' y') →
+                      ((x' y' : V 𝒢) → table-morphism 𝒢 x' y' (edge-at 𝒢 ε? idt F x' y') ≈ fo-labels x' y') →
                       (K : Config 𝒢) (x y : V 𝒢) →
                       mat (M.look {vertex-width 𝒢 y} {vertex-width 𝒢 x} (visible-table F K x y))
                       ≈ visible-graph K x y
@@ -290,7 +294,7 @@ module Interaction {m : ℕ} {D : Derivation} (𝒢 : Graph m D)
                     (foldr (add-table (vertex-width 𝒢 y) (vertex-width 𝒢 x)) base'
                            (map (λ CH → edge-table (proj₂ CH) x y) CHs)))
                ≈ foldr _+ₘ_ (when both? (fo-labels x y))
-                            (map (λ CH → table-morphism 𝒢 x y (proj₂ CH x y)) CHs)
+                            (map (λ CH → table-morphism 𝒢 x y (edge-at 𝒢 ε? idt (proj₂ CH) x y)) CHs)
     fold-rep []         = base-rep
     fold-rep (CH ∷ CHs) =
       ≈-trans (mat-cong (λ i j → ≈-of-≡
@@ -381,7 +385,7 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
   -- forward; restricting before hiding keeps direct boundary edges out of the summary.
   tabulated-summary : (tick : {A : Set} → String → A → A) → DepTables → Summary
   tabulated-summary tick F C =
-    edge-at 𝒢 (Tabulated.hide-graph (restrict-tables region F) tick ε? region)
+    stored (Tabulated.hide-graph (restrict-tables region F) tick ε? region)
     where
     region : List ℕ
     region = map (λ p → index-of 𝒢 (at p)) (sort C)
@@ -419,7 +423,7 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
   Summarises CH =
     ∀ x y → ¬ VertexIn x (fo-hidden 𝒢) → ¬ VertexIn y (fo-hidden 𝒢) →
     ¬ VertexIn x (proj₁ CH) → ¬ VertexIn y (proj₁ CH) →
-    Prf (table-morphism 𝒢 x y (proj₂ CH x y) ≈ summary (proj₁ CH) x y)
+    Prf (table-morphism 𝒢 x y (edge-at 𝒢 ε? idt (proj₂ CH) x y) ≈ summary (proj₁ CH) x y)
 
   Agrees : Summary → Set
   Agrees summarise = ∀ C → C ⊆ FO 𝒢 → AllPairs _≢_ C → Summarises (C , summarise C)
@@ -721,7 +725,7 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
                             (fo-graph 𝒢 x y +ₘ summary (hidden-set K) x y)
     visible-graph-summary K S x y hxf hyf hx hy =
       ≈-trans (foldr-base (when both-visible? (G x y))
-                          (map (λ CH → table-morphism 𝒢 x y (proj₂ CH x y)) (K .summaries)))
+                          (map (λ CH → table-morphism 𝒢 x y (edge-at 𝒢 ε? idt (proj₂ CH) x y)) (K .summaries)))
               (+ₘ-cong base-eq Σ-eq)
       where
       G  = fo-graph 𝒢
@@ -743,10 +747,10 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
       restrict-O = when-O (x ∈ᵥ? hidden-set K ⊎-dec y ∈ᵥ? hidden-set K) (G x y)
                           (set-elim.⊎-case (λ h → set-elim.⊥-elim (hx h)) (λ h → set-elim.⊥-elim (hy h)))
 
-      Σ-eq : foldr _+ₘ_ εₘ (map (λ CH → table-morphism 𝒢 x y (proj₂ CH x y)) (K .summaries))
+      Σ-eq : foldr _+ₘ_ εₘ (map (λ CH → table-morphism 𝒢 x y (edge-at 𝒢 ε? idt (proj₂ CH) x y)) (K .summaries))
              ≈ summary (hidden-set K) x y
       Σ-eq =
-        ≈-trans (foldr-map-≈ εₘ (λ CH → table-morphism 𝒢 x y (proj₂ CH x y))
+        ≈-trans (foldr-map-≈ εₘ (λ CH → table-morphism 𝒢 x y (edge-at 𝒢 ε? idt (proj₂ CH) x y))
                              (λ CH → summary (proj₁ CH) x y) (K .summaries)
                   (All-tabulate (λ {CH} m →
                      All-lookup (S .summaries) m x y hxf hyf
@@ -1163,9 +1167,6 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
     blocks-part = concat-↭↭ (All-map (λ {CH} one → per-block CH one) (AllP.map⁻ (blocks-one-region K S)))
 
   private
-    idt : {A' : Set} → String → A' → A'
-    idt _ a = a
-
     ≡ᵇ-self : (n : ℕ) → (n ≡ᵇ n) ≡ true
     ≡ᵇ-self zero    = ≡-refl
     ≡ᵇ-self (suc n) = ≡ᵇ-self n
@@ -1321,7 +1322,8 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
 
     module RH = HideRepresents 𝒢 ε? R-region regionV C-mem region-pairs
 
-    region-eq : table-morphism 𝒢 x y (tabulated-summary (λ _ x' → x') (fo-tabulation (λ _ x' → x')) C x y)
+    region-eq : table-morphism 𝒢 x y
+                  (edge-at 𝒢 ε? idt (tabulated-summary (λ _ x' → x') (fo-tabulation (λ _ x' → x')) C) x y)
                 ≡ dep-rel-at 𝒢 (Tabulated.hide-graph
                                 (restrict-tables (map (index-of 𝒢) regionV) F₀)
                                 (λ _ c → c) ε? (map (index-of 𝒢) regionV)) x y

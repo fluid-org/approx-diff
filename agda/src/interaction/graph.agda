@@ -988,18 +988,21 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
   table-morphism x y (just t) = mat (M.look {vertex-width 𝒢 y} {vertex-width 𝒢 x} t)
   table-morphism x y nothing  = εₘ
 
-  Edges : Set
-  Edges = (x y : V 𝒢) → Maybe M.Table
+  -- Edges either stored as tables, or as the columns one pass emits, with the visible positions
+  -- they are indexed by.
+  data Edges : Set where
+    stored  : DepTables → Edges
+    columns : List ℕ → List (ℕ × List (List (ℕ × Semiring.Carrier))) → Edges
 
   read-slot : DepTables → Maybe ℕ → Maybe ℕ → Maybe M.Table
   read-slot T (just a) (just b) = table-at T a b
   read-slot T _        _        = nothing
 
-  edge-at : DepTables → Edges
-  edge-at T x y = read-slot T (position T (index-of 𝒢 x)) (position T (index-of 𝒢 y))
+  edge-stored : DepTables → (x y : V 𝒢) → Maybe M.Table
+  edge-stored T x y = read-slot T (position T (index-of 𝒢 x)) (position T (index-of 𝒢 y))
 
   dep-rel-at : DepTables → (x y : V 𝒢) → vertex-object 𝒢 x ⇒ vertex-object 𝒢 y
-  dep-rel-at T x y = table-morphism x y (edge-at T x y)
+  dep-rel-at T x y = table-morphism x y (edge-stored T x y)
 
 -- Hiding over stored tables, with the hidden vertices listed so that every edge among
 -- them runs forward.
@@ -1380,7 +1383,7 @@ private
   -- Columns in evaluation order, one per visible vertex, each keyed by the source's index among
   -- the visible vertices.
   edges-of : {m : ℕ} {D : Derivation} (𝒢 : Graph m D) → List ℕ →
-             List (List (ℕ × M.Table)) → Edges 𝒢
+             List (List (ℕ × M.Table)) → (x y : V 𝒢) → Maybe M.Table
   edges-of 𝒢 vs cs x y with find-number (vertex-position 𝒢 x) 0 vs
                           | find-number (vertex-position 𝒢 y) 0 vs
   ... | just i | just j = column-slot i (M.nth [] j cs)
@@ -1388,14 +1391,15 @@ private
 
 hide-graph-edges : {m : ℕ} {D : Derivation} (𝒢 : Graph m D) →
                    ((x : Semiring.Carrier) → Dec (x ≡ Semiring.ε)) →
-                   ({A : Set} → String → A → A) → List ℕ → Edges 𝒢
+                   ({A : Set} → String → A → A) → List ℕ → (x y : V 𝒢) → Maybe M.Table
 hide-graph-edges 𝒢 ε-dec tick hid =
   edges-of 𝒢 (visible-positions 𝒢 hid)
            (reverse (FunctionHide.fold-result 𝒢 ε-dec tick hid [] (λ cs c → c ∷ cs) []))
 
 hide-graph-summary : {m : ℕ} {D : Derivation} (𝒢 : Graph m D) →
                      ((x : Semiring.Carrier) → Dec (x ≡ Semiring.ε)) →
-                     ({A : Set} → String → A → A) → (hid region : List ℕ) → Edges 𝒢
+                     ({A : Set} → String → A → A) → (hid region : List ℕ) →
+                     (x y : V 𝒢) → Maybe M.Table
 hide-graph-summary 𝒢 ε-dec tick hid region =
   edges-of 𝒢 (visible-positions 𝒢 hid)
            (reverse (FunctionHide.fold-summary 𝒢 ε-dec tick hid region (λ cs c → c ∷ cs) []))
@@ -1523,15 +1527,28 @@ module PositionHide {m : ℕ} {D : Derivation} (𝒢 : Graph m D)
       force-weights []            y = y
       force-weights ((_ , _) ∷ w) y = force-weights w y
 
+    force-list : {A : Set} → List Origin → A → A
+    force-list []       x = x
+    force-list (o ∷ os) x = primForce o (λ _ → force-list os x)
+
     set-at : ℕ → Origin → List Origin → List Origin
-    set-at _       _ []        = []
-    set-at zero    o (_ ∷ os)  = o ∷ os
-    set-at (suc p) o (o' ∷ os) = o' ∷ set-at p o os
+    set-at p o os = tick ("state " ++ₛ ℕ-Show.show p) (force-list written written)
+      where
+      walk : ℕ → Origin → List Origin → List Origin
+      walk _       _  []        = []
+      walk zero    o' (_ ∷ os') = o' ∷ os'
+      walk (suc q) o' (x ∷ os') = x ∷ walk q o' os'
+
+      written : List Origin
+      written = walk p o os
 
     origin-at : ℕ → List Origin → Origin
-    origin-at _       []       = summary no-block
-    origin-at zero    (o ∷ _)  = o
-    origin-at (suc p) (_ ∷ os) = origin-at p os
+    origin-at p os = tick ("origin " ++ₛ ℕ-Show.show p) (look p os)
+      where
+      look : ℕ → List Origin → Origin
+      look _       []        = summary no-block
+      look zero    (o ∷ _)   = o
+      look (suc q) (_ ∷ os') = look q os'
 
     from-origin : M.Table → Origin → Block
     from-origin W (source base) = apply-table-block W (at-visible base (length (first-row W)))
@@ -1572,7 +1589,8 @@ module PositionHide {m : ℕ} {D : Derivation} (𝒢 : Graph m D)
                (∀ {Dᵢ} → Ds ∋ Dᵢ → Path Dᵢ → Path D) → Path D →
                ℕ → ℕ → List Origin → Block → X → Res X
     go-node consume (node m' n' b' Ds) emb pos base st A acc =
-      emit (go-prems consume Ds (λ i p → emb (into i p)) (emb ε) pos base st A acc)
+      tick ("node " ++ₛ ℕ-Show.show pos)
+           (emit (go-prems consume Ds (λ i p → emb (into i p)) (emb ε) pos base st A acc))
       where
       emit : Res _ → Out _
       emit (res acc' ups vpos base' st') =
@@ -1580,7 +1598,7 @@ module PositionHide {m : ℕ} {D : Derivation} (𝒢 : Graph m D)
                            ups)
         where
         decide : Block → Out _
-        decide B with any (vpos ≡ᵇ_) hid
+        decide B with tick ("decide " ++ₛ ℕ-Show.show vpos) (any (vpos ≡ᵇ_) hid)
         ... | true  = store (tick ("block " ++ₛ ℕ-Show.show vpos) (in-region B))
           where
           in-region : Block → Block
@@ -1652,7 +1670,7 @@ private
   position-edges : {m : ℕ} {D : Derivation} (𝒢 : Graph m D) →
                    ((x : Semiring.Carrier) → Dec (x ≡ Semiring.ε)) →
                    ({A : Set} → String → A → A) → List ℕ →
-                   List (ℕ × List (List (ℕ × Semiring.Carrier))) → Edges 𝒢
+                   List (ℕ × List (List (ℕ × Semiring.Carrier))) → (x y : V 𝒢) → Maybe M.Table
   position-edges 𝒢 ε-dec tick vs cs x y =
     read (find-number (vertex-position 𝒢 x) 0 vs) (find-number (vertex-position 𝒢 y) 0 vs)
     where
@@ -1676,15 +1694,21 @@ hide-graph-position-edges : {m : ℕ} {D : Derivation} (𝒢 : Graph m D) →
                             ((x : Semiring.Carrier) → Dec (x ≡ Semiring.ε)) →
                             ({A : Set} → String → A → A) → List ℕ → Edges 𝒢
 hide-graph-position-edges 𝒢 ε-dec tick hid =
-  position-edges 𝒢 ε-dec tick (visible-positions 𝒢 hid)
-                 (reverse (PositionHide.fold-result 𝒢 ε-dec tick hid [] (λ cs c → c ∷ cs) []))
+  columns (visible-positions 𝒢 hid)
+          (reverse (PositionHide.fold-result 𝒢 ε-dec tick hid [] (λ cs c → c ∷ cs) []))
 
 hide-graph-position-summary : {m : ℕ} {D : Derivation} (𝒢 : Graph m D) →
                               ((x : Semiring.Carrier) → Dec (x ≡ Semiring.ε)) →
                               ({A : Set} → String → A → A) → (hid region : List ℕ) → Edges 𝒢
 hide-graph-position-summary 𝒢 ε-dec tick hid region =
-  position-edges 𝒢 ε-dec tick (visible-positions 𝒢 hid)
-                 (reverse (PositionHide.fold-summary 𝒢 ε-dec tick hid region (λ cs c → c ∷ cs) []))
+  columns (visible-positions 𝒢 hid)
+          (reverse (PositionHide.fold-summary 𝒢 ε-dec tick hid region (λ cs c → c ∷ cs) []))
+
+edge-at : {m : ℕ} {D : Derivation} (𝒢 : Graph m D) →
+          ((x : Semiring.Carrier) → Dec (x ≡ Semiring.ε)) → ({A : Set} → String → A → A) →
+          Edges 𝒢 → (x y : V 𝒢) → Maybe M.Table
+edge-at 𝒢 ε-dec tick (stored T)      x y = edge-stored 𝒢 T x y
+edge-at 𝒢 ε-dec tick (columns vs cs) x y = position-edges 𝒢 ε-dec tick vs cs x y
 
 private
   nth? : {C : Set} → ℕ → List C → Maybe C

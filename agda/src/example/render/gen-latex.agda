@@ -75,14 +75,21 @@ private
       o-labels = val-labels 0 value
 
       fo-tables = fo-graph-edges dependence (λ _ x → x)
-      fo : DepRels (vertex-object dependence)
-      fo x y = table-morphism dependence x y (fo-tables x y)
+      fo-of : Edges dependence → DepRels (vertex-object dependence)
+      fo-of tabs x y = table-morphism dependence x y (edge-at dependence three.ε? (λ _ z → z) tabs x y)
+      fo = fo-of fo-tables
       summarise = region-summary dependence (λ _ x → x)
       module I = Interaction dependence fo
 
       -- Dependence matrix of the degenerate configuration.
-      R = M3.look {vertex-width dependence (inj₂ ε)} {vertex-width dependence (inj₁ input)}
-            (I.visible-table fo-tables (I.initial summarise) (inj₁ input) (inj₂ ε))
+      R = degenerate fo-tables
+        where
+        degenerate : Edges dependence → M3.Matrix (vertex-width dependence (inj₂ ε))
+                                                  (vertex-width dependence (inj₁ input))
+        degenerate tabs =
+          M3.look {vertex-width dependence (inj₂ ε)} {vertex-width dependence (inj₁ input)}
+            (J.visible-table tabs (J.initial summarise) (inj₁ input) (inj₂ ε))
+          where module J = Interaction dependence (fo-of tabs)
 
       -- Control column of the environment vertex dropped.
       drop-ctrl : ∀ {m n} → M3.Matrix m (Nat.suc n) → M3.Matrix m n
@@ -107,7 +114,7 @@ private
     -- One table per edge of the visible graph after the reveals, between the environment, the
     -- revealed vertices and the root.
     emit : String → String → List (String × List ℕ) → Presentation → List (String × String)
-    emit key title reveals (matrices si so) = mapMaybe edge-entry (I.visible-edges fo-tables K endpoints)
+    emit key title reveals (matrices si so) = shared fo-tables
       where
       resolve : String × List ℕ → Maybe (String × Path D)
       resolve (s , ks) with path-at D ks
@@ -147,6 +154,15 @@ private
         (key ++ "/" ++ nu ++ "-" ++ nv ,
          table (title ++ " (" ++ nu ++ " to " ++ nv ++ ")") (vertex-labels u) (vertex-labels v)
                (M3.to-table M) (at-env u) (at-root v))
+
+      shared : Edges dependence → List (String × String)
+      shared tabs = with-config (foldr (J.reveal-at summarise) (J.initial summarise) (map proj₂ named))
+        where
+        module J = Interaction dependence (fo-of tabs)
+
+        with-config : Config dependence → List (String × String)
+        with-config K' = mapMaybe edge-entry (J.visible-edges tabs K' endpoints)
+
     emit key title reveals related =
       (key ++ "/root-root" ,
        table title o-labels o-labels (M3.to-table (rows M3.∘ (rows M3.ᵀ))) none none) ∷ []
@@ -226,18 +242,23 @@ private
                         signed-ε?
 
       fo-tables = smoves.fo-graph-edges dependence (λ _ x → x)
-      fo : graph.DepRels (graph.vertex-object dependence)
-      fo x y = graph.table-morphism dependence x y (fo-tables x y)
+      fo-of : graph.Edges dependence → graph.DepRels (graph.vertex-object dependence)
+      fo-of tabs x y = graph.table-morphism dependence x y
+                         (graph.edge-at dependence signed-ε? (λ _ z → z) tabs x y)
       summarise = smoves.region-summary dependence (λ _ x → x)
-      module I = smoves.Interaction dependence fo
 
       score-rows : mat.Table
-      score-rows = drop-ctrl (mat.look {graph.vertex-width dependence (inj₂ graph.ε)}
-                                       {graph.vertex-width dependence (inj₁ graph.input)}
-                     (I.visible-table fo-tables (I.initial summarise) (inj₁ graph.input) (inj₂ graph.ε)))
+      score-rows = rows fo-tables
         where
         drop-ctrl : ∀ {m n} → mat.Matrix m (Nat.suc n) → mat.Table
         drop-ctrl R = toList (tabulate (λ q → toList (tabulate (λ p → R q (suc p)))))
+
+        rows : graph.Edges dependence → mat.Table
+        rows tabs = drop-ctrl (mat.look {graph.vertex-width dependence (inj₂ graph.ε)}
+                                        {graph.vertex-width dependence (inj₁ graph.input)}
+                      (J.visible-table tabs (J.initial summarise)
+                                       (inj₁ graph.input) (inj₂ graph.ε)))
+          where module J = smoves.Interaction dependence (fo-of tabs)
 
     fragment : String
     fragment = signed-table "score (signed)" (axes.env-labels (runs.env runs.score-run))
