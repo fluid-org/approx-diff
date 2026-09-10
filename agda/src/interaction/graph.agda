@@ -403,6 +403,8 @@ table-of f = M.to-table (∃ₛ.fst (𝔽F-full f))
 
 record Graph (m : ℕ) (D : Derivation) : Set₁ where
   field
+    -- The graph's inputs are the input of the rule concluding the derivation.
+    in-width-eq : in-width D ≡ m
     from-input : (q : Path D) → 𝔽 m ⇒ object D q
     interior   : DepRels (object D)
     -- Every non-zero relation runs strictly forward in the evaluation order. The inputs are below
@@ -2690,6 +2692,7 @@ module Rule₀
   where
 
   E : Graph m (node m n fo-output [])
+  E .Graph.in-width-eq = ≡-refl
   E .Graph.from-input ε = input-to-output
   E .Graph.from-input (into () _)
   E .Graph.interior ε ε = εₘ
@@ -2735,6 +2738,7 @@ module Rule₁
     to-premise (into (there ()) _) _
 
   E : Graph m (node m n fo-output (D₁ ∷ []))
+  E .Graph.in-width-eq = ≡-refl
   E .Graph.from-input ε            = input-to-output
   E .Graph.from-input (into here q)        = Graph.from-input 𝒢 q ∘ inputs
   E .Graph.from-input (into (there ()) _)
@@ -2752,7 +2756,8 @@ module Rule₁
     premise-ins here (inj₁ input ∷ []) (Graph.in-neighbours 𝒢 q)
   E .Graph.in-neighbours (into (there ()) _)
   E .Graph.parent-to-input ε                      = I {𝔽 m}
-  E .Graph.parent-to-input (into here ε)          = inputs
+  E .Graph.parent-to-input (into here ε)          =
+    subst (λ w → 𝔽 m ⇒ 𝔽 w) (≡-sym (Graph.in-width-eq 𝒢)) inputs
   E .Graph.parent-to-input (into here (into j q)) = Graph.parent-to-input 𝒢 (into j q)
   E .Graph.parent-to-input (into (there ()) _)
   E .Graph.roots-to-input ε             = []
@@ -2847,6 +2852,7 @@ module Rule₂
     to-second (into (there (there ())) _) _
 
   E : Graph m (node m n fo-output (D₁ ∷ D₂ ∷ []))
+  E .Graph.in-width-eq = ≡-refl
   E .Graph.from-input ε                        = input-to-output
   E .Graph.from-input (into here q)            = Graph.from-input 𝒢₁ q ∘ inputs₁
   E .Graph.from-input (into (there here) q)    = Graph.from-input 𝒢₂ q ∘ from-inputs₂
@@ -2874,14 +2880,17 @@ module Rule₂
     premise-ins (there here) (inj₁ input ∷ inj₂ (into here ε) ∷ []) (Graph.in-neighbours 𝒢₂ q)
   E .Graph.in-neighbours (into (there (there ())) _)
   E .Graph.parent-to-input ε                              = I {𝔽 m}
-  E .Graph.parent-to-input (into here ε)                  = inputs₁
+  E .Graph.parent-to-input (into here ε)                  =
+    subst (λ w → 𝔽 m ⇒ 𝔽 w) (≡-sym (Graph.in-width-eq 𝒢₁)) inputs₁
   E .Graph.parent-to-input (into here (into j q))         = Graph.parent-to-input 𝒢₁ (into j q)
-  E .Graph.parent-to-input (into (there here) ε)          = from-inputs₂
+  E .Graph.parent-to-input (into (there here) ε)          =
+    subst (λ w → 𝔽 m ⇒ 𝔽 w) (≡-sym (Graph.in-width-eq 𝒢₂)) from-inputs₂
   E .Graph.parent-to-input (into (there here) (into j q)) = Graph.parent-to-input 𝒢₂ (into j q)
   E .Graph.parent-to-input (into (there (there ())) _)
   E .Graph.roots-to-input ε                     = []
   E .Graph.roots-to-input (into here q)         = lift-roots here (Graph.roots-to-input 𝒢₁ q)
-  E .Graph.roots-to-input (into (there here) ε) = (into here ε , from-root₁) ∷ []
+  E .Graph.roots-to-input (into (there here) ε) =
+    (into here ε , subst (λ w → _ ⇒ 𝔽 w) (≡-sym (Graph.in-width-eq 𝒢₂)) from-root₁) ∷ []
   E .Graph.roots-to-input (into (there here) (into j q)) =
     lift-roots (there here) (Graph.roots-to-input 𝒢₂ (into j q))
   E .Graph.roots-to-input (into (there (there ())) _)
@@ -3085,6 +3094,7 @@ module Rule₃
     to-third (into (there (there (there ()))) _) _
 
   E : Graph m (node m n fo-output (D₁ ∷ D₂ ∷ D₃ ∷ []))
+  E .Graph.in-width-eq = ≡-refl
   E .Graph.from-input ε                                = input-to-output
   E .Graph.from-input (into here q)                    = Graph.from-input 𝒢₁ q ∘ inputs₁
   E .Graph.from-input (into (there here) q)            = Graph.from-input 𝒢₂ q ∘ inputs₂
@@ -3124,11 +3134,14 @@ module Rule₃
                 (Graph.in-neighbours 𝒢₃ q)
   E .Graph.in-neighbours (into (there (there (there ()))) _)
   E .Graph.parent-to-input ε                                      = I {𝔽 m}
-  E .Graph.parent-to-input (into here ε)                          = inputs₁
+  E .Graph.parent-to-input (into here ε)                          =
+    subst (λ w → 𝔽 m ⇒ 𝔽 w) (≡-sym (Graph.in-width-eq 𝒢₁)) inputs₁
   E .Graph.parent-to-input (into here (into j q))                 = Graph.parent-to-input 𝒢₁ (into j q)
-  E .Graph.parent-to-input (into (there here) ε)                  = inputs₂
+  E .Graph.parent-to-input (into (there here) ε)                  =
+    subst (λ w → 𝔽 m ⇒ 𝔽 w) (≡-sym (Graph.in-width-eq 𝒢₂)) inputs₂
   E .Graph.parent-to-input (into (there here) (into j q))         = Graph.parent-to-input 𝒢₂ (into j q)
-  E .Graph.parent-to-input (into (there (there here)) ε)          = from-inputs₃
+  E .Graph.parent-to-input (into (there (there here)) ε)          =
+    subst (λ w → 𝔽 m ⇒ 𝔽 w) (≡-sym (Graph.in-width-eq 𝒢₃)) from-inputs₃
   E .Graph.parent-to-input (into (there (there here)) (into j q)) = Graph.parent-to-input 𝒢₃ (into j q)
   E .Graph.parent-to-input (into (there (there (there ()))) _)
   E .Graph.roots-to-input ε                             = []
@@ -3136,7 +3149,8 @@ module Rule₃
   E .Graph.roots-to-input (into (there here) q)         =
     lift-roots (there here) (Graph.roots-to-input 𝒢₂ q)
   E .Graph.roots-to-input (into (there (there here)) ε) =
-    (into here ε , from-root₁) ∷ (into (there here) ε , from-root₂) ∷ []
+    (into here ε , subst (λ w → _ ⇒ 𝔽 w) (≡-sym (Graph.in-width-eq 𝒢₃)) from-root₁) ∷
+    (into (there here) ε , subst (λ w → _ ⇒ 𝔽 w) (≡-sym (Graph.in-width-eq 𝒢₃)) from-root₂) ∷ []
   E .Graph.roots-to-input (into (there (there here)) (into j q)) =
     lift-roots (there (there here)) (Graph.roots-to-input 𝒢₃ (into j q))
   E .Graph.roots-to-input (into (there (there (there ()))) _)
@@ -3438,7 +3452,8 @@ module Ruleₛ {m n : ℕ} where
   parent-of : ∀ {Ds D} → All (Premise m n) Ds → (i : Ds ∋ D) → (q : Path D) →
               𝔽 (parent-in-width m D q) ⇒ 𝔽 (in-width-at D q)
   parent-of []       ()        _
-  parent-of (P ∷ Ps) here      ε          = P .inputs
+  parent-of (P ∷ Ps) here      ε          =
+    subst (λ w → 𝔽 m ⇒ 𝔽 w) (≡-sym (Graph.in-width-eq (P .𝒢))) (P .inputs)
   parent-of (P ∷ Ps) here      (into j q) = Graph.parent-to-input (P .𝒢) (into j q)
   parent-of (P ∷ Ps) (there i) q          = parent-of Ps i q
 
@@ -3456,6 +3471,7 @@ module Ruleₛ {m n : ℕ} where
   output-of (P ∷ Ps) (there i) q = output-of Ps i q
 
   E : ∀ {Ds} (fo-output : Bool) → 𝔽 m ⇒ 𝔽 n → All (Premise m n) Ds → Graph m (node m n fo-output Ds)
+  E fo-output input-to-output Ps .Graph.in-width-eq = ≡-refl
   E fo-output input-to-output Ps .Graph.from-input ε          = input-to-output
   E fo-output input-to-output Ps .Graph.from-input (into i q) = from-inputs Ps i q
   E fo-output input-to-output Ps .Graph.interior (into i p) (into j q) = interiors Ps i p j q
