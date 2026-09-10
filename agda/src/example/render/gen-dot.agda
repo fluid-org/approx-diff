@@ -90,7 +90,7 @@ module render-eval {Γ τ} (γ : Env Γ) (t : Γ ⊢ τ) where
   open Evaluated γ t public
 
   fo-tab = fo-tabulation dependence (λ _ x → x)
-  fo     = read-edge dependence fo-tab
+  fo     = dep-rel-at dependence fo-tab
   summarise = tabulated-summary dependence (λ _ x → x) fo-tab
 
   open Interaction dependence fo public

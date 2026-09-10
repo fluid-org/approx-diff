@@ -75,7 +75,7 @@ private
       o-labels = val-labels 0 value
 
       fo-tab = fo-tabulation dependence (λ _ x → x)
-      fo = read-edge dependence fo-tab
+      fo = dep-rel-at dependence fo-tab
       summarise = tabulated-summary dependence (λ _ x → x) fo-tab
       module I = Interaction dependence fo
 
@@ -225,7 +225,7 @@ private
                         signed-ε?
 
       fo-tab = smoves.fo-tabulation dependence (λ _ x → x)
-      fo = graph.read-edge dependence fo-tab
+      fo = graph.dep-rel-at dependence fo-tab
       summarise = smoves.tabulated-summary dependence (λ _ x → x) fo-tab
       module I = smoves.Interaction dependence fo
 

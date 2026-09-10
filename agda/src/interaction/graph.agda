@@ -390,8 +390,8 @@ vertex-order D .StrictTotalOrder._≈_ = _≡_
 vertex-order D .StrictTotalOrder._<_ = lt D
 vertex-order D .StrictTotalOrder.isStrictTotalOrder = lt-strict-total D
 
-EdgeLabels : {V : Set} → (V → Semimodule) → Set
-EdgeLabels {V} vertex-object = (x y : V) → vertex-object x ⇒ vertex-object y
+DepRels : {V : Set} → (V → Semimodule) → Set
+DepRels {V} vertex-object = (x y : V) → vertex-object x ⇒ vertex-object y
 
 table-of : ∀ {a b : ℕ} → 𝔽 a ⇒ 𝔽 b → M.Table
 table-of f = M.to-table (∃ₛ.fst (𝔽F-full f))
@@ -399,7 +399,7 @@ table-of f = M.to-table (∃ₛ.fst (𝔽F-full f))
 record Graph (m : ℕ) (D : Derivation) : Set₁ where
   field
     from-input : (q : Path D) → 𝔽 m ⇒ object D q
-    interior   : EdgeLabels (object D)
+    interior   : DepRels (object D)
     -- Every non-zero relation runs strictly forward in the evaluation order. The inputs are below
     -- everything, and the conclusion above everything, so it is a sink by construction.
     <-interior : ∀ p q → lt D p q ⊎ Prf (interior p q ≈ εₘ)
@@ -410,13 +410,13 @@ record Graph (m : ℕ) (D : Derivation) : Set₁ where
     roots-to-input  : Path D → List (Path D × M.Table)
     input-to-output : Path D → M.Table
 
-hide : {V : Set} (vertex-object : V → Semimodule) → EdgeLabels vertex-object → V → EdgeLabels vertex-object
+hide : {V : Set} (vertex-object : V → Semimodule) → DepRels vertex-object → V → DepRels vertex-object
 hide vertex-object G r x y = G x y +ₘ (G r y ∘ G x r)
 
-hide-all : {V : Set} (vertex-object : V → Semimodule) → EdgeLabels vertex-object → List V → EdgeLabels vertex-object
+hide-all : {V : Set} (vertex-object : V → Semimodule) → DepRels vertex-object → List V → DepRels vertex-object
 hide-all vertex-object = foldl (hide vertex-object)
 
-_≐_ : {V : Set} {vertex-object : V → Semimodule} → EdgeLabels vertex-object → EdgeLabels vertex-object → Prop
+_≐_ : {V : Set} {vertex-object : V → Semimodule} → DepRels vertex-object → DepRels vertex-object → Prop
 _≐_ {V} G G' = ∀ x y → G x y ≈ G' x y
 
 open import commutative-monoid using (CommutativeMonoid)
@@ -462,22 +462,22 @@ open SemiMod._≈m_
       (N.trans (N.sym N.+-distribʳ)
         (N.trans (N.·-cong (+-idem Semiring.ι) N.refl) N.·-unit))
 
-hide-cong : {V : Set} (vertex-object : V → Semimodule) {G G' : EdgeLabels vertex-object} (r : V) →
+hide-cong : {V : Set} (vertex-object : V → Semimodule) {G G' : DepRels vertex-object} (r : V) →
             G ≐ G' → hide vertex-object G r ≐ hide vertex-object G' r
 hide-cong vertex-object r e x y = +ₘ-cong (e x y) (∘-cong (e r y) (e x r))
 
-hide-all-cong : {V : Set} (vertex-object : V → Semimodule) {G G' : EdgeLabels vertex-object} (rs : List V) →
+hide-all-cong : {V : Set} (vertex-object : V → Semimodule) {G G' : DepRels vertex-object} (rs : List V) →
                 G ≐ G' → hide-all vertex-object G rs ≐ hide-all vertex-object G' rs
 hide-all-cong vertex-object []       e = e
 hide-all-cong vertex-object (r ∷ rs) e = hide-all-cong vertex-object rs (hide-cong vertex-object r e)
 
-hide-sink : {V : Set} (vertex-object : V → Semimodule) (G : EdgeLabels vertex-object) (r : V) →
+hide-sink : {V : Set} (vertex-object : V → Semimodule) (G : DepRels vertex-object) (r : V) →
             (∀ y → G r y ≈ εₘ) → hide vertex-object G r ≐ G
 hide-sink vertex-object G r z x y =
   ≈-trans (+ₘ-cong (≈-refl {f = G x y}) (∘-cong₁ {f₁ = G r y} {f₂ = εₘ} {g = G x r} (z y)))
           (absorb₁ (G x y) (G x r))
 
-hide-all-sink : {V : Set} (vertex-object : V → Semimodule) (G : EdgeLabels vertex-object) (r : V)
+hide-all-sink : {V : Set} (vertex-object : V → Semimodule) (G : DepRels vertex-object) (r : V)
                 (rs : List V) → (∀ y → G r y ≈ εₘ) → ∀ y → hide-all vertex-object G rs r y ≈ εₘ
 hide-all-sink vertex-object G r []        z = z
 hide-all-sink vertex-object G r (r' ∷ rs) z =
@@ -488,7 +488,7 @@ hide-all-sink vertex-object G r (r' ∷ rs) z =
                                      (CM.comp-bilinear-ε₂ {X = vertex-object r} (G r' y))))
                    (+ₘ-lunit εₘ))
 
-hide-all-source : {V : Set} (vertex-object : V → Semimodule) (G : EdgeLabels vertex-object) (r : V)
+hide-all-source : {V : Set} (vertex-object : V → Semimodule) (G : DepRels vertex-object) (r : V)
                   (rs : List V) → (∀ x → G x r ≈ εₘ) → ∀ x → hide-all vertex-object G rs x r ≈ εₘ
 hide-all-source vertex-object G r []        z = z
 hide-all-source vertex-object G r (r' ∷ rs) z =
@@ -501,7 +501,7 @@ hide-all-source vertex-object G r (r' ∷ rs) z =
 
 module Hide (V : Set) (w : V → Semimodule) where
   Gr : Set
-  Gr = EdgeLabels w
+  Gr = DepRels w
 
   h : Gr → V → Gr
   h = hide w
@@ -685,7 +685,7 @@ module Ordered {V : Set} (vertex-object : V → Semimodule) (_<_ : V → V → S
 
   open IsStrictOrder o using (trans; asym)
 
-  Fwd : EdgeLabels vertex-object → Set
+  Fwd : DepRels vertex-object → Set
   Fwd G = ∀ x y → (x < y) ⊎ Prf (G x y ≈ εₘ)
 
   fwd-hide : ∀ {G} r → Fwd G → Fwd (hide vertex-object G r)
@@ -708,7 +708,7 @@ module Ordered {V : Set} (vertex-object : V → Semimodule) (_<_ : V → V → S
     ... | inj₂ ⟪ e ⟫ | _          = ≈-trans {g = εₘ {vertex-object r'} {vertex-object r} ∘ G r r'} (∘-cong₁ {f₁ = G r' r} {f₂ = εₘ} {g = G r r'} e) (CM.comp-bilinear-ε₁ {Z = vertex-object r} (G r r'))
     ... | inj₁ _     | inj₂ ⟪ e ⟫ = ≈-trans {g = G r' r ∘ εₘ {vertex-object r} {vertex-object r'}} (∘-cong₂ {f = G r' r} e) (CM.comp-bilinear-ε₂ {X = vertex-object r} (G r' r))
 
-    both : ∀ (G : EdgeLabels vertex-object) r r' x y → vertex-object x ⇒ vertex-object y
+    both : ∀ (G : DepRels vertex-object) r r' x y → vertex-object x ⇒ vertex-object y
     both G r r' x y =
       (G x y +ₘ (G r y ∘ G x r)) +ₘ
       (((G r' y ∘ G x r') +ₘ (G r' y ∘ (G r r' ∘ G x r))) +ₘ ((G r y ∘ G r' r) ∘ G x r'))
@@ -800,14 +800,14 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
   vertex-object : V → Semimodule
   vertex-object v = 𝔽 (vertex-width v)
 
-  edge-labels : EdgeLabels vertex-object
-  edge-labels (inj₁ _) (inj₂ q) = from-input q
-  edge-labels (inj₂ p) (inj₂ q) = interior p q
-  edge-labels _        (inj₁ _) = εₘ
+  dep-rels : DepRels vertex-object
+  dep-rels (inj₁ _) (inj₂ q) = from-input q
+  dep-rels (inj₂ p) (inj₂ q) = interior p q
+  dep-rels _        (inj₁ _) = εₘ
 
   collapse : 𝔽 m ⇒ 𝔽 (out-width D)
   collapse =
-    hide-all vertex-object edge-labels (map inj₂ (vertices-result-first D)) (inj₁ input) (inj₂ ε)
+    hide-all vertex-object dep-rels (map inj₂ (vertices-result-first D)) (inj₁ input) (inj₂ ε)
 
   paths⁺ : List (Path D)
   paths⁺ = ε ∷ vertices-result-first D
@@ -818,8 +818,8 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
   fo-hidden : List (Path D)
   fo-hidden = filterᵇ (λ q → not (fo-at D q)) (vertices D)
 
-  fo-graph : EdgeLabels vertex-object
-  fo-graph = hide-all vertex-object edge-labels (map inj₂ fo-hidden)
+  fo-graph : DepRels vertex-object
+  fo-graph = hide-all vertex-object dep-rels (map inj₂ fo-hidden)
 
   _<ᵥ_ : V → V → Set
   _<ᵥ_ = sum-< (λ _ _ → ⊥) (lt D)
@@ -832,14 +832,14 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
 
   open O public using (Fwd; hide-all-perm)
 
-  edge-labels-forward : Fwd edge-labels
-  edge-labels-forward (inj₁ _) (inj₂ q) = inj₁ tt
-  edge-labels-forward (inj₂ p) (inj₂ q) = <-interior p q
-  edge-labels-forward (inj₁ _) (inj₁ _) = inj₂ ⟪ ≈-refl ⟫
-  edge-labels-forward (inj₂ p) (inj₁ _) = inj₂ ⟪ ≈-refl ⟫
+  dep-rels-forward : Fwd dep-rels
+  dep-rels-forward (inj₁ _) (inj₂ q) = inj₁ tt
+  dep-rels-forward (inj₂ p) (inj₂ q) = <-interior p q
+  dep-rels-forward (inj₁ _) (inj₁ _) = inj₂ ⟪ ≈-refl ⟫
+  dep-rels-forward (inj₂ p) (inj₁ _) = inj₂ ⟪ ≈-refl ⟫
 
   fo-forward : Fwd fo-graph
-  fo-forward = O.fwd-hide-all (map inj₂ fo-hidden) edge-labels-forward
+  fo-forward = O.fwd-hide-all (map inj₂ fo-hidden) dep-rels-forward
 
   -- Hiding the remaining vertices of the first-order graph collapses the graph: the two stages
   -- together hide every interior vertex exactly once, and reordering into result-first order is
@@ -847,13 +847,13 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
   fo-collapse : hide-all vertex-object fo-graph (map inj₂ FO) (inj₁ input) (inj₂ ε) ≈ collapse
   fo-collapse =
     ≈-trans (≡-to-≈ (≡-cong (λ G → G (inj₁ input) (inj₂ ε)) two-stage))
-            (hide-all-perm edge-labels-forward (map⁺ inj₂ interior-perm) (inj₁ input) (inj₂ ε))
+            (hide-all-perm dep-rels-forward (map⁺ inj₂ interior-perm) (inj₁ input) (inj₂ ε))
     where
     two-stage : hide-all vertex-object fo-graph (map inj₂ FO)
-                ≡ hide-all vertex-object edge-labels (map inj₂ (fo-hidden ++ FO))
+                ≡ hide-all vertex-object dep-rels (map inj₂ (fo-hidden ++ FO))
     two-stage =
-      ≡-trans (≡-sym (foldl-++ (hide vertex-object) edge-labels (map inj₂ fo-hidden) (map inj₂ FO)))
-              (≡-cong (hide-all vertex-object edge-labels) (≡-sym (map-++ inj₂ fo-hidden FO)))
+      ≡-trans (≡-sym (foldl-++ (hide vertex-object) dep-rels (map inj₂ fo-hidden) (map inj₂ FO)))
+              (≡-cong (hide-all vertex-object dep-rels) (≡-sym (map-++ inj₂ fo-hidden FO)))
 
     interior-perm : (fo-hidden ++ FO) ↭ vertices-result-first D
     interior-perm = ↭-trans (filterᵇ-split (fo-at D) (vertices D)) (vertices-perm D)
@@ -863,13 +863,13 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
 -- evaluation order (the inputs vertex first, the conclusion last). An empty slot is the zero
 -- relation, so a read forces only the slot it consults. Rows, slots and widths are indexed by
 -- position in the vertex list, not by vertex number.
-record Tabulation : Set where
+record DepRelTables : Set where
   field
     numbers : List ℕ
     widths  : List ℕ
     edges   : List (List (Maybe M.Table))
 
-open Tabulation public using (widths; edges)
+open DepRelTables public using (widths; edges)
 
 private
   sum : List Semiring.Carrier → Semiring.Carrier
@@ -918,8 +918,8 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D)
          (ε-dec : (x : Semiring.Carrier) → Dec (x ≡ Semiring.ε))
          (tick : {A : Set} → String → A → A) where
 
-  edge-table : (u v : V 𝒢) → M.Table
-  edge-table u v = tick "edge" (M.to-table (∃ₛ.fst (𝔽F-full (edge-labels 𝒢 u v))))
+  dep-rel-table : (u v : V 𝒢) → M.Table
+  dep-rel-table u v = tick "edge" (M.to-table (∃ₛ.fst (𝔽F-full (dep-rels 𝒢 u v))))
 
   nonzero-entry : Semiring.Carrier → Bool
   nonzero-entry x = not ⌊ ε-dec x ⌋
@@ -927,26 +927,26 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D)
   nonzero-slot : M.Table → Bool
   nonzero-slot = any (any nonzero-entry)
 
-  edge-slot : M.Table → Maybe M.Table
-  edge-slot t = if nonzero-slot t then just t else nothing
+  dep-rel-slot : M.Table → Maybe M.Table
+  dep-rel-slot t = if nonzero-slot t then just t else nothing
 
-  edge-row : V 𝒢 → List (Maybe M.Table)
-  edge-row x = map (λ y → edge-slot (edge-table x y)) (all-vertices 𝒢)
+  dep-rel-row : V 𝒢 → List (Maybe M.Table)
+  dep-rel-row x = map (λ y → dep-rel-slot (dep-rel-table x y)) (all-vertices 𝒢)
 
-  tabulation : Tabulation
-  tabulation .Tabulation.numbers = upTo (length (all-vertices 𝒢))
-  tabulation .Tabulation.widths   = map (vertex-width 𝒢) (all-vertices 𝒢)
-  tabulation .Tabulation.edges    = map edge-row (all-vertices 𝒢)
+  dep-rel-tables : DepRelTables
+  dep-rel-tables .DepRelTables.numbers = upTo (length (all-vertices 𝒢))
+  dep-rel-tables .DepRelTables.widths   = map (vertex-width 𝒢) (all-vertices 𝒢)
+  dep-rel-tables .DepRelTables.edges    = map dep-rel-row (all-vertices 𝒢)
 
 
 find-number : ℕ → ℕ → List ℕ → Maybe ℕ
 find-number i k []       = nothing
 find-number i k (j ∷ js) = if i ≡ᵇ j then just k else find-number i (suc k) js
 
-position : Tabulation → ℕ → Maybe ℕ
-position T i = find-number i 0 (Tabulation.numbers T)
+position : DepRelTables → ℕ → Maybe ℕ
+position T i = find-number i 0 (DepRelTables.numbers T)
 
-table-at : Tabulation → ℕ → ℕ → Maybe M.Table
+table-at : DepRelTables → ℕ → ℕ → Maybe M.Table
 table-at T i j = M.nth nothing j (M.nth [] i (T .edges))
 
 zero-table : ℕ → ℕ → M.Table
@@ -958,7 +958,7 @@ add-table r c t u =
              (upTo c))
       (upTo r)
 
-read-table : Tabulation → ℕ → ℕ → M.Table
+read-table : DepRelTables → ℕ → ℕ → M.Table
 read-table T i j with table-at T i j
 ... | just t  = t
 ... | nothing = zero-table (M.nth 0 j (T .widths)) (M.nth 0 i (T .widths))
@@ -976,11 +976,11 @@ mask-rows member all-ns []       _        = []
 mask-rows member all-ns (n ∷ ns) (r ∷ rs) =
   mask-slots member (member n) all-ns r ∷ mask-rows member all-ns ns rs
 
-restrict : List ℕ → Tabulation → Tabulation
-restrict region T .Tabulation.numbers = Tabulation.numbers T
-restrict region T .Tabulation.widths  = T .widths
-restrict region T .Tabulation.edges   =
-  mask-rows (λ n → any (n ≡ᵇ_) region) (Tabulation.numbers T) (Tabulation.numbers T) (T .edges)
+restrict : List ℕ → DepRelTables → DepRelTables
+restrict region T .DepRelTables.numbers = DepRelTables.numbers T
+restrict region T .DepRelTables.widths  = T .widths
+restrict region T .DepRelTables.edges   =
+  mask-rows (λ n → any (n ≡ᵇ_) region) (DepRelTables.numbers T) (DepRelTables.numbers T) (T .edges)
 
 module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
 
@@ -988,16 +988,16 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
   table-morphism x y (just t) = mat (M.look {vertex-width 𝒢 y} {vertex-width 𝒢 x} t)
   table-morphism x y nothing  = εₘ
 
-  read-slot : Tabulation → (x y : V 𝒢) → Maybe ℕ → Maybe ℕ → vertex-object 𝒢 x ⇒ vertex-object 𝒢 y
+  read-slot : DepRelTables → (x y : V 𝒢) → Maybe ℕ → Maybe ℕ → vertex-object 𝒢 x ⇒ vertex-object 𝒢 y
   read-slot T x y (just a) (just b) = table-morphism x y (table-at T a b)
   read-slot T x y _        _        = εₘ
 
-  read-edge : Tabulation → (x y : V 𝒢) → vertex-object 𝒢 x ⇒ vertex-object 𝒢 y
-  read-edge T x y = read-slot T x y (position T (index-of 𝒢 x)) (position T (index-of 𝒢 y))
+  dep-rel-at : DepRelTables → (x y : V 𝒢) → vertex-object 𝒢 x ⇒ vertex-object 𝒢 y
+  dep-rel-at T x y = read-slot T x y (position T (index-of 𝒢 x)) (position T (index-of 𝒢 y))
 
--- Hiding over a tabulation, with the hidden vertices listed so that every nonzero edge among
+-- Hiding over stored tables, with the hidden vertices listed so that every edge among
 -- them runs forward.
-module Tabulated (T : Tabulation) (tick : {A : Set} → String → A → A) where
+module Tabulated (T : DepRelTables) (tick : {A : Set} → String → A → A) where
 
   wd : ℕ → ℕ
   wd i = M.nth 0 i (T .widths)
@@ -1055,12 +1055,12 @@ module Tabulated (T : Tabulation) (tick : {A : Set} → String → A → A) wher
     row : ℕ → List (Maybe M.Table)
     row a = row-slots a (summaries 0 a [] hid-pos)
 
-    result : Tabulation
-    result .Tabulation.numbers = map (λ p → M.nth 0 p (Tabulation.numbers T)) survivors
-    result .Tabulation.widths  = map wd survivors
-    result .Tabulation.edges   = map row survivors
+    result : DepRelTables
+    result .DepRelTables.numbers = map (λ p → M.nth 0 p (DepRelTables.numbers T)) survivors
+    result .DepRelTables.widths  = map wd survivors
+    result .DepRelTables.edges   = map row survivors
 
-  hide-graph : ((x : Semiring.Carrier) → Dec (x ≡ Semiring.ε)) → List ℕ → Tabulation
+  hide-graph : ((x : Semiring.Carrier) → Dec (x ≡ Semiring.ε)) → List ℕ → DepRelTables
   hide-graph ε-dec hid = HideGraph.result ε-dec hid
 
 -- Hiding with edge labels applied as functions to the row blocks propagated from the region's
@@ -1495,8 +1495,8 @@ look-add t u i j =
   ≡-trans (≡-cong (M.nth Semiring.ε (toℕ j)) (nth-applyUpTo [] _ (λ k → k) i))
           (nth-applyUpTo Semiring.ε _ (λ k → k) j)
 
--- A tabulation represents a graph at a vertex list when its numbers and widths read off that list
--- and every slot's morphism is the graph's edge.
+-- Stored tables represent a graph at a vertex list when their numbers and widths read off that list
+-- and every slot's morphism is the graph's dependence relation.
 module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
 
   private
@@ -1517,25 +1517,25 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
                          (AllP.map⁺ (universal (λ _ → ≡-refl) (upTo c))))
                  (upTo r)))
 
-  read-table-rep : (T : Tabulation) (x y : V 𝒢) (p q : ℕ) →
+  read-table-rep : (T : DepRelTables) (x y : V 𝒢) (p q : ℕ) →
                    mat (M.look {vertex-width 𝒢 y} {vertex-width 𝒢 x} (read-table T p q))
                    ≈ table-morphism 𝒢 x y (table-at T p q)
   read-table-rep T x y p q with table-at T p q
   ... | just t  = ≈-refl
   ... | nothing =
-    zero-table-morphism x y (M.nth 0 q (Tabulation.widths T)) (M.nth 0 p (Tabulation.widths T))
+    zero-table-morphism x y (M.nth 0 q (DepRelTables.widths T)) (M.nth 0 p (DepRelTables.widths T))
 
-  record Represents (T : Tabulation) (vs : List (V 𝒢)) (G : EdgeLabels (vertex-object 𝒢)) : Set where
+  record Represents (T : DepRelTables) (vs : List (V 𝒢)) (G : DepRels (vertex-object 𝒢)) : Set where
     field
-      numbers-eq       : Tabulation.numbers T ≡ map (index-of 𝒢) vs
+      numbers-eq       : DepRelTables.numbers T ≡ map (index-of 𝒢) vs
       widths-eq        : T .widths ≡ map (vertex-width 𝒢) vs
-      numbers-distinct : AllPairs _≢_ (Tabulation.numbers T)
+      numbers-distinct : AllPairs _≢_ (DepRelTables.numbers T)
       slots            : ∀ {a b : ℕ} {x y : V 𝒢} → nth? a vs ≡ just x → nth? b vs ≡ just y →
                          Prf (table-morphism 𝒢 x y (table-at T a b) ≈ G x y)
 
   open Represents public
 
-  locate : {T : Tabulation} {vs : List (V 𝒢)} {G : EdgeLabels (vertex-object 𝒢)} →
+  locate : {T : DepRelTables} {vs : List (V 𝒢)} {G : DepRels (vertex-object 𝒢)} →
            Represents T vs G → {p : ℕ} {x : V 𝒢} → nth? p vs ≡ just x →
            position T (index-of 𝒢 x) ≡ just p
   locate {T} {vs} R {p} {x} h =
@@ -1544,10 +1544,10 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
                     (subst (AllPairs _≢_) (R .numbers-eq) (R .numbers-distinct))
                     (nth?-map (index-of 𝒢) p vs h))
 
-  read-edge-rep : {T : Tabulation} {vs : List (V 𝒢)} {G : EdgeLabels (vertex-object 𝒢)} →
+  dep-rel-at-rep : {T : DepRelTables} {vs : List (V 𝒢)} {G : DepRels (vertex-object 𝒢)} →
                   Represents T vs G → {x y : V 𝒢} → x ∈ vs → y ∈ vs →
-                  read-edge 𝒢 T x y ≈ G x y
-  read-edge-rep {T} {vs} {G} R {x} {y} mx my with ∈-nth? mx | ∈-nth? my
+                  dep-rel-at 𝒢 T x y ≈ G x y
+  dep-rel-at-rep {T} {vs} {G} R {x} {y} mx my with ∈-nth? mx | ∈-nth? my
   ... | (p , hp) | (q , hq) =
     ≈-trans (≡-to-≈ (≡-cong₂ (λ u v → read-slot 𝒢 T x y u v) (locate R hp) (locate R hq)))
             (Prf.prf (R .slots hp hq))
@@ -1601,37 +1601,37 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
     upTo-distinct : (n : ℕ) → AllPairs _≢_ (upTo n)
     upTo-distinct n = AllPairsP.applyUpTo⁺₁ _ n (λ i<j _ → <⇒≢ i<j)
 
-  tabulation-rep : (ε-dec : (x : Semiring.Carrier) → Dec (x ≡ Semiring.ε)) →
-                   Represents (tabulation 𝒢 ε-dec (λ _ x → x)) (all-vertices 𝒢) (edge-labels 𝒢)
-  tabulation-rep ε-dec .numbers-eq       = numbers-self
-  tabulation-rep ε-dec .widths-eq        = ≡-refl
-  tabulation-rep ε-dec .numbers-distinct = upTo-distinct (length (all-vertices 𝒢))
-  tabulation-rep ε-dec .slots {a} {b} {x} {y} ha hb =
-    subst (λ w → Prf (table-morphism 𝒢 x y w ≈ edge-labels 𝒢 x y)) (≡-sym table-eq) at-slot
+  dep-rel-tables-rep : (ε-dec : (x : Semiring.Carrier) → Dec (x ≡ Semiring.ε)) →
+                   Represents (dep-rel-tables 𝒢 ε-dec (λ _ x → x)) (all-vertices 𝒢) (dep-rels 𝒢)
+  dep-rel-tables-rep ε-dec .numbers-eq       = numbers-self
+  dep-rel-tables-rep ε-dec .widths-eq        = ≡-refl
+  dep-rel-tables-rep ε-dec .numbers-distinct = upTo-distinct (length (all-vertices 𝒢))
+  dep-rel-tables-rep ε-dec .slots {a} {b} {x} {y} ha hb =
+    subst (λ w → Prf (table-morphism 𝒢 x y w ≈ dep-rels 𝒢 x y)) (≡-sym table-eq) at-slot
     where
     idt : {C : Set} → String → C → C
     idt _ c = c
 
-    R = ∃ₛ.fst (𝔽F-full (edge-labels 𝒢 x y))
+    R = ∃ₛ.fst (𝔽F-full (dep-rels 𝒢 x y))
 
-    table-eq : table-at (tabulation 𝒢 ε-dec idt) a b
-               ≡ edge-slot 𝒢 ε-dec idt (edge-table 𝒢 ε-dec idt x y)
+    table-eq : table-at (dep-rel-tables 𝒢 ε-dec idt) a b
+               ≡ dep-rel-slot 𝒢 ε-dec idt (dep-rel-table 𝒢 ε-dec idt x y)
     table-eq =
       ≡-trans (≡-cong (M.nth nothing b)
-                      (nth?-nth [] a (map (edge-row 𝒢 ε-dec idt) (all-vertices 𝒢))
-                                (nth?-map (edge-row 𝒢 ε-dec idt) a (all-vertices 𝒢) ha)))
+                      (nth?-nth [] a (map (dep-rel-row 𝒢 ε-dec idt) (all-vertices 𝒢))
+                                (nth?-map (dep-rel-row 𝒢 ε-dec idt) a (all-vertices 𝒢) ha)))
               (nth?-nth nothing b
-                        (map (λ y' → edge-slot 𝒢 ε-dec idt (edge-table 𝒢 ε-dec idt x y'))
+                        (map (λ y' → dep-rel-slot 𝒢 ε-dec idt (dep-rel-table 𝒢 ε-dec idt x y'))
                              (all-vertices 𝒢))
-                        (nth?-map (λ y' → edge-slot 𝒢 ε-dec idt (edge-table 𝒢 ε-dec idt x y'))
+                        (nth?-map (λ y' → dep-rel-slot 𝒢 ε-dec idt (dep-rel-table 𝒢 ε-dec idt x y'))
                                   b (all-vertices 𝒢) hb))
 
-    at-slot : Prf (table-morphism 𝒢 x y (edge-slot 𝒢 ε-dec idt (edge-table 𝒢 ε-dec idt x y))
-                   ≈ edge-labels 𝒢 x y)
-    at-slot with nonzero-slot 𝒢 ε-dec idt (edge-table 𝒢 ε-dec idt x y) in nz
+    at-slot : Prf (table-morphism 𝒢 x y (dep-rel-slot 𝒢 ε-dec idt (dep-rel-table 𝒢 ε-dec idt x y))
+                   ≈ dep-rels 𝒢 x y)
+    at-slot with nonzero-slot 𝒢 ε-dec idt (dep-rel-table 𝒢 ε-dec idt x y) in nz
     ... | true  =
       ⟪ ≈-trans (mat-cong (λ i j → ≈-of-≡ (look-to-table R i j)))
-                (∃ₛ.snd (𝔽F-full (edge-labels 𝒢 x y))) ⟫
+                (∃ₛ.snd (𝔽F-full (dep-rels 𝒢 x y))) ⟫
     ... | false = ⟪ ≈-sym zero-case ⟫
       where
       all-ε : All (All (λ e → e ≡ Semiring.ε)) (M.to-table R)
@@ -1644,9 +1644,9 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
                 (nth-All [] (toℕ i) ≡-refl
                          (All-map (λ rz → nth-All Semiring.ε (toℕ j) ≡-refl rz) all-ε))
 
-      zero-case : edge-labels 𝒢 x y ≈ εₘ
+      zero-case : dep-rels 𝒢 x y ≈ εₘ
       zero-case =
-        ≈-trans (≈-sym (∃ₛ.snd (𝔽F-full (edge-labels 𝒢 x y))))
+        ≈-trans (≈-sym (∃ₛ.snd (𝔽F-full (dep-rels 𝒢 x y))))
                 (≈-trans (mat-cong (λ i j → ≈-of-≡ (entry-ε i j))) mat-ε)
 
   ∈-all-vertices : (v : V 𝒢) → v ∈ all-vertices 𝒢
@@ -1670,7 +1670,7 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
     same-pos : pu ≡ pv
     same-pos = ≡-trans (≡-sym (idx-at eu)) (≡-trans e (idx-at ev))
 
-  rep-cong : {T : Tabulation} {vs : List (V 𝒢)} {G G' : EdgeLabels (vertex-object 𝒢)} →
+  rep-cong : {T : DepRelTables} {vs : List (V 𝒢)} {G G' : DepRels (vertex-object 𝒢)} →
              ((x y : V 𝒢) → G x y ≈ G' x y) →
              Represents T vs G → Represents T vs G'
   rep-cong e R .numbers-eq       = R .numbers-eq
@@ -1678,15 +1678,15 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
   rep-cong e R .numbers-distinct = R .numbers-distinct
   rep-cong e R .slots {a} {b} {x} {y} ha hb = ⟪ ≈-trans (Prf.prf (R .slots ha hb)) (e x y) ⟫
 
-  -- The graph the restricted tabulation stores: an edge survives when either endpoint's number
+  -- The graph the restricted tables store: an edge survives when either endpoint's number
   -- lies in the region.
-  restrict-mask : List (V 𝒢) → EdgeLabels (vertex-object 𝒢) → EdgeLabels (vertex-object 𝒢)
+  restrict-mask : List (V 𝒢) → DepRels (vertex-object 𝒢) → DepRels (vertex-object 𝒢)
   restrict-mask ws' G x y =
     if any (index-of 𝒢 x ≡ᵇ_) (map (index-of 𝒢) ws')
        ∨ any (index-of 𝒢 y ≡ᵇ_) (map (index-of 𝒢) ws')
     then G x y else εₘ
 
-  restrict-rep : {T : Tabulation} {vs : List (V 𝒢)} {G : EdgeLabels (vertex-object 𝒢)} →
+  restrict-rep : {T : DepRelTables} {vs : List (V 𝒢)} {G : DepRels (vertex-object 𝒢)} →
                  Represents T vs G → (ws' : List (V 𝒢)) →
                  Represents (restrict (map (index-of 𝒢) ws') T) vs (restrict-mask ws' G)
   restrict-rep R ws' .numbers-eq       = R .numbers-eq
@@ -1698,11 +1698,11 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
     member : ℕ → Bool
     member n = any (n ≡ᵇ_) (map (index-of 𝒢) ws')
 
-    na-eq : nth? a (Tabulation.numbers T) ≡ just (index-of 𝒢 x)
+    na-eq : nth? a (DepRelTables.numbers T) ≡ just (index-of 𝒢 x)
     na-eq = subst (λ ns → nth? a ns ≡ just (index-of 𝒢 x)) (≡-sym (R .numbers-eq))
                   (nth?-map (index-of 𝒢) a vs ha)
 
-    nb-eq : nth? b (Tabulation.numbers T) ≡ just (index-of 𝒢 y)
+    nb-eq : nth? b (DepRelTables.numbers T) ≡ just (index-of 𝒢 y)
     nb-eq = subst (λ ns → nth? b ns ≡ just (index-of 𝒢 y)) (≡-sym (R .numbers-eq))
                   (nth?-map (index-of 𝒢) b vs hb)
 
@@ -1711,10 +1711,10 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
                  then table-at T a b else nothing)
     slot-eq =
       ≡-trans (≡-cong (M.nth nothing b)
-                      (mask-row member (Tabulation.numbers T) (Tabulation.numbers T)
-                                (Tabulation.edges T) a na-eq))
-              (mask-col member (member (index-of 𝒢 x)) (Tabulation.numbers T)
-                        (M.nth [] a (Tabulation.edges T)) b nb-eq)
+                      (mask-row member (DepRelTables.numbers T) (DepRelTables.numbers T)
+                                (DepRelTables.edges T) a na-eq))
+              (mask-col member (member (index-of 𝒢 x)) (DepRelTables.numbers T)
+                        (M.nth [] a (DepRelTables.edges T)) b nb-eq)
 
     at-mask : Prf (table-morphism 𝒢 x y
                      (if member (index-of 𝒢 x) ∨ member (index-of 𝒢 y)
@@ -1724,12 +1724,12 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
     ... | true  = R .slots ha hb
     ... | false = ⟪ ≈-refl ⟫
 
-  -- Hiding over a represented tabulation represents hiding in the graph: with the hidden vertices
+  -- Hiding over represented tables represents hiding in the graph: with the hidden vertices
   -- stored, listed without repeats, and carrying no backward edge among them, the result
   -- represents hide-all at the surviving vertices.
   module HideRepresents
       (ε-dec : (x : Semiring.Carrier) → Dec (x ≡ Semiring.ε))
-      {T : Tabulation} {vs : List (V 𝒢)} {G : EdgeLabels (vertex-object 𝒢)}
+      {T : DepRelTables} {vs : List (V 𝒢)} {G : DepRels (vertex-object 𝒢)}
       (R : Represents T vs G)
       (ws : List (V 𝒢)) (ws-mem : All (_∈ vs) ws)
       (pairs : AllPairs (λ v u → Prf (G u v ≈ εₘ)) ws) where
@@ -1749,18 +1749,18 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
                 (nth?-nth 0 p (map (vertex-width 𝒢) vs) (nth?-map (vertex-width 𝒢) p vs h))
 
       num-at : {p : ℕ} {x : V 𝒢} → nth? p vs ≡ just x →
-               M.nth 0 p (Tabulation.numbers T) ≡ index-of 𝒢 x
+               M.nth 0 p (DepRelTables.numbers T) ≡ index-of 𝒢 x
       num-at {p} {x} h =
         ≡-trans (≡-cong (M.nth 0 p) (R .numbers-eq))
                 (nth?-nth 0 p (map (index-of 𝒢) vs) (nth?-map (index-of 𝒢) p vs h))
 
       nth?-num : {p : ℕ} {x : V 𝒢} → nth? p vs ≡ just x →
-                 nth? p (Tabulation.numbers T) ≡ just (index-of 𝒢 x)
+                 nth? p (DepRelTables.numbers T) ≡ just (index-of 𝒢 x)
       nth?-num {p} {x} h =
         subst (λ ns → nth? p ns ≡ just (index-of 𝒢 x)) (≡-sym (R .numbers-eq))
               (nth?-map (index-of 𝒢) p vs h)
 
-      len-eq : length (Tabulation.widths T) ≡ length vs
+      len-eq : length (DepRelTables.widths T) ≡ length vs
       len-eq = ≡-trans (≡-cong length (R .widths-eq)) (length-map (vertex-width 𝒢) vs)
 
       data PosOf : List ℕ → List (V 𝒢) → Set where
@@ -1932,7 +1932,7 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
       survivors-just =
         All-map (λ {p} lt → nth?-defined p vs lt)
                 (filterᵇ-All (λ p → not (any (p ≡ᵇ_) HG.hid-pos))
-                             (applyUpTo-All (λ i → i) (length (Tabulation.widths T))
+                             (applyUpTo-All (λ i → i) (length (DepRelTables.widths T))
                                             (λ p lt → subst (p <_) len-eq lt)))
 
       extract : ∀ {ps} → All (λ p → Σ (V 𝒢) (λ z → nth? p vs ≡ just z)) ps → List (V 𝒢)
@@ -1952,7 +1952,7 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
       ... | (p , sa , sx) = p , sa , sx
 
       nums-eq : ∀ {ps} (sj : All (λ p → Σ (V 𝒢) (λ z → nth? p vs ≡ just z)) ps) →
-                map (λ p → M.nth 0 p (Tabulation.numbers T)) ps
+                map (λ p → M.nth 0 p (DepRelTables.numbers T)) ps
                 ≡ map (index-of 𝒢) (mapMaybe (λ p → nth? p vs) ps)
       nums-eq []               = ≡-refl
       nums-eq (_∷_ (z , e) sj) rewrite e = ≡-cong₂ _∷_ (num-at e) (nums-eq sj)
@@ -1974,16 +1974,16 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
 
       map-nth-distinct : ∀ {ps} → All (λ p → Σ (V 𝒢) (λ z → nth? p vs ≡ just z)) ps →
                          AllPairs _≢_ ps →
-                         AllPairs _≢_ (map (λ p → M.nth 0 p (Tabulation.numbers T)) ps)
+                         AllPairs _≢_ (map (λ p → M.nth 0 p (DepRelTables.numbers T)) ps)
       map-nth-distinct []                   []          = []
       map-nth-distinct (_∷_ {p} (z , e) sj) (hp ∷ dps) =
         AllP.map⁺ (heads sj hp) ∷ map-nth-distinct sj dps
         where
         heads : ∀ {qs} → All (λ q → Σ (V 𝒢) (λ z' → nth? q vs ≡ just z')) qs → All (p ≢_) qs →
-                All (λ q → M.nth 0 p (Tabulation.numbers T) ≢ M.nth 0 q (Tabulation.numbers T)) qs
+                All (λ q → M.nth 0 p (DepRelTables.numbers T) ≢ M.nth 0 q (DepRelTables.numbers T)) qs
         heads []                      []         = []
         heads (_∷_ {q} (z' , e') sj') (ne ∷ nes) =
-          (λ eq → nth-differ (Tabulation.numbers T) (R .numbers-distinct) ne
+          (λ eq → nth-differ (DepRelTables.numbers T) (R .numbers-distinct) ne
                              (nth?-num e) (nth?-num e')
                              (≡-trans (≡-sym (num-at e)) (≡-trans eq (num-at e'))))
           ∷ heads sj' nes
@@ -2001,7 +2001,7 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
     ... | (p , hp) =
       ∈-mapMaybe (∈-filterᵇ (λ p' → not (any (p' ≡ᵇ_) HG.hid-pos)) up-mem surv) hp
       where
-      up-mem : p ∈ upTo (length (Tabulation.widths T))
+      up-mem : p ∈ upTo (length (DepRelTables.widths T))
       up-mem = subst (λ n → p ∈ upTo n) (≡-sym len-eq)
                      (<-applyUpTo (λ i → i) (nth?-length p vs hp))
       surv : not (any (p ≡ᵇ_) HG.hid-pos) ≡ true
@@ -2014,7 +2014,7 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
     hide-rep .numbers-distinct =
       map-nth-distinct survivors-just
                        (filterᵇ-AllPairs (λ p → not (any (p ≡ᵇ_) HG.hid-pos))
-                                         (upTo-distinct (length (Tabulation.widths T))))
+                                         (upTo-distinct (length (DepRelTables.widths T))))
     hide-rep .slots {a'} {b'} {x} {y} ha' hb'
       with at-extract survivors-just
                       (subst (λ l → nth? a' l ≡ just x) (mapMaybe-just survivors-just) ha')
@@ -2063,17 +2063,17 @@ private
 -- conclusion's, which for a premise evaluated in a substituted environment is not the identity.
 module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
 
-  root-row : ∀ y → edge-labels 𝒢 (inj₂ ε) y ≈ εₘ
+  root-row : ∀ y → dep-rels 𝒢 (inj₂ ε) y ≈ εₘ
   root-row (inj₁ _) = ≈-refl {f = εₘ}
   root-row (inj₂ q) with Graph.<-interior 𝒢 ε q
   ... | inj₁ ()
   ... | inj₂ ⟪ e ⟫ = e
 
-  hide-paths⁺ : hide-all (vertex-object 𝒢) (edge-labels 𝒢) (map inj₂ (paths⁺ 𝒢)) (inj₁ input) (inj₂ ε)
+  hide-paths⁺ : hide-all (vertex-object 𝒢) (dep-rels 𝒢) (map inj₂ (paths⁺ 𝒢)) (inj₁ input) (inj₂ ε)
                 ≈ collapse 𝒢
   hide-paths⁺ =
     hide-all-cong (vertex-object 𝒢) (map inj₂ (vertices-result-first D))
-                  (hide-sink (vertex-object 𝒢) (edge-labels 𝒢) (inj₂ ε) root-row)
+                  (hide-sink (vertex-object 𝒢) (dep-rels 𝒢) (inj₂ ε) root-row)
                   (inj₁ input) (inj₂ ε)
 
 module HidePremise
@@ -2116,7 +2116,7 @@ module HidePremise
       ≈-trans (CM.comp-bilinear₁ (st .from-input q) (st .interior w q ∘ st .from-input w) Φ)
               (+ₘ-cong ≈-refl (assoc (st .interior w q) (st .from-input w) Φ))
 
-  record Agrees (G : EdgeLabels object') (st : St) : Set where
+  record Agrees (G : DepRels object') (st : St) : Set where
     field
       into-ok   : ∀ q → G inp (blk q) ≈ (st .from-input q ∘ Φ)
       interior-ok : ∀ p q → G (blk p) (blk q) ≈ st .interior p q
@@ -2150,7 +2150,7 @@ module HidePremise
 
   -- The relations a rule contributes, before the graph's root is hidden. Every edge from the graph to
   -- a target leaves the graph's root, which here is a matter of the vertex set rather than a lemma.
-  record Start (G : EdgeLabels object') (st : St) : Set where
+  record Start (G : DepRels object') (st : St) : Set where
     field
       into-start   : ∀ q → G inp (blk q) ≈ (st .from-input q ∘ Φ)
       interior-start : ∀ p q → G (blk p) (blk q) ≈ st .interior p q
@@ -2190,13 +2190,13 @@ module HidePremise
       ≈-trans (+ₘ-cong ≈-refl (∘-cong₁ {f₁ = st .interior ε ε} {f₂ = εₘ} {g = st .interior p ε} (r .sink ε)))
               (absorb₁ (st .interior p ε) (st .interior p ε))
 
-  module Hidden (G₀ : EdgeLabels object') (prem : EdgeLabels (vertex-object 𝒢) → St)
+  module Hidden (G₀ : DepRels object') (prem : DepRels (vertex-object 𝒢) → St)
                 (prem-step : ∀ G w → step (prem G) w ≡ prem (hide (vertex-object 𝒢) G (inj₂ w))) where
 
     st⁰ : St
-    st⁰ = prem (edge-labels 𝒢)
+    st⁰ = prem (dep-rels 𝒢)
 
-    G : EdgeLabels object'
+    G : DepRels object'
     G = hide-all object' (hide object' G₀ (blk ε)) (map blk (vertices-result-first D))
 
     st : St
@@ -2206,8 +2206,8 @@ module HidePremise
     done start =
       agrees-hide-all (vertices-result-first D) (vertices-result-first-no-ε D) (agrees-start start)
 
-    κ : st .from-input ε ≡ prem (hide-all (vertex-object 𝒢) (edge-labels 𝒢) (map inj₂ (paths⁺ 𝒢))) .from-input ε
-    κ = ≡-cong (λ st' → st' .from-input ε) (folds prem inj₂ (hide (vertex-object 𝒢)) prem-step (paths⁺ 𝒢) (edge-labels 𝒢))
+    κ : st .from-input ε ≡ prem (hide-all (vertex-object 𝒢) (dep-rels 𝒢) (map inj₂ (paths⁺ 𝒢))) .from-input ε
+    κ = ≡-cong (λ st' → st' .from-input ε) (folds prem inj₂ (hide (vertex-object 𝒢)) prem-step (paths⁺ 𝒢) (dep-rels 𝒢))
 
 module NoEdgeIntoHidden
   {V : Set} (vertex-object : V → Semimodule)
@@ -2217,7 +2217,7 @@ module NoEdgeIntoHidden
   (𝒢 : (s : S) (t : T) → vertex-object (src s) ⇒ vertex-object (col t))
   where
 
-  record Fixed (G : EdgeLabels vertex-object) : Set where
+  record Fixed (G : DepRels vertex-object) : Set where
     field
       edge    : ∀ s t → G (src s) (col t) ≈ 𝒢 s t
       no-edge : ∀ s w → G (src s) (hid w) ≈ εₘ
@@ -2264,7 +2264,7 @@ module NoEdgeOutOfHidden
   (𝒢 : (s : S) (t : T) → vertex-object (src s) ⇒ vertex-object (col t))
   where
 
-  record Fixed (G : EdgeLabels vertex-object) : Set where
+  record Fixed (G : DepRels vertex-object) : Set where
     field
       edge    : ∀ s t → G (src s) (col t) ≈ 𝒢 s t
       no-edge : ∀ w t → G (hid w) (col t) ≈ εₘ
@@ -2394,13 +2394,13 @@ module Rule₁
 
     module S = HidePremise 𝒢 (vertex-object E) (inj₁ input) b (λ (_ : Unit) → er) inputs (λ _ → up-root) (λ _ → input-to-output)
 
-    prem : EdgeLabels (vertex-object 𝒢) → S.St
+    prem : DepRels (vertex-object 𝒢) → S.St
     prem G .S.from-input q = G (inj₁ input) (inj₂ q)
     prem G .S.interior p q = G (inj₂ p) (inj₂ q)
 
-    module hidden = S.Hidden (edge-labels E) prem (λ G w → ≡-refl)
+    module hidden = S.Hidden (dep-rels E) prem (λ G w → ≡-refl)
 
-    start : S.Start (edge-labels E) hidden.st⁰
+    start : S.Start (dep-rels E) hidden.st⁰
     start .S.into-start q = ≈-refl
     start .S.interior-start p q = ≈-refl
     start .S.tgt-start _ = ≈-refl {f = input-to-output}
@@ -2410,7 +2410,7 @@ module Rule₁
     start .S.sink q = root-row 𝒢 (inj₂ q)
 
     plumb : collapse E ≡ hidden.G (inj₁ input) er
-    plumb = ≡-cong (λ l → hide-all (vertex-object E) (edge-labels E) l (inj₁ input) er)
+    plumb = ≡-cong (λ l → hide-all (vertex-object E) (dep-rels E) l (inj₁ input) er)
                    (≡-trans (≡-cong (map inj₂) (++-identityʳ (map (into here) (ε ∷ vertices-result-first D₁))))
                             (≡-sym (map-∘ {g = inj₂} {f = into here} (ε ∷ vertices-result-first D₁))))
 
@@ -2537,13 +2537,13 @@ module Rule₂
 
     module S₁ = HidePremise 𝒢₁ (vertex-object E) (inj₁ input) b1 tgt₁ inputs₁ P₁ K₁
 
-    prem₁ : EdgeLabels (vertex-object 𝒢₁) → S₁.St
+    prem₁ : DepRels (vertex-object 𝒢₁) → S₁.St
     prem₁ G .S₁.from-input q = G (inj₁ input) (inj₂ q)
     prem₁ G .S₁.interior p q = G (inj₂ p) (inj₂ q)
 
-    module hidden₁ = S₁.Hidden (edge-labels E) prem₁ (λ G w → ≡-refl)
+    module hidden₁ = S₁.Hidden (dep-rels E) prem₁ (λ G w → ≡-refl)
 
-    start₁ : S₁.Start (edge-labels E) hidden₁.st⁰
+    start₁ : S₁.Start (dep-rels E) hidden₁.st⁰
     start₁ .S₁.into-start q = ≈-refl
     start₁ .S₁.interior-start p q = ≈-refl
     start₁ .S₁.tgt-start (inj₁ q) = ≈-refl
@@ -2572,7 +2572,7 @@ module Rule₂
     module S₂ = HidePremise 𝒢₂ (vertex-object E) (inj₁ input) b2 (λ (_ : Unit) → er) Φ₂' (λ _ → up₂)
                             (λ _ → input-to-output +ₘ (up₁ ∘ (collapse 𝒢₁ ∘ inputs₁)))
 
-    prem₂ : EdgeLabels (vertex-object 𝒢₂) → S₂.St
+    prem₂ : DepRels (vertex-object 𝒢₂) → S₂.St
     prem₂ G .S₂.from-input q = G (inj₁ input) (inj₂ q)
     prem₂ G .S₂.interior p q = G (inj₂ p) (inj₂ q)
 
@@ -2585,7 +2585,7 @@ module Rule₂
 
     module IntoHidden = NoEdgeIntoHidden (vertex-object E) b1 b2 tgt₁ Bh
 
-    fixed₀ : IntoHidden.Fixed (edge-labels E)
+    fixed₀ : IntoHidden.Fixed (dep-rels E)
     fixed₀ .IntoHidden.edge D          (inj₁ q) = ≈-refl
     fixed₀ .IntoHidden.edge ε          (inj₂ _) = ≈-refl {f = up₂}
     fixed₀ .IntoHidden.edge (into i p) (inj₂ _) = ≈-refl {f = εₘ}
@@ -2621,9 +2621,9 @@ module Rule₂
 
     plumb : collapse E ≡ hidden₂.G (inj₁ input) er
     plumb =
-      ≡-trans (≡-cong (λ l → hide-all (vertex-object E) (edge-labels E) l (inj₁ input) er) lst)
+      ≡-trans (≡-cong (λ l → hide-all (vertex-object E) (dep-rels E) l (inj₁ input) er) lst)
               (≡-cong (λ G → G (inj₁ input) er)
-                      (foldl-++ (hide (vertex-object E)) (edge-labels E) (b1 ε ∷ map b1 ps₁) (b2 ε ∷ map b2 ps₂)))
+                      (foldl-++ (hide (vertex-object E)) (dep-rels E) (b1 ε ∷ map b1 ps₁) (b2 ε ∷ map b2 ps₂)))
 
   agree : collapse E ≈ ((input-to-output +ₘ (up₁ ∘ (collapse 𝒢₁ ∘ inputs₁))) +ₘ (up₂ ∘ (collapse 𝒢₂ ∘ Φ₂)))
   agree =
@@ -2802,13 +2802,13 @@ module Rule₃
 
     module S₁ = HidePremise 𝒢₁ (vertex-object E) (inj₁ input) b1 tgt inputs₁ P₁ K₁
 
-    prem₁ : EdgeLabels (vertex-object 𝒢₁) → S₁.St
+    prem₁ : DepRels (vertex-object 𝒢₁) → S₁.St
     prem₁ G .S₁.from-input q = G (inj₁ input) (inj₂ q)
     prem₁ G .S₁.interior p q = G (inj₂ p) (inj₂ q)
 
-    module hidden₁ = S₁.Hidden (edge-labels E) prem₁ (λ G w → ≡-refl)
+    module hidden₁ = S₁.Hidden (dep-rels E) prem₁ (λ G w → ≡-refl)
 
-    start₁ : S₁.Start (edge-labels E) hidden₁.st⁰
+    start₁ : S₁.Start (dep-rels E) hidden₁.st⁰
     start₁ .S₁.into-start q = ≈-refl
     start₁ .S₁.interior-start p q = ≈-refl
     start₁ .S₁.tgt-start (inj₁ q) = ≈-refl
@@ -2826,7 +2826,7 @@ module Rule₃
     module OutOfHidden = NoEdgeOutOfHidden (vertex-object E) b1 (inj₁ {A = Input}) b2
                                            (λ _ q → Graph.from-input 𝒢₂ q ∘ inputs₂)
 
-    fixed₀ : OutOfHidden.Fixed (edge-labels E)
+    fixed₀ : OutOfHidden.Fixed (dep-rels E)
     fixed₀ .OutOfHidden.edge _ q = ≈-refl
     fixed₀ .OutOfHidden.no-edge w q = ≈-refl {f = εₘ}
 
@@ -2848,7 +2848,7 @@ module Rule₃
     fixed₂ : IntoHidden₂.Fixed hidden₁.G
     fixed₂ = IntoHidden₂.fixed-hide-all (λ w → w) ps₁ (IntoHidden₂.fixed-hide ε k₀)
       where
-      k₀ : IntoHidden₂.Fixed (edge-labels E)
+      k₀ : IntoHidden₂.Fixed (dep-rels E)
       k₀ .IntoHidden₂.edge D          (inj₁ q)        = ≈-refl
       k₀ .IntoHidden₂.edge D          (inj₂ (inj₁ q)) = ≈-refl {f = e₂₃ D q}
       k₀ .IntoHidden₂.edge ε          (inj₂ (inj₂ _)) = ≈-refl {f = up₂}
@@ -2868,7 +2868,7 @@ module Rule₃
 
     module S₂ = HidePremise 𝒢₂ (vertex-object E) (inj₁ input) b2 tgt inputs₂ P₂ K₂
 
-    prem₂ : EdgeLabels (vertex-object 𝒢₂) → S₂.St
+    prem₂ : DepRels (vertex-object 𝒢₂) → S₂.St
     prem₂ G .S₂.from-input q = G (inj₁ input) (inj₂ q)
     prem₂ G .S₂.interior p q = G (inj₂ p) (inj₂ q)
 
@@ -2912,7 +2912,7 @@ module Rule₃
           (IntoHidden₃.fixed-hide-all inj₁ ps₁
             (IntoHidden₃.fixed-hide (inj₁ ε) k₀)))
       where
-      k₀ : IntoHidden₃.Fixed (edge-labels E)
+      k₀ : IntoHidden₃.Fixed (dep-rels E)
       k₀ .IntoHidden₃.edge D          (inj₁ q) = ≈-refl
       k₀ .IntoHidden₃.edge ε          (inj₂ _) = ≈-refl {f = up₃}
       k₀ .IntoHidden₃.edge (into i p) (inj₂ _) = ≈-refl {f = εₘ}
@@ -2936,7 +2936,7 @@ module Rule₃
     module S₃ = HidePremise 𝒢₃ (vertex-object E) (inj₁ input) b3 (λ (_ : Unit) → er) Φ₃' (λ _ → up₃)
                             (λ _ → (input-to-output +ₘ (up₁ ∘ c₁)) +ₘ (up₂ ∘ c₂))
 
-    prem₃ : EdgeLabels (vertex-object 𝒢₃) → S₃.St
+    prem₃ : DepRels (vertex-object 𝒢₃) → S₃.St
     prem₃ G .S₃.from-input q = G (inj₁ input) (inj₂ q)
     prem₃ G .S₃.interior p q = G (inj₂ p) (inj₂ q)
 
@@ -2984,9 +2984,9 @@ module Rule₃
 
     plumb : collapse E ≡ hidden₃.G (inj₁ input) er
     plumb =
-      ≡-trans (≡-cong (λ l → hide-all (vertex-object E) (edge-labels E) l (inj₁ input) er) lst)
+      ≡-trans (≡-cong (λ l → hide-all (vertex-object E) (dep-rels E) l (inj₁ input) er) lst)
               (≡-trans (≡-cong (λ G → G (inj₁ input) er)
-                               (foldl-++ (hide (vertex-object E)) (edge-labels E) l₁ (l₂ ++ l₃)))
+                               (foldl-++ (hide (vertex-object E)) (dep-rels E) l₁ (l₂ ++ l₃)))
                        (≡-cong (λ G → G (inj₁ input) er)
                                (foldl-++ (hide (vertex-object E)) hidden₁.G l₂ l₃)))
 
@@ -3130,13 +3130,13 @@ module Ruleₛ {m n : ℕ} where
 
         module S₁ = HidePremise 𝒢₁ (vertex-object whole) (inj₁ input) b1 bt inputs₁ Pt Kt
 
-        prem₁ : EdgeLabels (vertex-object 𝒢₁) → S₁.St
+        prem₁ : DepRels (vertex-object 𝒢₁) → S₁.St
         prem₁ G .S₁.from-input q = G (inj₁ input) (inj₂ q)
         prem₁ G .S₁.interior p q = G (inj₂ p) (inj₂ q)
 
-        module hidden₁ = S₁.Hidden (edge-labels whole) prem₁ (λ G w → ≡-refl)
+        module hidden₁ = S₁.Hidden (dep-rels whole) prem₁ (λ G w → ≡-refl)
 
-        start₁ : S₁.Start (edge-labels whole) hidden₁.st⁰
+        start₁ : S₁.Start (dep-rels whole) hidden₁.st⁰
         start₁ .S₁.into-start q = ≈-refl
         start₁ .S₁.interior-start p q = ≈-refl
         start₁ .S₁.tgt-start ε          = ≈-refl {f = input-to-output}
@@ -3164,7 +3164,7 @@ module Ruleₛ {m n : ℕ} where
         fixed₁ : IntoH.Fixed hidden₁.G
         fixed₁ = IntoH.fixed-hide-all (λ w → w) ps₁ (IntoH.fixed-hide ε fixed₀)
           where
-          fixed₀ : IntoH.Fixed (edge-labels whole)
+          fixed₀ : IntoH.Fixed (dep-rels whole)
           fixed₀ .IntoH.edge (into i p) (into j q) = ≈-refl
           fixed₀ .IntoH.edge (into i p) ε          = ≈-refl
           fixed₀ .IntoH.edge ε          (into j q) = ≈-refl {f = εₘ}
@@ -3173,19 +3173,19 @@ module Ruleₛ {m n : ℕ} where
           fixed₀ .IntoH.no-edge ε          w = ≈-refl {f = εₘ}
 
         sink₁ : ∀ y → hidden₁.G er y ≈ εₘ
-        sink₁ = hide-all-sink (vertex-object whole) (edge-labels whole) er
+        sink₁ = hide-all-sink (vertex-object whole) (dep-rels whole) er
                   (b1 ε ∷ map b1 ps₁) (root-row whole)
 
         source₁ : ∀ x → hidden₁.G x (inj₁ input) ≈ εₘ
-        source₁ = hide-all-source (vertex-object whole) (edge-labels whole) (inj₁ input)
+        source₁ = hide-all-source (vertex-object whole) (dep-rels whole) (inj₁ input)
                     (b1 ε ∷ map b1 ps₁) input-col
           where
-          input-col : ∀ x → edge-labels whole x (inj₁ input) ≈ εₘ
+          input-col : ∀ x → dep-rels whole x (inj₁ input) ≈ εₘ
           input-col (inj₁ _) = ≈-refl {f = εₘ}
           input-col (inj₂ _) = ≈-refl {f = εₘ}
 
         -- The remaining relation read at the vertices of the rest, whose root is the rule's own.
-        onto-rest : EdgeLabels (vertex-object whole) → EdgeLabels (vertex-object rest)
+        onto-rest : DepRels (vertex-object whole) → DepRels (vertex-object rest)
         onto-rest G (inj₁ _)            (inj₁ _)            = G (inj₁ input) (inj₁ input)
         onto-rest G (inj₁ _)            (inj₂ ε)            = G (inj₁ input) er
         onto-rest G (inj₁ _)            (inj₂ (into j q))   = G (inj₁ input) (bt (into j q))
@@ -3218,7 +3218,7 @@ module Ruleₛ {m n : ℕ} where
           ≈-trans (onto-rest-hide-all (hide (vertex-object whole) G (bt (into i w))) ws hs x y)
                   (hide-all-cong (vertex-object rest) (map inj₂ ws) (onto-rest-hide G i w) x y)
 
-        agree-rest : onto-rest hidden₁.G ≐ edge-labels rest
+        agree-rest : onto-rest hidden₁.G ≐ dep-rels rest
         agree-rest (inj₁ _)          (inj₁ _)          = source₁ (inj₁ input)
         agree-rest (inj₁ _)          (inj₂ (into j q)) =
           ≈-trans (done₁ .S₁.tgt-ok (into j q))
@@ -3244,9 +3244,9 @@ module Ruleₛ {m n : ℕ} where
         plumb : collapse whole ≡
                 hide-all (vertex-object whole) hidden₁.G (map bt psᵣ) (inj₁ input) er
         plumb =
-          ≡-trans (≡-cong (λ l → hide-all (vertex-object whole) (edge-labels whole) l (inj₁ input) er) lst)
+          ≡-trans (≡-cong (λ l → hide-all (vertex-object whole) (dep-rels whole) l (inj₁ input) er) lst)
                   (≡-cong (λ G → G (inj₁ input) er)
-                          (foldl-++ (hide (vertex-object whole)) (edge-labels whole)
+                          (foldl-++ (hide (vertex-object whole)) (dep-rels whole)
                                     (b1 ε ∷ map b1 ps₁) (map bt psᵣ)))
 
       reduce : collapse whole ≈ collapse rest
