@@ -1400,6 +1400,265 @@ hide-graph-summary 𝒢 ε-dec tick hid region =
   edges-of 𝒢 (visible-positions 𝒢 hid)
            (reverse (FunctionHide.fold-summary 𝒢 ε-dec tick hid region (λ cs c → c ∷ cs) []))
 
+-- Hiding by the source positions reaching each position of a vertex, with weights.
+module PositionHide {m : ℕ} {D : Derivation} (𝒢 : Graph m D)
+  (ε-dec : (x : Semiring.Carrier) → Dec (x ≡ Semiring.ε))
+  (tick : {A : Set} → String → A → A) (hid region : List ℕ) where
+
+  private
+    -- Source positions with their weights, ascending, and one such set per position of a vertex.
+    Weights : Set
+    Weights = List (ℕ × Semiring.Carrier)
+
+    Positions : Set
+    Positions = List Weights
+
+    -- Paths from the visible sources that have gone through the region, and paths that have not.
+    record Block : Set where
+      constructor block
+      field
+        through  : Positions
+        avoiding : Positions
+
+    data Origin : Set where
+      source  : ℕ → Origin
+      summary : Block → Origin
+
+    nonzero : Semiring.Carrier → Bool
+    nonzero x = not ⌊ ε-dec x ⌋
+
+    scale : Semiring.Carrier → Weights → Weights
+    scale w []             = []
+    scale w ((i , v) ∷ ws) = keep (w Semiring.· v)
+      where
+      keep : Semiring.Carrier → Weights
+      keep u = if nonzero u then (i , u) ∷ scale w ws else tick "dead" (scale w ws)
+
+    merge : Weights → Weights → Weights
+    merge []            C = C
+    merge ((i , u) ∷ B) C = merge-one i u B C
+      where
+      merge-one : ℕ → Semiring.Carrier → Weights → Weights → Weights
+      merge-one i u B []            = (i , u) ∷ B
+      merge-one i u B ((j , v) ∷ C) with i ≡ᵇ j | i <ᵇ j
+      ... | true  | _     = (i , u Semiring.+ v) ∷ merge B C
+      ... | false | true  = (i , u) ∷ merge B ((j , v) ∷ C)
+      ... | false | false = (j , v) ∷ merge-one i u B C
+
+    first-row : M.Table → List Semiring.Carrier
+    first-row []      = []
+    first-row (r ∷ _) = r
+
+    row-weights : List Semiring.Carrier → Positions → Weights
+    row-weights []       _        = []
+    row-weights _        []       = []
+    row-weights (w ∷ ws) (P ∷ Ps) = combine (row-weights ws Ps)
+      where
+      combine : Weights → Weights
+      combine rest = if nonzero w then tick "merge" (merge (scale w P) rest) else rest
+
+    apply-table : M.Table → Positions → Positions
+    apply-table t P = map (λ row → row-weights row P) t
+
+    apply-label : ∀ {a b : ℕ} → 𝔽 a ⇒ 𝔽 b → Positions → Positions
+    apply-label ℓ P = apply-table (tick "label" (table-of ℓ)) P
+
+    at-source : ℕ → ℕ → Positions
+    at-source base w = applyUpTo (λ j → (base + j , Semiring.ι) ∷ []) w
+
+    add-positions : Positions → Positions → Positions
+    add-positions []       Q        = Q
+    add-positions P        []       = P
+    add-positions (a ∷ P) (b ∷ Q)   = merge a b ∷ add-positions P Q
+
+    no-block : Block
+    no-block = block [] []
+
+    at-visible : ℕ → ℕ → Block
+    at-visible base w = block [] (at-source base w)
+
+    add-blocks : Block → Block → Block
+    add-blocks (block B C) (block B' C') = block (add-positions B B') (add-positions C C')
+
+    apply-table-block : M.Table → Block → Block
+    apply-table-block t (block B C) = block (apply-table t B) (apply-table t C)
+
+    apply-label-block : ∀ {a b : ℕ} → 𝔽 a ⇒ 𝔽 b → Block → Block
+    apply-label-block ℓ (block B C) = block (apply-label ℓ B) (apply-label ℓ C)
+
+    merge-block : Block → Positions
+    merge-block (block B C) = add-positions B C
+
+    -- Beyond a vertex of the region every path has gone through it.
+    entered : Block → Block
+    entered B = block (merge-block B) []
+
+    force-positions : {A : Set} → Positions → A → A
+    force-positions []      x = x
+    force-positions (a ∷ P) x = force-weights a (force-positions P x)
+      where
+      force-weights : {B : Set} → Weights → B → B
+      force-weights []            y = y
+      force-weights ((_ , _) ∷ w) y = force-weights w y
+
+    set-at : ℕ → Origin → List Origin → List Origin
+    set-at _       _ []        = []
+    set-at zero    o (_ ∷ os)  = o ∷ os
+    set-at (suc p) o (o' ∷ os) = o' ∷ set-at p o os
+
+    origin-at : ℕ → List Origin → Origin
+    origin-at _       []       = summary no-block
+    origin-at zero    (o ∷ _)  = o
+    origin-at (suc p) (_ ∷ os) = origin-at p os
+
+    from-origin : M.Table → Origin → Block
+    from-origin W (source base) = apply-table-block W (at-visible base (length (first-row W)))
+    from-origin W (summary B)   = apply-table-block W B
+
+    from-roots : List (Path D × M.Table) → List Origin → Block
+    from-roots []             st = no-block
+    from-roots ((r , W) ∷ fs) st =
+      add-blocks (from-origin W (origin-at (suc (path-position D r)) st)) (from-roots fs st)
+
+    to-conclusion : Path D → Path D → Origin → Block
+    to-conclusion rp vp (source base) =
+      apply-label-block (Graph.interior 𝒢 rp vp) (at-visible base (width-at D rp))
+    to-conclusion rp vp (summary B)   = apply-label-block (Graph.interior 𝒢 rp vp) B
+
+    record Out (X : Set) : Set where
+      constructor out
+      field
+        oacc : X
+        org  : Origin
+        opos : ℕ
+        obase : ℕ
+        ost  : List Origin
+
+    record Res (X : Set) : Set where
+      constructor res
+      field
+        racc : X
+        rups : Block
+        rpos : ℕ
+        rbase : ℕ
+        rst  : List Origin
+
+    go-node : {X : Set} → (X → ℕ → Block → X) → (D' : Derivation) → (Path D' → Path D) →
+              ℕ → ℕ → List Origin → Block → X → Out X
+    go-prems : {X : Set} → (X → ℕ → Block → X) → (Ds : List Derivation) →
+               (∀ {Dᵢ} → Ds ∋ Dᵢ → Path Dᵢ → Path D) → Path D →
+               ℕ → ℕ → List Origin → Block → X → Res X
+    go-node consume (node m' n' b' Ds) emb pos base st A acc =
+      emit (go-prems consume Ds (λ i p → emb (into i p)) (emb ε) pos base st A acc)
+      where
+      emit : Res _ → Out _
+      emit (res acc' ups vpos base' st') =
+        decide (add-blocks (apply-table-block (Graph.input-to-output 𝒢 (emb ε)) A) ups)
+        where
+        decide : Block → Out _
+        decide B with any (vpos ≡ᵇ_) hid
+        ... | true  = store (tick ("block " ++ₛ ℕ-Show.show vpos) (in-region B))
+          where
+          in-region : Block → Block
+          in-region Bk = if any (vpos ≡ᵇ_) region then entered Bk else Bk
+
+          store : Block → Out _
+          store Bk =
+            force-positions (Block.through Bk)
+              (force-positions (Block.avoiding Bk)
+                (out acc' (summary Bk) (suc vpos) base' (set-at vpos (summary Bk) st')))
+        ... | false = give (tick ("column " ++ₛ ℕ-Show.show vpos) B)
+          where
+          give : Block → Out _
+          give Ck =
+            primForce (consume acc' base' Ck)
+              (λ a → out a (source base') (suc vpos) (base' + width-at D (emb ε))
+                         (set-at vpos (source base') st'))
+    go-prems consume []          emb vp pos base st A acc = res acc no-block pos base st
+    go-prems consume (Dᵢ ∷ rest) emb vp pos base st A acc = enter (emb here ε)
+      where
+      enter : Path D → Res _
+      enter rp =
+        step (go-node consume Dᵢ (λ p → emb here p) pos base st
+                (add-blocks (apply-table-block (Graph.parent-to-input 𝒢 rp) A)
+                            (from-roots (Graph.roots-to-input 𝒢 rp) st))
+                acc)
+        where
+        step : Out _ → Res _
+        step (out acc' org pos' base' st') =
+          pack (to-conclusion rp vp org)
+               (go-prems consume rest (λ i p → emb (there i) p) vp pos' base' st' A acc')
+          where
+          pack : Block → Res _ → Res _
+          pack up (res acc₂ ups pos₂ base₂ st₂) =
+            res acc₂ (add-blocks up ups) pos₂ base₂ st₂
+
+    fold-blocks : {X : Set} → (X → ℕ → Block → X) → X → X
+    fold-blocks consume x₀ =
+      Out.oacc (go-node consume D (λ p → p) 1 m
+                  (set-at 0 (source 0)
+                          (applyUpTo (λ _ → summary no-block) (suc (suc (vertex-count D)))))
+                  (at-visible 0 m)
+                  (primForce (consume x₀ 0 (tick "column 0" no-block)) (λ a → a)))
+
+  Column : Set
+  Column = ℕ × List (List (ℕ × Semiring.Carrier))
+
+  fold-result : {X : Set} → (X → Column → X) → X → X
+  fold-result consume = fold-blocks (λ a b B → consume a (b , merge-block B))
+
+  fold-summary : {X : Set} → (X → Column → X) → X → X
+  fold-summary consume = fold-blocks (λ a b B → consume a (b , Block.through B))
+
+hide-graph-reachability : {m : ℕ} {D : Derivation} (𝒢 : Graph m D) →
+                          ((x : Semiring.Carrier) → Dec (x ≡ Semiring.ε)) →
+                          ({A : Set} → String → A → A) → List ℕ →
+                          {X : Set} → (X → ℕ × List (List (ℕ × Semiring.Carrier)) → X) → X → X
+hide-graph-reachability 𝒢 ε-dec tick hid = PositionHide.fold-result 𝒢 ε-dec tick hid []
+
+private
+  weight-at : ℕ → List (ℕ × Semiring.Carrier) → Semiring.Carrier
+  weight-at i []             = Semiring.ε
+  weight-at i ((j , w) ∷ ws) = if i ≡ᵇ j then w else weight-at i ws
+
+  -- One row per position of the target, one entry per position of the source.
+  positions-table : ℕ → ℕ → List (List (ℕ × Semiring.Carrier)) → M.Table
+  positions-table base w P = map (λ ws → applyUpTo (λ i → weight-at (base + i) ws) w) P
+
+  position-edges : {m : ℕ} {D : Derivation} (𝒢 : Graph m D) →
+                   ((x : Semiring.Carrier) → Dec (x ≡ Semiring.ε)) → List ℕ →
+                   List (ℕ × List (List (ℕ × Semiring.Carrier))) → Edges 𝒢
+  position-edges 𝒢 ε-dec vs cs x y =
+    read (find-number (vertex-position 𝒢 x) 0 vs) (find-number (vertex-position 𝒢 y) 0 vs)
+    where
+    nonzero-table : M.Table → Bool
+    nonzero-table = any (any (λ e → not ⌊ ε-dec e ⌋))
+
+    keep : M.Table → Maybe M.Table
+    keep t = if nonzero-table t then just t else nothing
+
+    read : Maybe ℕ → Maybe ℕ → Maybe M.Table
+    read (just i) (just j) = at (M.nth (0 , []) i cs) (M.nth (0 , []) j cs)
+      where
+      at : ℕ × List (List (ℕ × Semiring.Carrier)) →
+           ℕ × List (List (ℕ × Semiring.Carrier)) → Maybe M.Table
+      at (base , _) (_ , P) = keep (positions-table base (vertex-width 𝒢 x) P)
+    read _        _        = nothing
+
+hide-graph-position-edges : {m : ℕ} {D : Derivation} (𝒢 : Graph m D) →
+                            ((x : Semiring.Carrier) → Dec (x ≡ Semiring.ε)) →
+                            ({A : Set} → String → A → A) → List ℕ → Edges 𝒢
+hide-graph-position-edges 𝒢 ε-dec tick hid =
+  position-edges 𝒢 ε-dec (visible-positions 𝒢 hid)
+                 (reverse (PositionHide.fold-result 𝒢 ε-dec tick hid [] (λ cs c → c ∷ cs) []))
+
+hide-graph-position-summary : {m : ℕ} {D : Derivation} (𝒢 : Graph m D) →
+                              ((x : Semiring.Carrier) → Dec (x ≡ Semiring.ε)) →
+                              ({A : Set} → String → A → A) → (hid region : List ℕ) → Edges 𝒢
+hide-graph-position-summary 𝒢 ε-dec tick hid region =
+  position-edges 𝒢 ε-dec (visible-positions 𝒢 hid)
+                 (reverse (PositionHide.fold-summary 𝒢 ε-dec tick hid region (λ cs c → c ∷ cs) []))
+
 private
   nth? : {C : Set} → ℕ → List C → Maybe C
   nth? _       []       = nothing

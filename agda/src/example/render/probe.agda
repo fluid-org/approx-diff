@@ -9,7 +9,7 @@ open import IO
 open import IO.Finite using (putStrLn)
 open import Data.List using (List; []; _∷_; map; length; concat; upTo)
 open import Data.Nat using (ℕ; zero; suc; _+_; _*_; _⊔_)
-open import Data.Product using (_×_; _,_)
+open import Data.Product using (_×_; _,_; proj₂)
 import Data.Nat.Show as ℕ-Show
 open import Data.String using (String; _++_)
 open import Data.Sum using (inj₁; inj₂)
@@ -106,6 +106,35 @@ private
       show3 (hide-graph-fold dependence three.ε? trace (map suc (upTo k))
                (λ a c → join! a (join-entries c)) three.O)
 
+    join-weights : List (ℕ × Three) → Three
+    join-weights []            = three.O
+    join-weights ((_ , w) ∷ ws) = join! w (join-weights ws)
+
+    join-positions : List (List (ℕ × Three)) → Three
+    join-positions []       = three.O
+    join-positions (P ∷ Ps) = join! (join-weights P) (join-positions Ps)
+
+    all-positions : ℕ → String
+    all-positions k =
+      show3 (hide-graph-reachability dependence three.ε? trace (map suc (upTo k))
+               (λ a c → join! a (join-positions (proj₂ c))) three.O)
+
+    fo-positions : List ℕ
+    fo-positions = map (λ p → suc (path-position D p)) (fo-hidden dependence)
+
+    fo-count : String
+    fo-count = show (length fo-positions)
+
+    fo-functional : String
+    fo-functional =
+      show3 (hide-graph-fold dependence three.ε? trace fo-positions
+               (λ a c → join! a (join-entries c)) three.O)
+
+    fo-reachability : String
+    fo-reachability =
+      show3 (hide-graph-reachability dependence three.ε? trace fo-positions
+               (λ a c → join! a (join-positions (proj₂ c))) three.O)
+
   survey : String
   survey = scale.line "filter-sum" filter-sum-run ++ "\n" ++ scale.line "map" map-run ++ "\n"
            ++ scale.line "filter" filter-run ++ "\n" ++ scale.line "merge" merge-run
@@ -123,5 +152,11 @@ private
   prefixes : List ℕ
   prefixes = 800 ∷ 3936 ∷ []
 
+  point : String → String → ℕ → ℕ
+  point name v r = trace ("begin " ++ name) (trace (name ++ " -> " ++ v) r)
+
 main : Main
-main = run (putStrLn (trace survey (show (curve "functional" benchM.all-functional prefixes 0))))
+main =
+  run (putStrLn (trace survey
+        (show (point ("fo-reachability hidden=" ++ benchM.fo-count) benchM.fo-reachability
+                (point "fo-functional" benchM.fo-functional 0)))))
