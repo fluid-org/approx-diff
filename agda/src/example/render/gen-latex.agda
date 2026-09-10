@@ -163,10 +163,16 @@ private
         with-config : Config dependence → List (String × String)
         with-config K' = mapMaybe edge-entry (J.visible-edges tabs K' endpoints)
 
-    emit key title reveals related =
-      (key ++ "/root-root" ,
-       table title o-labels o-labels (M3.to-table (rows M3.∘ (rows M3.ᵀ))) none none) ∷ []
-      where rows = drop-ctrl R
+    emit key title reveals related = from-rows (M3.to-table (drop-ctrl R))
+      where
+      from-rows : M3.Table → List (String × String)
+      from-rows t = product (M3.look {vertex-width dependence (inj₂ ε)} {Nat.pred (wd (inj₁ input))} t)
+        where
+        product : M3.Matrix (vertex-width dependence (inj₂ ε)) (Nat.pred (wd (inj₁ input))) →
+                  List (String × String)
+        product rows =
+          (key ++ "/root-root" ,
+           table title o-labels o-labels (M3.to-table (rows M3.∘ (rows M3.ᵀ))) none none) ∷ []
 
   mk : String → String → Run → List (String × List ℕ) → Presentation → Test
   mk k ti r rs pr .Test.key     = k
