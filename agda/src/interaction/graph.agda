@@ -161,6 +161,11 @@ path-at (node m n b Ds) (k ∷ ks) with child Ds k
 object : (D : Derivation) → Path D → Semimodule
 object D q = 𝔽 (width-at D q)
 
+-- Width of the input of the rule enclosing a vertex; at the conclusion, the graph's own inputs.
+parent-in-width : ℕ → (D : Derivation) → Path D → ℕ
+parent-in-width m D               ε                 = m
+parent-in-width m (node m' n b Ds) (into {D = Dᵢ} i q) = parent-in-width m' Dᵢ q
+
 private
   into-here-injective : ∀ {m n b D Ds} {p q : Path D} →
                         into {m} {n} {b} {D ∷ Ds} here p ≡ into here q → p ≡ q
@@ -406,9 +411,9 @@ record Graph (m : ℕ) (D : Derivation) : Set₁ where
     -- In-neighbours of each vertex (inj₁ the inputs vertex): unlisted sources relate to it by zero.
     in-neighbours : (q : Path D) → List (Input ⊎ Path D)
     -- "input" here is the input of the rule concluding at q, not the graph's inputs vertex.
-    parent-to-input : Path D → M.Table
-    roots-to-input  : Path D → List (Path D × M.Table)
-    input-to-output : Path D → M.Table
+    parent-to-input : (q : Path D) → 𝔽 (parent-in-width m D q) ⇒ 𝔽 (in-width-at D q)
+    roots-to-input  : (q : Path D) → List (Σ (Path D) (λ r → object D r ⇒ 𝔽 (in-width-at D q)))
+    input-to-output : (q : Path D) → 𝔽 (in-width-at D q) ⇒ object D q
 
 hide : {V : Set} (vertex-object : V → Semimodule) → DepRels vertex-object → V → DepRels vertex-object
 hide vertex-object G r x y = G x y +ₘ (G r y ∘ G x r)
@@ -1245,18 +1250,15 @@ module FunctionHide {m : ℕ} {D : Derivation} (𝒢 : Graph m D)
     origin-at zero    (o ∷ _)  = o
     origin-at (suc p) (_ ∷ os) = origin-at p os
 
-    from-origin : M.Table → Origin → Block
-    from-origin W (source r)  = from-visible r W
-    from-origin W (summary B) = apply-table-block W B
-
-    from-roots : List (Path D × M.Table) → List Origin → Block
+    from-roots : ∀ {k} → List (Σ (Path D) (λ r → object D r ⇒ 𝔽 k)) → List Origin → Block
     from-roots []             st = no-block
-    from-roots ((r , W) ∷ fs) st =
-      add-blocks
-        (from-origin (tick "root-to-input" W)
-                     (tick ("state " ++ₛ ℕ-Show.show (suc (path-position D r)))
-                           (origin-at (suc (path-position D r)) st)))
-        (from-roots fs st)
+    from-roots ((r , f) ∷ fs) st =
+      add-blocks (from-origin r f (origin-at (suc (path-position D r)) st)) (from-roots fs st)
+      where
+      from-origin : ∀ {k} (r : Path D) → object D r ⇒ 𝔽 k → Origin → Block
+      from-origin r f (source j)  =
+        from-visible j (tick "apply" (label-on-table f (basis-table (width-at D r))))
+      from-origin r f (summary B) = apply-label-block f B
 
     to-conclusion : Path D → Path D → Origin → Block
     to-conclusion rp vp (source r) =
@@ -1292,8 +1294,7 @@ module FunctionHide {m : ℕ} {D : Derivation} (𝒢 : Graph m D)
       where
       emit : Res _ → Out _
       emit (res acc' ups vpos k' st') =
-        decide (add-blocks (apply-table-block (tick "to-output" (Graph.input-to-output 𝒢 (emb ε))) A)
-                           ups)
+        decide (add-blocks (apply-label-block (Graph.input-to-output 𝒢 (emb ε)) A) ups)
         where
         decide : Block → Out _
         decide B with any (vpos ≡ᵇ_) hid
@@ -1320,7 +1321,7 @@ module FunctionHide {m : ℕ} {D : Derivation} (𝒢 : Graph m D)
       enter : Path D → Res _
       enter rp =
         step (go-node consume Dᵢ (λ p → emb here p) pos k st
-                (add-blocks (apply-table-block (tick "to-input" (Graph.parent-to-input 𝒢 rp)) A)
+                (add-blocks (apply-label-block (Graph.parent-to-input 𝒢 rp) A)
                             (from-roots (Graph.roots-to-input 𝒢 rp) st))
                 acc)
         where
@@ -1449,9 +1450,6 @@ module PositionHide {m : ℕ} {D : Derivation} (𝒢 : Graph m D)
     first-row []      = []
     first-row (r ∷ _) = r
 
-    sized : String → M.Table → M.Table
-    sized name t = tick (name ++ₛ " " ++ₛ ℕ-Show.show (length t * length (first-row t))) t
-
     row-weights : List Semiring.Carrier → Positions → Weights
     row-weights []       _        = []
     row-weights _        []       = []
@@ -1533,15 +1531,14 @@ module PositionHide {m : ℕ} {D : Derivation} (𝒢 : Graph m D)
     origin-at zero    (o ∷ _)  = o
     origin-at (suc p) (_ ∷ os) = origin-at p os
 
-    from-origin : M.Table → Origin → Block
-    from-origin W (source base) = apply-table-block W (at-visible base (length (first-row W)))
-    from-origin W (summary B)   = apply-table-block W B
-
-    from-roots : List (Path D × M.Table) → List Origin → Block
+    from-roots : ∀ {k} → List (Σ (Path D) (λ r → object D r ⇒ 𝔽 k)) → List Origin → Block
     from-roots []             st = no-block
-    from-roots ((r , W) ∷ fs) st =
-      add-blocks (from-origin (sized "root-to-input" W) (origin-at (suc (path-position D r)) st))
-                 (from-roots fs st)
+    from-roots ((r , f) ∷ fs) st =
+      add-blocks (from-origin r f (origin-at (suc (path-position D r)) st)) (from-roots fs st)
+      where
+      from-origin : ∀ {k} (r : Path D) → object D r ⇒ 𝔽 k → Origin → Block
+      from-origin r f (source base) = apply-label-block f (at-visible base (width-at D r))
+      from-origin r f (summary B)   = apply-label-block f B
 
     to-conclusion : Path D → Path D → Origin → Block
     to-conclusion rp vp (source base) =
@@ -1576,8 +1573,7 @@ module PositionHide {m : ℕ} {D : Derivation} (𝒢 : Graph m D)
       where
       emit : Res _ → Out _
       emit (res acc' ups vpos base' st') =
-        decide (add-blocks (apply-table-block (sized "to-output" (Graph.input-to-output 𝒢 (emb ε))) A)
-                           ups)
+        decide (add-blocks (apply-label-block (Graph.input-to-output 𝒢 (emb ε)) A) ups)
         where
         decide : Block → Out _
         decide B with any (vpos ≡ᵇ_) hid
@@ -1604,7 +1600,7 @@ module PositionHide {m : ℕ} {D : Derivation} (𝒢 : Graph m D)
       enter : Path D → Res _
       enter rp =
         step (go-node consume Dᵢ (λ p → emb here p) pos base st
-                (add-blocks (apply-table-block (sized "to-input" (Graph.parent-to-input 𝒢 rp)) A)
+                (add-blocks (apply-label-block (Graph.parent-to-input 𝒢 rp) A)
                             (from-roots (Graph.roots-to-input 𝒢 rp) st))
                 acc)
         where
@@ -2670,15 +2666,23 @@ premise-ins i srcs []            = []
 premise-ins i srcs (inj₁ _ ∷ xs) = srcs ++ premise-ins i srcs xs
 premise-ins i srcs (inj₂ p ∷ xs) = inj₂ (into i p) ∷ premise-ins i srcs xs
 
-lift-roots : ∀ {m n b Ds D} (i : Ds ∋ D) → List (Path D × M.Table) →
-             List (Path (node m n b Ds) × M.Table)
+lift-roots : ∀ {m n b Ds D k} (i : Ds ∋ D) →
+             List (Σ (Path D) (λ r → object D r ⇒ 𝔽 k)) →
+             List (Σ (Path (node m n b Ds)) (λ r → object (node m n b Ds) r ⇒ 𝔽 k))
 lift-roots i []             = []
-lift-roots i ((r , t) ∷ fs) = (into i r , t) ∷ lift-roots i fs
+lift-roots i ((r , f) ∷ fs) = (into i r , f) ∷ lift-roots i fs
 
-weaken-roots : ∀ {m n b D Ds} → List (Path (node m n b Ds) × M.Table) →
-               List (Path (node m n b (D ∷ Ds)) × M.Table)
-weaken-roots []             = []
-weaken-roots ((r , t) ∷ fs) = (weaken r , t) ∷ weaken-roots fs
+weaken-width : ∀ {m n b D Ds} (r : Path (node m n b Ds)) →
+               width-at (node m n b (D ∷ Ds)) (weaken r) ≡ width-at (node m n b Ds) r
+weaken-width ε          = ≡-refl
+weaken-width (into i p) = ≡-refl
+
+weaken-roots : ∀ {m n b D Ds k} →
+               List (Σ (Path (node m n b Ds)) (λ r → object (node m n b Ds) r ⇒ 𝔽 k)) →
+               List (Σ (Path (node m n b (D ∷ Ds))) (λ r → object (node m n b (D ∷ Ds)) r ⇒ 𝔽 k))
+weaken-roots []                     = []
+weaken-roots {D = D} ((r , f) ∷ fs) =
+  (weaken r , subst (λ w → 𝔽 w ⇒ _) (≡-sym (weaken-width {D = D} r)) f) ∷ weaken-roots fs
 
 module Rule₀
   {m n : ℕ} (fo-output : Bool)
@@ -2696,11 +2700,11 @@ module Rule₀
   E .Graph.<-interior (into () _) _
   E .Graph.in-neighbours ε = inj₁ input ∷ []
   E .Graph.in-neighbours (into () _)
-  E .Graph.parent-to-input ε = table-of (I {𝔽 m})
+  E .Graph.parent-to-input ε = I {𝔽 m}
   E .Graph.parent-to-input (into () _)
   E .Graph.roots-to-input ε = []
   E .Graph.roots-to-input (into () _)
-  E .Graph.input-to-output ε = table-of input-to-output
+  E .Graph.input-to-output ε = input-to-output
   E .Graph.input-to-output (into () _)
 
   agree : collapse E ≈ input-to-output
@@ -2747,14 +2751,14 @@ module Rule₁
   E .Graph.in-neighbours (into here q) =
     premise-ins here (inj₁ input ∷ []) (Graph.in-neighbours 𝒢 q)
   E .Graph.in-neighbours (into (there ()) _)
-  E .Graph.parent-to-input ε                      = table-of (I {𝔽 m})
-  E .Graph.parent-to-input (into here ε)          = table-of inputs
+  E .Graph.parent-to-input ε                      = I {𝔽 m}
+  E .Graph.parent-to-input (into here ε)          = inputs
   E .Graph.parent-to-input (into here (into j q)) = Graph.parent-to-input 𝒢 (into j q)
   E .Graph.parent-to-input (into (there ()) _)
   E .Graph.roots-to-input ε             = []
   E .Graph.roots-to-input (into here q) = lift-roots here (Graph.roots-to-input 𝒢 q)
   E .Graph.roots-to-input (into (there ()) _)
-  E .Graph.input-to-output ε             = table-of input-to-output
+  E .Graph.input-to-output ε             = input-to-output
   E .Graph.input-to-output (into here q) = Graph.input-to-output 𝒢 q
   E .Graph.input-to-output (into (there ()) _)
 
@@ -2869,19 +2873,19 @@ module Rule₂
   E .Graph.in-neighbours (into (there here) q) =
     premise-ins (there here) (inj₁ input ∷ inj₂ (into here ε) ∷ []) (Graph.in-neighbours 𝒢₂ q)
   E .Graph.in-neighbours (into (there (there ())) _)
-  E .Graph.parent-to-input ε                              = table-of (I {𝔽 m})
-  E .Graph.parent-to-input (into here ε)                  = table-of inputs₁
+  E .Graph.parent-to-input ε                              = I {𝔽 m}
+  E .Graph.parent-to-input (into here ε)                  = inputs₁
   E .Graph.parent-to-input (into here (into j q))         = Graph.parent-to-input 𝒢₁ (into j q)
-  E .Graph.parent-to-input (into (there here) ε)          = table-of from-inputs₂
+  E .Graph.parent-to-input (into (there here) ε)          = from-inputs₂
   E .Graph.parent-to-input (into (there here) (into j q)) = Graph.parent-to-input 𝒢₂ (into j q)
   E .Graph.parent-to-input (into (there (there ())) _)
   E .Graph.roots-to-input ε                     = []
   E .Graph.roots-to-input (into here q)         = lift-roots here (Graph.roots-to-input 𝒢₁ q)
-  E .Graph.roots-to-input (into (there here) ε) = (into here ε , table-of from-root₁) ∷ []
+  E .Graph.roots-to-input (into (there here) ε) = (into here ε , from-root₁) ∷ []
   E .Graph.roots-to-input (into (there here) (into j q)) =
     lift-roots (there here) (Graph.roots-to-input 𝒢₂ (into j q))
   E .Graph.roots-to-input (into (there (there ())) _)
-  E .Graph.input-to-output ε                     = table-of input-to-output
+  E .Graph.input-to-output ε                     = input-to-output
   E .Graph.input-to-output (into here q)         = Graph.input-to-output 𝒢₁ q
   E .Graph.input-to-output (into (there here) q) = Graph.input-to-output 𝒢₂ q
   E .Graph.input-to-output (into (there (there ())) _)
@@ -3119,12 +3123,12 @@ module Rule₃
                 (inj₁ input ∷ inj₂ (into here ε) ∷ inj₂ (into (there here) ε) ∷ [])
                 (Graph.in-neighbours 𝒢₃ q)
   E .Graph.in-neighbours (into (there (there (there ()))) _)
-  E .Graph.parent-to-input ε                                      = table-of (I {𝔽 m})
-  E .Graph.parent-to-input (into here ε)                          = table-of inputs₁
+  E .Graph.parent-to-input ε                                      = I {𝔽 m}
+  E .Graph.parent-to-input (into here ε)                          = inputs₁
   E .Graph.parent-to-input (into here (into j q))                 = Graph.parent-to-input 𝒢₁ (into j q)
-  E .Graph.parent-to-input (into (there here) ε)                  = table-of inputs₂
+  E .Graph.parent-to-input (into (there here) ε)                  = inputs₂
   E .Graph.parent-to-input (into (there here) (into j q))         = Graph.parent-to-input 𝒢₂ (into j q)
-  E .Graph.parent-to-input (into (there (there here)) ε)          = table-of from-inputs₃
+  E .Graph.parent-to-input (into (there (there here)) ε)          = from-inputs₃
   E .Graph.parent-to-input (into (there (there here)) (into j q)) = Graph.parent-to-input 𝒢₃ (into j q)
   E .Graph.parent-to-input (into (there (there (there ()))) _)
   E .Graph.roots-to-input ε                             = []
@@ -3132,11 +3136,11 @@ module Rule₃
   E .Graph.roots-to-input (into (there here) q)         =
     lift-roots (there here) (Graph.roots-to-input 𝒢₂ q)
   E .Graph.roots-to-input (into (there (there here)) ε) =
-    (into here ε , table-of from-root₁) ∷ (into (there here) ε , table-of from-root₂) ∷ []
+    (into here ε , from-root₁) ∷ (into (there here) ε , from-root₂) ∷ []
   E .Graph.roots-to-input (into (there (there here)) (into j q)) =
     lift-roots (there (there here)) (Graph.roots-to-input 𝒢₃ (into j q))
   E .Graph.roots-to-input (into (there (there (there ()))) _)
-  E .Graph.input-to-output ε                             = table-of input-to-output
+  E .Graph.input-to-output ε                             = input-to-output
   E .Graph.input-to-output (into here q)                 = Graph.input-to-output 𝒢₁ q
   E .Graph.input-to-output (into (there here) q)         = Graph.input-to-output 𝒢₂ q
   E .Graph.input-to-output (into (there (there here)) q) = Graph.input-to-output 𝒢₃ q
@@ -3431,19 +3435,22 @@ module Ruleₛ {m n : ℕ} where
   root-in-neighbours []       = []
   root-in-neighbours (P ∷ Ps) = inj₂ (into here ε) ∷ map weaken-in (root-in-neighbours Ps)
 
-  parent-of : ∀ {Ds D} → All (Premise m n) Ds → Ds ∋ D → Path D → M.Table
+  parent-of : ∀ {Ds D} → All (Premise m n) Ds → (i : Ds ∋ D) → (q : Path D) →
+              𝔽 (parent-in-width m D q) ⇒ 𝔽 (in-width-at D q)
   parent-of []       ()        _
-  parent-of (P ∷ Ps) here      ε          = table-of (P .inputs)
+  parent-of (P ∷ Ps) here      ε          = P .inputs
   parent-of (P ∷ Ps) here      (into j q) = Graph.parent-to-input (P .𝒢) (into j q)
   parent-of (P ∷ Ps) (there i) q          = parent-of Ps i q
 
-  roots-of : ∀ {b Ds D} → All (Premise m n) Ds → Ds ∋ D → Path D →
-             List (Path (node m n b Ds) × M.Table)
+  roots-of : ∀ {b Ds D} → All (Premise m n) Ds → (i : Ds ∋ D) → (q : Path D) →
+             List (Σ (Path (node m n b Ds))
+                     (λ r → object (node m n b Ds) r ⇒ 𝔽 (in-width-at D q)))
   roots-of []       ()        _
   roots-of (P ∷ Ps) here      q = lift-roots here (Graph.roots-to-input (P .𝒢) q)
   roots-of (P ∷ Ps) (there i) q = weaken-roots (roots-of Ps i q)
 
-  output-of : ∀ {Ds D} → All (Premise m n) Ds → Ds ∋ D → Path D → M.Table
+  output-of : ∀ {Ds D} → All (Premise m n) Ds → (i : Ds ∋ D) → (q : Path D) →
+              𝔽 (in-width-at D q) ⇒ object D q
   output-of []       ()        _
   output-of (P ∷ Ps) here      q = Graph.input-to-output (P .𝒢) q
   output-of (P ∷ Ps) (there i) q = output-of Ps i q
@@ -3460,11 +3467,11 @@ module Ruleₛ {m n : ℕ} where
   E fo-output input-to-output Ps .Graph.<-interior ε (into j q) = inj₂ ⟪ ≈-refl ⟫
   E fo-output input-to-output Ps .Graph.in-neighbours ε          = inj₁ input ∷ root-in-neighbours Ps
   E fo-output input-to-output Ps .Graph.in-neighbours (into i q) = premise-in-neighbours Ps i q
-  E fo-output input-to-output Ps .Graph.parent-to-input ε          = table-of (I {𝔽 m})
+  E fo-output input-to-output Ps .Graph.parent-to-input ε          = I {𝔽 m}
   E fo-output input-to-output Ps .Graph.parent-to-input (into i q) = parent-of Ps i q
   E fo-output input-to-output Ps .Graph.roots-to-input ε          = []
   E fo-output input-to-output Ps .Graph.roots-to-input (into i q) = roots-of Ps i q
-  E fo-output input-to-output Ps .Graph.input-to-output ε          = table-of input-to-output
+  E fo-output input-to-output Ps .Graph.input-to-output ε          = input-to-output
   E fo-output input-to-output Ps .Graph.input-to-output (into i q) = output-of Ps i q
 
   rel : ∀ {Ds} → All (Premise m n) Ds → 𝔽 m ⇒ 𝔽 n
