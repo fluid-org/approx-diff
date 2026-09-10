@@ -1449,19 +1449,41 @@ module PositionHide {m : ℕ} {D : Derivation} (𝒢 : Graph m D)
     first-row []      = []
     first-row (r ∷ _) = r
 
+    sized : String → M.Table → M.Table
+    sized name t = tick (name ++ₛ " " ++ₛ ℕ-Show.show (length t * length (first-row t))) t
+
     row-weights : List Semiring.Carrier → Positions → Weights
     row-weights []       _        = []
     row-weights _        []       = []
     row-weights (w ∷ ws) (P ∷ Ps) = combine (row-weights ws Ps)
       where
       combine : Weights → Weights
-      combine rest = if nonzero w then tick "merge" (merge (scale w P) rest) else rest
+      combine rest =
+        if nonzero w
+        then tick ("merge " ++ₛ ℕ-Show.show (length P + length rest)) (merge (scale w P) rest)
+        else rest
 
     apply-table : M.Table → Positions → Positions
     apply-table t P = map (λ row → row-weights row P) t
 
     apply-label : ∀ {a b : ℕ} → 𝔽 a ⇒ 𝔽 b → Positions → Positions
-    apply-label ℓ P = apply-table (tick "label" (table-of ℓ)) P
+    apply-label {a} {b} ℓ P = spread 0 P (applyUpTo (λ _ → []) b)
+      where
+      image : ℕ → List Semiring.Carrier
+      image i =
+        toList (tabulate (ℓ .func (λ k → if toℕ k ≡ᵇ i then Semiring.ι else Semiring.ε)))
+
+      scatter : List Semiring.Carrier → Weights → Positions → Positions
+      scatter []       _  Q       = Q
+      scatter _        _  []      = []
+      scatter (c ∷ cs) ws (q ∷ Q) =
+        (if nonzero c then merge (scale c ws) q else q) ∷ scatter cs ws Q
+
+      spread : ℕ → Positions → Positions → Positions
+      spread i []            Q = Q
+      spread i ([]      ∷ P) Q = spread (suc i) P Q
+      spread i ((w ∷ ws) ∷ P) Q =
+        spread (suc i) P (tick ("label " ++ₛ ℕ-Show.show (length (w ∷ ws))) (scatter (image i) (w ∷ ws) Q))
 
     at-source : ℕ → ℕ → Positions
     at-source base w = applyUpTo (λ j → (base + j , Semiring.ι) ∷ []) w
@@ -1518,7 +1540,8 @@ module PositionHide {m : ℕ} {D : Derivation} (𝒢 : Graph m D)
     from-roots : List (Path D × M.Table) → List Origin → Block
     from-roots []             st = no-block
     from-roots ((r , W) ∷ fs) st =
-      add-blocks (from-origin W (origin-at (suc (path-position D r)) st)) (from-roots fs st)
+      add-blocks (from-origin (sized "root-to-input" W) (origin-at (suc (path-position D r)) st))
+                 (from-roots fs st)
 
     to-conclusion : Path D → Path D → Origin → Block
     to-conclusion rp vp (source base) =
@@ -1553,7 +1576,8 @@ module PositionHide {m : ℕ} {D : Derivation} (𝒢 : Graph m D)
       where
       emit : Res _ → Out _
       emit (res acc' ups vpos base' st') =
-        decide (add-blocks (apply-table-block (Graph.input-to-output 𝒢 (emb ε)) A) ups)
+        decide (add-blocks (apply-table-block (sized "to-output" (Graph.input-to-output 𝒢 (emb ε))) A)
+                           ups)
         where
         decide : Block → Out _
         decide B with any (vpos ≡ᵇ_) hid
@@ -1580,7 +1604,7 @@ module PositionHide {m : ℕ} {D : Derivation} (𝒢 : Graph m D)
       enter : Path D → Res _
       enter rp =
         step (go-node consume Dᵢ (λ p → emb here p) pos base st
-                (add-blocks (apply-table-block (Graph.parent-to-input 𝒢 rp) A)
+                (add-blocks (apply-table-block (sized "to-input" (Graph.parent-to-input 𝒢 rp)) A)
                             (from-roots (Graph.roots-to-input 𝒢 rp) st))
                 acc)
         where
@@ -1626,9 +1650,10 @@ private
   positions-table base w P = map (λ ws → applyUpTo (λ i → weight-at (base + i) ws) w) P
 
   position-edges : {m : ℕ} {D : Derivation} (𝒢 : Graph m D) →
-                   ((x : Semiring.Carrier) → Dec (x ≡ Semiring.ε)) → List ℕ →
+                   ((x : Semiring.Carrier) → Dec (x ≡ Semiring.ε)) →
+                   ({A : Set} → String → A → A) → List ℕ →
                    List (ℕ × List (List (ℕ × Semiring.Carrier))) → Edges 𝒢
-  position-edges 𝒢 ε-dec vs cs x y =
+  position-edges 𝒢 ε-dec tick vs cs x y =
     read (find-number (vertex-position 𝒢 x) 0 vs) (find-number (vertex-position 𝒢 y) 0 vs)
     where
     nonzero-table : M.Table → Bool
@@ -1642,21 +1667,23 @@ private
       where
       at : ℕ × List (List (ℕ × Semiring.Carrier)) →
            ℕ × List (List (ℕ × Semiring.Carrier)) → Maybe M.Table
-      at (base , _) (_ , P) = keep (positions-table base (vertex-width 𝒢 x) P)
-    read _        _        = nothing
+      at (base , _) (_ , P) =
+        tick ("read " ++ₛ ℕ-Show.show (i + j + vertex-width 𝒢 x * length P))
+             (keep (positions-table base (vertex-width 𝒢 x) P))
+    read _        _        = tick "read 0" nothing
 
 hide-graph-position-edges : {m : ℕ} {D : Derivation} (𝒢 : Graph m D) →
                             ((x : Semiring.Carrier) → Dec (x ≡ Semiring.ε)) →
                             ({A : Set} → String → A → A) → List ℕ → Edges 𝒢
 hide-graph-position-edges 𝒢 ε-dec tick hid =
-  position-edges 𝒢 ε-dec (visible-positions 𝒢 hid)
+  position-edges 𝒢 ε-dec tick (visible-positions 𝒢 hid)
                  (reverse (PositionHide.fold-result 𝒢 ε-dec tick hid [] (λ cs c → c ∷ cs) []))
 
 hide-graph-position-summary : {m : ℕ} {D : Derivation} (𝒢 : Graph m D) →
                               ((x : Semiring.Carrier) → Dec (x ≡ Semiring.ε)) →
                               ({A : Set} → String → A → A) → (hid region : List ℕ) → Edges 𝒢
 hide-graph-position-summary 𝒢 ε-dec tick hid region =
-  position-edges 𝒢 ε-dec (visible-positions 𝒢 hid)
+  position-edges 𝒢 ε-dec tick (visible-positions 𝒢 hid)
                  (reverse (PositionHide.fold-summary 𝒢 ε-dec tick hid region (λ cs c → c ∷ cs) []))
 
 private
