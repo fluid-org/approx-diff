@@ -1319,6 +1319,30 @@ hide-graph-fold : {m : ℕ} {D : Derivation} (𝒢 : Graph m D) →
                   {X : Set} → (X → List (ℕ × M.Table) → X) → X → X
 hide-graph-fold 𝒢 ε-dec tick hid = FunctionHide.fold-result 𝒢 ε-dec tick hid
 
+hide-graph-edges : {m : ℕ} {D : Derivation} (𝒢 : Graph m D) →
+                   ((x : Semiring.Carrier) → Dec (x ≡ Semiring.ε)) →
+                   ({A : Set} → String → A → A) → List ℕ → Edges 𝒢
+hide-graph-edges {m} {D} 𝒢 ε-dec tick hid = read columns
+  where
+  visible : List ℕ
+  visible = filterᵇ (λ p → not (any (p ≡ᵇ_) hid)) (upTo (suc (suc (vertex-count D))))
+
+  columns : List (List (ℕ × M.Table))
+  columns = reverse (hide-graph-fold 𝒢 ε-dec tick hid (λ cs c → c ∷ cs) [])
+
+  position-of : V 𝒢 → ℕ
+  position-of (inj₁ _) = 0
+  position-of (inj₂ p) = suc (path-position D p)
+
+  slot : ℕ → List (ℕ × M.Table) → Maybe M.Table
+  slot i []             = nothing
+  slot i ((j , t) ∷ es) = if i ≡ᵇ j then just t else slot i es
+
+  read : List (List (ℕ × M.Table)) → Edges 𝒢
+  read cs x y with find-number (position-of x) 0 visible | find-number (position-of y) 0 visible
+  ... | just i | just j = slot i (M.nth [] j cs)
+  ... | _      | _      = nothing
+
 private
   nth? : {C : Set} → ℕ → List C → Maybe C
   nth? _       []       = nothing

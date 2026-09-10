@@ -36,7 +36,8 @@ open import interaction.evaluated Sig three.semiring interpretation three.C (λ 
 open import interaction.labelling Sig three.semiring interpretation three.C (λ x → three.∨-idem {x})
   using (Node; val; at)
 open import interaction.moves three.semiring (λ x → three.∨-idem {x}) three.≡-of-≈ three.ε?
-  using (module Interaction; Config; visible; NonZero?; tabulated-summary; fo-tabulation)
+  using (module Interaction; Config; visible; NonZero?; tabulated-summary; fo-tabulation;
+         fo-graph-edges)
 open import example.runs (nonzero three.semiring) three.semiring three.C
   using (Run; filter-sum-run; const-run; length-run; fold0-run; case0-run; tag-run; case-l-run;
          case-r-run; test-run; map-run; adjacent-sums-run; filter-run; cond-run; eq-run;
@@ -75,7 +76,7 @@ private
       o-labels = val-labels 0 value
 
       fo-tab = fo-tabulation dependence (λ _ x → x)
-      fo-tables = edge-at dependence fo-tab
+      fo-tables = fo-graph-edges dependence (λ _ x → x)
       fo = dep-rel-at dependence fo-tab
       summarise = tabulated-summary dependence (λ _ x → x) fo-tab
       module I = Interaction dependence fo
@@ -226,7 +227,7 @@ private
                         signed-ε?
 
       fo-tab = smoves.fo-tabulation dependence (λ _ x → x)
-      fo-tables = graph.edge-at dependence fo-tab
+      fo-tables = smoves.fo-graph-edges dependence (λ _ x → x)
       fo = graph.dep-rel-at dependence fo-tab
       summarise = smoves.tabulated-summary dependence (λ _ x → x) fo-tab
       module I = smoves.Interaction dependence fo
