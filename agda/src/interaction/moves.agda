@@ -365,9 +365,17 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
   fo-edges : (tick : {A : Set} → String → A → A) → DepRels (vertex-object 𝒢)
   fo-edges tick = dep-rel-at 𝒢 (fo-tabulation tick)
 
+  positions : List (Path D) → List ℕ
+  positions = map (λ p → suc (path-position D p))
+
   fo-graph-edges : (tick : {A : Set} → String → A → A) → Edges 𝒢
-  fo-graph-edges tick =
-    hide-graph-edges 𝒢 ε? tick (map (λ p → suc (path-position D p)) (fo-hidden 𝒢))
+  fo-graph-edges tick = hide-graph-edges 𝒢 ε? tick (positions (fo-hidden 𝒢))
+
+  -- The first-order set and the region are hidden together, and the paths kept are those through
+  -- the region, which is what restricting to the region before hiding leaves.
+  region-summary : (tick : {A : Set} → String → A → A) → Summary
+  region-summary tick C =
+    hide-graph-summary 𝒢 ε? tick (positions (fo-hidden 𝒢) ++ positions C) (positions C)
 
   -- The region is sorted into evaluation order so that every nonzero edge among its vertices runs
   -- forward; restricting before hiding keeps direct boundary edges out of the summary.

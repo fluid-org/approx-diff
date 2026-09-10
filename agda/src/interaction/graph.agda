@@ -1074,7 +1074,7 @@ module Tabulated (T : DepTables) (tick : {A : Set} → String → A → A) where
 -- are given by position.
 module FunctionHide {m : ℕ} {D : Derivation} (𝒢 : Graph m D)
   (ε-dec : (x : Semiring.Carrier) → Dec (x ≡ Semiring.ε))
-  (tick : {A : Set} → String → A → A) (hid : List ℕ) where
+  (tick : {A : Set} → String → A → A) (hid region : List ℕ) where
 
   private
     total-positions : ℕ
@@ -1087,9 +1087,16 @@ module FunctionHide {m : ℕ} {D : Derivation} (𝒢 : Graph m D)
     InEdges : Set
     InEdges = List (ℕ × M.Table)
 
+    -- Paths from the visible sources that have gone through the region, and paths that have not.
+    record Block : Set where
+      constructor block
+      field
+        through  : InEdges
+        avoiding : InEdges
+
     data Origin : Set where
       source  : ℕ → Origin
-      summary : InEdges → Origin
+      summary : Block → Origin
 
     or-strict : Bool → Bool → Bool
     or-strict false b     = b
@@ -1191,6 +1198,34 @@ module FunctionHide {m : ℕ} {D : Derivation} (𝒢 : Graph m D)
     unit-at : ℕ → M.Table → InEdges
     unit-at r t = (r , t) ∷ []
 
+    no-block : Block
+    no-block = block no-in-edges no-in-edges
+
+    from-visible : ℕ → M.Table → Block
+    from-visible r t = block no-in-edges (unit-at r t)
+
+    add-blocks : Block → Block → Block
+    add-blocks (block B C) (block B' C') = block (add-in-edges B B') (add-in-edges C C')
+
+    apply-table-block : M.Table → Block → Block
+    apply-table-block W (block B C) = block (apply-table W B) (apply-table W C)
+
+    apply-label-block : ∀ {a b : ℕ} → 𝔽 a ⇒ 𝔽 b → Block → Block
+    apply-label-block ℓ (block B C) = block (apply-label ℓ B) (apply-label ℓ C)
+
+    drop-zeros-block : Block → Block
+    drop-zeros-block (block B C) = block (drop-zeros B) (drop-zeros C)
+
+    force-block : {A : Set} → Block → A → A
+    force-block (block B C) x = force-in-edges B (force-in-edges C x)
+
+    merge-block : Block → InEdges
+    merge-block (block B C) = add-in-edges B C
+
+    -- Beyond a vertex of the region every path has gone through it.
+    entered : Block → Block
+    entered B = block (merge-block B) no-in-edges
+
     expand : List ℕ → InEdges → List (Maybe M.Table)
     expand sv es = walk 0 sv es
       where
@@ -1206,27 +1241,28 @@ module FunctionHide {m : ℕ} {D : Derivation} (𝒢 : Graph m D)
     set-at (suc p) o (o' ∷ os) = o' ∷ set-at p o os
 
     origin-at : ℕ → List Origin → Origin
-    origin-at _       []       = summary []
+    origin-at _       []       = summary no-block
     origin-at zero    (o ∷ _)  = o
     origin-at (suc p) (_ ∷ os) = origin-at p os
 
-    from-origin : M.Table → Origin → InEdges
-    from-origin W (source r)  = unit-at r W
-    from-origin W (summary B) = apply-table W B
+    from-origin : M.Table → Origin → Block
+    from-origin W (source r)  = from-visible r W
+    from-origin W (summary B) = apply-table-block W B
 
-    from-roots : List (Path D × M.Table) → List Origin → InEdges
-    from-roots []             st = no-in-edges
+    from-roots : List (Path D × M.Table) → List Origin → Block
+    from-roots []             st = no-block
     from-roots ((r , W) ∷ fs) st =
-      add-in-edges
+      add-blocks
         (from-origin (tick "root-to-input" W)
                      (tick ("state " ++ₛ ℕ-Show.show (suc (path-position D r)))
                            (origin-at (suc (path-position D r)) st)))
         (from-roots fs st)
 
-    to-conclusion : Path D → Path D → Origin → InEdges
+    to-conclusion : Path D → Path D → Origin → Block
     to-conclusion rp vp (source r) =
-      unit-at r (tick "apply" (label-on-table (Graph.interior 𝒢 rp vp) (basis-table (width-at D rp))))
-    to-conclusion rp vp (summary B) = apply-label (Graph.interior 𝒢 rp vp) B
+      from-visible r
+        (tick "apply" (label-on-table (Graph.interior 𝒢 rp vp) (basis-table (width-at D rp))))
+    to-conclusion rp vp (summary B) = apply-label-block (Graph.interior 𝒢 rp vp) B
 
     record Out (X : Set) : Set where
       constructor out
@@ -1241,48 +1277,51 @@ module FunctionHide {m : ℕ} {D : Derivation} (𝒢 : Graph m D)
       constructor res
       field
         racc : X
-        rups : InEdges
+        rups : Block
         rpos : ℕ
         rk   : ℕ
         rst  : List Origin
 
-    go-node : {X : Set} → (X → InEdges → X) → (D' : Derivation) → (Path D' → Path D) →
-              ℕ → ℕ → List Origin → InEdges → X → Out X
-    go-prems : {X : Set} → (X → InEdges → X) → (Ds : List Derivation) →
+    go-node : {X : Set} → (X → Block → X) → (D' : Derivation) → (Path D' → Path D) →
+              ℕ → ℕ → List Origin → Block → X → Out X
+    go-prems : {X : Set} → (X → Block → X) → (Ds : List Derivation) →
                (∀ {Dᵢ} → Ds ∋ Dᵢ → Path Dᵢ → Path D) → Path D →
-               ℕ → ℕ → List Origin → InEdges → X → Res X
+               ℕ → ℕ → List Origin → Block → X → Res X
     go-node consume (node m' n' b' Ds) emb pos k st A acc =
       emit (go-prems consume Ds (λ i p → emb (into i p)) (emb ε) pos k st A acc)
       where
       emit : Res _ → Out _
       emit (res acc' ups vpos k' st') =
-        decide (add-in-edges (apply-table (tick "to-output" (Graph.input-to-output 𝒢 (emb ε))) A)
-                             ups)
+        decide (add-blocks (apply-table-block (tick "to-output" (Graph.input-to-output 𝒢 (emb ε))) A)
+                           ups)
         where
-        decide : InEdges → Out _
+        decide : Block → Out _
         decide B with any (vpos ≡ᵇ_) hid
-        ... | true  = store (tick ("block " ++ₛ ℕ-Show.show vpos) (drop-zeros B))
+        ... | true  = store (tick ("block " ++ₛ ℕ-Show.show vpos) (in-region (drop-zeros-block B)))
           where
-          store : InEdges → Out _
+          in-region : Block → Block
+          in-region Bk = if any (vpos ≡ᵇ_) region then entered Bk else Bk
+
+          store : Block → Out _
           store Bk =
-            force-in-edges Bk
+            force-block Bk
               (out acc' (summary Bk) (suc vpos) k'
                    (tick ("state " ++ₛ ℕ-Show.show vpos) (set-at vpos (summary Bk) st')))
-        ... | false = give (tick ("column " ++ₛ ℕ-Show.show vpos) (drop-zeros B))
+        ... | false = give (tick ("column " ++ₛ ℕ-Show.show vpos) (drop-zeros-block B))
           where
-          give : InEdges → Out _
+          give : Block → Out _
           give Ck =
             primForce (consume acc' Ck)
               (λ a → out a (source k') (suc vpos) (suc k')
                          (tick ("state " ++ₛ ℕ-Show.show vpos) (set-at vpos (source k') st')))
-    go-prems consume []          emb vp pos k st A acc = res acc no-in-edges pos k st
+    go-prems consume []          emb vp pos k st A acc = res acc no-block pos k st
     go-prems consume (Dᵢ ∷ rest) emb vp pos k st A acc = enter (emb here ε)
       where
       enter : Path D → Res _
       enter rp =
         step (go-node consume Dᵢ (λ p → emb here p) pos k st
-                (add-in-edges (apply-table (tick "to-input" (Graph.parent-to-input 𝒢 rp)) A)
-                              (from-roots (Graph.roots-to-input 𝒢 rp) st))
+                (add-blocks (apply-table-block (tick "to-input" (Graph.parent-to-input 𝒢 rp)) A)
+                            (from-roots (Graph.roots-to-input 𝒢 rp) st))
                 acc)
         where
         step : Out _ → Res _
@@ -1290,17 +1329,23 @@ module FunctionHide {m : ℕ} {D : Derivation} (𝒢 : Graph m D)
           pack (to-conclusion rp vp org)
                (go-prems consume rest (λ i p → emb (there i) p) vp pos' k' st' A acc')
           where
-          pack : InEdges → Res _ → Res _
+          pack : Block → Res _ → Res _
           pack up (res acc₂ ups pos₂ k₂ st₂) =
-            res acc₂ (add-in-edges up ups) pos₂ k₂ st₂
+            res acc₂ (add-blocks up ups) pos₂ k₂ st₂
+
+    fold-blocks : {X : Set} → (X → Block → X) → X → X
+    fold-blocks {X} consume x₀ =
+      Out.oacc (go-node consume D (λ p → p) 1 1
+                  (set-at 0 (source 0) (applyUpTo (λ _ → summary no-block) total-positions))
+                  (from-visible 0 (basis-table m))
+                  (primForce (consume x₀ (tick "column 0" no-block)) (λ a → a)))
 
   -- Visible vertices in evaluation order.
   fold-result : {X : Set} → (X → List (ℕ × M.Table) → X) → X → X
-  fold-result {X} consume x₀ =
-    Out.oacc (go-node consume D (λ p → p) 1 1
-                (set-at 0 (source 0) (applyUpTo (λ _ → summary []) total-positions))
-                (unit-at 0 (basis-table m))
-                (primForce (consume x₀ (tick "column 0" no-in-edges)) (λ a → a)))
+  fold-result consume = fold-blocks (λ a B → consume a (merge-block B))
+
+  fold-summary : {X : Set} → (X → List (ℕ × M.Table) → X) → X → X
+  fold-summary consume = fold-blocks (λ a B → consume a (Block.through B))
 
   result : List (List (Maybe M.Table))
   result = start visible
@@ -1311,37 +1356,49 @@ module FunctionHide {m : ℕ} {D : Derivation} (𝒢 : Graph m D)
 hide-graph-functional : {m : ℕ} {D : Derivation} (𝒢 : Graph m D) →
                         ((x : Semiring.Carrier) → Dec (x ≡ Semiring.ε)) →
                         ({A : Set} → String → A → A) → List ℕ → List (List (Maybe M.Table))
-hide-graph-functional 𝒢 ε-dec tick hid = FunctionHide.result 𝒢 ε-dec tick hid
+hide-graph-functional 𝒢 ε-dec tick hid = FunctionHide.result 𝒢 ε-dec tick hid []
 
 hide-graph-fold : {m : ℕ} {D : Derivation} (𝒢 : Graph m D) →
                   ((x : Semiring.Carrier) → Dec (x ≡ Semiring.ε)) →
                   ({A : Set} → String → A → A) → List ℕ →
                   {X : Set} → (X → List (ℕ × M.Table) → X) → X → X
-hide-graph-fold 𝒢 ε-dec tick hid = FunctionHide.fold-result 𝒢 ε-dec tick hid
+hide-graph-fold 𝒢 ε-dec tick hid = FunctionHide.fold-result 𝒢 ε-dec tick hid []
+
+private
+  vertex-position : {m : ℕ} {D : Derivation} (𝒢 : Graph m D) → V 𝒢 → ℕ
+  vertex-position         𝒢 (inj₁ _) = 0
+  vertex-position {D = D} 𝒢 (inj₂ p) = suc (path-position D p)
+
+  visible-positions : {m : ℕ} {D : Derivation} (𝒢 : Graph m D) → List ℕ → List ℕ
+  visible-positions {D = D} 𝒢 hid =
+    filterᵇ (λ p → not (any (p ≡ᵇ_) hid)) (upTo (suc (suc (vertex-count D))))
+
+  column-slot : ℕ → List (ℕ × M.Table) → Maybe M.Table
+  column-slot i []             = nothing
+  column-slot i ((j , t) ∷ es) = if i ≡ᵇ j then just t else column-slot i es
+
+  -- Columns in evaluation order, one per visible vertex, each keyed by the source's index among
+  -- the visible vertices.
+  edges-of : {m : ℕ} {D : Derivation} (𝒢 : Graph m D) → List ℕ →
+             List (List (ℕ × M.Table)) → Edges 𝒢
+  edges-of 𝒢 vs cs x y with find-number (vertex-position 𝒢 x) 0 vs
+                          | find-number (vertex-position 𝒢 y) 0 vs
+  ... | just i | just j = column-slot i (M.nth [] j cs)
+  ... | _      | _      = nothing
 
 hide-graph-edges : {m : ℕ} {D : Derivation} (𝒢 : Graph m D) →
                    ((x : Semiring.Carrier) → Dec (x ≡ Semiring.ε)) →
                    ({A : Set} → String → A → A) → List ℕ → Edges 𝒢
-hide-graph-edges {m} {D} 𝒢 ε-dec tick hid = read columns
-  where
-  visible : List ℕ
-  visible = filterᵇ (λ p → not (any (p ≡ᵇ_) hid)) (upTo (suc (suc (vertex-count D))))
+hide-graph-edges 𝒢 ε-dec tick hid =
+  edges-of 𝒢 (visible-positions 𝒢 hid)
+           (reverse (FunctionHide.fold-result 𝒢 ε-dec tick hid [] (λ cs c → c ∷ cs) []))
 
-  columns : List (List (ℕ × M.Table))
-  columns = reverse (hide-graph-fold 𝒢 ε-dec tick hid (λ cs c → c ∷ cs) [])
-
-  position-of : V 𝒢 → ℕ
-  position-of (inj₁ _) = 0
-  position-of (inj₂ p) = suc (path-position D p)
-
-  slot : ℕ → List (ℕ × M.Table) → Maybe M.Table
-  slot i []             = nothing
-  slot i ((j , t) ∷ es) = if i ≡ᵇ j then just t else slot i es
-
-  read : List (List (ℕ × M.Table)) → Edges 𝒢
-  read cs x y with find-number (position-of x) 0 visible | find-number (position-of y) 0 visible
-  ... | just i | just j = slot i (M.nth [] j cs)
-  ... | _      | _      = nothing
+hide-graph-summary : {m : ℕ} {D : Derivation} (𝒢 : Graph m D) →
+                     ((x : Semiring.Carrier) → Dec (x ≡ Semiring.ε)) →
+                     ({A : Set} → String → A → A) → (hid region : List ℕ) → Edges 𝒢
+hide-graph-summary 𝒢 ε-dec tick hid region =
+  edges-of 𝒢 (visible-positions 𝒢 hid)
+           (reverse (FunctionHide.fold-summary 𝒢 ε-dec tick hid region (λ cs c → c ∷ cs) []))
 
 private
   nth? : {C : Set} → ℕ → List C → Maybe C

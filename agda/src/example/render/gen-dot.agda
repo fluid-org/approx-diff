@@ -92,7 +92,7 @@ module render-eval {Γ τ} (γ : Env Γ) (t : Γ ⊢ τ) where
   fo-tab = fo-tabulation dependence (λ _ x → x)
   fo-tables = fo-graph-edges dependence (λ _ x → x)
   fo     = dep-rel-at dependence fo-tab
-  summarise = tabulated-summary dependence (λ _ x → x) fo-tab
+  summarise = region-summary dependence (λ _ x → x)
 
   open Interaction dependence fo public
 
