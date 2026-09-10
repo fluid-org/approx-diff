@@ -863,13 +863,13 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
 -- evaluation order (the inputs vertex first, the conclusion last). An empty slot is the zero
 -- relation, so a read forces only the slot it consults. Rows, slots and widths are indexed by
 -- position in the vertex list, not by vertex number.
-record DepRelTables : Set where
+record DepTables : Set where
   field
     numbers : List ℕ
     widths  : List ℕ
     edges   : List (List (Maybe M.Table))
 
-open DepRelTables public using (widths; edges)
+open DepTables public using (widths; edges)
 
 private
   sum : List Semiring.Carrier → Semiring.Carrier
@@ -918,8 +918,8 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D)
          (ε-dec : (x : Semiring.Carrier) → Dec (x ≡ Semiring.ε))
          (tick : {A : Set} → String → A → A) where
 
-  dep-rel-table : (u v : V 𝒢) → M.Table
-  dep-rel-table u v = tick "edge" (M.to-table (∃ₛ.fst (𝔽F-full (dep-rels 𝒢 u v))))
+  dep-table : (u v : V 𝒢) → M.Table
+  dep-table u v = tick "edge" (M.to-table (∃ₛ.fst (𝔽F-full (dep-rels 𝒢 u v))))
 
   nonzero-entry : Semiring.Carrier → Bool
   nonzero-entry x = not ⌊ ε-dec x ⌋
@@ -927,26 +927,26 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D)
   nonzero-slot : M.Table → Bool
   nonzero-slot = any (any nonzero-entry)
 
-  dep-rel-slot : M.Table → Maybe M.Table
-  dep-rel-slot t = if nonzero-slot t then just t else nothing
+  dep-slot : M.Table → Maybe M.Table
+  dep-slot t = if nonzero-slot t then just t else nothing
 
-  dep-rel-row : V 𝒢 → List (Maybe M.Table)
-  dep-rel-row x = map (λ y → dep-rel-slot (dep-rel-table x y)) (all-vertices 𝒢)
+  dep-row : V 𝒢 → List (Maybe M.Table)
+  dep-row x = map (λ y → dep-slot (dep-table x y)) (all-vertices 𝒢)
 
-  dep-rel-tables : DepRelTables
-  dep-rel-tables .DepRelTables.numbers = upTo (length (all-vertices 𝒢))
-  dep-rel-tables .DepRelTables.widths   = map (vertex-width 𝒢) (all-vertices 𝒢)
-  dep-rel-tables .DepRelTables.edges    = map dep-rel-row (all-vertices 𝒢)
+  dep-tables : DepTables
+  dep-tables .DepTables.numbers = upTo (length (all-vertices 𝒢))
+  dep-tables .DepTables.widths   = map (vertex-width 𝒢) (all-vertices 𝒢)
+  dep-tables .DepTables.edges    = map dep-row (all-vertices 𝒢)
 
 
 find-number : ℕ → ℕ → List ℕ → Maybe ℕ
 find-number i k []       = nothing
 find-number i k (j ∷ js) = if i ≡ᵇ j then just k else find-number i (suc k) js
 
-position : DepRelTables → ℕ → Maybe ℕ
-position T i = find-number i 0 (DepRelTables.numbers T)
+position : DepTables → ℕ → Maybe ℕ
+position T i = find-number i 0 (DepTables.numbers T)
 
-table-at : DepRelTables → ℕ → ℕ → Maybe M.Table
+table-at : DepTables → ℕ → ℕ → Maybe M.Table
 table-at T i j = M.nth nothing j (M.nth [] i (T .edges))
 
 zero-table : ℕ → ℕ → M.Table
@@ -958,7 +958,7 @@ add-table r c t u =
              (upTo c))
       (upTo r)
 
-read-table : DepRelTables → ℕ → ℕ → M.Table
+read-table : DepTables → ℕ → ℕ → M.Table
 read-table T i j with table-at T i j
 ... | just t  = t
 ... | nothing = zero-table (M.nth 0 j (T .widths)) (M.nth 0 i (T .widths))
@@ -976,11 +976,11 @@ mask-rows member all-ns []       _        = []
 mask-rows member all-ns (n ∷ ns) (r ∷ rs) =
   mask-slots member (member n) all-ns r ∷ mask-rows member all-ns ns rs
 
-restrict : List ℕ → DepRelTables → DepRelTables
-restrict region T .DepRelTables.numbers = DepRelTables.numbers T
-restrict region T .DepRelTables.widths  = T .widths
-restrict region T .DepRelTables.edges   =
-  mask-rows (λ n → any (n ≡ᵇ_) region) (DepRelTables.numbers T) (DepRelTables.numbers T) (T .edges)
+restrict : List ℕ → DepTables → DepTables
+restrict region T .DepTables.numbers = DepTables.numbers T
+restrict region T .DepTables.widths  = T .widths
+restrict region T .DepTables.edges   =
+  mask-rows (λ n → any (n ≡ᵇ_) region) (DepTables.numbers T) (DepTables.numbers T) (T .edges)
 
 module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
 
@@ -988,16 +988,16 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
   table-morphism x y (just t) = mat (M.look {vertex-width 𝒢 y} {vertex-width 𝒢 x} t)
   table-morphism x y nothing  = εₘ
 
-  read-slot : DepRelTables → (x y : V 𝒢) → Maybe ℕ → Maybe ℕ → vertex-object 𝒢 x ⇒ vertex-object 𝒢 y
+  read-slot : DepTables → (x y : V 𝒢) → Maybe ℕ → Maybe ℕ → vertex-object 𝒢 x ⇒ vertex-object 𝒢 y
   read-slot T x y (just a) (just b) = table-morphism x y (table-at T a b)
   read-slot T x y _        _        = εₘ
 
-  dep-rel-at : DepRelTables → (x y : V 𝒢) → vertex-object 𝒢 x ⇒ vertex-object 𝒢 y
+  dep-rel-at : DepTables → (x y : V 𝒢) → vertex-object 𝒢 x ⇒ vertex-object 𝒢 y
   dep-rel-at T x y = read-slot T x y (position T (index-of 𝒢 x)) (position T (index-of 𝒢 y))
 
 -- Hiding over stored tables, with the hidden vertices listed so that every edge among
 -- them runs forward.
-module Tabulated (T : DepRelTables) (tick : {A : Set} → String → A → A) where
+module Tabulated (T : DepTables) (tick : {A : Set} → String → A → A) where
 
   wd : ℕ → ℕ
   wd i = M.nth 0 i (T .widths)
@@ -1055,12 +1055,12 @@ module Tabulated (T : DepRelTables) (tick : {A : Set} → String → A → A) wh
     row : ℕ → List (Maybe M.Table)
     row a = row-slots a (summaries 0 a [] hid-pos)
 
-    result : DepRelTables
-    result .DepRelTables.numbers = map (λ p → M.nth 0 p (DepRelTables.numbers T)) survivors
-    result .DepRelTables.widths  = map wd survivors
-    result .DepRelTables.edges   = map row survivors
+    result : DepTables
+    result .DepTables.numbers = map (λ p → M.nth 0 p (DepTables.numbers T)) survivors
+    result .DepTables.widths  = map wd survivors
+    result .DepTables.edges   = map row survivors
 
-  hide-graph : ((x : Semiring.Carrier) → Dec (x ≡ Semiring.ε)) → List ℕ → DepRelTables
+  hide-graph : ((x : Semiring.Carrier) → Dec (x ≡ Semiring.ε)) → List ℕ → DepTables
   hide-graph ε-dec hid = HideGraph.result ε-dec hid
 
 -- Hiding with edge labels applied as functions to the row blocks propagated from the region's
@@ -1517,25 +1517,25 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
                          (AllP.map⁺ (universal (λ _ → ≡-refl) (upTo c))))
                  (upTo r)))
 
-  read-table-rep : (T : DepRelTables) (x y : V 𝒢) (p q : ℕ) →
+  read-table-rep : (T : DepTables) (x y : V 𝒢) (p q : ℕ) →
                    mat (M.look {vertex-width 𝒢 y} {vertex-width 𝒢 x} (read-table T p q))
                    ≈ table-morphism 𝒢 x y (table-at T p q)
   read-table-rep T x y p q with table-at T p q
   ... | just t  = ≈-refl
   ... | nothing =
-    zero-table-morphism x y (M.nth 0 q (DepRelTables.widths T)) (M.nth 0 p (DepRelTables.widths T))
+    zero-table-morphism x y (M.nth 0 q (DepTables.widths T)) (M.nth 0 p (DepTables.widths T))
 
-  record Represents (T : DepRelTables) (vs : List (V 𝒢)) (G : DepRels (vertex-object 𝒢)) : Set where
+  record Represents (T : DepTables) (vs : List (V 𝒢)) (G : DepRels (vertex-object 𝒢)) : Set where
     field
-      numbers-eq       : DepRelTables.numbers T ≡ map (index-of 𝒢) vs
+      numbers-eq       : DepTables.numbers T ≡ map (index-of 𝒢) vs
       widths-eq        : T .widths ≡ map (vertex-width 𝒢) vs
-      numbers-distinct : AllPairs _≢_ (DepRelTables.numbers T)
+      numbers-distinct : AllPairs _≢_ (DepTables.numbers T)
       slots            : ∀ {a b : ℕ} {x y : V 𝒢} → nth? a vs ≡ just x → nth? b vs ≡ just y →
                          Prf (table-morphism 𝒢 x y (table-at T a b) ≈ G x y)
 
   open Represents public
 
-  locate : {T : DepRelTables} {vs : List (V 𝒢)} {G : DepRels (vertex-object 𝒢)} →
+  locate : {T : DepTables} {vs : List (V 𝒢)} {G : DepRels (vertex-object 𝒢)} →
            Represents T vs G → {p : ℕ} {x : V 𝒢} → nth? p vs ≡ just x →
            position T (index-of 𝒢 x) ≡ just p
   locate {T} {vs} R {p} {x} h =
@@ -1544,7 +1544,7 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
                     (subst (AllPairs _≢_) (R .numbers-eq) (R .numbers-distinct))
                     (nth?-map (index-of 𝒢) p vs h))
 
-  dep-rel-at-rep : {T : DepRelTables} {vs : List (V 𝒢)} {G : DepRels (vertex-object 𝒢)} →
+  dep-rel-at-rep : {T : DepTables} {vs : List (V 𝒢)} {G : DepRels (vertex-object 𝒢)} →
                   Represents T vs G → {x y : V 𝒢} → x ∈ vs → y ∈ vs →
                   dep-rel-at 𝒢 T x y ≈ G x y
   dep-rel-at-rep {T} {vs} {G} R {x} {y} mx my with ∈-nth? mx | ∈-nth? my
@@ -1601,12 +1601,12 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
     upTo-distinct : (n : ℕ) → AllPairs _≢_ (upTo n)
     upTo-distinct n = AllPairsP.applyUpTo⁺₁ _ n (λ i<j _ → <⇒≢ i<j)
 
-  dep-rel-tables-rep : (ε-dec : (x : Semiring.Carrier) → Dec (x ≡ Semiring.ε)) →
-                   Represents (dep-rel-tables 𝒢 ε-dec (λ _ x → x)) (all-vertices 𝒢) (dep-rels 𝒢)
-  dep-rel-tables-rep ε-dec .numbers-eq       = numbers-self
-  dep-rel-tables-rep ε-dec .widths-eq        = ≡-refl
-  dep-rel-tables-rep ε-dec .numbers-distinct = upTo-distinct (length (all-vertices 𝒢))
-  dep-rel-tables-rep ε-dec .slots {a} {b} {x} {y} ha hb =
+  dep-tables-rep : (ε-dec : (x : Semiring.Carrier) → Dec (x ≡ Semiring.ε)) →
+                   Represents (dep-tables 𝒢 ε-dec (λ _ x → x)) (all-vertices 𝒢) (dep-rels 𝒢)
+  dep-tables-rep ε-dec .numbers-eq       = numbers-self
+  dep-tables-rep ε-dec .widths-eq        = ≡-refl
+  dep-tables-rep ε-dec .numbers-distinct = upTo-distinct (length (all-vertices 𝒢))
+  dep-tables-rep ε-dec .slots {a} {b} {x} {y} ha hb =
     subst (λ w → Prf (table-morphism 𝒢 x y w ≈ dep-rels 𝒢 x y)) (≡-sym table-eq) at-slot
     where
     idt : {C : Set} → String → C → C
@@ -1614,21 +1614,21 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
 
     R = ∃ₛ.fst (𝔽F-full (dep-rels 𝒢 x y))
 
-    table-eq : table-at (dep-rel-tables 𝒢 ε-dec idt) a b
-               ≡ dep-rel-slot 𝒢 ε-dec idt (dep-rel-table 𝒢 ε-dec idt x y)
+    table-eq : table-at (dep-tables 𝒢 ε-dec idt) a b
+               ≡ dep-slot 𝒢 ε-dec idt (dep-table 𝒢 ε-dec idt x y)
     table-eq =
       ≡-trans (≡-cong (M.nth nothing b)
-                      (nth?-nth [] a (map (dep-rel-row 𝒢 ε-dec idt) (all-vertices 𝒢))
-                                (nth?-map (dep-rel-row 𝒢 ε-dec idt) a (all-vertices 𝒢) ha)))
+                      (nth?-nth [] a (map (dep-row 𝒢 ε-dec idt) (all-vertices 𝒢))
+                                (nth?-map (dep-row 𝒢 ε-dec idt) a (all-vertices 𝒢) ha)))
               (nth?-nth nothing b
-                        (map (λ y' → dep-rel-slot 𝒢 ε-dec idt (dep-rel-table 𝒢 ε-dec idt x y'))
+                        (map (λ y' → dep-slot 𝒢 ε-dec idt (dep-table 𝒢 ε-dec idt x y'))
                              (all-vertices 𝒢))
-                        (nth?-map (λ y' → dep-rel-slot 𝒢 ε-dec idt (dep-rel-table 𝒢 ε-dec idt x y'))
+                        (nth?-map (λ y' → dep-slot 𝒢 ε-dec idt (dep-table 𝒢 ε-dec idt x y'))
                                   b (all-vertices 𝒢) hb))
 
-    at-slot : Prf (table-morphism 𝒢 x y (dep-rel-slot 𝒢 ε-dec idt (dep-rel-table 𝒢 ε-dec idt x y))
+    at-slot : Prf (table-morphism 𝒢 x y (dep-slot 𝒢 ε-dec idt (dep-table 𝒢 ε-dec idt x y))
                    ≈ dep-rels 𝒢 x y)
-    at-slot with nonzero-slot 𝒢 ε-dec idt (dep-rel-table 𝒢 ε-dec idt x y) in nz
+    at-slot with nonzero-slot 𝒢 ε-dec idt (dep-table 𝒢 ε-dec idt x y) in nz
     ... | true  =
       ⟪ ≈-trans (mat-cong (λ i j → ≈-of-≡ (look-to-table R i j)))
                 (∃ₛ.snd (𝔽F-full (dep-rels 𝒢 x y))) ⟫
@@ -1670,7 +1670,7 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
     same-pos : pu ≡ pv
     same-pos = ≡-trans (≡-sym (idx-at eu)) (≡-trans e (idx-at ev))
 
-  rep-cong : {T : DepRelTables} {vs : List (V 𝒢)} {G G' : DepRels (vertex-object 𝒢)} →
+  rep-cong : {T : DepTables} {vs : List (V 𝒢)} {G G' : DepRels (vertex-object 𝒢)} →
              ((x y : V 𝒢) → G x y ≈ G' x y) →
              Represents T vs G → Represents T vs G'
   rep-cong e R .numbers-eq       = R .numbers-eq
@@ -1686,7 +1686,7 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
        ∨ any (index-of 𝒢 y ≡ᵇ_) (map (index-of 𝒢) ws')
     then G x y else εₘ
 
-  restrict-rep : {T : DepRelTables} {vs : List (V 𝒢)} {G : DepRels (vertex-object 𝒢)} →
+  restrict-rep : {T : DepTables} {vs : List (V 𝒢)} {G : DepRels (vertex-object 𝒢)} →
                  Represents T vs G → (ws' : List (V 𝒢)) →
                  Represents (restrict (map (index-of 𝒢) ws') T) vs (restrict-mask ws' G)
   restrict-rep R ws' .numbers-eq       = R .numbers-eq
@@ -1698,11 +1698,11 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
     member : ℕ → Bool
     member n = any (n ≡ᵇ_) (map (index-of 𝒢) ws')
 
-    na-eq : nth? a (DepRelTables.numbers T) ≡ just (index-of 𝒢 x)
+    na-eq : nth? a (DepTables.numbers T) ≡ just (index-of 𝒢 x)
     na-eq = subst (λ ns → nth? a ns ≡ just (index-of 𝒢 x)) (≡-sym (R .numbers-eq))
                   (nth?-map (index-of 𝒢) a vs ha)
 
-    nb-eq : nth? b (DepRelTables.numbers T) ≡ just (index-of 𝒢 y)
+    nb-eq : nth? b (DepTables.numbers T) ≡ just (index-of 𝒢 y)
     nb-eq = subst (λ ns → nth? b ns ≡ just (index-of 𝒢 y)) (≡-sym (R .numbers-eq))
                   (nth?-map (index-of 𝒢) b vs hb)
 
@@ -1711,10 +1711,10 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
                  then table-at T a b else nothing)
     slot-eq =
       ≡-trans (≡-cong (M.nth nothing b)
-                      (mask-row member (DepRelTables.numbers T) (DepRelTables.numbers T)
-                                (DepRelTables.edges T) a na-eq))
-              (mask-col member (member (index-of 𝒢 x)) (DepRelTables.numbers T)
-                        (M.nth [] a (DepRelTables.edges T)) b nb-eq)
+                      (mask-row member (DepTables.numbers T) (DepTables.numbers T)
+                                (DepTables.edges T) a na-eq))
+              (mask-col member (member (index-of 𝒢 x)) (DepTables.numbers T)
+                        (M.nth [] a (DepTables.edges T)) b nb-eq)
 
     at-mask : Prf (table-morphism 𝒢 x y
                      (if member (index-of 𝒢 x) ∨ member (index-of 𝒢 y)
@@ -1729,7 +1729,7 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
   -- represents hide-all at the surviving vertices.
   module HideRepresents
       (ε-dec : (x : Semiring.Carrier) → Dec (x ≡ Semiring.ε))
-      {T : DepRelTables} {vs : List (V 𝒢)} {G : DepRels (vertex-object 𝒢)}
+      {T : DepTables} {vs : List (V 𝒢)} {G : DepRels (vertex-object 𝒢)}
       (R : Represents T vs G)
       (ws : List (V 𝒢)) (ws-mem : All (_∈ vs) ws)
       (pairs : AllPairs (λ v u → Prf (G u v ≈ εₘ)) ws) where
@@ -1749,18 +1749,18 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
                 (nth?-nth 0 p (map (vertex-width 𝒢) vs) (nth?-map (vertex-width 𝒢) p vs h))
 
       num-at : {p : ℕ} {x : V 𝒢} → nth? p vs ≡ just x →
-               M.nth 0 p (DepRelTables.numbers T) ≡ index-of 𝒢 x
+               M.nth 0 p (DepTables.numbers T) ≡ index-of 𝒢 x
       num-at {p} {x} h =
         ≡-trans (≡-cong (M.nth 0 p) (R .numbers-eq))
                 (nth?-nth 0 p (map (index-of 𝒢) vs) (nth?-map (index-of 𝒢) p vs h))
 
       nth?-num : {p : ℕ} {x : V 𝒢} → nth? p vs ≡ just x →
-                 nth? p (DepRelTables.numbers T) ≡ just (index-of 𝒢 x)
+                 nth? p (DepTables.numbers T) ≡ just (index-of 𝒢 x)
       nth?-num {p} {x} h =
         subst (λ ns → nth? p ns ≡ just (index-of 𝒢 x)) (≡-sym (R .numbers-eq))
               (nth?-map (index-of 𝒢) p vs h)
 
-      len-eq : length (DepRelTables.widths T) ≡ length vs
+      len-eq : length (DepTables.widths T) ≡ length vs
       len-eq = ≡-trans (≡-cong length (R .widths-eq)) (length-map (vertex-width 𝒢) vs)
 
       data PosOf : List ℕ → List (V 𝒢) → Set where
@@ -1932,7 +1932,7 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
       survivors-just =
         All-map (λ {p} lt → nth?-defined p vs lt)
                 (filterᵇ-All (λ p → not (any (p ≡ᵇ_) HG.hid-pos))
-                             (applyUpTo-All (λ i → i) (length (DepRelTables.widths T))
+                             (applyUpTo-All (λ i → i) (length (DepTables.widths T))
                                             (λ p lt → subst (p <_) len-eq lt)))
 
       extract : ∀ {ps} → All (λ p → Σ (V 𝒢) (λ z → nth? p vs ≡ just z)) ps → List (V 𝒢)
@@ -1952,7 +1952,7 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
       ... | (p , sa , sx) = p , sa , sx
 
       nums-eq : ∀ {ps} (sj : All (λ p → Σ (V 𝒢) (λ z → nth? p vs ≡ just z)) ps) →
-                map (λ p → M.nth 0 p (DepRelTables.numbers T)) ps
+                map (λ p → M.nth 0 p (DepTables.numbers T)) ps
                 ≡ map (index-of 𝒢) (mapMaybe (λ p → nth? p vs) ps)
       nums-eq []               = ≡-refl
       nums-eq (_∷_ (z , e) sj) rewrite e = ≡-cong₂ _∷_ (num-at e) (nums-eq sj)
@@ -1974,16 +1974,16 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
 
       map-nth-distinct : ∀ {ps} → All (λ p → Σ (V 𝒢) (λ z → nth? p vs ≡ just z)) ps →
                          AllPairs _≢_ ps →
-                         AllPairs _≢_ (map (λ p → M.nth 0 p (DepRelTables.numbers T)) ps)
+                         AllPairs _≢_ (map (λ p → M.nth 0 p (DepTables.numbers T)) ps)
       map-nth-distinct []                   []          = []
       map-nth-distinct (_∷_ {p} (z , e) sj) (hp ∷ dps) =
         AllP.map⁺ (heads sj hp) ∷ map-nth-distinct sj dps
         where
         heads : ∀ {qs} → All (λ q → Σ (V 𝒢) (λ z' → nth? q vs ≡ just z')) qs → All (p ≢_) qs →
-                All (λ q → M.nth 0 p (DepRelTables.numbers T) ≢ M.nth 0 q (DepRelTables.numbers T)) qs
+                All (λ q → M.nth 0 p (DepTables.numbers T) ≢ M.nth 0 q (DepTables.numbers T)) qs
         heads []                      []         = []
         heads (_∷_ {q} (z' , e') sj') (ne ∷ nes) =
-          (λ eq → nth-differ (DepRelTables.numbers T) (R .numbers-distinct) ne
+          (λ eq → nth-differ (DepTables.numbers T) (R .numbers-distinct) ne
                              (nth?-num e) (nth?-num e')
                              (≡-trans (≡-sym (num-at e)) (≡-trans eq (num-at e'))))
           ∷ heads sj' nes
@@ -2001,7 +2001,7 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
     ... | (p , hp) =
       ∈-mapMaybe (∈-filterᵇ (λ p' → not (any (p' ≡ᵇ_) HG.hid-pos)) up-mem surv) hp
       where
-      up-mem : p ∈ upTo (length (DepRelTables.widths T))
+      up-mem : p ∈ upTo (length (DepTables.widths T))
       up-mem = subst (λ n → p ∈ upTo n) (≡-sym len-eq)
                      (<-applyUpTo (λ i → i) (nth?-length p vs hp))
       surv : not (any (p ≡ᵇ_) HG.hid-pos) ≡ true
@@ -2014,7 +2014,7 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
     hide-rep .numbers-distinct =
       map-nth-distinct survivors-just
                        (filterᵇ-AllPairs (λ p → not (any (p ≡ᵇ_) HG.hid-pos))
-                                         (upTo-distinct (length (DepRelTables.widths T))))
+                                         (upTo-distinct (length (DepTables.widths T))))
     hide-rep .slots {a'} {b'} {x} {y} ha' hb'
       with at-extract survivors-just
                       (subst (λ l → nth? a' l ≡ just x) (mapMaybe-just survivors-just) ha')
