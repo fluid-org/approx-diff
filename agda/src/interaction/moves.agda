@@ -372,7 +372,7 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
   fo-edges tick = dep-rel-at 𝒢 (fo-tabulation tick)
 
   -- The region is sorted into evaluation order so that every nonzero edge among its vertices runs
-  -- forward; masking before hiding keeps direct boundary edges out of the summary.
+  -- forward; restricting before hiding keeps direct boundary edges out of the summary.
   tabulated-summary : (tick : {A : Set} → String → A → A) → DepTables → Summary
   tabulated-summary tick F C =
     Tabulated.hide-graph (restrict-tables region F) tick ε? region
@@ -1267,9 +1267,9 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
       ∈-any-≡ᵇ (index-of 𝒢 (at p)) idxs
                (∈-map⁺ (index-of 𝒢) (∈-map⁺ at (∈-resp-↭ (↭-sym (sort-↭ C)) h)))
 
-    mask-restrict : (x' y' : V 𝒢) →
-                    restrict-mask 𝒢 regionV (fo-graph 𝒢) x' y' ≈ restrict (fo-graph 𝒢) C x' y'
-    mask-restrict x' y' with x' ∈ᵥ? C ⊎-dec y' ∈ᵥ? C
+    region-restrict : (x' y' : V 𝒢) →
+                      restrict-vertices 𝒢 regionV (fo-graph 𝒢) x' y' ≈ restrict (fo-graph 𝒢) C x' y'
+    region-restrict x' y' with x' ∈ᵥ? C ⊎-dec y' ∈ᵥ? C
     ... | yes k =
       ≡-to-≈ (≡-cong (λ b → if b then fo-graph 𝒢 x' y' else εₘ) (mem-true k))
       where
@@ -1288,7 +1288,7 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
 
     R-region : Represents 𝒢 (restrict-tables (map (index-of 𝒢) regionV) F₀)
                           FoHide.remaining (restrict (fo-graph 𝒢) C)
-    R-region = rep-cong 𝒢 mask-restrict (restrict-rep 𝒢 fo-rep regionV)
+    R-region = rep-cong 𝒢 region-restrict (restrict-rep 𝒢 fo-rep regionV)
 
     C-mem : All (_∈ₚ FoHide.remaining) regionV
     C-mem = All-tabulate in-rem

@@ -963,24 +963,24 @@ read-table T i j with table-at T i j
 ... | just t  = t
 ... | nothing = zero-table (M.nth 0 j (T .widths)) (M.nth 0 i (T .widths))
 
-mask-slots : (ℕ → Bool) → Bool → List ℕ → List (Maybe M.Table) → List (Maybe M.Table)
-mask-slots member keep-row _        []       = []
-mask-slots member keep-row []       _        = []
-mask-slots member keep-row (m ∷ ms) (t ∷ ts) =
-  (if keep-row ∨ member m then t else nothing) ∷ mask-slots member keep-row ms ts
+restrict-slots : (ℕ → Bool) → Bool → List ℕ → List (Maybe M.Table) → List (Maybe M.Table)
+restrict-slots member keep-row _        []       = []
+restrict-slots member keep-row []       _        = []
+restrict-slots member keep-row (m ∷ ms) (t ∷ ts) =
+  (if keep-row ∨ member m then t else nothing) ∷ restrict-slots member keep-row ms ts
 
-mask-rows : (ℕ → Bool) → List ℕ → List ℕ → List (List (Maybe M.Table)) →
-            List (List (Maybe M.Table))
-mask-rows member all-ns _        []       = []
-mask-rows member all-ns []       _        = []
-mask-rows member all-ns (n ∷ ns) (r ∷ rs) =
-  mask-slots member (member n) all-ns r ∷ mask-rows member all-ns ns rs
+restrict-rows : (ℕ → Bool) → List ℕ → List ℕ → List (List (Maybe M.Table)) →
+                List (List (Maybe M.Table))
+restrict-rows member all-ns _        []       = []
+restrict-rows member all-ns []       _        = []
+restrict-rows member all-ns (n ∷ ns) (r ∷ rs) =
+  restrict-slots member (member n) all-ns r ∷ restrict-rows member all-ns ns rs
 
 restrict : List ℕ → DepTables → DepTables
 restrict region T .DepTables.numbers = DepTables.numbers T
 restrict region T .DepTables.widths  = T .widths
 restrict region T .DepTables.edges   =
-  mask-rows (λ n → any (n ≡ᵇ_) region) (DepTables.numbers T) (DepTables.numbers T) (T .edges)
+  restrict-rows (λ n → any (n ≡ᵇ_) region) (DepTables.numbers T) (DepTables.numbers T) (T .edges)
 
 module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
 
@@ -1471,23 +1471,23 @@ private
   if-nothing false e = ≡-refl
   if-nothing true  e = e
 
-  mask-col : (member : ℕ → Bool) (keep : Bool) (ms : List ℕ) (ts : List (Maybe M.Table))
-             (b : ℕ) {nb : ℕ} → nth? b ms ≡ just nb →
-             M.nth nothing b (mask-slots member keep ms ts)
-             ≡ (if keep ∨ member nb then M.nth nothing b ts else nothing)
-  mask-col member keep []       ts       b       ()
-  mask-col member keep (m ∷ ms) []       b  {nb} hb = ≡-sym (if-nothing (keep ∨ member nb) ≡-refl)
-  mask-col member keep (m ∷ ms) (t ∷ ts) zero    ≡-refl = ≡-refl
-  mask-col member keep (m ∷ ms) (t ∷ ts) (suc b) hb = mask-col member keep ms ts b hb
+  nth-restrict-slots : (member : ℕ → Bool) (keep : Bool) (ms : List ℕ) (ts : List (Maybe M.Table))
+                       (b : ℕ) {nb : ℕ} → nth? b ms ≡ just nb →
+                       M.nth nothing b (restrict-slots member keep ms ts)
+                       ≡ (if keep ∨ member nb then M.nth nothing b ts else nothing)
+  nth-restrict-slots member keep []       ts       b       ()
+  nth-restrict-slots member keep (m ∷ ms) []       b  {nb} hb = ≡-sym (if-nothing (keep ∨ member nb) ≡-refl)
+  nth-restrict-slots member keep (m ∷ ms) (t ∷ ts) zero    ≡-refl = ≡-refl
+  nth-restrict-slots member keep (m ∷ ms) (t ∷ ts) (suc b) hb = nth-restrict-slots member keep ms ts b hb
 
-  mask-row : (member : ℕ → Bool) (all-ns ns : List ℕ) (rs : List (List (Maybe M.Table)))
-             (a : ℕ) {na : ℕ} → nth? a ns ≡ just na →
-             M.nth [] a (mask-rows member all-ns ns rs)
-             ≡ mask-slots member (member na) all-ns (M.nth [] a rs)
-  mask-row member all-ns []       rs       a       ()
-  mask-row member all-ns (n ∷ ns) []       a       ha = ≡-refl
-  mask-row member all-ns (n ∷ ns) (r ∷ rs) zero    ≡-refl = ≡-refl
-  mask-row member all-ns (n ∷ ns) (r ∷ rs) (suc a) ha = mask-row member all-ns ns rs a ha
+  nth-restrict-rows : (member : ℕ → Bool) (all-ns ns : List ℕ) (rs : List (List (Maybe M.Table)))
+                      (a : ℕ) {na : ℕ} → nth? a ns ≡ just na →
+                      M.nth [] a (restrict-rows member all-ns ns rs)
+                      ≡ restrict-slots member (member na) all-ns (M.nth [] a rs)
+  nth-restrict-rows member all-ns []       rs       a       ()
+  nth-restrict-rows member all-ns (n ∷ ns) []       a       ha = ≡-refl
+  nth-restrict-rows member all-ns (n ∷ ns) (r ∷ rs) zero    ≡-refl = ≡-refl
+  nth-restrict-rows member all-ns (n ∷ ns) (r ∷ rs) (suc a) ha = nth-restrict-rows member all-ns ns rs a ha
 
 look-add : ∀ {r c} (t u : M.Table) (i : Fin r) (j : Fin c) →
            M.look (add-table r c t u) i j ≡ (M.look t i j Semiring.+ M.look u i j)
@@ -1680,20 +1680,20 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
 
   -- The graph the restricted tables store: an edge survives when either endpoint's number
   -- lies in the region.
-  restrict-mask : List (V 𝒢) → DepRels (vertex-object 𝒢) → DepRels (vertex-object 𝒢)
-  restrict-mask ws' G x y =
+  restrict-vertices : List (V 𝒢) → DepRels (vertex-object 𝒢) → DepRels (vertex-object 𝒢)
+  restrict-vertices ws' G x y =
     if any (index-of 𝒢 x ≡ᵇ_) (map (index-of 𝒢) ws')
        ∨ any (index-of 𝒢 y ≡ᵇ_) (map (index-of 𝒢) ws')
     then G x y else εₘ
 
   restrict-rep : {T : DepTables} {vs : List (V 𝒢)} {G : DepRels (vertex-object 𝒢)} →
                  Represents T vs G → (ws' : List (V 𝒢)) →
-                 Represents (restrict (map (index-of 𝒢) ws') T) vs (restrict-mask ws' G)
+                 Represents (restrict (map (index-of 𝒢) ws') T) vs (restrict-vertices ws' G)
   restrict-rep R ws' .numbers-eq       = R .numbers-eq
   restrict-rep R ws' .widths-eq        = R .widths-eq
   restrict-rep R ws' .numbers-distinct = R .numbers-distinct
   restrict-rep {T} {vs} {G} R ws' .slots {a} {b} {x} {y} ha hb =
-    subst (λ w → Prf (table-morphism 𝒢 x y w ≈ restrict-mask ws' G x y)) (≡-sym slot-eq) at-mask
+    subst (λ w → Prf (table-morphism 𝒢 x y w ≈ restrict-vertices ws' G x y)) (≡-sym slot-eq) at-restricted
     where
     member : ℕ → Bool
     member n = any (n ≡ᵇ_) (map (index-of 𝒢) ws')
@@ -1711,16 +1711,16 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
                  then table-at T a b else nothing)
     slot-eq =
       ≡-trans (≡-cong (M.nth nothing b)
-                      (mask-row member (DepTables.numbers T) (DepTables.numbers T)
+                      (nth-restrict-rows member (DepTables.numbers T) (DepTables.numbers T)
                                 (DepTables.edges T) a na-eq))
-              (mask-col member (member (index-of 𝒢 x)) (DepTables.numbers T)
+              (nth-restrict-slots member (member (index-of 𝒢 x)) (DepTables.numbers T)
                         (M.nth [] a (DepTables.edges T)) b nb-eq)
 
-    at-mask : Prf (table-morphism 𝒢 x y
+    at-restricted : Prf (table-morphism 𝒢 x y
                      (if member (index-of 𝒢 x) ∨ member (index-of 𝒢 y)
                       then table-at T a b else nothing)
-                   ≈ restrict-mask ws' G x y)
-    at-mask with member (index-of 𝒢 x) ∨ member (index-of 𝒢 y)
+                   ≈ restrict-vertices ws' G x y)
+    at-restricted with member (index-of 𝒢 x) ∨ member (index-of 𝒢 y)
     ... | true  = R .slots ha hb
     ... | false = ⟪ ≈-refl ⟫
 
