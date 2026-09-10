@@ -50,7 +50,7 @@ fo-of τ = ⌊ first-order? τ ⌋
 -- node.
 mutual
   deriv : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} → γ , t ⇓ v [ R ] → Derivation
-  deriv {τ = τ} {v = v} D = node (width v) (fo-of τ) (subderivs D)
+  deriv {τ = τ} {γ = γ} {v = v} D = node (suc (width-env γ)) (width v) (fo-of τ) (subderivs D)
 
   subderivs : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} → γ , t ⇓ v [ R ] → List Derivation
   subderivs (⇓-var x)          = []
@@ -77,7 +77,8 @@ mutual
   deriv-m : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
             {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {v' : Val (σ' [ σr ])} {F} →
             Map γ s σ' v v' F → Derivation
-  deriv-m {σr = σr} {σ' = σ'} {v' = v'} D = node (width v') (fo-of (σ' [ σr ])) (subderivs-m D)
+  deriv-m {γ = γ} {σr = σr} {σ' = σ'} {v = v} {v' = v'} D =
+    node (suc (width-env γ) + width v) (width v') (fo-of (σ' [ σr ])) (subderivs-m D)
 
   subderivs-m : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
                 {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {v' : Val (σ' [ σr ])} {F} →
