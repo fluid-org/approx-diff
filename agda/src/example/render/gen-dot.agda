@@ -90,7 +90,7 @@ module render-eval {Γ τ} (γ : Env Γ) (t : Γ ⊢ τ) where
   open Evaluated γ t public
 
   first-order = first-order-graph dependence (λ _ x → x)
-  rels = relation-of dependence three.ε? (λ _ x → x)
+  rels = dep-rels-of dependence three.ε? (λ _ x → x)
   fo = rels first-order
   summarise = region-summary dependence (λ _ x → x)
 

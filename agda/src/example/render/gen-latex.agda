@@ -75,7 +75,7 @@ private
       o-labels = val-labels 0 value
 
       first-order = first-order-graph dependence (λ _ x → x)
-      rels = relation-of dependence three.ε? (λ _ x → x)
+      rels = dep-rels-of dependence three.ε? (λ _ x → x)
       adjacent = adjacent-at dependence three.≡-of-≈ three.ε? (λ _ x → x)
       fo = rels first-order
       summarise = region-summary dependence (λ _ x → x)
@@ -248,7 +248,7 @@ private
                         signed-≡-of-≈ signed-ε?
 
       first-order = smoves.first-order-graph dependence (λ _ x → x)
-      rels = graph.relation-of dependence signed-ε? (λ _ x → x)
+      rels = graph.dep-rels-of dependence signed-ε? (λ _ x → x)
       adjacent = graph.adjacent-at dependence signed-≡-of-≈ signed-ε? (λ _ x → x)
       summarise = smoves.region-summary dependence (λ _ x → x)
 

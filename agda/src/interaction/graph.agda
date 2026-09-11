@@ -1024,9 +1024,6 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : FullGraph m D) where
   edge-stored : DepTables → (x y : V 𝒢) → Maybe M.Table
   edge-stored T x y = read-slot T (position T (index-of 𝒢 x)) (position T (index-of 𝒢 y))
 
-  dep-rel-at : DepTables → (x y : V 𝒢) → vertex-object 𝒢 x ⇒ vertex-object 𝒢 y
-  dep-rel-at T x y = table-morphism x y (edge-stored T x y)
-
 -- Hiding over stored tables, with the hidden vertices listed so that every edge among
 -- them runs forward.
 module Tabulated (T : DepTables) (tick : {A : Set} → String → A → A) where
@@ -1485,17 +1482,17 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : FullGraph m D) where
     ⟪ entry-ε x y (G x y) (NonZero-O ε-dec (entry x y (G x y)) (λ k → h (inj₁ k))) ,
       entry-ε y x (G y x) (NonZero-O ε-dec (entry y x (G y x)) (λ k → h (inj₂ k))) ⟫
 
-  -- The relations a graph holds, as morphisms.
-  relation-of : ((x : Semiring.Carrier) → Dec (x ≡ Semiring.ε)) → ({A : Set} → String → A → A) →
+  -- The dependence relations a graph holds, as morphisms.
+  dep-rels-of : ((x : Semiring.Carrier) → Dec (x ≡ Semiring.ε)) → ({A : Set} → String → A → A) →
                 Graph 𝒢 → DepRels (vertex-object 𝒢)
-  relation-of ε-dec tick E x y = table-morphism 𝒢 x y (edge-at 𝒢 ε-dec tick E x y)
+  dep-rels-of ε-dec tick E x y = table-morphism 𝒢 x y (edge-at 𝒢 ε-dec tick E x y)
 
   -- Adjacency in a graph, decided by looking at the edge stored for each direction instead of
   -- reading its matrix off basis vectors.
   adjacent-at : (≡-of-≈ : ∀ {u v : Semiring.Carrier} → u Semiring.≈ v → u ≡ v)
                 (ε-dec : (x : Semiring.Carrier) → Dec (x ≡ Semiring.ε))
                 (tick : {A : Set} → String → A → A) (E : Graph 𝒢) (x y : V 𝒢) →
-                Dec (Adjacent (relation-of ε-dec tick E) x y)
+                Dec (Adjacent (dep-rels-of ε-dec tick E) x y)
   adjacent-at ≡-of-≈ ε-dec tick E x y =
     nonzero-at (edge-at 𝒢 ε-dec tick E x y) x y ⊎-dec nonzero-at (edge-at 𝒢 ε-dec tick E y x) y x
     where
@@ -1784,10 +1781,12 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : FullGraph m D) where
                     (subst (AllPairs _≢_) (R .numbers-eq) (R .numbers-distinct))
                     (nth?-map (index-of 𝒢) p vs h))
 
-  dep-rel-at-rep : {T : DepTables} {vs : List (V 𝒢)} {G : DepRels (vertex-object 𝒢)} →
-                  Represents T vs G → {x y : V 𝒢} → x ∈ vs → y ∈ vs →
-                  dep-rel-at 𝒢 T x y ≈ G x y
-  dep-rel-at-rep {T} {vs} {G} R {x} {y} mx my with ∈-nth? mx | ∈-nth? my
+  dep-rels-of-rep : (ε-dec : (x : Semiring.Carrier) → Dec (x ≡ Semiring.ε))
+                    (tick : {A : Set} → String → A → A)
+                    {T : DepTables} {vs : List (V 𝒢)} {G : DepRels (vertex-object 𝒢)} →
+                    Represents T vs G → {x y : V 𝒢} → x ∈ vs → y ∈ vs →
+                    dep-rels-of 𝒢 ε-dec tick (tabulated T) x y ≈ G x y
+  dep-rels-of-rep ε-dec tick {T} {vs} {G} R {x} {y} mx my with ∈-nth? mx | ∈-nth? my
   ... | (p , hp) | (q , hq) =
     ≈-trans (≡-to-≈ (≡-cong₂ (λ u v → table-morphism 𝒢 x y (read-slot 𝒢 T u v)) (locate R hp) (locate R hq)))
             (Prf.prf (R .slots hp hq))

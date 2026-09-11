@@ -337,7 +337,7 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : FullGraph m D) where
     Tabulated.hide-graph (dep-tables 𝒢 ε? tick) tick ε? (map (index-of 𝒢) fo-hid)
 
   fo-edges : (tick : {A : Set} → String → A → A) → DepRels (vertex-object 𝒢)
-  fo-edges tick = dep-rel-at 𝒢 (fo-tabulation tick)
+  fo-edges tick = dep-rels-of 𝒢 ε? tick (tabulated (fo-tabulation tick))
 
   positions : List (Path D) → List ℕ
   positions = map (λ p → suc (path-position D p))
@@ -1302,7 +1302,7 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : FullGraph m D) where
                          Summarises (C , tabulated-one (λ _ x → x) (fo-tabulation (λ _ x → x)) C)
   tabulated-one-agrees C C⊆FO C-dist x y hxf hyf hxC hyC =
     ⟪ ≈-trans (≡-to-≈ region-eq)
-      (≈-trans (dep-rel-at-rep 𝒢 RH.hide-rep x∈rem y∈rem)
+      (≈-trans (dep-rels-of-rep 𝒢 ε? idt RH.hide-rep x∈rem y∈rem)
                (hide-all-perm 𝒢 (restrict-forward C (fo-forward 𝒢)) (map⁺ at (sort-↭ C)) x y)) ⟫
     where
     regionV : List (V 𝒢)
@@ -1369,12 +1369,12 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : FullGraph m D) where
 
     region-eq : table-morphism 𝒢 x y
                   (edge-at 𝒢 ε? idt (tabulated-one (λ _ x' → x') (fo-tabulation (λ _ x' → x')) C) x y)
-                ≡ dep-rel-at 𝒢 (Tabulated.hide-graph
+                ≡ dep-rels-of 𝒢 ε? idt (tabulated (Tabulated.hide-graph
                                 (restrict-tables (map (index-of 𝒢) regionV) F₀)
-                                (λ _ c → c) ε? (map (index-of 𝒢) regionV)) x y
+                                (λ _ c → c) ε? (map (index-of 𝒢) regionV))) x y
     region-eq =
-      ≡-cong (λ l → dep-rel-at 𝒢 (Tabulated.hide-graph (restrict-tables l F₀)
-                                  (λ _ c → c) ε? l) x y)
+      ≡-cong (λ l → dep-rels-of 𝒢 ε? idt (tabulated (Tabulated.hide-graph (restrict-tables l F₀)
+                                                     (λ _ c → c) ε? l)) x y)
              (map-∘ {g = index-of 𝒢} {f = at} (sort C))
 
     not-in-map : {v : V 𝒢} (L : List (Path D)) → ¬ VertexIn v L → ¬ (v ∈ₚ map at (sort L))
