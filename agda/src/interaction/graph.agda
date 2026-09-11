@@ -7,7 +7,8 @@ open import Data.List using (List; []; _∷_; _++_; map; mapMaybe; foldl; filter
                              applyUpTo; reverse)
 open import Agda.Builtin.Strict using (primForce)
 open import Data.Bool.ListAction using (any)
-open import Data.List.Properties using (++-identityʳ; map-++; map-∘; foldl-++; length-map)
+open import Data.List.Properties using (++-identityʳ; map-++; map-∘; foldl-++; length-map;
+                                        length-++)
 open import Data.List.Relation.Unary.All using (All; []; _∷_; universal)
   renaming (map to All-map; lookup to All-lookup)
 open import Data.List.Relation.Unary.AllPairs using (AllPairs; []; _∷_) renaming (map to AllPairs-map)
@@ -890,6 +891,24 @@ vertex-count (node m n b Ds)   = vertex-count-of Ds
 vertex-count-of []           = 0
 vertex-count-of (D ∷ Ds)     = suc (vertex-count D) + vertex-count-of Ds
 
+length-vertices : (D : Derivation) → length (vertices D) ≡ vertex-count D
+length-vertices-of : (m n : ℕ) (b : Bool) (Ds : List Derivation) →
+                     length (vertices-of m n b Ds) ≡ vertex-count-of Ds
+length-vertices (node m n b Ds) = length-vertices-of m n b Ds
+length-vertices-of m n b []       = ≡-refl
+length-vertices-of m n b (D ∷ Ds) =
+  ≡-trans (length-++ (map (into here) (vertices D ++ (ε ∷ [])))) (≡-cong₂ _+_ head-len tail-len)
+  where
+  head-len : length (map (into here) (vertices D ++ (ε ∷ []))) ≡ suc (vertex-count D)
+  head-len =
+    ≡-trans (length-map (into here) (vertices D ++ (ε ∷ [])))
+    (≡-trans (length-++ (vertices D))
+    (≡-trans (≡-cong (_+ 1) (length-vertices D))
+    (≡-trans (+-suc (vertex-count D) 0) (≡-cong suc (+-identityʳ (vertex-count D))))))
+
+  tail-len : length (map weaken (vertices-of m n b Ds)) ≡ vertex-count-of Ds
+  tail-len = ≡-trans (length-map weaken (vertices-of m n b Ds)) (length-vertices-of m n b Ds)
+
 -- Index of a path in (vertices D ++ (ε ∷ [])).
 path-position : (D : Derivation) → Path D → ℕ
 path-position-of : (Ds : List Derivation) {D : Derivation} → Ds ∋ D → Path D → ℕ
@@ -1422,6 +1441,16 @@ private
   nth?-nth d zero    (_ ∷ _)  ≡-refl = ≡-refl
   nth?-nth d (suc p) (_ ∷ xs) h      = nth?-nth d p xs h
 
+  nth?-++ˡ : {C : Set} (p : ℕ) (xs ys : List C) {x : C} →
+             nth? p xs ≡ just x → nth? p (xs ++ ys) ≡ just x
+  nth?-++ˡ zero    (_ ∷ _)  ys ≡-refl = ≡-refl
+  nth?-++ˡ (suc p) (_ ∷ xs) ys h      = nth?-++ˡ p xs ys h
+
+  nth?-++ʳ : {C : Set} (xs : List C) (p : ℕ) (ys : List C) →
+             nth? (length xs + p) (xs ++ ys) ≡ nth? p ys
+  nth?-++ʳ []       p ys = ≡-refl
+  nth?-++ʳ (_ ∷ xs) p ys = nth?-++ʳ xs p ys
+
   nth?-∈ : {C : Set} {p : ℕ} {xs : List C} {x : C} → nth? p xs ≡ just x → x ∈ xs
   nth?-∈ {p = zero}  {_ ∷ _} ≡-refl = here ≡-refl
   nth?-∈ {p = suc p} {_ ∷ _} h      = there (nth?-∈ {p = p} h)
@@ -1581,6 +1610,39 @@ private
   nth-restrict-rows member all-ns (n ∷ ns) []       a       ha = ≡-refl
   nth-restrict-rows member all-ns (n ∷ ns) (r ∷ rs) zero    ≡-refl = ≡-refl
   nth-restrict-rows member all-ns (n ∷ ns) (r ∷ rs) (suc a) ha = nth-restrict-rows member all-ns ns rs a ha
+
+-- A vertex's position indexes it in the vertices of its derivation.
+vertex-at : (D : Derivation) (p : Path D) →
+            nth? (path-position D p) (vertices D ++ (ε ∷ [])) ≡ just p
+vertex-of-at : (m n : ℕ) (b : Bool) (Ds : List Derivation) {Dᵢ : Derivation}
+               (i : Ds ∋ Dᵢ) (q : Path Dᵢ) →
+               nth? (path-position-of Ds i q) (vertices-of m n b Ds) ≡ just (into i q)
+vertex-at (node m n b Ds) ε =
+  ≡-trans (≡-cong (λ k → nth? k (vertices-of m n b Ds ++ (ε ∷ [])))
+                  (≡-trans (≡-sym (length-vertices-of m n b Ds))
+                           (≡-sym (+-identityʳ (length (vertices-of m n b Ds))))))
+          (nth?-++ʳ (vertices-of m n b Ds) 0 (ε ∷ []))
+vertex-at (node m n b Ds) (into i q) =
+  nth?-++ˡ (path-position-of Ds i q) (vertices-of m n b Ds) (ε ∷ []) (vertex-of-at m n b Ds i q)
+vertex-of-at m n b (D ∷ Ds) here      q =
+  nth?-++ˡ (path-position D q) (map (into here) (vertices D ++ (ε ∷ [])))
+           (map weaken (vertices-of m n b Ds))
+           (nth?-map (into here) (path-position D q) (vertices D ++ (ε ∷ [])) (vertex-at D q))
+vertex-of-at m n b (D ∷ Ds) (there i) q =
+  ≡-trans (≡-cong (λ k → nth? k (map (into here) (vertices D ++ (ε ∷ []))
+                                 ++ map weaken (vertices-of m n b Ds)))
+                  (≡-cong (_+ path-position-of Ds i q) (≡-sym head-len)))
+  (≡-trans (nth?-++ʳ (map (into here) (vertices D ++ (ε ∷ [])))
+                     (path-position-of Ds i q) (map weaken (vertices-of m n b Ds)))
+           (nth?-map weaken (path-position-of Ds i q) (vertices-of m n b Ds)
+                     (vertex-of-at m n b Ds i q)))
+  where
+  head-len : length (map (into here) (vertices D ++ (ε ∷ []))) ≡ suc (vertex-count D)
+  head-len =
+    ≡-trans (length-map (into here) (vertices D ++ (ε ∷ [])))
+    (≡-trans (length-++ (vertices D))
+    (≡-trans (≡-cong (_+ 1) (length-vertices D))
+    (≡-trans (+-suc (vertex-count D) 0) (≡-cong suc (+-identityʳ (vertex-count D))))))
 
 look-add : ∀ {r c} (t u : M.Table) (i : Fin r) (j : Fin c) →
            M.look (add-table r c t u) i j ≡ (M.look t i j Semiring.+ M.look u i j)
