@@ -6,9 +6,9 @@
 -- lookup costs the depth rather than the number of vertices.
 module interaction.components where
 
-open import Data.Bool using (Bool; true; false; if_then_else_)
-open import Data.List using (List; []; _∷_; _++_; filterᵇ; length; map; take; upTo)
-open import Data.Nat using (ℕ; zero; suc; _+_; _∸_; _<ᵇ_)
+open import Data.Bool using (Bool; true; false; not; if_then_else_)
+open import Data.List using (List; []; _∷_; _++_; concat; filterᵇ; length; map; take; upTo)
+open import Data.Nat using (ℕ; zero; suc; _+_; _∸_; _<ᵇ_; _≡ᵇ_)
 open import Data.Product using (_×_; _,_; proj₁)
 
 private
@@ -143,8 +143,59 @@ symmetric nss = zip-append nss (drain (fill-bins d 0 nss (empty-bins d)) [])
 induced : ℕ → List (List ℕ) → List (List ℕ)
 induced k nss = map (filterᵇ (λ j → j <ᵇ k)) (take k nss)
 
-components : List (List ℕ) → List (List ℕ)
-components nss = from n (depth-for n n) (upTo n) (proj₁ (fill (depth-for n n) nss))
+private
+  -- Numbers outside the list are cleared before the traversal starts, so they are neither visited
+  -- nor followed.
+  drop-rest : ℕ → ℕ → ℕ → List ℕ → Tree → Tree
+  drop-rest d i zero    ws       t = t
+  drop-rest d i (suc c) []       t = drop-rest d (suc i) c [] (clear d i t)
+  drop-rest d i (suc c) (w ∷ ws) t =
+    if i ≡ᵇ w then drop-rest d (suc i) c ws t
+    else drop-rest d (suc i) c (w ∷ ws) (clear d i t)
+
+components-on : List ℕ → List (List ℕ) → List (List ℕ)
+components-on ws nss = from n d ws (drop-rest d 0 n ws (proj₁ (fill d nss)))
   where
   n : ℕ
   n = length nss
+
+  d : ℕ
+  d = depth-for n n
+
+components : List (List ℕ) → List (List ℕ)
+components nss = components-on (upTo (length nss)) nss
+
+private
+  mem : ℕ → List ℕ → Bool
+  mem i []       = false
+  mem i (j ∷ js) = if i ≡ᵇ j then true else mem i js
+
+  nth-list : ℕ → List (List ℕ) → List ℕ
+  nth-list _       []        = []
+  nth-list zero    (ns ∷ _)  = ns
+  nth-list (suc i) (_ ∷ nss) = nth-list i nss
+
+  touches : List ℕ → List ℕ → Bool
+  touches ns []       = false
+  touches ns (q ∷ qs) = if mem q ns then true else touches ns qs
+
+-- The same components by the fold the proofs are stated against: one question per pair.
+by-pairs : List (List ℕ) → List ℕ → List (List ℕ)
+by-pairs nss []       = []
+by-pairs nss (w ∷ ws) = (w ∷ concat (filterᵇ hits bs)) ∷ filterᵇ (λ b → not (hits b)) bs
+  where
+  bs : List (List ℕ)
+  bs = by-pairs nss ws
+
+  hits : List ℕ → Bool
+  hits = touches (nth-list w nss)
+
+thin : ℕ → ℕ → List ℕ
+thin n v = go 0 0 v
+  where
+  next : ℕ → ℕ
+  next c = if suc c ≡ᵇ n then 0 else suc c
+
+  go : ℕ → ℕ → ℕ → List ℕ
+  go i c zero    = []
+  go i c (suc v) = if c ≡ᵇ 0 then go (suc i) (next c) v else i ∷ go (suc i) (next c) v

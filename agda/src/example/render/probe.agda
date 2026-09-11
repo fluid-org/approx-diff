@@ -23,7 +23,8 @@ open import interaction.graph three.semiring (λ x → three.∨-idem {x})
 open import interaction.evaluated Sig three.semiring interpretation three.C (λ x → three.∨-idem {x})
 open import interaction.moves three.semiring (λ x → three.∨-idem {x}) three.≡-of-≈ three.ε?
   using (module Interaction; first-order-graph)
-open import interaction.components using (components; induced; symmetric)
+open import interaction.components
+  using (by-pairs; components; components-on; induced; symmetric; thin)
 open import example.runs (nonzero three.semiring) three.semiring three.C
   using (Run; filter-sum-run; map-run; filter-run; merge-run; env; term)
 
@@ -145,8 +146,16 @@ private
       ss = induced k (symmetric (graph-sources dependence first-order))
       cc = components ss
 
-    both : ℕ → String
-    both k = sizes k ++ " | " ++ traversed k
+    split : ℕ → String
+    split n =
+      show (length cc) ++ " components, " ++ show (length bb) ++ " blocks over "
+      ++ show (sum (map length cc)) ++ " and " ++ show (sum (map length bb)) ++ " of "
+      ++ show (length ws) ++ " kept"
+      where
+      ss = symmetric (graph-sources dependence first-order)
+      ws = thin n (length ss)
+      cc = components-on ws ss
+      bb = by-pairs ss ws
 
   survey : String
   survey = scale.line "filter-sum" filter-sum-run ++ "\n" ++ scale.line "map" map-run ++ "\n"
@@ -172,4 +181,4 @@ private
 main : Main
 main =
   run (putStrLn (trace survey
-        (show (curve "agree" region-foldM.both (5 ∷ 10 ∷ 20 ∷ 40 ∷ 80 ∷ 116 ∷ []) 0))))
+        (show (curve "split" region-foldM.split (2 ∷ 3 ∷ 4 ∷ 6 ∷ 10 ∷ []) 0))))
