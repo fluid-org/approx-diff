@@ -145,6 +145,9 @@ private
       ss = induced k (symmetric (graph-sources dependence first-order))
       cc = components ss
 
+    both : ℕ → String
+    both k = sizes k ++ " | " ++ traversed k
+
   survey : String
   survey = scale.line "filter-sum" filter-sum-run ++ "\n" ++ scale.line "map" map-run ++ "\n"
            ++ scale.line "filter" filter-run ++ "\n" ++ scale.line "merge" merge-run
@@ -158,7 +161,7 @@ private
           (trace (name ++ " k=" ++ show k ++ " -> " ++ f k) (curve name f ks r))
 
   module benchM = bench merge-run
-  module region-foldM = region-fold merge-run
+  module region-foldM = region-fold filter-run
 
   prefixes : List ℕ
   prefixes = 800 ∷ 3936 ∷ []
@@ -169,5 +172,4 @@ private
 main : Main
 main =
   run (putStrLn (trace survey
-        (show (curve "traversal" region-foldM.traversed (100 ∷ 200 ∷ [])
-                (curve "regions" region-foldM.sizes (100 ∷ 200 ∷ []) 0)))))
+        (show (curve "agree" region-foldM.both (5 ∷ 10 ∷ 20 ∷ 40 ∷ 80 ∷ 116 ∷ []) 0))))
