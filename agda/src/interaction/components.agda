@@ -7,7 +7,7 @@
 module interaction.components where
 
 open import Data.Bool using (Bool; true; false; if_then_else_)
-open import Data.List using (List; []; _∷_; _++_; length; upTo)
+open import Data.List using (List; []; _∷_; _++_; filterᵇ; length; map; take; upTo)
 open import Data.Nat using (ℕ; zero; suc; _+_; _∸_; _<ᵇ_)
 open import Data.Product using (_×_; _,_; proj₁)
 
@@ -108,6 +108,9 @@ symmetric nss = zip-append nss (drain (fill-bins d 0 nss (empty-bins d)) [])
   where
   d : ℕ
   d = depth-for (length nss) (length nss)
+
+induced : ℕ → List (List ℕ) → List (List ℕ)
+induced k nss = map (filterᵇ (λ j → j <ᵇ k)) (take k nss)
 
 components : List (List ℕ) → List (List ℕ)
 components nss = from n (depth-for n n) (upTo n) (proj₁ (fill (depth-for n n) nss))

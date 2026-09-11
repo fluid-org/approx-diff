@@ -23,7 +23,7 @@ open import interaction.graph three.semiring (λ x → three.∨-idem {x})
 open import interaction.evaluated Sig three.semiring interpretation three.C (λ x → three.∨-idem {x})
 open import interaction.moves three.semiring (λ x → three.∨-idem {x}) three.≡-of-≈ three.ε?
   using (module Interaction; first-order-graph)
-open import interaction.components using (components; symmetric)
+open import interaction.components using (components; induced; symmetric)
 open import example.runs (nonzero three.semiring) three.semiring three.C
   using (Run; filter-sum-run; map-run; filter-run; merge-run; env; term)
 
@@ -137,12 +137,12 @@ private
     sizes k = show (length blocks) ++ " regions over " ++ show (sum (map length blocks)) ++ " hidden"
       where blocks = I.regions (take k (FO dependence))
 
-    traversed : String
-    traversed =
+    traversed : ℕ → String
+    traversed k =
       show (length cc) ++ " components over " ++ show (sum (map length cc)) ++ " visible, "
       ++ show (sum (map length ss)) ++ " endpoints"
       where
-      ss = symmetric (graph-sources dependence first-order)
+      ss = induced k (symmetric (graph-sources dependence first-order))
       cc = components ss
 
   survey : String
@@ -158,7 +158,7 @@ private
           (trace (name ++ " k=" ++ show k ++ " -> " ++ f k) (curve name f ks r))
 
   module benchM = bench merge-run
-  module region-foldM = region-fold filter-run
+  module region-foldM = region-fold merge-run
 
   prefixes : List ℕ
   prefixes = 800 ∷ 3936 ∷ []
@@ -169,5 +169,5 @@ private
 main : Main
 main =
   run (putStrLn (trace survey
-        (show (point "traversal" region-foldM.traversed
-                (curve "regions" region-foldM.sizes (116 ∷ []) 0)))))
+        (show (curve "traversal" region-foldM.traversed (100 ∷ 200 ∷ [])
+                (curve "regions" region-foldM.sizes (100 ∷ 200 ∷ []) 0)))))
