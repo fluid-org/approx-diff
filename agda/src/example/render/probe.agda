@@ -7,7 +7,7 @@ module example.render.probe where
 
 open import IO
 open import IO.Finite using (putStrLn)
-open import Data.List using (List; []; _∷_; map; length; concat; upTo)
+open import Data.List using (List; []; _∷_; map; length; concat; take; upTo)
 open import Data.Nat using (ℕ; zero; suc; _+_; _*_; _⊔_)
 open import Data.Product using (_×_; _,_; proj₂)
 import Data.Nat.Show as ℕ-Show
@@ -21,6 +21,8 @@ open import signature.example.interpretation (nonzero three.semiring) three.semi
   using (Sig; interpretation)
 open import interaction.graph three.semiring (λ x → three.∨-idem {x})
 open import interaction.evaluated Sig three.semiring interpretation three.C (λ x → three.∨-idem {x})
+open import interaction.moves three.semiring (λ x → three.∨-idem {x}) three.≡-of-≈ three.ε?
+  using (module Interaction; first-order-graph)
 open import example.runs (nonzero three.semiring) three.semiring three.C
   using (Run; filter-sum-run; map-run; filter-run; merge-run; env; term)
 
@@ -119,6 +121,21 @@ private
       show3 (hide-graph-reachability dependence three.ε? trace fo-positions
                (λ a c → join! a (join-positions (proj₂ c))) three.O)
 
+  -- Every adjacency question the fold asks reads a stored edge, so the position-edge marks between
+  -- one prefix's begin line and its result count the questions.
+  module region-fold (r : Run) where
+    open Evaluated (env r) (term r)
+
+    private
+      first-order = first-order-graph dependence (λ _ x → x)
+      rels = dep-rels-of dependence three.ε? trace
+      adjacent = adjacent-at dependence three.≡-of-≈ three.ε? trace
+      module I = Interaction dependence (rels first-order) (adjacent first-order)
+
+    sizes : ℕ → String
+    sizes k = show (length blocks) ++ " regions over " ++ show (sum (map length blocks)) ++ " hidden"
+      where blocks = I.regions (take k (FO dependence))
+
   survey : String
   survey = scale.line "filter-sum" filter-sum-run ++ "\n" ++ scale.line "map" map-run ++ "\n"
            ++ scale.line "filter" filter-run ++ "\n" ++ scale.line "merge" merge-run
@@ -132,6 +149,7 @@ private
           (trace (name ++ " k=" ++ show k ++ " -> " ++ f k) (curve name f ks r))
 
   module benchM = bench merge-run
+  module region-foldM = region-fold merge-run
 
   prefixes : List ℕ
   prefixes = 800 ∷ 3936 ∷ []
@@ -142,4 +160,5 @@ private
 main : Main
 main =
   run (putStrLn (trace survey
-        (show (point ("fo-reachability hidden=" ++ benchM.fo-count) benchM.fo-reachability 0))))
+        (show (curve "regions" region-foldM.sizes (200 ∷ 400 ∷ 800 ∷ 1600 ∷ [])
+                (point ("fo-reachability hidden=" ++ benchM.fo-count) benchM.fo-reachability 0)))))

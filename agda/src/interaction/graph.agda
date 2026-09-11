@@ -1386,7 +1386,8 @@ private
                    ({A : Set} → String → A → A) → List ℕ →
                    List (ℕ × List (List (ℕ × Semiring.Carrier))) → (x y : V 𝒢) → Maybe M.Table
   position-edges 𝒢 ε-dec tick vs cs x y =
-    read (find-number (vertex-position 𝒢 x) 0 vs) (find-number (vertex-position 𝒢 y) 0 vs)
+    tick "position-edge"
+         (read (find-number (vertex-position 𝒢 x) 0 vs) (find-number (vertex-position 𝒢 y) 0 vs))
     where
     nonzero-table : M.Table → Bool
     nonzero-table = any (any (λ e → not ⌊ ε-dec e ⌋))
