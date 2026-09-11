@@ -92,15 +92,6 @@ private
   foldr-map-≈ b f g []       []            = ≈-refl
   foldr-map-≈ b f g (x ∷ xs) (⟪ e ⟫ ∷ es) = +ₘ-cong e (foldr-map-≈ b f g xs es)
 
-NonZero : ∀ {m n} → M.Matrix m n → Set
-NonZero {m} {n} R = Σ (Fin m) λ i → Σ (Fin n) λ j → ¬ (R i j ≡ S.ε)
-
-NonZero? : ∀ {m n} (R : M.Matrix m n) → Dec (NonZero R)
-NonZero? R = FinP.any? (λ i → FinP.any? (λ j → ¬? (ε? (R i j))))
-
-NonZero-O : ∀ {m n} (R : M.Matrix m n) → ¬ NonZero R → ∀ i j → R i j ≡ S.ε
-NonZero-O R h i j = dec-case (ε? (R i j)) (λ e → e) (λ ne → ⊥-elim (h (i , j , ne)))
-
 when : ∀ {p} {P : Set p} {X Y : SemiMod.Semimodule} → Dec P → X ⇒ Y → X ⇒ Y
 when (yes _) f = f
 when (no _)  f = εₘ
@@ -144,39 +135,6 @@ record Config {m : ℕ} {D : Derivation} (𝒢 : FullGraph m D) : Set₁ where
     summaries : List (List (Path D) × Graph 𝒢)
 
 open Config public
-
--- Two vertices are adjacent when an edge between them, in either direction, is nonzero. Reading
--- the edge's matrix off basis vectors decides it for any graph; a graph held as tables decides it
--- by looking.
-module _ {m : ℕ} {D : Derivation} (𝒢 : FullGraph m D) where
-
-  private
-    wd : V 𝒢 → ℕ
-    wd = vertex-width 𝒢
-
-  entry : ∀ (x y : V 𝒢) → (vertex-object 𝒢 x ⇒ vertex-object 𝒢 y) → M.Matrix (wd y) (wd x)
-  entry x y f = ∃ₛ.fst (𝔽F-full f)
-
-  entry-ε : ∀ (x y : V 𝒢) (f : vertex-object 𝒢 x ⇒ vertex-object 𝒢 y) →
-            (∀ i j → entry x y f i j ≡ S.ε) → f ≈ εₘ
-  entry-ε x y f h =
-    ≈-trans (≈-sym (∃ₛ.snd (𝔽F-full f)))
-    (≈-trans (mat-cong (λ i j → ≈-of-≡ (h i j))) mat-ε)
-
-  Adjacent : DepRels (vertex-object 𝒢) → V 𝒢 → V 𝒢 → Set
-  Adjacent G x y = NonZero (entry x y (G x y)) ⊎ NonZero (entry y x (G y x))
-
-  Adjacent? : (G : DepRels (vertex-object 𝒢)) (x y : V 𝒢) → Dec (Adjacent G x y)
-  Adjacent? G x y = NonZero? (entry x y (G x y)) ⊎-dec NonZero? (entry y x (G y x))
-
-  adjacent-sym : (G : DepRels (vertex-object 𝒢)) {x y : V 𝒢} → Adjacent G x y → Adjacent G y x
-  adjacent-sym G = [ inj₂ , inj₁ ]′
-
-  adjacent-O : (G : DepRels (vertex-object 𝒢)) (x y : V 𝒢) → ¬ Adjacent G x y →
-               Prf ((G x y ≈ εₘ) ∧ₚ (G y x ≈ εₘ))
-  adjacent-O G x y h =
-    ⟪ entry-ε x y (G x y) (NonZero-O (entry x y (G x y)) (λ k → h (inj₁ k))) ,ₚ
-      entry-ε y x (G y x) (NonZero-O (entry y x (G y x)) (λ k → h (inj₂ k))) ⟫
 
 module Interaction {m : ℕ} {D : Derivation} (𝒢 : FullGraph m D)
                    (fo-labels : DepRels (vertex-object 𝒢))
@@ -271,7 +229,7 @@ module Interaction {m : ℕ} {D : Derivation} (𝒢 : FullGraph m D)
     where
     edge : A × V 𝒢 → A × V 𝒢 → Maybe ((A × V 𝒢) × (A × V 𝒢) × M.Table)
     edge u v with visible-table F K (proj₂ u) (proj₂ v)
-    ... | t with NonZero? (M.look {vertex-width 𝒢 (proj₂ v)} {vertex-width 𝒢 (proj₂ u)} t)
+    ... | t with NonZero? ε? (M.look {vertex-width 𝒢 (proj₂ v)} {vertex-width 𝒢 (proj₂ u)} t)
     ...   | yes _ = just (u , v , t)
     ...   | no  _ = nothing
 
@@ -351,7 +309,7 @@ module Interaction {m : ℕ} {D : Derivation} (𝒢 : FullGraph m D)
 
 module _ {m : ℕ} {D : Derivation} (𝒢 : FullGraph m D) where
 
-  open Interaction 𝒢 (fo-graph 𝒢) (Adjacent? 𝒢 (fo-graph 𝒢))
+  open Interaction 𝒢 (fo-graph 𝒢) (Adjacent? 𝒢 ε? (fo-graph 𝒢))
 
   private
     module Hide-𝒢 = Hide (V 𝒢) (vertex-object 𝒢)
@@ -567,11 +525,11 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : FullGraph m D) where
     where
     entry-row : ∀ {z} → VertexIn z C → fo-graph 𝒢 (at q) z ≈ εₘ
     entry-row {inj₂ q'} hz =
-      proj₁ₚ (Prf.prf (adjacent-O 𝒢 (fo-graph 𝒢) (at q) (at q') (All-lookup hadj hz)))
+      proj₁ₚ (Prf.prf (adjacent-O 𝒢 ε? (fo-graph 𝒢) (at q) (at q') (All-lookup hadj hz)))
 
     entry-col : ∀ {z} → VertexIn z C → fo-graph 𝒢 z (at q) ≈ εₘ
     entry-col {inj₂ q'} hz =
-      proj₂ₚ (Prf.prf (adjacent-O 𝒢 (fo-graph 𝒢) (at q) (at q') (All-lookup hadj hz)))
+      proj₂ₚ (Prf.prf (adjacent-O 𝒢 ε? (fo-graph 𝒢) (at q) (at q') (All-lookup hadj hz)))
 
     base-row : (z : V 𝒢) → restrict (fo-graph 𝒢) C (at q) z ≈ εₘ
     base-row z =

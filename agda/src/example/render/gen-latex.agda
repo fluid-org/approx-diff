@@ -36,8 +36,7 @@ open import interaction.evaluated Sig three.semiring interpretation three.C (λ 
 open import interaction.labelling Sig three.semiring interpretation three.C (λ x → three.∨-idem {x})
   using (Node; val; at)
 open import interaction.moves three.semiring (λ x → three.∨-idem {x}) three.≡-of-≈ three.ε?
-  using (module Interaction; Config; visible; NonZero?; Adjacent?; first-order-graph;
-         region-summary)
+  using (module Interaction; Config; visible; first-order-graph; region-summary)
 open import example.runs (nonzero three.semiring) three.semiring three.C
   using (Run; filter-sum-run; const-run; length-run; fold0-run; case0-run; tag-run; case-l-run;
          case-r-run; test-run; map-run; adjacent-sums-run; merge-run; filter-run; cond-run; eq-run;
@@ -76,11 +75,11 @@ private
       o-labels = val-labels 0 value
 
       first-order = first-order-graph dependence (λ _ x → x)
-      relation-of : Graph dependence → DepRels (vertex-object dependence)
-      relation-of tabs x y = table-morphism dependence x y (edge-at dependence three.ε? (λ _ z → z) tabs x y)
-      fo = relation-of first-order
+      rels = relation-of dependence three.ε? (λ _ x → x)
+      adjacent = adjacent-at dependence three.≡-of-≈ three.ε? (λ _ x → x)
+      fo = rels first-order
       summarise = region-summary dependence (λ _ x → x)
-      module I = Interaction dependence fo (Adjacent? dependence fo)
+      module I = Interaction dependence fo (adjacent first-order)
 
       -- Dependence matrix of the degenerate configuration.
       R = degenerate first-order
@@ -90,8 +89,7 @@ private
         degenerate tabs =
           M3.look {vertex-width dependence (inj₂ ε)} {vertex-width dependence (inj₁ input)}
             (J.visible-table tabs (J.initial summarise) (inj₁ input) (inj₂ ε))
-          where module J = Interaction dependence (relation-of tabs)
-                                       (Adjacent? dependence (relation-of tabs))
+          where module J = Interaction dependence (rels tabs) (adjacent tabs)
 
       -- Control column of the environment vertex dropped.
       drop-ctrl : ∀ {m n} → M3.Matrix m (Nat.suc n) → M3.Matrix m n
@@ -150,7 +148,7 @@ private
       edge-entry : (String × V dependence) × (String × V dependence) × M3.Table →
                    Maybe (String × String)
       edge-entry ((nu , u) , (nv , v) , t) with presented u v (M3.look {wd v} {wd u} t)
-      ... | M with NonZero? M
+      ... | M with NonZero? three.ε? M
       ...   | no  _ = nothing
       ...   | yes _ = just
         (key ++ "/" ++ nu ++ "-" ++ nv ,
@@ -160,8 +158,7 @@ private
       shared : Graph dependence → List (String × String)
       shared tabs = with-config (foldr (J.reveal-at summarise) (J.initial summarise) (map proj₂ named))
         where
-        module J = Interaction dependence (relation-of tabs)
-                               (Adjacent? dependence (relation-of tabs))
+        module J = Interaction dependence (rels tabs) (adjacent tabs)
 
         with-config : Config dependence → List (String × String)
         with-config K' = mapMaybe edge-entry (J.visible-edges tabs K' endpoints)
@@ -240,6 +237,7 @@ private
                       (sign.unk , three.C)
 
       signed-ε? = ⊗-ε? sign.semiring three.semiring sign.ε? three.ε?
+      signed-≡-of-≈ = ⊗-≡-of-≈ sign.semiring three.semiring sign.≡-of-≈ three.≡-of-≈
       module mat = matrix.Mat (sign.semiring ⊗S three.semiring)
 
       open evaluated.Evaluated (runs.env runs.score-run) (runs.term runs.score-run)
@@ -247,13 +245,11 @@ private
 
       module smoves = interaction.moves (sign.semiring ⊗S three.semiring)
                         (⊗-idem sign.semiring three.semiring sign.+ˢ-idem (λ x → three.∨-idem {x}))
-                        (⊗-≡-of-≈ sign.semiring three.semiring sign.≡-of-≈ three.≡-of-≈)
-                        signed-ε?
+                        signed-≡-of-≈ signed-ε?
 
       first-order = smoves.first-order-graph dependence (λ _ x → x)
-      relation-of : graph.Graph dependence → graph.DepRels (graph.vertex-object dependence)
-      relation-of tabs x y = graph.table-morphism dependence x y
-                         (graph.edge-at dependence signed-ε? (λ _ z → z) tabs x y)
+      rels = graph.relation-of dependence signed-ε? (λ _ x → x)
+      adjacent = graph.adjacent-at dependence signed-≡-of-≈ signed-ε? (λ _ x → x)
       summarise = smoves.region-summary dependence (λ _ x → x)
 
       score-rows : mat.Table
@@ -267,8 +263,7 @@ private
                                         {graph.vertex-width dependence (inj₁ graph.input)}
                       (J.visible-table tabs (J.initial summarise)
                                        (inj₁ graph.input) (inj₂ graph.ε)))
-          where module J = smoves.Interaction dependence (relation-of tabs)
-                                       (smoves.Adjacent? dependence (relation-of tabs))
+          where module J = smoves.Interaction dependence (rels tabs) (adjacent tabs)
 
     fragment : String
     fragment = signed-table "score (signed)" (axes.env-labels (runs.env runs.score-run))

@@ -35,14 +35,15 @@ open import Relation.Binary
 open import Relation.Binary.PropositionalEquality using (_≡_; _≢_; subst; subst₂; isEquivalence)
   renaming (refl to ≡-refl; sym to ≡-sym; trans to ≡-trans; cong to ≡-cong; cong₂ to ≡-cong₂)
 open import Relation.Nullary using (¬_)
-open import Relation.Nullary.Decidable using (Dec; yes; no; ⌊_⌋)
+open import Relation.Nullary.Decidable using (Dec; yes; no; ⌊_⌋; ¬?; _⊎-dec_)
 import Data.Sum.Properties as SumP
+import Data.Fin.Properties as FinP
 open import Level using (0ℓ)
 open import prop using (Prf; ⟪_⟫; _∧_; _,_; proj₁; proj₂; ∃ₛ)
 open import prop-setoid using (Setoid)
 open import commutative-semiring using (CommutativeSemiring)
 open import basics using (IsStrictOrder)
-open import list using (filterᵇ-split)
+open import list using (filterᵇ-split; dec-case)
 import matrix
 import Data.Nat.Show as ℕ-Show
 open import Data.String using (String) renaming (_++_ to _++ₛ_)
@@ -61,10 +62,13 @@ open import categories using (Category)
 open Category SemiMod.cat
   using (_⇒_; _∘_; _≈_; ∘-cong; ∘-cong₁; ∘-cong₂; assoc; id-left; id-right; ≈-refl; ≈-sym; ≈-trans; ≡-to-≈)
 open import cmon-enriched using (CMonEnriched; Biproduct)
-open import matrix-embedding S using (𝔽; 𝔽F-full; mat; mat-cong; mat-comp; mat-+; mat-ε)
+open import matrix-embedding S using (𝔽; 𝔽F-full; 𝔽F-faithful; mat; mat-cong; mat-comp; mat-+; mat-ε)
 private
   module CM = CMonEnriched SemiMod.cmon-enriched
   module M = matrix.Mat S
+
+  ≈-of-≡ : ∀ {x y : Semiring.Carrier} → x ≡ y → x Semiring.≈ y
+  ≈-of-≡ ≡-refl = Semiring.refl
 
 infixl 21 _+ₘ_
 _+ₘ_ : ∀ {X Y : Semimodule} → X ⇒ Y → X ⇒ Y → X ⇒ Y
@@ -1466,6 +1470,91 @@ edge-at : {m : ℕ} {D : Derivation} (𝒢 : FullGraph m D) →
 edge-at 𝒢 ε-dec tick (tabulated T)      x y = edge-stored 𝒢 T x y
 edge-at 𝒢 ε-dec tick (columns vs cs) x y = position-edges 𝒢 ε-dec tick vs cs x y
 
+NonZero : ∀ {r c} → M.Matrix r c → Set
+NonZero {r} {c} R = Σ (Fin r) λ i → Σ (Fin c) λ j → ¬ (R i j ≡ Semiring.ε)
+
+NonZero? : ((x : Semiring.Carrier) → Dec (x ≡ Semiring.ε)) →
+           ∀ {r c} (R : M.Matrix r c) → Dec (NonZero R)
+NonZero? ε-dec R = FinP.any? (λ i → FinP.any? (λ j → ¬? (ε-dec (R i j))))
+
+NonZero-O : ((x : Semiring.Carrier) → Dec (x ≡ Semiring.ε)) →
+            ∀ {r c} (R : M.Matrix r c) → ¬ NonZero R → ∀ i j → R i j ≡ Semiring.ε
+NonZero-O ε-dec R h i j = dec-case (ε-dec (R i j)) (λ e → e) (λ ne → ⊥-elim (h (i , j , ne)))
+
+-- Two vertices are adjacent when the relation between them is nonzero in one direction or the
+-- other. A relation given as a morphism has its matrix read off basis vectors; a graph holds the
+-- edge, and keeps it only when nonzero, so looking at it decides adjacency.
+module _ {m : ℕ} {D : Derivation} (𝒢 : FullGraph m D) where
+
+  entry : (x y : V 𝒢) → (vertex-object 𝒢 x ⇒ vertex-object 𝒢 y) →
+          M.Matrix (vertex-width 𝒢 y) (vertex-width 𝒢 x)
+  entry x y f = ∃ₛ.fst (𝔽F-full f)
+
+  entry-ε : (x y : V 𝒢) (f : vertex-object 𝒢 x ⇒ vertex-object 𝒢 y) →
+            (∀ i j → entry x y f i j ≡ Semiring.ε) → f ≈ εₘ
+  entry-ε x y f h =
+    ≈-trans (≈-sym (∃ₛ.snd (𝔽F-full f)))
+            (≈-trans (mat-cong (λ i j → ≈-of-≡ (h i j))) mat-ε)
+
+  entry-O : (≡-of-≈ : ∀ {u v : Semiring.Carrier} → u Semiring.≈ v → u ≡ v)
+            (x y : V 𝒢) (f : vertex-object 𝒢 x ⇒ vertex-object 𝒢 y) → f ≈ εₘ →
+            ∀ i j → entry x y f i j ≡ Semiring.ε
+  entry-O ≡-of-≈ x y f h i j =
+    ≡-of-≈ (𝔽F-faithful (≈-trans (∃ₛ.snd (𝔽F-full f)) (≈-trans h (≈-sym mat-ε))) i j)
+
+  -- The entries read back from a matrix are the matrix's own.
+  entry-mat : (≡-of-≈ : ∀ {u v : Semiring.Carrier} → u Semiring.≈ v → u ≡ v) (x y : V 𝒢)
+              (A : M.Matrix (vertex-width 𝒢 y) (vertex-width 𝒢 x)) →
+              ∀ i j → entry x y (mat A) i j ≡ A i j
+  entry-mat ≡-of-≈ x y A i j = ≡-of-≈ (𝔽F-faithful (∃ₛ.snd (𝔽F-full (mat A))) i j)
+
+  Adjacent : DepRels (vertex-object 𝒢) → V 𝒢 → V 𝒢 → Set
+  Adjacent G x y = NonZero (entry x y (G x y)) ⊎ NonZero (entry y x (G y x))
+
+  Adjacent? : (ε-dec : (x : Semiring.Carrier) → Dec (x ≡ Semiring.ε))
+              (G : DepRels (vertex-object 𝒢)) (x y : V 𝒢) → Dec (Adjacent G x y)
+  Adjacent? ε-dec G x y =
+    NonZero? ε-dec (entry x y (G x y)) ⊎-dec NonZero? ε-dec (entry y x (G y x))
+
+  adjacent-sym : (G : DepRels (vertex-object 𝒢)) {x y : V 𝒢} → Adjacent G x y → Adjacent G y x
+  adjacent-sym G = [ inj₂ , inj₁ ]
+
+  adjacent-O : (ε-dec : (x : Semiring.Carrier) → Dec (x ≡ Semiring.ε))
+               (G : DepRels (vertex-object 𝒢)) (x y : V 𝒢) → ¬ Adjacent G x y →
+               Prf ((G x y ≈ εₘ) ∧ (G y x ≈ εₘ))
+  adjacent-O ε-dec G x y h =
+    ⟪ entry-ε x y (G x y) (NonZero-O ε-dec (entry x y (G x y)) (λ k → h (inj₁ k))) ,
+      entry-ε y x (G y x) (NonZero-O ε-dec (entry y x (G y x)) (λ k → h (inj₂ k))) ⟫
+
+  -- The relations a graph holds, as morphisms.
+  relation-of : ((x : Semiring.Carrier) → Dec (x ≡ Semiring.ε)) → ({A : Set} → String → A → A) →
+                Graph 𝒢 → DepRels (vertex-object 𝒢)
+  relation-of ε-dec tick E x y = table-morphism 𝒢 x y (edge-at 𝒢 ε-dec tick E x y)
+
+  -- Adjacency in a graph, decided by looking at the edge stored for each direction instead of
+  -- reading its matrix off basis vectors.
+  adjacent-at : (≡-of-≈ : ∀ {u v : Semiring.Carrier} → u Semiring.≈ v → u ≡ v)
+                (ε-dec : (x : Semiring.Carrier) → Dec (x ≡ Semiring.ε))
+                (tick : {A : Set} → String → A → A) (E : Graph 𝒢) (x y : V 𝒢) →
+                Dec (Adjacent (relation-of ε-dec tick E) x y)
+  adjacent-at ≡-of-≈ ε-dec tick E x y =
+    nonzero-at (edge-at 𝒢 ε-dec tick E x y) x y ⊎-dec nonzero-at (edge-at 𝒢 ε-dec tick E y x) y x
+    where
+    nonzero-at : (w : Maybe M.Table) (u v : V 𝒢) →
+                 Dec (NonZero (entry u v (table-morphism 𝒢 u v w)))
+    nonzero-at nothing  u v = no (λ { (i , j , ne) → ne (entry-O ≡-of-≈ u v εₘ ≈-refl i j) })
+    nonzero-at (just t) u v = decide (NonZero? ε-dec (M.look {vertex-width 𝒢 v} {vertex-width 𝒢 u} t))
+      where
+      R : M.Matrix (vertex-width 𝒢 v) (vertex-width 𝒢 u)
+      R = M.look {vertex-width 𝒢 v} {vertex-width 𝒢 u} t
+
+      decide : Dec (NonZero R) → Dec (NonZero (entry u v (mat R)))
+      decide (yes (i , j , ne)) =
+        yes (i , j , λ e → ne (≡-trans (≡-sym (entry-mat ≡-of-≈ u v R i j)) e))
+      decide (no h) =
+        no (λ { (i , j , ne) →
+                  ne (≡-trans (entry-mat ≡-of-≈ u v R i j) (NonZero-O ε-dec R h i j)) })
+
 private
   nth? : {C : Set} → ℕ → List C → Maybe C
   nth? _       []       = nothing
@@ -1695,18 +1784,14 @@ look-add t u i j =
 -- and every slot's morphism is the graph's dependence relation.
 module _ {m : ℕ} {D : Derivation} (𝒢 : FullGraph m D) where
 
-  private
-    ≈-of-≡ : ∀ {x y : Semiring.Carrier} → x ≡ y → x Semiring.≈ y
-    ≈-of-≡ ≡-refl = Semiring.refl
-
   zero-table-morphism : (x y : V 𝒢) (r c : ℕ) →
                         mat (M.look {vertex-width 𝒢 y} {vertex-width 𝒢 x} (zero-table r c)) ≈ εₘ
   zero-table-morphism x y r c =
-    ≈-trans (mat-cong (λ i j → ≈-of-≡ (entry i j))) mat-ε
+    ≈-trans (mat-cong (λ i j → ≈-of-≡ (zero-at i j))) mat-ε
     where
-    entry : (i : Fin (vertex-width 𝒢 y)) (j : Fin (vertex-width 𝒢 x)) →
-            M.look (zero-table r c) i j ≡ Semiring.ε
-    entry i j =
+    zero-at : (i : Fin (vertex-width 𝒢 y)) (j : Fin (vertex-width 𝒢 x)) →
+              M.look (zero-table r c) i j ≡ Semiring.ε
+    zero-at i j =
       nth-All {P = λ row → M.nth Semiring.ε (toℕ j) row ≡ Semiring.ε} [] (toℕ i) ≡-refl
               (AllP.map⁺ (universal (λ _ →
                  nth-All {P = λ e → e ≡ Semiring.ε} Semiring.ε (toℕ j) ≡-refl
@@ -1834,8 +1919,8 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : FullGraph m D) where
       all-ε = All-map (λ rf → All-map (λ ef → dec-just (ε-dec _) (not-false ef)) (any-false _ _ rf))
                       (any-false _ (M.to-table R) nz)
 
-      entry-ε : ∀ i j → R i j ≡ Semiring.ε
-      entry-ε i j =
+      zero-entry : ∀ i j → R i j ≡ Semiring.ε
+      zero-entry i j =
         ≡-trans (≡-sym (look-to-table R i j))
                 (nth-All [] (toℕ i) ≡-refl
                          (All-map (λ rz → nth-All Semiring.ε (toℕ j) ≡-refl rz) all-ε))
@@ -1843,7 +1928,7 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : FullGraph m D) where
       zero-case : dep-rels 𝒢 x y ≈ εₘ
       zero-case =
         ≈-trans (≈-sym (∃ₛ.snd (𝔽F-full (dep-rels 𝒢 x y))))
-                (≈-trans (mat-cong (λ i j → ≈-of-≡ (entry-ε i j))) mat-ε)
+                (≈-trans (mat-cong (λ i j → ≈-of-≡ (zero-entry i j))) mat-ε)
 
   ∈-all-vertices : (v : V 𝒢) → v ∈ all-vertices 𝒢
   ∈-all-vertices (inj₁ input)      = here ≡-refl

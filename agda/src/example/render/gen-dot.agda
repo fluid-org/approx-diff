@@ -90,12 +90,12 @@ module render-eval {Γ τ} (γ : Env Γ) (t : Γ ⊢ τ) where
   open Evaluated γ t public
 
   first-order = first-order-graph dependence (λ _ x → x)
-  relation-of : Graph dependence → DepRels (vertex-object dependence)
-  relation-of tabs x y = table-morphism dependence x y (edge-at dependence three.ε? (λ _ z → z) tabs x y)
-  fo = relation-of first-order
+  rels = relation-of dependence three.ε? (λ _ x → x)
+  fo = rels first-order
   summarise = region-summary dependence (λ _ x → x)
 
-  open Interaction dependence fo (Adjacent? dependence fo) public
+  open Interaction dependence fo (adjacent-at dependence three.≡-of-≈ three.ε? (λ _ x → x)
+                                              first-order) public
 
   private
     label-of : V dependence → String
