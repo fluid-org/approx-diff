@@ -26,6 +26,37 @@ private
   depth-for zero       n = zero
   depth-for (suc fuel) n = if n <ᵇ 2 then zero else suc (depth-for fuel (half (n + 1)))
 
+  data Numbers : Set where
+    num-tip  : ℕ → Numbers
+    num-fork : Numbers → Numbers → Numbers
+
+  fill-numbers : ℕ → List ℕ → Numbers × List ℕ
+  fill-numbers zero    []       = num-tip 0 , []
+  fill-numbers zero    (n ∷ ns) = num-tip n , ns
+  fill-numbers (suc d) ns with fill-numbers d ns
+  ... | l , ns' with fill-numbers d ns'
+  ...   | r , ns'' = num-fork l r , ns''
+
+-- A list read by position, out of range reading zero.
+Index : Set
+Index = ℕ × Numbers
+
+index : List ℕ → Index
+index ns = d , proj₁ (fill-numbers d ns)
+  where
+  d : ℕ
+  d = depth-for (length ns) (length ns)
+
+index-at : Index → ℕ → ℕ
+index-at (d , t) p = look-num d p t
+  where
+  look-num : ℕ → ℕ → Numbers → ℕ
+  look-num d       p (num-tip n)    = n
+  look-num zero    p (num-fork l r) = 0
+  look-num (suc d) p (num-fork l r) =
+    if p <ᵇ pow d then look-num d p l else look-num d (p ∸ pow d) r
+
+private
   data Tree : Set where
     tip  : Bool → List ℕ → Tree
     fork : Tree → Tree → Tree

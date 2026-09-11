@@ -4,7 +4,7 @@ open import Data.Bool using (Bool; true; false; not; _∨_; if_then_else_)
 open import Data.Empty using (⊥; ⊥-elim)
 open import Data.Fin using (Fin; toℕ; zero; suc)
 open import Data.List using (List; []; _∷_; _++_; map; mapMaybe; foldl; filterᵇ; length; upTo;
-                             applyUpTo; reverse)
+                             applyUpTo; replicate; reverse)
 open import Agda.Builtin.Strict using (primForce)
 open import Data.Bool.ListAction using (any)
 open import Data.List.Properties using (++-identityʳ; map-++; map-∘; foldl-++; length-map;
@@ -21,6 +21,7 @@ open import Data.Nat using (ℕ; zero; suc; _≡ᵇ_; _<ᵇ_; _+_; _*_; _∸_; _
 open import Data.Nat.Properties using (+-suc; +-identityʳ; <⇒≢)
 open import Data.Product using (Σ; _×_; _,_)
 open import Data.Maybe using (Maybe; just; nothing)
+open import interaction.components using (Index; index; index-at)
 open import Data.Sum using (_⊎_; inj₁; inj₂; [_,_])
 open import Data.Vec using (toList; tabulate)
 import Data.List.Relation.Binary.Permutation.Propositional as ↭
@@ -1381,29 +1382,30 @@ private
   positions-table : ℕ → ℕ → List (List (ℕ × Semiring.Carrier)) → M.Table
   positions-table base w P = map (λ ws → applyUpTo (λ i → weight-at (base + i) ws) w) P
 
-  -- Index of the visible vertex holding position p, its block running from its base to the next.
-  owner-at : ℕ → ℕ → List (ℕ × List (List (ℕ × Semiring.Carrier))) → Maybe ℕ
-  owner-at i p []                          = nothing
-  owner-at i p ((b , _) ∷ [])              = if p <ᵇ b then nothing else just i
-  owner-at i p ((b , _) ∷ (b' , P') ∷ cs') =
-    if p <ᵇ b then nothing
-    else if p <ᵇ b' then just i
-    else owner-at (suc i) p ((b' , P') ∷ cs')
+  -- Owning visible vertex of each position, offset by one so zero reads as none. A block runs from
+  -- its base to the next, which is wider than the vertex if its width falls short of the gap.
+  owner-table : List (ℕ × List (List (ℕ × Semiring.Carrier))) → List ℕ
+  owner-table []             = []
+  owner-table ((b , P) ∷ cs) = replicate b 0 ++ go 0 ((b , P) ∷ cs)
+    where
+    go : ℕ → List (ℕ × List (List (ℕ × Semiring.Carrier))) → List ℕ
+    go i []                          = []
+    go i ((b , P) ∷ [])              = replicate (length P) (suc i)
+    go i ((b , _) ∷ (b' , P') ∷ cs') = replicate (b' ∸ b) (suc i) ++ go (suc i) ((b' , P') ∷ cs')
 
   insert-index : ℕ → List ℕ → List ℕ
   insert-index i []       = i ∷ []
   insert-index i (j ∷ js) =
     if i ≡ᵇ j then j ∷ js else if i <ᵇ j then i ∷ j ∷ js else j ∷ insert-index i js
 
-  module Sources (ε-dec : (x : Semiring.Carrier) → Dec (x ≡ Semiring.ε))
-                 (cs : List (ℕ × List (List (ℕ × Semiring.Carrier)))) where
+  module Sources (ε-dec : (x : Semiring.Carrier) → Dec (x ≡ Semiring.ε)) (owners : Index) where
 
     entry : ℕ × Semiring.Carrier → List ℕ → List ℕ
-    entry (p , w) is = if ⌊ ε-dec w ⌋ then is else at (owner-at 0 p cs)
+    entry (p , w) is = if ⌊ ε-dec w ⌋ then is else at (index-at owners p)
       where
-      at : Maybe ℕ → List ℕ
-      at nothing  = is
-      at (just i) = insert-index i is
+      at : ℕ → List ℕ
+      at zero    = is
+      at (suc i) = insert-index i is
 
     row : List (ℕ × Semiring.Carrier) → List ℕ → List ℕ
     row []       is = is
@@ -1415,7 +1417,10 @@ private
 
   source-lists : ((x : Semiring.Carrier) → Dec (x ≡ Semiring.ε)) →
                  List (ℕ × List (List (ℕ × Semiring.Carrier))) → List (List ℕ)
-  source-lists ε-dec cs = map (λ { (_ , P) → Sources.column ε-dec cs P [] }) cs
+  source-lists ε-dec cs = map (λ { (_ , P) → Sources.column ε-dec owners P [] }) cs
+    where
+    owners : Index
+    owners = index (owner-table cs)
 
   position-edges : {m : ℕ} {D : Derivation} (𝒢 : FullGraph m D) →
                    ((x : Semiring.Carrier) → Dec (x ≡ Semiring.ε)) →
