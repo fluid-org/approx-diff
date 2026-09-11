@@ -160,5 +160,4 @@ private
 main : Main
 main =
   run (putStrLn (trace survey
-        (show (curve "regions" region-foldM.sizes (200 ∷ 400 ∷ 800 ∷ 1600 ∷ [])
-                (point ("fo-reachability hidden=" ++ benchM.fo-count) benchM.fo-reachability 0)))))
+        (show (curve "regions" region-foldM.sizes (100 ∷ 200 ∷ []) 0))))

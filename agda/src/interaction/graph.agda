@@ -1400,7 +1400,15 @@ private
       where
       at : ℕ × List (List (ℕ × Semiring.Carrier)) →
            ℕ × List (List (ℕ × Semiring.Carrier)) → Maybe M.Table
-      at (base , _) (_ , P) = keep (positions-table base (vertex-width 𝒢 x) P)
+      at (base , _) (_ , P) =
+        if any (any in-block) P then keep (positions-table base (vertex-width 𝒢 x) P) else nothing
+        where
+        -- Every nonzero table entry comes from a source position in x's block, so a column
+        -- reaching none of them tabulates to zero.
+        in-block : ℕ × Semiring.Carrier → Bool
+        in-block (p , w) =
+          if p <ᵇ base then false
+          else if p <ᵇ base + vertex-width 𝒢 x then not ⌊ ε-dec w ⌋ else false
     read _        _        = nothing
 
 hide-graph-position-edges : {m : ℕ} {D : Derivation} (𝒢 : FullGraph m D) →
