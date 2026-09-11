@@ -31,36 +31,36 @@ data Node : Set ℓ where
 node-width : Node → ℕ
 node-width (val v) = width v
 
-record Labelling (s : Derivation) : Set ℓ where
-  field at : (p : Path s) → Σ[ x ∈ Node ] node-width x ≡ width-at s p
+record Labelling (D : Derivation) : Set ℓ where
+  field at : (p : Path D) → Σ[ x ∈ Node ] node-width x ≡ width-at D p
 
 open Labelling public
 
-lab₀ : ∀ {k b} (x : Node) → node-width x ≡ k → Labelling (node k b []ₗ)
+lab₀ : ∀ {m k b} (x : Node) → node-width x ≡ k → Labelling (node m k b []ₗ)
 lab₀ x e .at ε = x , e
 lab₀ x e .at (into () _)
 
-lab₁ : ∀ {k b s} → Labelling s → (x : Node) → node-width x ≡ k → Labelling (node k b (s ∷ₗ []ₗ))
+lab₁ : ∀ {m k b D} → Labelling D → (x : Node) → node-width x ≡ k → Labelling (node m k b (D ∷ₗ []ₗ))
 lab₁ f x e .at ε             = x , e
 lab₁ f x e .at (into here p) = f .at p
 lab₁ f x e .at (into (there ()) _)
 
-lab₂ : ∀ {k b s₁ s₂} → Labelling s₁ → Labelling s₂ → (x : Node) → node-width x ≡ k →
-       Labelling (node k b (s₁ ∷ₗ s₂ ∷ₗ []ₗ))
+lab₂ : ∀ {m k b D₁ D₂} → Labelling D₁ → Labelling D₂ → (x : Node) → node-width x ≡ k →
+       Labelling (node m k b (D₁ ∷ₗ D₂ ∷ₗ []ₗ))
 lab₂ f₁ f₂ x e .at ε                     = x , e
 lab₂ f₁ f₂ x e .at (into here p)         = f₁ .at p
 lab₂ f₁ f₂ x e .at (into (there here) p) = f₂ .at p
 lab₂ f₁ f₂ x e .at (into (there (there ())) _)
 
-lab₊ : ∀ {k b s t ts} → Labelling s → Labelling (node k b (t ∷ₗ ts)) →
-       Labelling (node k b (s ∷ₗ t ∷ₗ ts))
+lab₊ : ∀ {m k b D D' Ds} → Labelling D → Labelling (node m k b (D' ∷ₗ Ds)) →
+       Labelling (node m k b (D ∷ₗ D' ∷ₗ Ds))
 lab₊ f g .at ε                  = g .at ε
 lab₊ f g .at (into here p)      = f .at p
 lab₊ f g .at (into (there i) p) = g .at (into i p)
 
-lab₃ : ∀ {k b s₁ s₂ s₃} → Labelling s₁ → Labelling s₂ → Labelling s₃ →
+lab₃ : ∀ {m k b D₁ D₂ D₃} → Labelling D₁ → Labelling D₂ → Labelling D₃ →
        (x : Node) → node-width x ≡ k →
-       Labelling (node k b (s₁ ∷ₗ s₂ ∷ₗ s₃ ∷ₗ []ₗ))
+       Labelling (node m k b (D₁ ∷ₗ D₂ ∷ₗ D₃ ∷ₗ []ₗ))
 lab₃ f₁ f₂ f₃ x e .at ε                             = x , e
 lab₃ f₁ f₂ f₃ x e .at (into here p)                 = f₁ .at p
 lab₃ f₁ f₂ f₃ x e .at (into (there here) p)         = f₂ .at p
@@ -87,8 +87,8 @@ mutual
   label {v = v} (⇓-fold D₁ D₂)    = lab₂ (label D₁) (label-m D₂) (val v) refl
 
   label-premises : ∀ {Γ is} {γ : Env Γ} {Ms : Every (λ s → Γ ⊢ base s) is} {vs R}
-                   (D : γ , Ms ⇓s vs [ R ]) {k b} (x : Node) → node-width x ≡ k →
-                   Labelling (node k b (derivs D))
+                   (D : γ , Ms ⇓s vs [ R ]) {m k b} (x : Node) → node-width x ≡ k →
+                   Labelling (node m k b (derivs D))
   label-premises []                 x e = lab₀ x e
   label-premises (D₁ ∷ [])          x e = lab₁ (label D₁) x e
   label-premises (D₁ ∷ D₂@(_ ∷ _))  x e = lab₊ (label D₁) (label-premises D₂ x e)

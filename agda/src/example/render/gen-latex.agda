@@ -36,10 +36,10 @@ open import interaction.evaluated Sig three.semiring interpretation three.C (λ 
 open import interaction.labelling Sig three.semiring interpretation three.C (λ x → three.∨-idem {x})
   using (Node; val; at)
 open import interaction.moves three.semiring (λ x → three.∨-idem {x}) three.≡-of-≈ three.ε?
-  using (module Interaction; Config; visible; NonZero?; tabulated-summary; fo-tabulation)
+  using (module Interaction; Config; visible; first-order-graph; region-summary)
 open import example.runs (nonzero three.semiring) three.semiring three.C
   using (Run; filter-sum-run; const-run; length-run; fold0-run; case0-run; tag-run; case-l-run;
-         case-r-run; test-run; map-run; adjacent-sums-run; filter-run; cond-run; eq-run;
+         case-r-run; test-run; map-run; adjacent-sums-run; merge-run; filter-run; cond-run; eq-run;
          mult-run; add-mul-run; case-inl-run; mavg-run; total-run; sum-mul-run; rose-run; score-run; env; term)
 open import example.render.table using (Label; Sel; none; sel-label; table; signed-table)
 open import example.render.value-labels (nonzero three.semiring) three.semiring three.C
@@ -74,14 +74,22 @@ private
       i-labels = env-labels (env r)
       o-labels = val-labels 0 value
 
-      fo-tab = fo-tabulation dependence (λ _ x → x)
-      fo = read-edge dependence fo-tab
-      summarise = tabulated-summary dependence (λ _ x → x) fo-tab
-      module I = Interaction dependence fo
+      first-order = first-order-graph dependence (λ _ x → x)
+      rels = dep-rels-of dependence three.ε? (λ _ x → x)
+      adjacent = adjacent-at dependence three.≡-of-≈ three.ε? (λ _ x → x)
+      fo = rels first-order
+      summarise = region-summary dependence (λ _ x → x)
+      module I = Interaction dependence fo (adjacent first-order)
 
       -- Dependence matrix of the degenerate configuration.
-      R = M3.look {vertex-width dependence (inj₂ ε)} {vertex-width dependence (inj₁ input)}
-            (I.visible-table fo-tab (I.initial summarise) (inj₁ input) (inj₂ ε))
+      R = degenerate first-order
+        where
+        degenerate : Graph dependence → M3.Matrix (vertex-width dependence (inj₂ ε))
+                                                  (vertex-width dependence (inj₁ input))
+        degenerate tabs =
+          M3.look {vertex-width dependence (inj₂ ε)} {vertex-width dependence (inj₁ input)}
+            (J.visible-table tabs (J.initial summarise) (inj₁ input) (inj₂ ε))
+          where module J = Interaction dependence (rels tabs) (adjacent tabs)
 
       -- Control column of the environment vertex dropped.
       drop-ctrl : ∀ {m n} → M3.Matrix m (Nat.suc n) → M3.Matrix m n
@@ -106,7 +114,7 @@ private
     -- One table per edge of the visible graph after the reveals, between the environment, the
     -- revealed vertices and the root.
     emit : String → String → List (String × List ℕ) → Presentation → List (String × String)
-    emit key title reveals (matrices si so) = mapMaybe edge-entry (I.visible-edges fo-tab K endpoints)
+    emit key title reveals (matrices si so) = shared first-order
       where
       resolve : String × List ℕ → Maybe (String × Path D)
       resolve (s , ks) with path-at D ks
@@ -140,16 +148,31 @@ private
       edge-entry : (String × V dependence) × (String × V dependence) × M3.Table →
                    Maybe (String × String)
       edge-entry ((nu , u) , (nv , v) , t) with presented u v (M3.look {wd v} {wd u} t)
-      ... | M with NonZero? M
+      ... | M with NonZero? three.ε? M
       ...   | no  _ = nothing
       ...   | yes _ = just
         (key ++ "/" ++ nu ++ "-" ++ nv ,
          table (title ++ " (" ++ nu ++ " to " ++ nv ++ ")") (vertex-labels u) (vertex-labels v)
                (M3.to-table M) (at-env u) (at-root v))
-    emit key title reveals related =
-      (key ++ "/root-root" ,
-       table title o-labels o-labels (M3.to-table (rows M3.∘ (rows M3.ᵀ))) none none) ∷ []
-      where rows = drop-ctrl R
+
+      shared : Graph dependence → List (String × String)
+      shared tabs = with-config (foldr (J.reveal-at summarise) (J.initial summarise) (map proj₂ named))
+        where
+        module J = Interaction dependence (rels tabs) (adjacent tabs)
+
+        with-config : Config dependence → List (String × String)
+        with-config K' = mapMaybe edge-entry (J.visible-edges tabs K' endpoints)
+
+    emit key title reveals related = from-rows (M3.to-table (drop-ctrl R))
+      where
+      from-rows : M3.Table → List (String × String)
+      from-rows t = product (M3.look {vertex-width dependence (inj₂ ε)} {Nat.pred (wd (inj₁ input))} t)
+        where
+        product : M3.Matrix (vertex-width dependence (inj₂ ε)) (Nat.pred (wd (inj₁ input))) →
+                  List (String × String)
+        product rows =
+          (key ++ "/root-root" ,
+           table title o-labels o-labels (M3.to-table (rows M3.∘ (rows M3.ᵀ))) none none) ∷ []
 
   mk : String → String → Run → List (String × List ℕ) → Presentation → Test
   mk k ti r rs pr .Test.key     = k
@@ -214,6 +237,7 @@ private
                       (sign.unk , three.C)
 
       signed-ε? = ⊗-ε? sign.semiring three.semiring sign.ε? three.ε?
+      signed-≡-of-≈ = ⊗-≡-of-≈ sign.semiring three.semiring sign.≡-of-≈ three.≡-of-≈
       module mat = matrix.Mat (sign.semiring ⊗S three.semiring)
 
       open evaluated.Evaluated (runs.env runs.score-run) (runs.term runs.score-run)
@@ -221,21 +245,25 @@ private
 
       module smoves = interaction.moves (sign.semiring ⊗S three.semiring)
                         (⊗-idem sign.semiring three.semiring sign.+ˢ-idem (λ x → three.∨-idem {x}))
-                        (⊗-≡-of-≈ sign.semiring three.semiring sign.≡-of-≈ three.≡-of-≈)
-                        signed-ε?
+                        signed-≡-of-≈ signed-ε?
 
-      fo-tab = smoves.fo-tabulation dependence (λ _ x → x)
-      fo = graph.read-edge dependence fo-tab
-      summarise = smoves.tabulated-summary dependence (λ _ x → x) fo-tab
-      module I = smoves.Interaction dependence fo
+      first-order = smoves.first-order-graph dependence (λ _ x → x)
+      rels = graph.dep-rels-of dependence signed-ε? (λ _ x → x)
+      adjacent = graph.adjacent-at dependence signed-≡-of-≈ signed-ε? (λ _ x → x)
+      summarise = smoves.region-summary dependence (λ _ x → x)
 
       score-rows : mat.Table
-      score-rows = drop-ctrl (mat.look {graph.vertex-width dependence (inj₂ graph.ε)}
-                                       {graph.vertex-width dependence (inj₁ graph.input)}
-                     (I.visible-table fo-tab (I.initial summarise) (inj₁ graph.input) (inj₂ graph.ε)))
+      score-rows = rows first-order
         where
         drop-ctrl : ∀ {m n} → mat.Matrix m (Nat.suc n) → mat.Table
         drop-ctrl R = toList (tabulate (λ q → toList (tabulate (λ p → R q (suc p)))))
+
+        rows : graph.Graph dependence → mat.Table
+        rows tabs = drop-ctrl (mat.look {graph.vertex-width dependence (inj₂ graph.ε)}
+                                        {graph.vertex-width dependence (inj₁ graph.input)}
+                      (J.visible-table tabs (J.initial summarise)
+                                       (inj₁ graph.input) (inj₂ graph.ε)))
+          where module J = smoves.Interaction dependence (rels tabs) (adjacent tabs)
 
     fragment : String
     fragment = signed-table "score (signed)" (axes.env-labels (runs.env runs.score-run))
@@ -244,8 +272,6 @@ private
 all-tables : List (String × String)
 all-tables =
   concat (map emit-test tests) ++ₗ (("score-signed/env-root" , signed.fragment) ∷ [])
-  -- merge and merge-forward disabled: hiding diverges on merge's graph (#48 closure width
-  -- growth); restore once that subtask lands.
 
 main : Main
 main = run (foldr (λ t io → writeFile ("test-baselines/matrices/" ++ proj₁ t ++ ".tex") (proj₂ t) >> io)

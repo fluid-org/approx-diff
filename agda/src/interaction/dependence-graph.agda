@@ -14,7 +14,7 @@ open import signature.interpretation using (Interpretation)
 import sd-semimodule-primitives
 
 -- The dependence graph of a derivation with a control input. Each rule builds its graph from its
--- premises' graphs using the wiring that also defines the rule's relation, so collapsing the graph
+-- premises' graphs using the edges that also define the rule's relation, so collapsing the graph
 -- recovers the relation rule by rule. Vertices carry free semimodules; the relation is a morphism
 -- and enters the graph directly, with join comparing the vertex pairing with the width sum.
 module interaction.dependence-graph {ℓ} (Sig : Signature ℓ) {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A)
@@ -50,7 +50,7 @@ fo-of τ = ⌊ first-order? τ ⌋
 -- node.
 mutual
   deriv : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} → γ , t ⇓ v [ R ] → Derivation
-  deriv {τ = τ} {v = v} D = node (width v) (fo-of τ) (subderivs D)
+  deriv {τ = τ} {γ = γ} {v = v} D = node (suc (width-env γ)) (width v) (fo-of τ) (subderivs D)
 
   subderivs : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} → γ , t ⇓ v [ R ] → List Derivation
   subderivs (⇓-var x)          = []
@@ -77,7 +77,8 @@ mutual
   deriv-m : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
             {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {v' : Val (σ' [ σr ])} {F} →
             Map γ s σ' v v' F → Derivation
-  deriv-m {σr = σr} {σ' = σ'} {v' = v'} D = node (width v') (fo-of (σ' [ σr ])) (subderivs-m D)
+  deriv-m {γ = γ} {σr = σr} {σ' = σ'} {v = v} {v' = v'} D =
+    node (suc (width-env γ) + width v) (width v') (fo-of (σ' [ σr ])) (subderivs-m D)
 
   subderivs-m : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
                 {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {v' : Val (σ' [ σr ])} {F} →
@@ -129,7 +130,7 @@ private
 
 mutual
   graph : ∀ {Γ τ} {γ : Env Γ} {t : Γ ⊢ τ} {v R} (D : γ , t ⇓ v [ R ]) →
-          Graph (suc (width-env γ)) (deriv D)
+          FullGraph (suc (width-env γ)) (deriv D)
   graph {τ = τ} (⇓-var {γ = γ} x) = Rule₀.E (fo-of τ) (var-out x γ)
   graph {τ = τ} (⇓-unit {γ = γ}) = Rule₀.E (fo-of τ) wctrl
   graph {τ = τ} (⇓-lam {γ = γ} {t = t}) = Rule₀.E (fo-of τ) (lam-out γ t)
@@ -178,7 +179,7 @@ mutual
 
   graph-m : ∀ {Γ} {γ : Env Γ} {τ₀ : type 1} {σr : type 0} {s : Γ ▸ τ₀ [ σr ] ⊢ σr}
             {σ' : type 1} {v : Val (σ' [ μ τ₀ ])} {v' : Val (σ' [ σr ])} {F}
-            (D : Map γ s σ' v v' F) → Graph (suc (width-env γ) + width v) (deriv-m D)
+            (D : Map γ s σ' v v' F) → FullGraph (suc (width-env γ) + width v) (deriv-m D)
   graph-m {γ = γ} {σr = σr} {σ' = σ'} (m-rec {w = w} {w' = w'} D₁ D₂) =
     Rule₂.E (graph-m D₁) (graph D₂) I
           (rec-inputs γ w' ∘ join (suc (width-env γ) + width w) (width w'))

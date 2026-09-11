@@ -89,11 +89,13 @@ module render-eval {Γ τ} (γ : Env Γ) (t : Γ ⊢ τ) where
 
   open Evaluated γ t public
 
-  fo-tab = fo-tabulation dependence (λ _ x → x)
-  fo     = read-edge dependence fo-tab
-  summarise = tabulated-summary dependence (λ _ x → x) fo-tab
+  first-order = first-order-graph dependence (λ _ x → x)
+  rels = dep-rels-of dependence three.ε? (λ _ x → x)
+  fo = rels first-order
+  summarise = region-summary dependence (λ _ x → x)
 
-  open Interaction dependence fo public
+  open Interaction dependence fo (adjacent-at dependence three.≡-of-≈ three.ε? (λ _ x → x)
+                                              first-order) public
 
   private
     label-of : V dependence → String
@@ -104,7 +106,7 @@ module render-eval {Γ τ} (γ : Env Γ) (t : Γ ⊢ τ) where
     node-line (i , _ , x) = "  n" ++ ℕ-Show.show i ++ " [shape=box, fontsize=11, label=\"" ++ label-of x ++ "\"];\n"
 
   dot-at : Config dependence → String
-  dot-at K = "digraph G {\n  rankdir=LR;\n" ++ cat (map node-line nvs) ++ edge-lines (rows nvs) ++ "}\n"
+  dot-at K = shared first-order
     where
     endpoints : List (ℕ × V dependence)
     endpoints = (0 , inj₁ input) ∷ map (λ p → index-of dependence (inj₂ p) , inj₂ p) (K .visible)
@@ -113,13 +115,17 @@ module render-eval {Γ τ} (γ : Env Γ) (t : Γ ⊢ τ) where
     nvs : List (ℕ × ℕ × V dependence)
     nvs = enumerate 0 endpoints
 
-    rows : List (ℕ × ℕ × V dependence) → List Edge
-    rows []                 = []
-    rows ((i , gx , x) ∷ is) = cols nvs ++L rows is
+    rows : Graph dependence → List (ℕ × ℕ × V dependence) → List Edge
+    rows tabs []                  = []
+    rows tabs ((i , gx , x) ∷ is) = cols nvs ++L rows tabs is
       where
       cols : List (ℕ × ℕ × V dependence) → List Edge
-      cols []                 = []
-      cols ((j , gy , y) ∷ js) = keep i j (visible-table fo-tab K x y) ++L cols js
+      cols []                  = []
+      cols ((j , gy , y) ∷ js) = keep i j (visible-table tabs K x y) ++L cols js
+
+    shared : Graph dependence → String
+    shared tabs =
+      "digraph G {\n  rankdir=LR;\n" ++ cat (map node-line nvs) ++ edge-lines (rows tabs nvs) ++ "}\n"
 
   full : Config dependence
   full = foldl (λ K p → reveal-at summarise p K) (initial summarise) (FO dependence)

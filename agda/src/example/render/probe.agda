@@ -7,9 +7,9 @@ module example.render.probe where
 
 open import IO
 open import IO.Finite using (putStrLn)
-open import Data.List using (List; []; _∷_; map; length; concat; upTo)
-open import Data.Maybe using (just; nothing)
+open import Data.List using (List; []; _∷_; map; length; concat; take; upTo)
 open import Data.Nat using (ℕ; zero; suc; _+_; _*_; _⊔_)
+open import Data.Product using (_×_; _,_; proj₂)
 import Data.Nat.Show as ℕ-Show
 open import Data.String using (String; _++_)
 open import Data.Sum using (inj₁; inj₂)
@@ -21,6 +21,9 @@ open import signature.example.interpretation (nonzero three.semiring) three.semi
   using (Sig; interpretation)
 open import interaction.graph three.semiring (λ x → three.∨-idem {x})
 open import interaction.evaluated Sig three.semiring interpretation three.C (λ x → three.∨-idem {x})
+open import interaction.moves three.semiring (λ x → three.∨-idem {x}) three.≡-of-≈ three.ε?
+  using (module Interaction; first-order-graph)
+open import interaction.components using (components; symmetric)
 open import example.runs (nonzero three.semiring) three.semiring three.C
   using (Run; filter-sum-run; map-run; filter-run; merge-run; env; term)
 
@@ -76,38 +79,95 @@ private
 
     line : String
     line = name ++ ": " ++ show (length hid) ++ " vertices, width sum " ++ show (sum ws)
+           ++ ", inputs width " ++ show (vertex-width dependence (inj₁ input))
            ++ ", max " ++ show (max ws)
            ++ ", widths 0/1/2/3+: " ++ show (count is0 ws) ++ "/" ++ show (count is1 ws)
            ++ "/" ++ show (count is2 ws) ++ "/" ++ show (count big ws)
 
-  module bench where
-    open Evaluated (env merge-run) (term merge-run)
+  -- Strict in both arguments, so joining forces every entry.
+  join! : Three → Three → Three
+  join! three.O y       = y
+  join! three.C three.O = three.C
+  join! three.C three.C = three.C
+  join! three.C three.D = three.D
+  join! three.D three.O = three.D
+  join! three.D three.C = three.D
+  join! three.D three.D = three.D
 
-    T : Tabulation
-    T = tabulation dependence three.ε? trace
+  join-weights : List (ℕ × Three) → Three
+  join-weights []            = three.O
+  join-weights ((_ , w) ∷ ws) = join! w (join-weights ws)
 
-    root-index : ℕ
-    root-index = suc (length (vertices D))
+  join-positions : List (List (ℕ × Three)) → Three
+  join-positions []       = three.O
+  join-positions (P ∷ Ps) = join! (join-weights P) (join-positions Ps)
 
-    join-table : M3.Table → Three
-    join-table t = join-list (concat t)
+  module bench (r : Run) where
+    open Evaluated (env r) (term r)
 
-    ask : Tabulation → Three
-    ask H with position H 0 | position H root-index
-    ... | just p | just q = join-table (read-table H p q)
-    ... | _      | _      = three.O
+    all-positions : ℕ → String
+    all-positions k =
+      show3 (hide-graph-reachability dependence three.ε? trace (map suc (upTo k))
+               (λ a c → join! a (join-positions (proj₂ c))) three.O)
 
-    at at-sweep : ℕ → String
-    at k       = show3 (ask (Tabulated.hide-graph T (λ _ x → x) three.ε? (map suc (upTo k))))
-    at-sweep k = show3 (ask (Tabulated.hide-graph-sweep T (λ _ x → x) three.ε? (map suc (upTo k))))
+    fo-positions : List ℕ
+    fo-positions = map (λ p → suc (path-position D p)) (fo-hidden dependence)
+
+    fo-count : String
+    fo-count = show (length fo-positions)
+
+    fo-reachability : String
+    fo-reachability =
+      show3 (hide-graph-reachability dependence three.ε? trace fo-positions
+               (λ a c → join! a (join-positions (proj₂ c))) three.O)
+
+  -- Every adjacency question the fold asks reads a stored edge, so the position-edge marks between
+  -- one prefix's begin line and its result count the questions. A prefix repeated in the curve is
+  -- timed a second time against whatever the first left built.
+  module region-fold (r : Run) where
+    open Evaluated (env r) (term r)
+
+    private
+      first-order = first-order-graph dependence (λ _ x → x)
+      rels = dep-rels-of dependence three.ε? trace
+      adjacent = adjacent-at dependence three.≡-of-≈ three.ε? trace
+      module I = Interaction dependence (rels first-order) (adjacent first-order)
+
+    sizes : ℕ → String
+    sizes k = show (length blocks) ++ " regions over " ++ show (sum (map length blocks)) ++ " hidden"
+      where blocks = I.regions (take k (FO dependence))
+
+    traversed : String
+    traversed =
+      show (length cc) ++ " components over " ++ show (sum (map length cc)) ++ " visible, "
+      ++ show (sum (map length ss)) ++ " endpoints"
+      where
+      ss = symmetric (graph-sources dependence first-order)
+      cc = components ss
 
   survey : String
   survey = scale.line "filter-sum" filter-sum-run ++ "\n" ++ scale.line "map" map-run ++ "\n"
            ++ scale.line "filter" filter-run ++ "\n" ++ scale.line "merge" merge-run
 
-  curve : List ℕ → ℕ
-  curve []       = 0
-  curve (k ∷ ks) = trace ("k=" ++ show k ++ " -> " ++ bench.at k) (curve ks)
+  -- The result threads through the continuation, so unused-argument erasure cannot drop the
+  -- chain ahead of it.
+  curve : String → (ℕ → String) → List ℕ → ℕ → ℕ
+  curve name f []       r = r
+  curve name f (k ∷ ks) r =
+    trace ("begin " ++ name ++ " k=" ++ show k)
+          (trace (name ++ " k=" ++ show k ++ " -> " ++ f k) (curve name f ks r))
+
+  module benchM = bench merge-run
+  module region-foldM = region-fold merge-run
+
+  prefixes : List ℕ
+  prefixes = 800 ∷ 3936 ∷ []
+
+  point : String → String → ℕ → ℕ
+  point name v r = trace ("begin " ++ name) (trace (name ++ " -> " ++ v) r)
 
 main : Main
-main = run (putStrLn (trace survey (show (curve (5 ∷ [])))))
+main =
+  run (putStrLn (trace survey
+        (show (point "traversal" region-foldM.traversed
+                (curve "regions" region-foldM.sizes (100 ∷ 200 ∷ []) 0)))))
