@@ -1407,7 +1407,7 @@ hide-graph-summary 𝒢 ε-dec tick hid region =
 -- Hiding by the source positions reaching each position of a vertex, with weights.
 module PositionHide {m : ℕ} {D : Derivation} (𝒢 : Graph m D)
   (ε-dec : (x : Semiring.Carrier) → Dec (x ≡ Semiring.ε))
-  (tick : {A : Set} → String → A → A) (hid region : List ℕ) where
+  (tick : {A : Set} → String → A → A) (hid : List ℕ) (regions : List (List ℕ)) where
 
   private
     -- Source positions with their weights, ascending, and one such set per position of a vertex.
@@ -1417,11 +1417,13 @@ module PositionHide {m : ℕ} {D : Derivation} (𝒢 : Graph m D)
     Positions : Set
     Positions = List Weights
 
-    -- Paths from the visible sources that have gone through the region, and paths that have not.
+    -- Paths that have gone through each region, one entry per region in order, and the paths
+    -- that have gone through none. A path's interior lies in a single region, so an entry never
+    -- moves between regions.
     record Block : Set where
       constructor block
       field
-        through  : Positions
+        inside   : List Positions
         avoiding : Positions
 
     data Origin : Set where
@@ -1497,27 +1499,54 @@ module PositionHide {m : ℕ} {D : Derivation} (𝒢 : Graph m D)
     add-positions P        []       = P
     add-positions (a ∷ P) (b ∷ Q)   = merge a b ∷ add-positions P Q
 
+    empty-slots : List Positions
+    empty-slots = map (λ _ → []) regions
+
     no-block : Block
-    no-block = block [] []
+    no-block = block empty-slots []
 
     at-visible : ℕ → ℕ → Block
-    at-visible base w = block [] (at-source base w)
+    at-visible base w = block empty-slots (at-source base w)
+
+    add-slots : List Positions → List Positions → List Positions
+    add-slots []       Qs       = Qs
+    add-slots Ps       []       = Ps
+    add-slots (P ∷ Ps) (Q ∷ Qs) = add-positions P Q ∷ add-slots Ps Qs
 
     add-blocks : Block → Block → Block
-    add-blocks (block B C) (block B' C') = block (add-positions B B') (add-positions C C')
+    add-blocks (block Bs C) (block Bs' C') = block (add-slots Bs Bs') (add-positions C C')
 
     apply-table-block : M.Table → Block → Block
-    apply-table-block t (block B C) = block (apply-table t B) (apply-table t C)
+    apply-table-block t (block Bs C) = block (map (apply-table t) Bs) (apply-table t C)
 
     apply-label-block : ∀ {a b : ℕ} → 𝔽 a ⇒ 𝔽 b → Block → Block
-    apply-label-block ℓ (block B C) = block (apply-label ℓ B) (apply-label ℓ C)
+    apply-label-block ℓ (block Bs C) = block (map (apply-label ℓ) Bs) (apply-label ℓ C)
+
+    sum-slots : List Positions → Positions
+    sum-slots []       = []
+    sum-slots (P ∷ Ps) = add-positions P (sum-slots Ps)
 
     merge-block : Block → Positions
-    merge-block (block B C) = add-positions B C
+    merge-block (block Bs C) = add-positions (sum-slots Bs) C
 
-    -- Beyond a vertex of the region every path has gone through it.
-    entered : Block → Block
-    entered B = block (merge-block B) []
+    slot-at : ℕ → List Positions → Positions
+    slot-at _       []       = []
+    slot-at zero    (P ∷ _)  = P
+    slot-at (suc r) (_ ∷ Ps) = slot-at r Ps
+
+    set-slot : ℕ → Positions → List Positions → List Positions
+    set-slot _       _ []        = []
+    set-slot zero    P (_ ∷ Ps)  = P ∷ Ps
+    set-slot (suc r) P (Q ∷ Ps)  = Q ∷ set-slot r P Ps
+
+    -- Beyond a vertex of a region every path through it belongs to that region.
+    entered : ℕ → Block → Block
+    entered r (block Bs C) =
+      block (set-slot r (add-positions (slot-at r Bs) C) Bs) []
+
+    region-of : ℕ → List (List ℕ) → ℕ → Maybe ℕ
+    region-of _ []       _ = nothing
+    region-of p (R ∷ Rs) r = if any (p ≡ᵇ_) R then just r else region-of p Rs (suc r)
 
     force-positions : {A : Set} → Positions → A → A
     force-positions []      x = x
@@ -1526,6 +1555,10 @@ module PositionHide {m : ℕ} {D : Derivation} (𝒢 : Graph m D)
       force-weights : {B : Set} → Weights → B → B
       force-weights []            y = y
       force-weights ((_ , _) ∷ w) y = force-weights w y
+
+    force-slots : {A : Set} → List Positions → A → A
+    force-slots []       x = x
+    force-slots (P ∷ Ps) x = force-positions P (force-slots Ps x)
 
     force-list : {A : Set} → List Origin → A → A
     force-list []       x = x
@@ -1602,11 +1635,13 @@ module PositionHide {m : ℕ} {D : Derivation} (𝒢 : Graph m D)
         ... | true  = store (tick ("block " ++ₛ ℕ-Show.show vpos) (in-region B))
           where
           in-region : Block → Block
-          in-region Bk = if any (vpos ≡ᵇ_) region then entered Bk else Bk
+          in-region Bk with region-of vpos regions 0
+          ... | just r  = entered r Bk
+          ... | nothing = Bk
 
           store : Block → Out _
           store Bk =
-            force-positions (Block.through Bk)
+            force-slots (Block.inside Bk)
               (force-positions (Block.avoiding Bk)
                 (out acc' (summary Bk) (suc vpos) base' (set-at vpos (summary Bk) st')))
         ... | false = give (tick ("column " ++ₛ ℕ-Show.show vpos) B)
@@ -1649,8 +1684,8 @@ module PositionHide {m : ℕ} {D : Derivation} (𝒢 : Graph m D)
   fold-result : {X : Set} → (X → Column → X) → X → X
   fold-result consume = fold-blocks (λ a b B → consume a (b , merge-block B))
 
-  fold-summary : {X : Set} → (X → Column → X) → X → X
-  fold-summary consume = fold-blocks (λ a b B → consume a (b , Block.through B))
+  fold-summary : ℕ → {X : Set} → (X → Column → X) → X → X
+  fold-summary r consume = fold-blocks (λ a b B → consume a (b , slot-at r (Block.inside B)))
 
 hide-graph-reachability : {m : ℕ} {D : Derivation} (𝒢 : Graph m D) →
                           ((x : Semiring.Carrier) → Dec (x ≡ Semiring.ε)) →
@@ -1697,12 +1732,16 @@ hide-graph-position-edges 𝒢 ε-dec tick hid =
   columns (visible-positions 𝒢 hid)
           (reverse (PositionHide.fold-result 𝒢 ε-dec tick hid [] (λ cs c → c ∷ cs) []))
 
-hide-graph-position-summary : {m : ℕ} {D : Derivation} (𝒢 : Graph m D) →
-                              ((x : Semiring.Carrier) → Dec (x ≡ Semiring.ε)) →
-                              ({A : Set} → String → A → A) → (hid region : List ℕ) → Edges 𝒢
-hide-graph-position-summary 𝒢 ε-dec tick hid region =
-  columns (visible-positions 𝒢 hid)
-          (reverse (PositionHide.fold-summary 𝒢 ε-dec tick hid region (λ cs c → c ∷ cs) []))
+-- One pass yields every region's summary, since a path's interior lies in a single region.
+hide-graph-position-summaries : {m : ℕ} {D : Derivation} (𝒢 : Graph m D) →
+                                ((x : Semiring.Carrier) → Dec (x ≡ Semiring.ε)) →
+                                ({A : Set} → String → A → A) → List ℕ → List (List ℕ) →
+                                List (Edges 𝒢)
+hide-graph-position-summaries 𝒢 ε-dec tick hid regions =
+  applyUpTo (λ r → columns (visible-positions 𝒢 hid)
+                           (reverse (PositionHide.fold-summary 𝒢 ε-dec tick hid regions r
+                                                               (λ cs c → c ∷ cs) [])))
+            (length regions)
 
 edge-at : {m : ℕ} {D : Derivation} (𝒢 : Graph m D) →
           ((x : Semiring.Carrier) → Dec (x ≡ Semiring.ε)) → ({A : Set} → String → A → A) →

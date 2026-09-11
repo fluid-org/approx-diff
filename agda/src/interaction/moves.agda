@@ -130,6 +130,14 @@ private
 idt : {A : Set} → String → A → A
 idt _ x = x
 
+-- The summaries of a list of regions, computed together, keyed by those regions.
+record Summary {m : ℕ} {D : Derivation} (𝒢 : Graph m D) : Set where
+  field
+    regions-to : List (List (Path D)) → List (List (Path D) × Edges 𝒢)
+    keys       : ∀ Cs → map proj₁ (regions-to Cs) ≡ Cs
+
+open Summary public using (regions-to; keys)
+
 record Config {m : ℕ} {D : Derivation} (𝒢 : Graph m D) : Set₁ where
   field
     visible : List (Path D)
@@ -214,12 +222,9 @@ module Interaction {m : ℕ} {D : Derivation} (𝒢 : Graph m D)
   summary : List (Path D) → DepRels (vertex-object 𝒢)
   summary C = hide-all (vertex-object 𝒢) (restrict fo-labels C) (map at C)
 
-  Summary : Set
-  Summary = List (Path D) → Edges 𝒢
-
-  initial : Summary → Config 𝒢
+  initial : Summary 𝒢 → Config 𝒢
   initial summarise .visible = []
-  initial summarise .summaries  = map (λ C → C , summarise C) (regions fo-labels (FO 𝒢))
+  initial summarise .summaries  = summarise .regions-to (regions fo-labels (FO 𝒢))
 
   hidden-set : Config 𝒢 → List (Path D)
   hidden-set K = concat (map proj₁ (K .summaries))
@@ -307,33 +312,33 @@ module Interaction {m : ℕ} {D : Derivation} (𝒢 : Graph m D)
                                      (map (λ CH' → edge-table (proj₂ CH') x y) CHs))))
                (+ₘ-cong (edge-table-rep (proj₂ CH) x y) (fold-rep CHs)))
 
-  hide-at : Summary → Path D → Config 𝒢 → Config 𝒢
+  hide-at : Summary 𝒢 → Path D → Config 𝒢 → Config 𝒢
   hide-at summarise p K .visible = filter (p ≢?_) (K .visible)
-  hide-at summarise p K .summaries  = (C , summarise C) ∷ proj₂ tp
+  hide-at summarise p K .summaries  = summarise .regions-to (C ∷ []) ++ proj₂ tp
     where
       tp = L.partition (adj-p? p) (K .summaries)
       C  = p ∷ concat (map proj₁ (proj₁ tp))
 
-  split-region : Summary → Path D →
+  split-region : Summary 𝒢 → Path D →
                  List (Path D) × Edges 𝒢 → List (List (Path D) × Edges 𝒢)
   split-region summarise p (C , H) with p ∈? C
-  ... | yes _ = map (λ C' → C' , summarise C') (regions fo-labels (filter (p ≢?_) C))
+  ... | yes _ = summarise .regions-to (regions fo-labels (filter (p ≢?_) C))
   ... | no  _ = (C , H) ∷ []
 
-  split-region-∈ : ∀ (summarise : Summary) p C (H : Edges 𝒢) → p ∈ C →
+  split-region-∈ : ∀ (summarise : Summary 𝒢) p C (H : Edges 𝒢) → p ∈ C →
                    split-region summarise p (C , H) ≡
-                   map (λ C' → C' , summarise C') (regions fo-labels (filter (p ≢?_) C))
+                   summarise .regions-to (regions fo-labels (filter (p ≢?_) C))
   split-region-∈ summarise p C H h with p ∈? C
   ... | yes _ = ≡-refl
   ... | no ¬k = ⊥-elim (¬k h)
 
-  split-region-∉ : ∀ (summarise : Summary) p C (H : Edges 𝒢) → p ∉ C →
+  split-region-∉ : ∀ (summarise : Summary 𝒢) p C (H : Edges 𝒢) → p ∉ C →
                    split-region summarise p (C , H) ≡ (C , H) ∷ []
   split-region-∉ summarise p C H h with p ∈? C
   ... | yes k = ⊥-elim (h k)
   ... | no  _ = ≡-refl
 
-  reveal-at : Summary → Path D → Config 𝒢 → Config 𝒢
+  reveal-at : Summary 𝒢 → Path D → Config 𝒢 → Config 𝒢
   reveal-at summarise p K .visible = p ∷ K .visible
   reveal-at summarise p K .summaries  = concat (map (split-region summarise p) (K .summaries))
 
@@ -375,20 +380,51 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
   fo-graph-edges : (tick : {A : Set} → String → A → A) → Edges 𝒢
   fo-graph-edges tick = hide-graph-position-edges 𝒢 ε? tick (positions (fo-hidden 𝒢))
 
-  -- The first-order set and the region are hidden together, and the paths kept are those through
-  -- the region, which is what restricting to the region before hiding leaves.
-  region-summary : (tick : {A : Set} → String → A → A) → Summary
-  region-summary tick C =
-    hide-graph-position-summary 𝒢 ε? tick (positions (fo-hidden 𝒢) ++ positions C) (positions C)
+  at-index : List (Edges 𝒢) → ℕ → Edges 𝒢
+  at-index []       _       = columns [] []
+  at-index (E ∷ _)  zero    = E
+  at-index (_ ∷ Es) (suc i) = at-index Es i
+
+  with-regions : ℕ → List (List (Path D)) → (ℕ → Edges 𝒢) → List (List (Path D) × Edges 𝒢)
+  with-regions i []       f = []
+  with-regions i (C ∷ Cs) f = (C , f i) ∷ with-regions (suc i) Cs f
+
+  with-regions-keys : (i : ℕ) (Cs : List (List (Path D))) (f : ℕ → Edges 𝒢) →
+                      map proj₁ (with-regions i Cs f) ≡ Cs
+  with-regions-keys i []       f = ≡-refl
+  with-regions-keys i (C ∷ Cs) f = ≡-cong (C ∷_) (with-regions-keys (suc i) Cs f)
+
+  -- The first-order set and every region are hidden together, and the paths kept for a region are
+  -- those through it, which is what restricting to it before hiding leaves.
+  region-summary : (tick : {A : Set} → String → A → A) → Summary 𝒢
+  region-summary tick .regions-to Cs =
+    with-regions 0 Cs (at-index (hide-graph-position-summaries 𝒢 ε? tick
+                                   (positions (fo-hidden 𝒢) ++ concat (map positions Cs))
+                                   (map positions Cs)))
+  region-summary tick .keys Cs = with-regions-keys 0 Cs _
 
   -- The region is sorted into evaluation order so that every nonzero edge among its vertices runs
   -- forward; restricting before hiding keeps direct boundary edges out of the summary.
-  tabulated-summary : (tick : {A : Set} → String → A → A) → DepTables → Summary
-  tabulated-summary tick F C =
+  tabulated-one : (tick : {A : Set} → String → A → A) → DepTables → List (Path D) → Edges 𝒢
+  tabulated-one tick F C =
     stored (Tabulated.hide-graph (restrict-tables region F) tick ε? region)
     where
     region : List ℕ
     region = map (λ p → index-of 𝒢 (at p)) (sort C)
+
+  tabulated-pairs : (tick : {A : Set} → String → A → A) → DepTables →
+                    List (List (Path D)) → List (List (Path D) × Edges 𝒢)
+  tabulated-pairs tick F []       = []
+  tabulated-pairs tick F (C ∷ Cs) = (C , tabulated-one tick F C) ∷ tabulated-pairs tick F Cs
+
+  tabulated-keys : (tick : {A : Set} → String → A → A) (F : DepTables)
+                   (Cs : List (List (Path D))) → map proj₁ (tabulated-pairs tick F Cs) ≡ Cs
+  tabulated-keys tick F []       = ≡-refl
+  tabulated-keys tick F (C ∷ Cs) = ≡-cong (C ∷_) (tabulated-keys tick F Cs)
+
+  tabulated-summary : (tick : {A : Set} → String → A → A) → DepTables → Summary 𝒢
+  tabulated-summary tick F .regions-to Cs = tabulated-pairs tick F Cs
+  tabulated-summary tick F .keys       Cs = tabulated-keys tick F Cs
 
   adjacent-sym : (G : DepRels (vertex-object 𝒢)) {x y : V 𝒢} → Adjacent G x y → Adjacent G y x
   adjacent-sym G = [ inj₂ , inj₁ ]′
@@ -425,8 +461,9 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
     ¬ VertexIn x (proj₁ CH) → ¬ VertexIn y (proj₁ CH) →
     Prf (table-morphism 𝒢 x y (edge-at 𝒢 ε? idt (proj₂ CH) x y) ≈ summary (proj₁ CH) x y)
 
-  Agrees : Summary → Set
-  Agrees summarise = ∀ C → C ⊆ FO 𝒢 → AllPairs _≢_ C → Summarises (C , summarise C)
+  Agrees : Summary 𝒢 → Set
+  Agrees summarise = ∀ Cs → All (_⊆ FO 𝒢) Cs → All (AllPairs _≢_) Cs →
+                     All Summarises (summarise .regions-to Cs)
 
   record Summarised (K : Config 𝒢) : Set where
     field
@@ -455,14 +492,34 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
                       (regions-concat G ws)))
     where tp = L.partition (adjacent-in? G w) (regions G ws)
 
-  hide-at-hidden-set : (summarise : Summary) (p : Path D) (K : Config 𝒢) →
+  hide-at-hidden-set : (summarise : Summary 𝒢) (p : Path D) (K : Config 𝒢) →
                        hidden-set (hide-at summarise p K) ↭ (p ∷ hidden-set K)
+  hide-at-hidden-split : (summarise : Summary 𝒢) (p : Path D) (K : Config 𝒢) →
+                         hidden-set (hide-at summarise p K)
+                         ≡ (p ∷ concat (map proj₁ (proj₁ (L.partition (adj-p? p) (K .summaries)))))
+                           ++ concat (map proj₁ (proj₂ (L.partition (adj-p? p) (K .summaries))))
+  hide-at-hidden-split summarise p K = ≡-cong concat keyed
+    where
+    tp = L.partition (adj-p? p) (K .summaries)
+    C  = p ∷ concat (map proj₁ (proj₁ tp))
+
+    keyed : map proj₁ (summarise .regions-to (C ∷ []) ++ proj₂ tp)
+            ≡ (C ∷ []) ++ map proj₁ (proj₂ tp)
+    keyed = ≡-trans (map-++ proj₁ (summarise .regions-to (C ∷ [])) (proj₂ tp))
+                    (≡-cong (_++ map proj₁ (proj₂ tp)) (summarise .keys (C ∷ [])))
+
   hide-at-hidden-set summarise p K =
-    ↭.prep p
-      (↭-trans (↭-reflexive (concat-++ (map proj₁ (proj₁ tp)) (map proj₁ (proj₂ tp))))
-      (↭-trans (↭-reflexive (≡-cong concat (≡-sym (map-++ proj₁ (proj₁ tp) (proj₂ tp)))))
-               (concat-resp (↭↭-of-↭ (map⁺ proj₁ (partition-↭ _ (K .summaries)))))))
-    where tp = L.partition (adj-p? p) (K .summaries)
+    subst (λ l → l ↭ (p ∷ hidden-set K)) (≡-sym (hide-at-hidden-split summarise p K)) merged
+    where
+    tp = L.partition (adj-p? p) (K .summaries)
+    C  = p ∷ concat (map proj₁ (proj₁ tp))
+
+    merged : (C ++ concat (map proj₁ (proj₂ tp))) ↭ (p ∷ hidden-set K)
+    merged =
+      ↭.prep p
+        (↭-trans (↭-reflexive (concat-++ (map proj₁ (proj₁ tp)) (map proj₁ (proj₂ tp))))
+        (↭-trans (↭-reflexive (≡-cong concat (≡-sym (map-++ proj₁ (proj₁ tp) (proj₂ tp)))))
+                 (concat-resp (↭↭-of-↭ (map⁺ proj₁ (partition-↭ _ (K .summaries)))))))
 
   private
     mv-mono : {C E : List (Path D)} → C ⊆ E → ∀ {z} → VertexIn z C → VertexIn z E
@@ -594,7 +651,7 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
     concat-distinct (map proj₁ (K .summaries))
       (proj₁ (proj₂ (visible-hidden-split K S)))
 
-  hide-at-partition : (summarise : Summary) (p : Path D) (K : Config 𝒢) → Summarised K →
+  hide-at-partition : (summarise : Summary 𝒢) (p : Path D) (K : Config 𝒢) → Summarised K →
                       p ∈ K .visible →
                       (hide-at summarise p K .visible ++ hidden-set (hide-at summarise p K)) ↭ FO 𝒢
   hide-at-partition summarise p K S pv =
@@ -606,33 +663,37 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
                   ↭-refl)
              (S .partition)))
 
-  hide-at-summaries : (summarise : Summary) → Agrees summarise →
+  hide-at-summaries : (summarise : Summary 𝒢) → Agrees summarise →
                       (p : Path D) (K : Config 𝒢) (S : Summarised K) → p ∈ K .visible →
                       All Summarises (hide-at summarise p K .summaries)
   hide-at-summaries summarise agrees p K S pv =
-    agrees C' C'-mono C'-distinct ∷ proj₂ (partition-All (adj-p? p) (S .summaries))
+    AllP.++⁺ (agrees (C' ∷ []) (C'-mono ∷ []) (C'-distinct ∷ []))
+             (proj₂ (partition-All (adj-p? p) (S .summaries)))
     where
     C' = p ∷ concat (map proj₁ (proj₁ (L.partition (adj-p? p) (K .summaries))))
 
     C'-mono : C' ⊆ FO 𝒢
-    C'-mono h with ∈-resp-↭ (hide-at-hidden-set summarise p K) (∈-++⁺ˡ h)
+    C'-mono {q} h
+      with ∈-resp-↭ (hide-at-hidden-set summarise p K)
+             (subst (λ l → q ∈ l) (≡-sym (hide-at-hidden-split summarise p K)) (∈-++⁺ˡ h))
     ... | here ≡-refl = ∈-resp-↭ (S .partition) (∈-++⁺ˡ pv)
     ... | there k     = ∈-resp-↭ (S .partition) (∈-++⁺ʳ (K .visible) k)
 
     C'-distinct : AllPairs _≢_ C'
     C'-distinct =
       proj₁ (AllPairs-++⁻ C' (concat (map proj₁ (proj₂ (L.partition (adj-p? p) (K .summaries)))))
-              (proj₁ (proj₂ (AllPairs-++⁻ (hide-at summarise p K .visible)
-                                          (hidden-set (hide-at summarise p K))
-                                          (partition-distinct (hide-at summarise p K)
-                                            (hide-at-partition summarise p K S pv))))))
+              (subst (AllPairs _≢_) (hide-at-hidden-split summarise p K)
+                (proj₁ (proj₂ (AllPairs-++⁻ (hide-at summarise p K .visible)
+                                            (hidden-set (hide-at summarise p K))
+                                            (partition-distinct (hide-at summarise p K)
+                                              (hide-at-partition summarise p K S pv)))))))
 
   Apart-mono : {G : DepRels (vertex-object 𝒢)} {C₁ C₂ C₁' C₂' : List (Path D)} →
                C₁ ⊆ C₁' → C₂ ⊆ C₂' → Apart G C₁' C₂' → Apart G C₁ C₂
   Apart-mono m₁ m₂ ap = All-tabulate (λ h → All-tabulate (λ h' → All-lookup (All-lookup ap (m₁ h)) (m₂ h')))
 
   private
-    split-none : (summarise : Summary) (p : Path D)
+    split-none : (summarise : Summary 𝒢) (p : Path D)
                  {CHs : List (List (Path D) × Edges 𝒢)} →
                  All (λ CH → p ∉ proj₁ CH) CHs →
                  concat (map (split-region summarise p) CHs) ≡ CHs
@@ -640,7 +701,7 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
     split-none summarise p (_∷_ {C , H} h hs) rewrite split-region-∉ summarise p C H h =
       ≡-cong ((C , H) ∷_) (split-none summarise p hs)
 
-  reveal-set : (summarise : Summary) (p : Path D)
+  reveal-set : (summarise : Summary 𝒢) (p : Path D)
                (CHs : List (List (Path D) × Edges 𝒢)) →
                AllPairs _≢_ (concat (map proj₁ CHs)) →
                Any (λ CH → p ∈ proj₁ CH) CHs →
@@ -655,13 +716,13 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
     ↭-trans (↭-reflexive (≡-cong (λ z → p ∷ concat z) (map-++ proj₁ Xs Zs)))
     (↭-trans (↭-reflexive (≡-cong (p ∷_) (≡-sym (concat-++ (map proj₁ Xs) (map proj₁ Zs)))))
     (↭-trans (↭-reflexive (≡-cong₂ (λ u v → p ∷ (concat u ++ concat (map proj₁ v)))
-                                   (map-proj₁-pair summarise Regs)
+                                   (summarise .keys Regs)
                                    (split-none summarise p no-p-tail)))
              (++⁺ head-perm ↭-refl)))
     where
     C∖p  = filter (p ≢?_) C
     Regs = regions (fo-graph 𝒢) C∖p
-    Xs   = map (λ C' → C' , summarise C') Regs
+    Xs   = summarise .regions-to Regs
     Zs   = concat (map (split-region summarise p) CHs)
 
     no-p-tail : All (λ CH → p ∉ proj₁ CH) CHs
@@ -673,14 +734,14 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
     head-perm = ↭-trans (↭.prep p (regions-concat (fo-graph 𝒢) C∖p)) (filter-out-↭ (_≟_ {D}) aC m)
 
   private
-    split-summaries : (summarise : Summary) → Agrees summarise → (p : Path D)
+    split-summaries : (summarise : Summary 𝒢) → Agrees summarise → (p : Path D)
                       (CH : List (Path D) × Edges 𝒢) →
                       proj₁ CH ⊆ FO 𝒢 → AllPairs _≢_ (proj₁ CH) → Summarises CH →
                       All Summarises (split-region summarise p CH)
     split-summaries summarise agrees p (C , H) mono dist old with p ∈? C
     ... | no  _ = old ∷ []
     ... | yes _ =
-      AllP.map⁺ (All-tabulate (λ {C'} m → agrees C' (All-lookup subs m) (All-lookup dists' m)))
+      agrees (regions (fo-graph 𝒢) (filter (p ≢?_) C)) subs dists'
       where
       subs : All (_⊆ FO 𝒢) (regions (fo-graph 𝒢) (filter (p ≢?_) C))
       subs = All-map (λ inc {_} h → mono (proj₁ (∈-filter⁻ (p ≢?_) (inc h))))
@@ -689,7 +750,7 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
       dists' : All (AllPairs _≢_) (regions (fo-graph 𝒢) (filter (p ≢?_) C))
       dists' = regions-distinct (fo-graph 𝒢) (filter (p ≢?_) C) (AllPairsP.filter⁺ (p ≢?_) dist)
 
-  reveal-at-partition : (summarise : Summary) (p : Path D) (K : Config 𝒢) → Summarised K →
+  reveal-at-partition : (summarise : Summary 𝒢) (p : Path D) (K : Config 𝒢) → Summarised K →
                         p ∈ hidden-set K →
                         (reveal-at summarise p K .visible ++ hidden-set (reveal-at summarise p K)) ↭ FO 𝒢
   reveal-at-partition summarise p K S hp =
@@ -700,7 +761,7 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
                    (hidden-∈ K hp)))
              (S .partition))
 
-  reveal-at-summaries : (summarise : Summary) → Agrees summarise →
+  reveal-at-summaries : (summarise : Summary 𝒢) → Agrees summarise →
                         (p : Path D) (K : Config 𝒢) → Summarised K →
                         All Summarises (reveal-at summarise p K .summaries)
   reveal-at-summaries summarise agrees p K S =
@@ -762,7 +823,7 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
                (≈-trans (+ₘ-cong restrict-O ≈-refl)
                         (+ₘ-lunit (foldr _+ₘ_ εₘ (map (λ C → summary C x y) Cs))))))))
 
-  hide-reveal-visible : (summarise : Summary) (p : Path D) (K : Config 𝒢) → Summarised K →
+  hide-reveal-visible : (summarise : Summary 𝒢) (p : Path D) (K : Config 𝒢) → Summarised K →
                         p ∈ K .visible →
                         reveal-at summarise p (hide-at summarise p K) .visible ↭ K .visible
   hide-reveal-visible summarise p K S pv =
@@ -770,16 +831,30 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
                  (proj₁ (visible-hidden-split K S))
                  pv
 
-  hide-reveal-hidden-set : (summarise : Summary) (p : Path D) (K : Config 𝒢) → Summarised K →
+  hide-reveal-hidden-set : (summarise : Summary 𝒢) (p : Path D) (K : Config 𝒢) → Summarised K →
                            p ∈ K .visible →
                            hidden-set (reveal-at summarise p (hide-at summarise p K)) ↭ hidden-set K
+  private
+    head-eq : {A' : Set} {x y : A'} {xs ys : List A'} → x ∷ xs ≡ y ∷ ys → x ≡ y
+    head-eq ≡-refl = ≡-refl
+
+  keyed-head : {xs : List (List (Path D) × Edges 𝒢)} {C : List (Path D)} {p : Path D} →
+               map proj₁ xs ≡ C ∷ [] → p ∈ C → Any (λ CH → p ∈ proj₁ CH) xs
+  keyed-head {(C' , H) ∷ xs} {p = p} eq m =
+    here (subst (λ z → p ∈ z) (≡-sym (head-eq eq)) m)
+
   hide-reveal-hidden-set summarise p K S pv =
     drop-∷ (↭-trans (reveal-set summarise p (hide-at summarise p K .summaries)
                       (proj₁ (proj₂ (AllPairs-++⁻ (hide-at summarise p K .visible)
                                                   (hidden-set (hide-at summarise p K))
                                                   (partition-distinct (hide-at summarise p K)
                                                     (hide-at-partition summarise p K S pv)))))
-                      (here (here ≡-refl)))
+                      (AnyPr.++⁺ˡ
+                        (keyed-head
+                          (summarise .keys
+                            ((p ∷ concat (map proj₁ (proj₁ (L.partition (adj-p? p) (K .summaries)))))
+                             ∷ []))
+                          (here ≡-refl))))
                     (hide-at-hidden-set summarise p K))
 
   private
@@ -791,7 +866,7 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
                              k)
                  hp ≡-refl
 
-  reveal-hide-visible : (summarise : Summary) (p : Path D) (K : Config 𝒢) → Summarised K →
+  reveal-hide-visible : (summarise : Summary 𝒢) (p : Path D) (K : Config 𝒢) → Summarised K →
                         p ∈ hidden-set K →
                         hide-at summarise p (reveal-at summarise p K) .visible ≡ K .visible
   reveal-hide-visible summarise p K S hp =
@@ -800,7 +875,7 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
               (All-tabulate (λ {q} m e →
                  hidden-not-visible K S {p = p} hp (subst (_∈ K .visible) (≡-sym e) m))))
 
-  reveal-hide-hidden-set : (summarise : Summary) (p : Path D) (K : Config 𝒢) → Summarised K →
+  reveal-hide-hidden-set : (summarise : Summary 𝒢) (p : Path D) (K : Config 𝒢) → Summarised K →
                            p ∈ hidden-set K →
                            hidden-set (hide-at summarise p (reveal-at summarise p K)) ↭ hidden-set K
   reveal-hide-hidden-set summarise p K S hp =
@@ -847,12 +922,12 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
 
   open _≈K_ public
 
-  hide-reveal : (summarise : Summary) (p : Path D) (K : Config 𝒢) → Summarised K → p ∈ K .visible →
+  hide-reveal : (summarise : Summary 𝒢) (p : Path D) (K : Config 𝒢) → Summarised K → p ∈ K .visible →
                 reveal-at summarise p (hide-at summarise p K) ≈K K
   hide-reveal summarise p K S pv .visible-≈ = hide-reveal-visible summarise p K S pv
   hide-reveal summarise p K S pv .hidden-≈  = hide-reveal-hidden-set summarise p K S pv
 
-  reveal-hide : (summarise : Summary) (p : Path D) (K : Config 𝒢) → Summarised K → p ∈ hidden-set K →
+  reveal-hide : (summarise : Summary 𝒢) (p : Path D) (K : Config 𝒢) → Summarised K → p ∈ hidden-set K →
                 hide-at summarise p (reveal-at summarise p K) ≈K K
   reveal-hide summarise p K S hp .visible-≈ = ↭-reflexive (reveal-hide-visible summarise p K S hp)
   reveal-hide summarise p K S hp .hidden-≈  = reveal-hide-hidden-set summarise p K S hp
@@ -958,11 +1033,11 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
   regions-perm G (↭.trans p q)  = H.trans (regions-perm G p) (regions-perm G q)
 
   private
-    stored≡ : (summarise : Summary) →
+    stored≡ : (summarise : Summary 𝒢) →
               map proj₁ (initial summarise .summaries) ≡ regions (fo-graph 𝒢) (FO 𝒢)
-    stored≡ summarise = map-proj₁-pair summarise (regions (fo-graph 𝒢) (FO 𝒢))
+    stored≡ summarise = summarise .keys (regions (fo-graph 𝒢) (FO 𝒢))
 
-  initial-summarised : (summarise : Summary) → Agrees summarise → Summarised (initial summarise)
+  initial-summarised : (summarise : Summary 𝒢) → Agrees summarise → Summarised (initial summarise)
   initial-summarised summarise agrees .partition =
     subst (λ z → concat z ↭ FO 𝒢) (≡-sym (stored≡ summarise)) (regions-concat (fo-graph 𝒢) (FO 𝒢))
   initial-summarised summarise agrees .canonical =
@@ -970,9 +1045,9 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
           (≡-sym (stored≡ summarise))
           (regions-perm (fo-graph 𝒢) (↭-sym (regions-concat (fo-graph 𝒢) (FO 𝒢))))
   initial-summarised summarise agrees .summaries =
-    AllP.map⁺ (All-tabulate (λ {C} m →
-      agrees C (All-lookup (regions-⊆ (fo-graph 𝒢) (FO 𝒢)) m)
-               (All-lookup (regions-distinct (fo-graph 𝒢) (FO 𝒢) FO-distinct) m)))
+    agrees (regions (fo-graph 𝒢) (FO 𝒢))
+           (regions-⊆ (fo-graph 𝒢) (FO 𝒢))
+           (regions-distinct (fo-graph 𝒢) (FO 𝒢) FO-distinct)
 
   -- From the inputs to the root, the visible graph of the initial state is the collapse of
   -- the underlying graph: reading the stored region summaries computes the same dependence as
@@ -991,7 +1066,7 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
                (∈-resp-↭ (filterᵇ-split (fo-at D) (vertices D)) (∈-++⁺ˡ mem))
     ≡-refl
 
-  initial-collapse : (summarise : Summary) → Agrees summarise →
+  initial-collapse : (summarise : Summary 𝒢) → Agrees summarise →
                      visible-graph (initial summarise) (inj₁ input) (inj₂ ε) ≈ collapse 𝒢
   initial-collapse summarise agrees =
     ≈-trans (summaries-assemble (initial summarise) (initial-summarised summarise agrees)
@@ -1002,7 +1077,7 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
                        (inj₁ input) (inj₂ ε))
                      (fo-collapse 𝒢))
 
-  hide-at-summarised : (summarise : Summary) → Agrees summarise →
+  hide-at-summarised : (summarise : Summary 𝒢) → Agrees summarise →
                        (p : Path D) (K : Config 𝒢) (S : Summarised K) →
                        p ∈ K .visible →
                        Summarised (hide-at summarise p K)
@@ -1013,12 +1088,20 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
           (H.trans (merge-region-resp (fo-graph 𝒢) p (S .canonical))
                    (H.sym ↭-sym (regions-perm (fo-graph 𝒢) (hide-at-hidden-set summarise p K))))
     where
+    tp = L.partition (adj-p? p) (K .summaries)
+    C  = p ∷ concat (map proj₁ (proj₁ tp))
+
+    keys-eq : map proj₁ (hide-at summarise p K .summaries) ≡ C ∷ map proj₁ (proj₂ tp)
+    keys-eq = ≡-trans (map-++ proj₁ (summarise .regions-to (C ∷ [])) (proj₂ tp))
+                      (≡-cong (_++ map proj₁ (proj₂ tp)) (summarise .keys (C ∷ [])))
+
     lhs-eq : merge-region (fo-graph 𝒢) p (map proj₁ (K .summaries)) ≡
              map proj₁ (hide-at summarise p K .summaries)
     lhs-eq =
-      ≡-cong₂ (λ u v → (p ∷ concat u) ∷ v)
-              (map-partition₁ proj₁ (adjacent-in? (fo-graph 𝒢) p) (K .summaries))
-              (map-partition₂ proj₁ (adjacent-in? (fo-graph 𝒢) p) (K .summaries))
+      ≡-trans (≡-cong₂ (λ u v → (p ∷ concat u) ∷ v)
+                       (map-partition₁ proj₁ (adjacent-in? (fo-graph 𝒢) p) (K .summaries))
+                       (map-partition₂ proj₁ (adjacent-in? (fo-graph 𝒢) p) (K .summaries)))
+              (≡-sym keys-eq)
   hide-at-summarised summarise agrees p K S pv .summaries = hide-at-summaries summarise agrees p K S pv
 
   private
@@ -1104,7 +1187,7 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
                              (subst (λ z → concat z ↭ C) eq (regions-concat G C)))
                     (H.refl []))
 
-  reveal-at-summarised : (summarise : Summary) → Agrees summarise →
+  reveal-at-summarised : (summarise : Summary 𝒢) → Agrees summarise →
                          (p : Path D) (K : Config 𝒢) (S : Summarised K) →
                          p ∈ hidden-set K →
                          Summarised (reveal-at summarise p K)
@@ -1154,7 +1237,7 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
     per-block (C , H') one =
       dec-case (p ∈? C)
         (λ k → ↭↭-of-≡ (≡-trans (≡-cong (map proj₁) (split-region-∈ summarise p C H' k))
-                                (map-proj₁-pair summarise (regions G (filter notp C)))))
+                                (summarise .keys (regions G (filter notp C)))))
         (λ ¬k → subst₂ _↭↭_
                   (≡-sym (≡-cong (map proj₁) (split-region-∉ summarise p C H' ¬k)))
                   (≡-sym (≡-cong (regions G)
@@ -1254,8 +1337,9 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
   -- fo-tabulation represents the first-order graph at its surviving vertices, restriction and
   -- hiding preserve representation, and sorting the region is sound because the restricted graph
   -- is forward.
-  tabulated-agrees : Agrees (tabulated-summary (λ _ x → x) (fo-tabulation (λ _ x → x)))
-  tabulated-agrees C C⊆FO C-dist x y hxf hyf hxC hyC =
+  tabulated-one-agrees : (C : List (Path D)) → C ⊆ FO 𝒢 → AllPairs _≢_ C →
+                         Summarises (C , tabulated-one (λ _ x → x) (fo-tabulation (λ _ x → x)) C)
+  tabulated-one-agrees C C⊆FO C-dist x y hxf hyf hxC hyC =
     ⟪ ≈-trans (≡-to-≈ region-eq)
       (≈-trans (dep-rel-at-rep 𝒢 RH.hide-rep x∈rem y∈rem)
                (hide-all-perm 𝒢 (restrict-forward C (fo-forward 𝒢)) (map⁺ at (sort-↭ C)) x y)) ⟫
@@ -1323,7 +1407,7 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
     module RH = HideRepresents 𝒢 ε? R-region regionV C-mem region-pairs
 
     region-eq : table-morphism 𝒢 x y
-                  (edge-at 𝒢 ε? idt (tabulated-summary (λ _ x' → x') (fo-tabulation (λ _ x' → x')) C) x y)
+                  (edge-at 𝒢 ε? idt (tabulated-one (λ _ x' → x') (fo-tabulation (λ _ x' → x')) C) x y)
                 ≡ dep-rel-at 𝒢 (Tabulated.hide-graph
                                 (restrict-tables (map (index-of 𝒢) regionV) F₀)
                                 (λ _ c → c) ε? (map (index-of 𝒢) regionV)) x y
@@ -1346,3 +1430,8 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
     y∈rem = RH.∈-remaining
               (FoHide.∈-remaining (∈-all-vertices 𝒢 y) (not-in-map (fo-hidden 𝒢) hyf))
               (not-in-map C hyC)
+
+  tabulated-agrees : Agrees (tabulated-summary (λ _ x → x) (fo-tabulation (λ _ x → x)))
+  tabulated-agrees []       _              _              = []
+  tabulated-agrees (C ∷ Cs) (mono ∷ monos) (dist ∷ dists) =
+    tabulated-one-agrees C mono dist ∷ tabulated-agrees Cs monos dists

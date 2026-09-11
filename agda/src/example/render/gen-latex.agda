@@ -39,7 +39,7 @@ open import interaction.moves three.semiring (λ x → three.∨-idem {x}) three
   using (module Interaction; Config; visible; NonZero?; fo-graph-edges; region-summary)
 open import example.runs (nonzero three.semiring) three.semiring three.C
   using (Run; filter-sum-run; const-run; length-run; fold0-run; case0-run; tag-run; case-l-run;
-         case-r-run; test-run; map-run; adjacent-sums-run; filter-run; cond-run; eq-run;
+         case-r-run; test-run; map-run; adjacent-sums-run; merge-run; filter-run; cond-run; eq-run;
          mult-run; add-mul-run; case-inl-run; mavg-run; total-run; sum-mul-run; rose-run; score-run; env; term)
 open import example.render.table using (Label; Sel; none; sel-label; table; signed-table)
 open import example.render.value-labels (nonzero three.semiring) three.semiring three.C
@@ -273,7 +273,6 @@ private
 all-tables : List (String × String)
 all-tables =
   concat (map emit-test tests) ++ₗ (("score-signed/env-root" , signed.fragment) ∷ [])
-  -- merge and merge-forward omitted: fo-tabulation does not complete on merge's graph.
 
 main : Main
 main = run (foldr (λ t io → writeFile ("test-baselines/matrices/" ++ proj₁ t ++ ".tex") (proj₂ t) >> io)
