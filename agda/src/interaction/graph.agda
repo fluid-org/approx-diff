@@ -1471,6 +1471,10 @@ hide-graph-position-summaries 𝒢 ε-dec tick hid regions =
   with-sources : List (ℕ × List (List (ℕ × Semiring.Carrier))) → Graph 𝒢
   with-sources cs = columns (visible-positions 𝒢 hid) (source-lists ε-dec cs) cs
 
+graph-sources : {m : ℕ} {D : Derivation} (𝒢 : FullGraph m D) → Graph 𝒢 → List (List ℕ)
+graph-sources 𝒢 (tabulated _)     = []
+graph-sources 𝒢 (columns _ ss _) = ss
+
 edge-at : {m : ℕ} {D : Derivation} (𝒢 : FullGraph m D) →
           ((x : Semiring.Carrier) → Dec (x ≡ Semiring.ε)) → ({A : Set} → String → A → A) →
           Graph 𝒢 → (x y : V 𝒢) → Maybe M.Table

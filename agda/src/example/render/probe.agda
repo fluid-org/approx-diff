@@ -23,6 +23,7 @@ open import interaction.graph three.semiring (λ x → three.∨-idem {x})
 open import interaction.evaluated Sig three.semiring interpretation three.C (λ x → three.∨-idem {x})
 open import interaction.moves three.semiring (λ x → three.∨-idem {x}) three.≡-of-≈ three.ε?
   using (module Interaction; first-order-graph)
+open import interaction.components using (components; symmetric)
 open import example.runs (nonzero three.semiring) three.semiring three.C
   using (Run; filter-sum-run; map-run; filter-run; merge-run; env; term)
 
@@ -136,6 +137,14 @@ private
     sizes k = show (length blocks) ++ " regions over " ++ show (sum (map length blocks)) ++ " hidden"
       where blocks = I.regions (take k (FO dependence))
 
+    traversed : String
+    traversed =
+      show (length cc) ++ " components over " ++ show (sum (map length cc)) ++ " visible, "
+      ++ show (sum (map length ss)) ++ " endpoints"
+      where
+      ss = symmetric (graph-sources dependence first-order)
+      cc = components ss
+
   survey : String
   survey = scale.line "filter-sum" filter-sum-run ++ "\n" ++ scale.line "map" map-run ++ "\n"
            ++ scale.line "filter" filter-run ++ "\n" ++ scale.line "merge" merge-run
@@ -160,4 +169,5 @@ private
 main : Main
 main =
   run (putStrLn (trace survey
-        (show (curve "regions" region-foldM.sizes (100 ∷ 100 ∷ 200 ∷ []) 0))))
+        (show (point "traversal" region-foldM.traversed
+                (curve "regions" region-foldM.sizes (100 ∷ 200 ∷ []) 0)))))
