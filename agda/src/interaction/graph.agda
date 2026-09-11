@@ -1015,7 +1015,7 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : FullGraph m D) where
   -- positions they are indexed by.
   data Graph : Set where
     tabulated  : DepTables → Graph
-    columns : List ℕ → List (ℕ × List (List (ℕ × Semiring.Carrier))) → Graph
+    columns : List ℕ → List (List ℕ) → List (ℕ × List (List (ℕ × Semiring.Carrier))) → Graph
 
   read-slot : DepTables → Maybe ℕ → Maybe ℕ → Maybe M.Table
   read-slot T (just a) (just b) = table-at T a b
@@ -1381,11 +1381,47 @@ private
   positions-table : ℕ → ℕ → List (List (ℕ × Semiring.Carrier)) → M.Table
   positions-table base w P = map (λ ws → applyUpTo (λ i → weight-at (base + i) ws) w) P
 
+  -- Index of the visible vertex holding position p, its block running from its base to the next.
+  owner-at : ℕ → ℕ → List (ℕ × List (List (ℕ × Semiring.Carrier))) → Maybe ℕ
+  owner-at i p []                          = nothing
+  owner-at i p ((b , _) ∷ [])              = if p <ᵇ b then nothing else just i
+  owner-at i p ((b , _) ∷ (b' , P') ∷ cs') =
+    if p <ᵇ b then nothing
+    else if p <ᵇ b' then just i
+    else owner-at (suc i) p ((b' , P') ∷ cs')
+
+  insert-index : ℕ → List ℕ → List ℕ
+  insert-index i []       = i ∷ []
+  insert-index i (j ∷ js) =
+    if i ≡ᵇ j then j ∷ js else if i <ᵇ j then i ∷ j ∷ js else j ∷ insert-index i js
+
+  module Sources (ε-dec : (x : Semiring.Carrier) → Dec (x ≡ Semiring.ε))
+                 (cs : List (ℕ × List (List (ℕ × Semiring.Carrier)))) where
+
+    entry : ℕ × Semiring.Carrier → List ℕ → List ℕ
+    entry (p , w) is = if ⌊ ε-dec w ⌋ then is else at (owner-at 0 p cs)
+      where
+      at : Maybe ℕ → List ℕ
+      at nothing  = is
+      at (just i) = insert-index i is
+
+    row : List (ℕ × Semiring.Carrier) → List ℕ → List ℕ
+    row []       is = is
+    row (e ∷ es) is = row es (entry e is)
+
+    column : List (List (ℕ × Semiring.Carrier)) → List ℕ → List ℕ
+    column []       is = is
+    column (P ∷ Ps) is = column Ps (row P is)
+
+  source-lists : ((x : Semiring.Carrier) → Dec (x ≡ Semiring.ε)) →
+                 List (ℕ × List (List (ℕ × Semiring.Carrier))) → List (List ℕ)
+  source-lists ε-dec cs = map (λ { (_ , P) → Sources.column ε-dec cs P [] }) cs
+
   position-edges : {m : ℕ} {D : Derivation} (𝒢 : FullGraph m D) →
                    ((x : Semiring.Carrier) → Dec (x ≡ Semiring.ε)) →
-                   ({A : Set} → String → A → A) → List ℕ →
+                   ({A : Set} → String → A → A) → List ℕ → List (List ℕ) →
                    List (ℕ × List (List (ℕ × Semiring.Carrier))) → (x y : V 𝒢) → Maybe M.Table
-  position-edges 𝒢 ε-dec tick vs cs x y =
+  position-edges 𝒢 ε-dec tick vs ss cs x y =
     tick "position-edge"
          (read (find-number (vertex-position 𝒢 x) 0 vs) (find-number (vertex-position 𝒢 y) 0 vs))
     where
@@ -1396,7 +1432,9 @@ private
     keep t = if nonzero-table t then just t else nothing
 
     read : Maybe ℕ → Maybe ℕ → Maybe M.Table
-    read (just i) (just j) = at (M.nth (0 , []) i cs) (M.nth (0 , []) j cs)
+    read (just i) (just j) =
+      if any (i ≡ᵇ_) (M.nth [] j ss) then at (M.nth (0 , []) i cs) (M.nth (0 , []) j cs)
+      else nothing
       where
       at : ℕ × List (List (ℕ × Semiring.Carrier)) →
            ℕ × List (List (ℕ × Semiring.Carrier)) → Maybe M.Table
@@ -1415,8 +1453,10 @@ hide-graph-position-edges : {m : ℕ} {D : Derivation} (𝒢 : FullGraph m D) �
                             ((x : Semiring.Carrier) → Dec (x ≡ Semiring.ε)) →
                             ({A : Set} → String → A → A) → List ℕ → Graph 𝒢
 hide-graph-position-edges 𝒢 ε-dec tick hid =
-  columns (visible-positions 𝒢 hid)
-          (reverse (PositionHide.fold-result 𝒢 ε-dec tick hid [] (λ cs c → c ∷ cs) []))
+  with-sources (reverse (PositionHide.fold-result 𝒢 ε-dec tick hid [] (λ cs c → c ∷ cs) []))
+  where
+  with-sources : List (ℕ × List (List (ℕ × Semiring.Carrier))) → Graph 𝒢
+  with-sources cs = columns (visible-positions 𝒢 hid) (source-lists ε-dec cs) cs
 
 -- One pass yields every region's summary, since a path's interior lies in a single region.
 hide-graph-position-summaries : {m : ℕ} {D : Derivation} (𝒢 : FullGraph m D) →
@@ -1424,16 +1464,18 @@ hide-graph-position-summaries : {m : ℕ} {D : Derivation} (𝒢 : FullGraph m D
                                 ({A : Set} → String → A → A) → List ℕ → List (List ℕ) →
                                 List (Graph 𝒢)
 hide-graph-position-summaries 𝒢 ε-dec tick hid regions =
-  applyUpTo (λ r → columns (visible-positions 𝒢 hid)
-                           (reverse (PositionHide.fold-summary 𝒢 ε-dec tick hid regions r
-                                                               (λ cs c → c ∷ cs) [])))
+  applyUpTo (λ r → with-sources (reverse (PositionHide.fold-summary 𝒢 ε-dec tick hid regions r
+                                                                    (λ cs c → c ∷ cs) [])))
             (length regions)
+  where
+  with-sources : List (ℕ × List (List (ℕ × Semiring.Carrier))) → Graph 𝒢
+  with-sources cs = columns (visible-positions 𝒢 hid) (source-lists ε-dec cs) cs
 
 edge-at : {m : ℕ} {D : Derivation} (𝒢 : FullGraph m D) →
           ((x : Semiring.Carrier) → Dec (x ≡ Semiring.ε)) → ({A : Set} → String → A → A) →
           Graph 𝒢 → (x y : V 𝒢) → Maybe M.Table
 edge-at 𝒢 ε-dec tick (tabulated T)      x y = edge-stored 𝒢 T x y
-edge-at 𝒢 ε-dec tick (columns vs cs) x y = position-edges 𝒢 ε-dec tick vs cs x y
+edge-at 𝒢 ε-dec tick (columns vs ss cs) x y = position-edges 𝒢 ε-dec tick vs ss cs x y
 
 NonZero : ∀ {r c} → M.Matrix r c → Set
 NonZero {r} {c} R = Σ (Fin r) λ i → Σ (Fin c) λ j → ¬ (R i j ≡ Semiring.ε)

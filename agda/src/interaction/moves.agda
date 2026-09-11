@@ -346,7 +346,7 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : FullGraph m D) where
   first-order-graph tick = hide-graph-position-edges 𝒢 ε? tick (positions (fo-hidden 𝒢))
 
   at-index : List (Graph 𝒢) → ℕ → Graph 𝒢
-  at-index []       _       = columns [] []
+  at-index []       _       = columns [] [] []
   at-index (E ∷ _)  zero    = E
   at-index (_ ∷ Es) (suc i) = at-index Es i
 
