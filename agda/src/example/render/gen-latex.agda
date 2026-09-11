@@ -36,7 +36,8 @@ open import interaction.evaluated Sig three.semiring interpretation three.C (λ 
 open import interaction.labelling Sig three.semiring interpretation three.C (λ x → three.∨-idem {x})
   using (Node; val; at)
 open import interaction.moves three.semiring (λ x → three.∨-idem {x}) three.≡-of-≈ three.ε?
-  using (module Interaction; Config; visible; NonZero?; first-order-graph; region-summary)
+  using (module Interaction; Config; visible; NonZero?; Adjacent?; first-order-graph;
+         region-summary)
 open import example.runs (nonzero three.semiring) three.semiring three.C
   using (Run; filter-sum-run; const-run; length-run; fold0-run; case0-run; tag-run; case-l-run;
          case-r-run; test-run; map-run; adjacent-sums-run; merge-run; filter-run; cond-run; eq-run;
@@ -79,7 +80,7 @@ private
       relation-of tabs x y = table-morphism dependence x y (edge-at dependence three.ε? (λ _ z → z) tabs x y)
       fo = relation-of first-order
       summarise = region-summary dependence (λ _ x → x)
-      module I = Interaction dependence fo
+      module I = Interaction dependence fo (Adjacent? dependence fo)
 
       -- Dependence matrix of the degenerate configuration.
       R = degenerate first-order
@@ -90,6 +91,7 @@ private
           M3.look {vertex-width dependence (inj₂ ε)} {vertex-width dependence (inj₁ input)}
             (J.visible-table tabs (J.initial summarise) (inj₁ input) (inj₂ ε))
           where module J = Interaction dependence (relation-of tabs)
+                                       (Adjacent? dependence (relation-of tabs))
 
       -- Control column of the environment vertex dropped.
       drop-ctrl : ∀ {m n} → M3.Matrix m (Nat.suc n) → M3.Matrix m n
@@ -159,6 +161,7 @@ private
       shared tabs = with-config (foldr (J.reveal-at summarise) (J.initial summarise) (map proj₂ named))
         where
         module J = Interaction dependence (relation-of tabs)
+                               (Adjacent? dependence (relation-of tabs))
 
         with-config : Config dependence → List (String × String)
         with-config K' = mapMaybe edge-entry (J.visible-edges tabs K' endpoints)
@@ -265,6 +268,7 @@ private
                       (J.visible-table tabs (J.initial summarise)
                                        (inj₁ graph.input) (inj₂ graph.ε)))
           where module J = smoves.Interaction dependence (relation-of tabs)
+                                       (smoves.Adjacent? dependence (relation-of tabs))
 
     fragment : String
     fragment = signed-table "score (signed)" (axes.env-labels (runs.env runs.score-run))

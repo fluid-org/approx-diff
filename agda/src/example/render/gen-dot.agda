@@ -95,7 +95,7 @@ module render-eval {Γ τ} (γ : Env Γ) (t : Γ ⊢ τ) where
   fo = relation-of first-order
   summarise = region-summary dependence (λ _ x → x)
 
-  open Interaction dependence fo public
+  open Interaction dependence fo (Adjacent? dependence fo) public
 
   private
     label-of : V dependence → String
