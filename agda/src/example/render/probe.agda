@@ -9,7 +9,7 @@ open import IO
 open import IO.Finite using (putStrLn)
 open import Data.List using (List; []; _∷_; map; length; concat; take; upTo)
 open import Data.Nat using (ℕ; zero; suc; _+_; _*_; _⊔_)
-open import Data.Product using (_×_; _,_; proj₂)
+open import Data.Product using (_×_; _,_; proj₁; proj₂)
 import Data.Nat.Show as ℕ-Show
 open import Data.String using (String; _++_)
 open import Data.Sum using (inj₁; inj₂)
@@ -144,13 +144,14 @@ private
       ++ show (sum (map length ss)) ++ " endpoints"
       where
       ss = induced k (symmetric (graph-sources dependence first-order))
-      cc = components ss
+      cc = proj₁ (components ss)
 
     split : ℕ → String
     split n =
-      show (length cc) ++ " components, " ++ show (length bb) ++ " blocks over "
-      ++ show (sum (map length cc)) ++ " and " ++ show (sum (map length bb)) ++ " of "
-      ++ show (length ws) ++ " kept"
+      show (length (proj₁ cc)) ++ " components in " ++ show (proj₂ cc) ++ " visits, "
+      ++ show (length (proj₁ bb)) ++ " blocks in " ++ show (proj₂ bb) ++ " pairs, over "
+      ++ show (sum (map length (proj₁ cc))) ++ " and " ++ show (sum (map length (proj₁ bb)))
+      ++ " of " ++ show (length ws) ++ " kept"
       where
       ss = symmetric (graph-sources dependence first-order)
       ws = thin n (length ss)

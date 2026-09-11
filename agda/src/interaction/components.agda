@@ -80,26 +80,31 @@ private
   clear (suc d) p (fork l r) =
     if p <ᵇ pow d then fork (clear d p l) r else fork l (clear d (p ∸ pow d) r)
 
-  push : ℕ → List ℕ → List ℕ → Tree → List ℕ × Tree
-  push d []       fr t = fr , t
-  push d (q ∷ qs) fr t with look d q t
-  ... | true  , _ = push d qs (q ∷ fr) (clear d q t)
-  ... | false , _ = push d qs fr t
+  push : ℕ → List ℕ → List ℕ → Tree → ℕ → List ℕ × Tree × ℕ
+  push d []       fr t c = fr , t , c
+  push d (q ∷ qs) fr t c with look d q t
+  ... | true  , _ = push d qs (q ∷ fr) (clear d q t) (suc c)
+  ... | false , _ = push d qs fr t (suc c)
 
   -- Fuel bounds the pushes, of which there is at most one per vertex.
-  expand : ℕ → ℕ → List ℕ → Tree → List ℕ → List ℕ × Tree
-  expand zero    d fr       t acc = acc , t
-  expand (suc f) d []       t acc = acc , t
-  expand (suc f) d (p ∷ fr) t acc with look d p t
-  ... | _ , ns with push d ns fr t
-  ...   | fr' , t' = expand f d fr' t' (p ∷ acc)
+  expand : ℕ → ℕ → List ℕ → Tree → List ℕ → ℕ → List ℕ × Tree × ℕ
+  expand zero    d fr       t acc c = acc , t , c
+  expand (suc f) d []       t acc c = acc , t , c
+  expand (suc f) d (p ∷ fr) t acc c with look d p t
+  ... | _ , ns with push d ns fr t c
+  ...   | fr' , t' , c' = expand f d fr' t' (p ∷ acc) c'
 
-  from : ℕ → ℕ → List ℕ → Tree → List (List ℕ)
-  from f d []       t = []
-  from f d (p ∷ ps) t with look d p t
-  ... | false , _ = from f d ps t
-  ... | true  , _ with expand f d (p ∷ []) (clear d p t) []
-  ...   | c , t' = c ∷ from f d ps t'
+  from : ℕ → ℕ → List ℕ → Tree → ℕ → List (List ℕ) × ℕ
+  from f d []       t c = [] , c
+  from f d (p ∷ ps) t c with look d p t
+  ... | false , _ = from f d ps t c
+  ... | true  , _ = opened (expand f d (p ∷ []) (clear d p t) [] c)
+    where
+    opened : List ℕ × Tree × ℕ → List (List ℕ) × ℕ
+    opened (b , t' , c') = consed b (from f d ps t' c')
+      where
+      consed : List ℕ → List (List ℕ) × ℕ → List (List ℕ) × ℕ
+      consed b' (bs , c'') = b' ∷ bs , c''
 
   data Bins : Set where
     bin  : List ℕ → Bins
@@ -153,8 +158,9 @@ private
     if i ≡ᵇ w then drop-rest d (suc i) c ws t
     else drop-rest d (suc i) c (w ∷ ws) (clear d i t)
 
-components-on : List ℕ → List (List ℕ) → List (List ℕ)
-components-on ws nss = from n d ws (drop-rest d 0 n ws (proj₁ (fill d nss)))
+-- Blocks with the number of neighbours examined.
+components-on : List ℕ → List (List ℕ) → List (List ℕ) × ℕ
+components-on ws nss = from n d ws (drop-rest d 0 n ws (proj₁ (fill d nss))) 0
   where
   n : ℕ
   n = length nss
@@ -162,7 +168,7 @@ components-on ws nss = from n d ws (drop-rest d 0 n ws (proj₁ (fill d nss)))
   d : ℕ
   d = depth-for n n
 
-components : List (List ℕ) → List (List ℕ)
+components : List (List ℕ) → List (List ℕ) × ℕ
 components nss = components-on (upTo (length nss)) nss
 
 private
@@ -175,20 +181,36 @@ private
   nth-list zero    (ns ∷ _)  = ns
   nth-list (suc i) (_ ∷ nss) = nth-list i nss
 
-  touches : List ℕ → List ℕ → Bool
-  touches ns []       = false
-  touches ns (q ∷ qs) = if mem q ns then true else touches ns qs
-
--- The same components by the fold the proofs are stated against: one question per pair.
-by-pairs : List (List ℕ) → List ℕ → List (List ℕ)
-by-pairs nss []       = []
-by-pairs nss (w ∷ ws) = (w ∷ concat (filterᵇ hits bs)) ∷ filterᵇ (λ b → not (hits b)) bs
+-- The same blocks by the fold the proofs are stated against, with the number of pairs tested.
+by-pairs : List (List ℕ) → List ℕ → List (List ℕ) × ℕ
+by-pairs nss []       = [] , 0
+by-pairs nss (w ∷ ws) = step (by-pairs nss ws)
   where
-  bs : List (List ℕ)
-  bs = by-pairs nss ws
+  ns : List ℕ
+  ns = nth-list w nss
 
-  hits : List ℕ → Bool
-  hits = touches (nth-list w nss)
+  hits : List ℕ → ℕ → Bool × ℕ
+  hits []       c = false , c
+  hits (q ∷ qs) c = if mem q ns then true , suc c else hits qs (suc c)
+
+  part : List (List ℕ) → ℕ → List (List ℕ) × List (List ℕ) × ℕ
+  part []       c = [] , [] , c
+  part (b ∷ bs) c = place (hits b c)
+    where
+    add-hit add-miss : List (List ℕ) × List (List ℕ) × ℕ →
+                       List (List ℕ) × List (List ℕ) × ℕ
+    add-hit  (hit , miss , c') = b ∷ hit , miss , c'
+    add-miss (hit , miss , c') = hit , b ∷ miss , c'
+
+    place : Bool × ℕ → List (List ℕ) × List (List ℕ) × ℕ
+    place (true  , c') = add-hit (part bs c')
+    place (false , c') = add-miss (part bs c')
+
+  step : List (List ℕ) × ℕ → List (List ℕ) × ℕ
+  step (bs , c) = joined (part bs c)
+    where
+    joined : List (List ℕ) × List (List ℕ) × ℕ → List (List ℕ) × ℕ
+    joined (hit , miss , c') = (w ∷ concat hit) ∷ miss , c'
 
 thin : ℕ → ℕ → List ℕ
 thin n v = go 0 0 v
