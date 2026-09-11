@@ -83,27 +83,26 @@ private
            ++ ", widths 0/1/2/3+: " ++ show (count is0 ws) ++ "/" ++ show (count is1 ws)
            ++ "/" ++ show (count is2 ws) ++ "/" ++ show (count big ws)
 
+  -- Strict in both arguments, so joining forces every entry.
+  join! : Three → Three → Three
+  join! three.O y       = y
+  join! three.C three.O = three.C
+  join! three.C three.C = three.C
+  join! three.C three.D = three.D
+  join! three.D three.O = three.D
+  join! three.D three.C = three.D
+  join! three.D three.D = three.D
+
+  join-weights : List (ℕ × Three) → Three
+  join-weights []            = three.O
+  join-weights ((_ , w) ∷ ws) = join! w (join-weights ws)
+
+  join-positions : List (List (ℕ × Three)) → Three
+  join-positions []       = three.O
+  join-positions (P ∷ Ps) = join! (join-weights P) (join-positions Ps)
+
   module bench (r : Run) where
     open Evaluated (env r) (term r)
-
-    -- Strict in both arguments, so joining forces every entry.
-    join! : Three → Three → Three
-    join! three.O y       = y
-    join! three.C three.O = three.C
-    join! three.C three.C = three.C
-    join! three.C three.D = three.D
-    join! three.D three.O = three.D
-    join! three.D three.C = three.D
-    join! three.D three.D = three.D
-
-
-    join-weights : List (ℕ × Three) → Three
-    join-weights []            = three.O
-    join-weights ((_ , w) ∷ ws) = join! w (join-weights ws)
-
-    join-positions : List (List (ℕ × Three)) → Three
-    join-positions []       = three.O
-    join-positions (P ∷ Ps) = join! (join-weights P) (join-positions Ps)
 
     all-positions : ℕ → String
     all-positions k =
@@ -122,7 +121,8 @@ private
                (λ a c → join! a (join-positions (proj₂ c))) three.O)
 
   -- Every adjacency question the fold asks reads a stored edge, so the position-edge marks between
-  -- one prefix's begin line and its result count the questions.
+  -- one prefix's begin line and its result count the questions. A prefix repeated in the curve is
+  -- timed a second time against whatever the first left built.
   module region-fold (r : Run) where
     open Evaluated (env r) (term r)
 
@@ -160,4 +160,4 @@ private
 main : Main
 main =
   run (putStrLn (trace survey
-        (show (curve "regions" region-foldM.sizes (100 ∷ 200 ∷ []) 0))))
+        (show (curve "regions" region-foldM.sizes (100 ∷ 100 ∷ 200 ∷ []) 0))))
