@@ -84,9 +84,6 @@ private
   module bench (r : Run) where
     open Evaluated (env r) (term r)
 
-    join-table : M3.Table → Three
-    join-table t = join-list (concat t)
-
     -- Strict in both arguments, so joining forces every entry.
     join! : Three → Three → Three
     join! three.O y       = y
@@ -97,14 +94,6 @@ private
     join! three.D three.C = three.D
     join! three.D three.D = three.D
 
-    join-entries : List (ℕ × M3.Table) → Three
-    join-entries []             = three.O
-    join-entries ((_ , t) ∷ es) = join! (join-table t) (join-entries es)
-
-    all-functional : ℕ → String
-    all-functional k =
-      show3 (hide-graph-fold dependence three.ε? trace (map suc (upTo k))
-               (λ a c → join! a (join-entries c)) three.O)
 
     join-weights : List (ℕ × Three) → Three
     join-weights []            = three.O
@@ -124,11 +113,6 @@ private
 
     fo-count : String
     fo-count = show (length fo-positions)
-
-    fo-functional : String
-    fo-functional =
-      show3 (hide-graph-fold dependence three.ε? trace fo-positions
-               (λ a c → join! a (join-entries c)) three.O)
 
     fo-reachability : String
     fo-reachability =
@@ -158,5 +142,4 @@ private
 main : Main
 main =
   run (putStrLn (trace survey
-        (show (point ("fo-reachability hidden=" ++ benchM.fo-count) benchM.fo-reachability
-                (point "fo-functional" benchM.fo-functional 0)))))
+        (show (point ("fo-reachability hidden=" ++ benchM.fo-count) benchM.fo-reachability 0))))
