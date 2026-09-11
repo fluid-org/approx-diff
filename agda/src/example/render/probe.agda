@@ -158,7 +158,7 @@ private
           (trace (name ++ " k=" ++ show k ++ " -> " ++ f k) (curve name f ks r))
 
   module benchM = bench merge-run
-  module region-foldM = region-fold merge-run
+  module region-foldM = region-fold filter-run
 
   prefixes : List ℕ
   prefixes = 800 ∷ 3936 ∷ []
@@ -170,4 +170,4 @@ main : Main
 main =
   run (putStrLn (trace survey
         (show (point "traversal" region-foldM.traversed
-                (curve "regions" region-foldM.sizes (100 ∷ 200 ∷ []) 0)))))
+                (curve "regions" region-foldM.sizes (116 ∷ []) 0)))))

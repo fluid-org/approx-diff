@@ -7,7 +7,7 @@
 module interaction.components where
 
 open import Data.Bool using (Bool; true; false; if_then_else_)
-open import Data.List using (List; []; _∷_; length; upTo)
+open import Data.List using (List; []; _∷_; _++_; length; upTo)
 open import Data.Nat using (ℕ; zero; suc; _+_; _∸_; _<ᵇ_)
 open import Data.Product using (_×_; _,_; proj₁)
 
@@ -70,23 +70,44 @@ private
   ... | true  , _ with expand f d (p ∷ []) (clear d p t) []
   ...   | c , t' = c ∷ from f d ps t'
 
-  add-at : ℕ → ℕ → List (List ℕ) → List (List ℕ)
-  add-at _       i []          = []
-  add-at zero    i (ns ∷ nss)  = (i ∷ ns) ∷ nss
-  add-at (suc j) i (ns ∷ nss)  = ns ∷ add-at j i nss
+  data Bins : Set where
+    bin  : List ℕ → Bins
+    node : Bins → Bins → Bins
+
+  empty-bins : ℕ → Bins
+  empty-bins zero    = bin []
+  empty-bins (suc d) = node (empty-bins d) (empty-bins d)
+
+  put : ℕ → ℕ → ℕ → Bins → Bins
+  put d       p v (bin xs)   = bin (v ∷ xs)
+  put zero    p v (node l r) = node l r
+  put (suc d) p v (node l r) =
+    if p <ᵇ pow d then node (put d p v l) r else node l (put d (p ∸ pow d) v r)
+
+  put-each : ℕ → ℕ → List ℕ → Bins → Bins
+  put-each d i []       bs = bs
+  put-each d i (j ∷ js) bs = put-each d i js (put d j i bs)
+
+  fill-bins : ℕ → ℕ → List (List ℕ) → Bins → Bins
+  fill-bins d i []         bs = bs
+  fill-bins d i (ns ∷ nss) bs = fill-bins d (suc i) nss (put-each d i ns bs)
+
+  drain : Bins → List (List ℕ) → List (List ℕ)
+  drain (bin xs)   acc = xs ∷ acc
+  drain (node l r) acc = drain l (drain r acc)
+
+  zip-append : List (List ℕ) → List (List ℕ) → List (List ℕ)
+  zip-append []         _          = []
+  zip-append nss        []         = nss
+  zip-append (ns ∷ nss) (ms ∷ mss) = (ns ++ ms) ∷ zip-append nss mss
 
 -- Both endpoints of every listed edge, so a traversal can run in either direction. Repeats are
 -- harmless: a vertex already queued is no longer in the set.
 symmetric : List (List ℕ) → List (List ℕ)
-symmetric nss = go 0 nss nss
+symmetric nss = zip-append nss (drain (fill-bins d 0 nss (empty-bins d)) [])
   where
-  add-each : ℕ → List ℕ → List (List ℕ) → List (List ℕ)
-  add-each i []       acc = acc
-  add-each i (j ∷ js) acc = add-each i js (add-at j i acc)
-
-  go : ℕ → List (List ℕ) → List (List ℕ) → List (List ℕ)
-  go i []          acc = acc
-  go i (ns ∷ nss') acc = go (suc i) nss' (add-each i ns acc)
+  d : ℕ
+  d = depth-for (length nss) (length nss)
 
 components : List (List ℕ) → List (List ℕ)
 components nss = from n (depth-for n n) (upTo n) (proj₁ (fill (depth-for n n) nss))
