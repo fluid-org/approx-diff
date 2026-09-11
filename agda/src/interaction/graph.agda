@@ -1419,6 +1419,47 @@ hide-graph-position-summaries 𝒢 ε-dec tick hid regions =
                                                                (λ cs c → c ∷ cs) [])))
             (length regions)
 
+private
+  insert-index : ℕ → List ℕ → List ℕ
+  insert-index i []       = i ∷ []
+  insert-index i (j ∷ js) with i ≡ᵇ j | i <ᵇ j
+  ... | true  | _     = j ∷ js
+  ... | false | true  = i ∷ j ∷ js
+  ... | false | false = j ∷ insert-index i js
+
+  union-indices : List ℕ → List ℕ → List ℕ
+  union-indices []       js = js
+  union-indices (i ∷ is) js = insert-index i (union-indices is js)
+
+  -- The visible vertex owning a position: the last one whose block of positions starts at or
+  -- before it.
+  owner : List ℕ → ℕ → ℕ → ℕ → ℕ
+  owner []       i best p = best
+  owner (b ∷ bs) i best p = if b <ᵇ suc p then owner bs (suc i) i p else best
+
+  sources-in : List ℕ → List (List (ℕ × Semiring.Carrier)) → List ℕ
+  sources-in bs []       = []
+  sources-in bs (w ∷ ws) =
+    union-indices (map (λ { (p , _) → owner bs 0 0 p }) w) (sources-in bs ws)
+
+  into-lists : ℕ → List (List ℕ) → List (List ℕ) → List (List ℕ)
+  into-lists j []         out = out
+  into-lists j (is ∷ iss) out = into-lists (suc j) iss (add-to is out)
+    where
+    add-to : List ℕ → List (List ℕ) → List (List ℕ)
+    add-to []       o = o
+    add-to (i ∷ is') o = add-to is' (at-index i o)
+      where
+      at-index : ℕ → List (List ℕ) → List (List ℕ)
+      at-index _       []         = []
+      at-index zero    (js ∷ jss) = insert-index j js ∷ jss
+      at-index (suc k) (js ∷ jss) = js ∷ at-index k jss
+
+  union-lists : List (List ℕ) → List (List ℕ) → List (List ℕ)
+  union-lists []         _          = []
+  union-lists xs         []         = xs
+  union-lists (is ∷ iss) (js ∷ jss) = union-indices is js ∷ union-lists iss jss
+
 edge-at : {m : ℕ} {D : Derivation} (𝒢 : FullGraph m D) →
           ((x : Semiring.Carrier) → Dec (x ≡ Semiring.ε)) → ({A : Set} → String → A → A) →
           Graph 𝒢 → (x y : V 𝒢) → Maybe M.Table
