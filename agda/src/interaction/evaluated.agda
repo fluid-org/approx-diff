@@ -35,7 +35,7 @@ module Evaluated {Γ τ} (γ : Env Γ) (t : Γ ⊢ τ) where
 
   D = deriv derivation
 
-  dependence : Graph (suc (width-env γ)) D
+  dependence : FullGraph (suc (width-env γ)) D
   dependence = graph derivation
 
   labels : Labelling D

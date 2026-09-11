@@ -89,10 +89,10 @@ module render-eval {Γ τ} (γ : Env Γ) (t : Γ ⊢ τ) where
 
   open Evaluated γ t public
 
-  fo-tables = fo-graph-edges dependence (λ _ x → x)
-  fo-of : Edges dependence → DepRels (vertex-object dependence)
-  fo-of tabs x y = table-morphism dependence x y (edge-at dependence three.ε? (λ _ z → z) tabs x y)
-  fo = fo-of fo-tables
+  first-order = first-order-graph dependence (λ _ x → x)
+  relation-of : Graph dependence → DepRels (vertex-object dependence)
+  relation-of tabs x y = table-morphism dependence x y (edge-at dependence three.ε? (λ _ z → z) tabs x y)
+  fo = relation-of first-order
   summarise = region-summary dependence (λ _ x → x)
 
   open Interaction dependence fo public
@@ -106,7 +106,7 @@ module render-eval {Γ τ} (γ : Env Γ) (t : Γ ⊢ τ) where
     node-line (i , _ , x) = "  n" ++ ℕ-Show.show i ++ " [shape=box, fontsize=11, label=\"" ++ label-of x ++ "\"];\n"
 
   dot-at : Config dependence → String
-  dot-at K = shared fo-tables
+  dot-at K = shared first-order
     where
     endpoints : List (ℕ × V dependence)
     endpoints = (0 , inj₁ input) ∷ map (λ p → index-of dependence (inj₂ p) , inj₂ p) (K .visible)
@@ -115,7 +115,7 @@ module render-eval {Γ τ} (γ : Env Γ) (t : Γ ⊢ τ) where
     nvs : List (ℕ × ℕ × V dependence)
     nvs = enumerate 0 endpoints
 
-    rows : Edges dependence → List (ℕ × ℕ × V dependence) → List Edge
+    rows : Graph dependence → List (ℕ × ℕ × V dependence) → List Edge
     rows tabs []                  = []
     rows tabs ((i , gx , x) ∷ is) = cols nvs ++L rows tabs is
       where
@@ -123,7 +123,7 @@ module render-eval {Γ τ} (γ : Env Γ) (t : Γ ⊢ τ) where
       cols []                  = []
       cols ((j , gy , y) ∷ js) = keep i j (visible-table tabs K x y) ++L cols js
 
-    shared : Edges dependence → String
+    shared : Graph dependence → String
     shared tabs =
       "digraph G {\n  rankdir=LR;\n" ++ cat (map node-line nvs) ++ edge-lines (rows tabs nvs) ++ "}\n"
 

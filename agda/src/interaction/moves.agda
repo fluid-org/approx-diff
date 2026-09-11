@@ -131,21 +131,21 @@ idt : {A : Set} → String → A → A
 idt _ x = x
 
 -- The summaries of a list of regions, computed together, keyed by those regions.
-record Summary {m : ℕ} {D : Derivation} (𝒢 : Graph m D) : Set where
+record Summary {m : ℕ} {D : Derivation} (𝒢 : FullGraph m D) : Set where
   field
-    regions-to : List (List (Path D)) → List (List (Path D) × Edges 𝒢)
+    regions-to : List (List (Path D)) → List (List (Path D) × Graph 𝒢)
     keys       : ∀ Cs → map proj₁ (regions-to Cs) ≡ Cs
 
 open Summary public using (regions-to; keys)
 
-record Config {m : ℕ} {D : Derivation} (𝒢 : Graph m D) : Set₁ where
+record Config {m : ℕ} {D : Derivation} (𝒢 : FullGraph m D) : Set₁ where
   field
     visible : List (Path D)
-    summaries : List (List (Path D) × Edges 𝒢)
+    summaries : List (List (Path D) × Graph 𝒢)
 
 open Config public
 
-module Interaction {m : ℕ} {D : Derivation} (𝒢 : Graph m D)
+module Interaction {m : ℕ} {D : Derivation} (𝒢 : FullGraph m D)
                    (fo-labels : DepRels (vertex-object 𝒢)) where
 
   private
@@ -207,10 +207,10 @@ module Interaction {m : ℕ} {D : Derivation} (𝒢 : Graph m D)
   inj₁ _        ∈ᵥ? C = no (λ ())
   inj₂ p ∈ᵥ? C = p ∈? C
 
-  Adj-p : Path D → List (Path D) × Edges 𝒢 → Set
+  Adj-p : Path D → List (Path D) × Graph 𝒢 → Set
   Adj-p p CH = AdjacentIn fo-labels p (proj₁ CH)
 
-  adj-p? : (p : Path D) (CH : List (Path D) × Edges 𝒢) → Dec (Adj-p p CH)
+  adj-p? : (p : Path D) (CH : List (Path D) × Graph 𝒢) → Dec (Adj-p p CH)
   adj-p? p CH = adjacent-in? fo-labels p (proj₁ CH)
 
   restrict : DepRels (vertex-object 𝒢) → List (Path D) → DepRels (vertex-object 𝒢)
@@ -242,13 +242,13 @@ module Interaction {m : ℕ} {D : Derivation} (𝒢 : Graph m D)
           (map (λ CH → table-morphism 𝒢 x y (edge-at 𝒢 ε? idt (proj₂ CH) x y)) (K .summaries))
     where hs = hidden-set K
 
-  edge-table : Edges 𝒢 → (x y : V 𝒢) → M.Table
+  edge-table : Graph 𝒢 → (x y : V 𝒢) → M.Table
   edge-table E x y with edge-at 𝒢 ε? idt E x y
   ... | just t  = t
   ... | nothing = zero-table (vertex-width 𝒢 y) (vertex-width 𝒢 x)
 
   -- F must be the graph fo-labels reads.
-  visible-table : Edges 𝒢 → Config 𝒢 → (x y : V 𝒢) → M.Table
+  visible-table : Graph 𝒢 → Config 𝒢 → (x y : V 𝒢) → M.Table
   visible-table F K x y =
     foldr (add-table (vertex-width 𝒢 y) (vertex-width 𝒢 x))
           (if ⌊ ¬? (x ∈ᵥ? hidden-set K) ×-dec ¬? (y ∈ᵥ? hidden-set K) ⌋
@@ -258,7 +258,7 @@ module Interaction {m : ℕ} {D : Derivation} (𝒢 : Graph m D)
 
   -- The edges of the visible graph among labelled endpoints: the ordered pairs whose dependence
   -- matrix is nonzero, with the matrix.
-  visible-edges : {A : Set} → Edges 𝒢 → Config 𝒢 → List (A × V 𝒢) →
+  visible-edges : {A : Set} → Graph 𝒢 → Config 𝒢 → List (A × V 𝒢) →
                   List ((A × V 𝒢) × (A × V 𝒢) × M.Table)
   visible-edges {A} F K us = concat (map (λ u → mapMaybe (edge u) us) us)
     where
@@ -268,7 +268,7 @@ module Interaction {m : ℕ} {D : Derivation} (𝒢 : Graph m D)
     ...   | yes _ = just (u , v , t)
     ...   | no  _ = nothing
 
-  edge-table-rep : (E : Edges 𝒢) (x y : V 𝒢) →
+  edge-table-rep : (E : Graph 𝒢) (x y : V 𝒢) →
                    mat (M.look {vertex-width 𝒢 y} {vertex-width 𝒢 x} (edge-table E x y))
                    ≈ table-morphism 𝒢 x y (edge-at 𝒢 ε? idt E x y)
   edge-table-rep E x y with edge-at 𝒢 ε? idt E x y
@@ -277,7 +277,7 @@ module Interaction {m : ℕ} {D : Derivation} (𝒢 : Graph m D)
 
   -- The rendered table computes the matrix of the visible graph, provided F stores the graph
   -- fo-labels reads.
-  visible-table-rep : (F : Edges 𝒢) →
+  visible-table-rep : (F : Graph 𝒢) →
                       ((x' y' : V 𝒢) → table-morphism 𝒢 x' y' (edge-at 𝒢 ε? idt F x' y') ≈ fo-labels x' y') →
                       (K : Config 𝒢) (x y : V 𝒢) →
                       mat (M.look {vertex-width 𝒢 y} {vertex-width 𝒢 x} (visible-table F K x y))
@@ -294,7 +294,7 @@ module Interaction {m : ℕ} {D : Derivation} (𝒢 : Graph m D)
     ... | yes _ = ≈-trans (edge-table-rep F x y) (F-reads x y)
     ... | no  _ = zero-table-morphism 𝒢 x y (vertex-width 𝒢 y) (vertex-width 𝒢 x)
 
-    fold-rep : (CHs : List (List (Path D) × Edges 𝒢)) →
+    fold-rep : (CHs : List (List (Path D) × Graph 𝒢)) →
                mat (M.look {vertex-width 𝒢 y} {vertex-width 𝒢 x}
                     (foldr (add-table (vertex-width 𝒢 y) (vertex-width 𝒢 x)) base'
                            (map (λ CH → edge-table (proj₂ CH) x y) CHs)))
@@ -320,19 +320,19 @@ module Interaction {m : ℕ} {D : Derivation} (𝒢 : Graph m D)
       C  = p ∷ concat (map proj₁ (proj₁ tp))
 
   split-region : Summary 𝒢 → Path D →
-                 List (Path D) × Edges 𝒢 → List (List (Path D) × Edges 𝒢)
+                 List (Path D) × Graph 𝒢 → List (List (Path D) × Graph 𝒢)
   split-region summarise p (C , H) with p ∈? C
   ... | yes _ = summarise .regions-to (regions fo-labels (filter (p ≢?_) C))
   ... | no  _ = (C , H) ∷ []
 
-  split-region-∈ : ∀ (summarise : Summary 𝒢) p C (H : Edges 𝒢) → p ∈ C →
+  split-region-∈ : ∀ (summarise : Summary 𝒢) p C (H : Graph 𝒢) → p ∈ C →
                    split-region summarise p (C , H) ≡
                    summarise .regions-to (regions fo-labels (filter (p ≢?_) C))
   split-region-∈ summarise p C H h with p ∈? C
   ... | yes _ = ≡-refl
   ... | no ¬k = ⊥-elim (¬k h)
 
-  split-region-∉ : ∀ (summarise : Summary 𝒢) p C (H : Edges 𝒢) → p ∉ C →
+  split-region-∉ : ∀ (summarise : Summary 𝒢) p C (H : Graph 𝒢) → p ∉ C →
                    split-region summarise p (C , H) ≡ (C , H) ∷ []
   split-region-∉ summarise p C H h with p ∈? C
   ... | yes k = ⊥-elim (h k)
@@ -342,7 +342,7 @@ module Interaction {m : ℕ} {D : Derivation} (𝒢 : Graph m D)
   reveal-at summarise p K .visible = p ∷ K .visible
   reveal-at summarise p K .summaries  = concat (map (split-region summarise p) (K .summaries))
 
-module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
+module _ {m : ℕ} {D : Derivation} (𝒢 : FullGraph m D) where
 
   open Interaction 𝒢 (fo-graph 𝒢)
 
@@ -377,19 +377,19 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
   positions : List (Path D) → List ℕ
   positions = map (λ p → suc (path-position D p))
 
-  fo-graph-edges : (tick : {A : Set} → String → A → A) → Edges 𝒢
-  fo-graph-edges tick = hide-graph-position-edges 𝒢 ε? tick (positions (fo-hidden 𝒢))
+  first-order-graph : (tick : {A : Set} → String → A → A) → Graph 𝒢
+  first-order-graph tick = hide-graph-position-edges 𝒢 ε? tick (positions (fo-hidden 𝒢))
 
-  at-index : List (Edges 𝒢) → ℕ → Edges 𝒢
+  at-index : List (Graph 𝒢) → ℕ → Graph 𝒢
   at-index []       _       = columns [] []
   at-index (E ∷ _)  zero    = E
   at-index (_ ∷ Es) (suc i) = at-index Es i
 
-  with-regions : ℕ → List (List (Path D)) → (ℕ → Edges 𝒢) → List (List (Path D) × Edges 𝒢)
+  with-regions : ℕ → List (List (Path D)) → (ℕ → Graph 𝒢) → List (List (Path D) × Graph 𝒢)
   with-regions i []       f = []
   with-regions i (C ∷ Cs) f = (C , f i) ∷ with-regions (suc i) Cs f
 
-  with-regions-keys : (i : ℕ) (Cs : List (List (Path D))) (f : ℕ → Edges 𝒢) →
+  with-regions-keys : (i : ℕ) (Cs : List (List (Path D))) (f : ℕ → Graph 𝒢) →
                       map proj₁ (with-regions i Cs f) ≡ Cs
   with-regions-keys i []       f = ≡-refl
   with-regions-keys i (C ∷ Cs) f = ≡-cong (C ∷_) (with-regions-keys (suc i) Cs f)
@@ -405,15 +405,15 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
 
   -- The region is sorted into evaluation order so that every nonzero edge among its vertices runs
   -- forward; restricting before hiding keeps direct boundary edges out of the summary.
-  tabulated-one : (tick : {A : Set} → String → A → A) → DepTables → List (Path D) → Edges 𝒢
+  tabulated-one : (tick : {A : Set} → String → A → A) → DepTables → List (Path D) → Graph 𝒢
   tabulated-one tick F C =
-    stored (Tabulated.hide-graph (restrict-tables region F) tick ε? region)
+    tabulated (Tabulated.hide-graph (restrict-tables region F) tick ε? region)
     where
     region : List ℕ
     region = map (λ p → index-of 𝒢 (at p)) (sort C)
 
   tabulated-pairs : (tick : {A : Set} → String → A → A) → DepTables →
-                    List (List (Path D)) → List (List (Path D) × Edges 𝒢)
+                    List (List (Path D)) → List (List (Path D) × Graph 𝒢)
   tabulated-pairs tick F []       = []
   tabulated-pairs tick F (C ∷ Cs) = (C , tabulated-one tick F C) ∷ tabulated-pairs tick F Cs
 
@@ -455,7 +455,7 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
 
   -- A region's stored summary reads back as the specified summary between vertices outside the
   -- region and outside the first-order-hidden set, the pairs a view can expose.
-  Summarises : List (Path D) × Edges 𝒢 → Set
+  Summarises : List (Path D) × Graph 𝒢 → Set
   Summarises CH =
     ∀ x y → ¬ VertexIn x (fo-hidden 𝒢) → ¬ VertexIn y (fo-hidden 𝒢) →
     ¬ VertexIn x (proj₁ CH) → ¬ VertexIn y (proj₁ CH) →
@@ -694,7 +694,7 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
 
   private
     split-none : (summarise : Summary 𝒢) (p : Path D)
-                 {CHs : List (List (Path D) × Edges 𝒢)} →
+                 {CHs : List (List (Path D) × Graph 𝒢)} →
                  All (λ CH → p ∉ proj₁ CH) CHs →
                  concat (map (split-region summarise p) CHs) ≡ CHs
     split-none summarise p []                     = ≡-refl
@@ -702,7 +702,7 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
       ≡-cong ((C , H) ∷_) (split-none summarise p hs)
 
   reveal-set : (summarise : Summary 𝒢) (p : Path D)
-               (CHs : List (List (Path D) × Edges 𝒢)) →
+               (CHs : List (List (Path D) × Graph 𝒢)) →
                AllPairs _≢_ (concat (map proj₁ CHs)) →
                Any (λ CH → p ∈ proj₁ CH) CHs →
                (p ∷ concat (map proj₁ (concat (map (split-region summarise p) CHs))))
@@ -735,7 +735,7 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
 
   private
     split-summaries : (summarise : Summary 𝒢) → Agrees summarise → (p : Path D)
-                      (CH : List (Path D) × Edges 𝒢) →
+                      (CH : List (Path D) × Graph 𝒢) →
                       proj₁ CH ⊆ FO 𝒢 → AllPairs _≢_ (proj₁ CH) → Summarises CH →
                       All Summarises (split-region summarise p CH)
     split-summaries summarise agrees p (C , H) mono dist old with p ∈? C
@@ -838,7 +838,7 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
     head-eq : {A' : Set} {x y : A'} {xs ys : List A'} → x ∷ xs ≡ y ∷ ys → x ≡ y
     head-eq ≡-refl = ≡-refl
 
-  keyed-head : {xs : List (List (Path D) × Edges 𝒢)} {C : List (Path D)} {p : Path D} →
+  keyed-head : {xs : List (List (Path D) × Graph 𝒢)} {C : List (Path D)} {p : Path D} →
                map proj₁ xs ≡ C ∷ [] → p ∈ C → Any (λ CH → p ∈ proj₁ CH) xs
   keyed-head {(C' , H) ∷ xs} {p = p} eq m =
     here (subst (λ z → p ∈ z) (≡-sym (head-eq eq)) m)
@@ -1033,16 +1033,16 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : Graph m D) where
   regions-perm G (↭.trans p q)  = H.trans (regions-perm G p) (regions-perm G q)
 
   private
-    stored≡ : (summarise : Summary 𝒢) →
+    tabulated≡ : (summarise : Summary 𝒢) →
               map proj₁ (initial summarise .summaries) ≡ regions (fo-graph 𝒢) (FO 𝒢)
-    stored≡ summarise = summarise .keys (regions (fo-graph 𝒢) (FO 𝒢))
+    tabulated≡ summarise = summarise .keys (regions (fo-graph 𝒢) (FO 𝒢))
 
   initial-summarised : (summarise : Summary 𝒢) → Agrees summarise → Summarised (initial summarise)
   initial-summarised summarise agrees .partition =
-    subst (λ z → concat z ↭ FO 𝒢) (≡-sym (stored≡ summarise)) (regions-concat (fo-graph 𝒢) (FO 𝒢))
+    subst (λ z → concat z ↭ FO 𝒢) (≡-sym (tabulated≡ summarise)) (regions-concat (fo-graph 𝒢) (FO 𝒢))
   initial-summarised summarise agrees .canonical =
     subst (λ z → z ↭↭ regions (fo-graph 𝒢) (concat z))
-          (≡-sym (stored≡ summarise))
+          (≡-sym (tabulated≡ summarise))
           (regions-perm (fo-graph 𝒢) (↭-sym (regions-concat (fo-graph 𝒢) (FO 𝒢))))
   initial-summarised summarise agrees .summaries =
     agrees (regions (fo-graph 𝒢) (FO 𝒢))
