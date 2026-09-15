@@ -458,14 +458,14 @@ map-partition₂ h P? (x ∷ xs) with P? (h x)
 ... | no  _ = ≡-cong (h x ∷_) (map-partition₂ h P? xs)
 
 -- No element of one list is related to any element of the other.
-Across : ∀ {a r} {A : Set a} → (A → A → Set r) → List A → List A → Set (a ⊔ r)
-Across R bs cs = All (λ y → All (λ z → ¬ R y z) cs) bs
+Apart : ∀ {a r} {A : Set a} → (A → A → Set r) → List A → List A → Set (a ⊔ r)
+Apart R bs cs = All (λ y → All (λ z → ¬ R y z) cs) bs
 
-Across-sym : ∀ {a r} {A : Set a} {R : A → A → Set r} → (∀ {x y} → R x y → R y x) →
-             {bs cs : List A} → Across R bs cs → Across R cs bs
-Across-sym sym []        = universal (λ _ → []) _
-Across-sym sym (nz ∷ ap) =
-  All.zipWith (λ (n , as) → n ∷ as) (All-map (λ n k → n (sym k)) nz , Across-sym sym ap)
+Apart-sym : ∀ {a r} {A : Set a} {R : A → A → Set r} → (∀ {x y} → R x y → R y x) →
+            {bs cs : List A} → Apart R bs cs → Apart R cs bs
+Apart-sym sym []        = universal (λ _ → []) _
+Apart-sym sym (nz ∷ ap) =
+  All.zipWith (λ (n , as) → n ∷ as) (All-map (λ n k → n (sym k)) nz , Apart-sym sym ap)
 
 AllPairs-∈ : ∀ {a r} {A : Set a} {S : A → A → Set r} {x y : A} {xs : List A} →
              AllPairs S xs → x ∈ xs → y ∈ xs → x ≡ y ⊎ S x y ⊎ S y x
@@ -480,16 +480,13 @@ AllPairs-∈ (px ∷ ps) (there m)     (there n)     = AllPairs-∈ ps m n
 module Partitions {a r} {A : Set a} {_~_ : A → A → Set r} (_~?_ : Decidable _~_)
                   (~-refl : Reflexive _~_) (~-sym : Symmetric _~_) where
 
-  Apart : List A → List A → Set (a ⊔ r)
-  Apart = Across _~_
-
   record Partition (xs : List A) (bss : List (List A)) : Set (a ⊔ r) where
     constructor partitioned
     field
       covers   : concat bss ↭ xs
       nonempty : All (_≢ []) bss
       joined   : All (AllPairs _~_) bss
-      apart    : AllPairs Apart bss
+      apart    : AllPairs (Apart _~_) bss
 
   open Partition
 
@@ -504,7 +501,7 @@ module Partitions {a r} {A : Set a} {_~_ : A → A → Set r} (_~?_ : Decidable 
     apart-none {x} (nd ∷ nds) = ≡-cong₂ _++_ (filter-none (x ~?_) nd) (apart-none nds)
 
     -- Keeping what is related to a member of one block keeps that block and drops every other.
-    concat-class : {bss : List (List A)} → All (AllPairs _~_) bss → AllPairs Apart bss →
+    concat-class : {bss : List (List A)} → All (AllPairs _~_) bss → AllPairs (Apart _~_) bss →
                    {bs : List A} → bs ∈ bss → {x : A} → x ∈ bs →
                    concat (map (filter (x ~?_)) bss) ≡ bs
     concat-class (j ∷ js) (ap ∷ aps) (here ≡-refl) {x = x} m =
@@ -577,4 +574,4 @@ module Partitions {a r} {A : Set a} {_~_ : A → A → Set r} (_~?_ : Decidable 
                                           (++⁺ (↭-sym same) ↭-refl)))
     right .nonempty = All.tail (All-resp-↭ shifted (Q .nonempty))
     right .joined   = All.tail (All-resp-↭ shifted (Q .joined))
-    right .apart    = Pairs.tail (AllPairs-perm (Across-sym ~-sym) shifted (Q .apart))
+    right .apart    = Pairs.tail (AllPairs-perm (Apart-sym ~-sym) shifted (Q .apart))

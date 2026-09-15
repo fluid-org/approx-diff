@@ -391,28 +391,27 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : FullGraph m D) where
   tabulated-summary tick F .regions-to Cs = tabulated-pairs tick F Cs
   tabulated-summary tick F .keys       Cs = tabulated-keys tick F Cs
 
-  Apart : List (Path D) → List (Path D) → Set
-  Apart C C' = All (λ q → All (λ q' → ¬ Adjacent 𝒢 (fo-graph 𝒢) (at q) (at q')) C') C
+  Adjacent-paths : Path D → Path D → Set
+  Adjacent-paths q q' = Adjacent 𝒢 (fo-graph 𝒢) (at q) (at q')
 
-  apart-sym : {C C' : List (Path D)} → Apart C C' → Apart C' C
-  apart-sym h =
-    All-tabulate (λ m' →
-      All-tabulate (λ m a → All-lookup (All-lookup h m) m' (adjacent-sym 𝒢 (fo-graph 𝒢) a)))
+  apart-sym : {C C' : List (Path D)} →
+              Apart Adjacent-paths C C' → Apart Adjacent-paths C' C
+  apart-sym = Apart-sym (adjacent-sym 𝒢 (fo-graph 𝒢))
 
   merge-separated : (w : Path D) {rs : List (List (Path D))} →
-                    AllPairs Apart rs →
+                    AllPairs (Apart Adjacent-paths) rs →
                     let tp = L.partition (adjacent-in? w) rs in
-                    AllPairs Apart ((w ∷ concat (proj₁ tp)) ∷ proj₂ tp)
+                    AllPairs (Apart Adjacent-paths) ((w ∷ concat (proj₁ tp)) ∷ proj₂ tp)
   merge-separated w {rs} sep = apart-w ∷ proj₁ (proj₂ pa)
     where
-    pa = partition-AllPairs {S = Apart} (adjacent-in? w) (λ {C} {C'} → apart-sym {C} {C'}) sep
+    pa = partition-AllPairs {S = Apart Adjacent-paths} (adjacent-in? w) (λ {C} {C'} → apart-sym {C} {C'}) sep
     tp = L.partition (adjacent-in? w) rs
-    apart-w : All (Apart (w ∷ concat (proj₁ tp))) (proj₂ tp)
+    apart-w : All (Apart Adjacent-paths (w ∷ concat (proj₁ tp))) (proj₂ tp)
     apart-w =
       All.zipWith (λ {C'} (hf , hc) → AllP.¬Any⇒All¬ C' hf ∷ AllP.concat⁺ hc)
                   (part₂-¬ (adjacent-in? w) rs , proj₂ (proj₂ pa))
 
-  regions-separated : (ws : List (Path D)) → AllPairs Apart (regions ws)
+  regions-separated : (ws : List (Path D)) → AllPairs (Apart Adjacent-paths) (regions ws)
   regions-separated []       = []
   regions-separated (w ∷ ws) = merge-separated w (regions-separated ws)
 
@@ -436,15 +435,15 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : FullGraph m D) where
 
   open Summarised public
 
-  separated : {K : Config 𝒢} → Summarised K → AllPairs Apart (map proj₁ (K .summaries))
+  separated : {K : Config 𝒢} → Summarised K → AllPairs (Apart Adjacent-paths) (map proj₁ (K .summaries))
   separated {K} S =
     perm-AllPairs (λ {C} {C'} → apart-sym {C} {C'})
                   (λ {C} {C'} {C''} → resp C C' C'')
                   (H.sym ↭-sym (S .canonical))
                   (regions-separated (hidden-set K))
     where
-    resp : (C C' C'' : List (Path D)) → C ↭ C' → Apart C C'' →
-           Apart C' C''
+    resp : (C C' C'' : List (Path D)) → C ↭ C' → Apart Adjacent-paths C C'' →
+           Apart Adjacent-paths C' C''
     resp C C' C'' r ap = All-resp-↭ r ap
 
   regions-concat : (ws : List (Path D)) → concat (regions ws) ↭ ws
@@ -549,7 +548,7 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : FullGraph m D) where
 
   assemble : {E : List (Path D)} (Cs : List (List (Path D))) →
              All (_⊆ E) Cs →
-             AllPairs (λ C C' → Apart C' C × Distinct C C') Cs →
+             AllPairs (λ C C' → Apart Adjacent-paths C' C × Distinct C C') Cs →
              ∀ x y →
              hide-all (vertex-object 𝒢) (restrict (fo-graph 𝒢) E) (map at (concat Cs)) x y ≈
              foldr _+ₘ_ (restrict (fo-graph 𝒢) E x y) (map (λ C → summary C x y) Cs)
@@ -652,7 +651,7 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : FullGraph m D) where
                                               (hide-at-partition summarise p K S pv)))))))
 
   Apart-mono : {C₁ C₂ C₁' C₂' : List (Path D)} →
-               C₁ ⊆ C₁' → C₂ ⊆ C₂' → Apart C₁' C₂' → Apart C₁ C₂
+               C₁ ⊆ C₁' → C₂ ⊆ C₂' → Apart Adjacent-paths C₁' C₂' → Apart Adjacent-paths C₁ C₂
   Apart-mono m₁ m₂ ap = All-tabulate (λ h → All-tabulate (λ h' → All-lookup (All-lookup ap (m₁ h)) (m₂ h')))
 
   private
@@ -763,7 +762,7 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : FullGraph m D) where
       base-eq : when both-visible? (G x y) ≈ G x y
       base-eq = when-yes both-visible? (hx , hy) (G x y)
 
-      seps : AllPairs (λ C C' → Apart C' C × Distinct C C') Cs
+      seps : AllPairs (λ C C' → Apart Adjacent-paths C' C × Distinct C C') Cs
       seps = AllPairs-map (λ {C} {C'} (ap , d) → (apart-sym {C} {C'} ap , d))
                           (AllPairs.zip (separated S , summarised-distinct K S))
 
@@ -1082,7 +1081,7 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : FullGraph m D) where
                                   (filter-all (∁? (adjacent-in? w)) h))))
                (≡-cong (_++ Y') (≡-sym (merge-region-filter w X'))))
 
-  regions-apart : (B' rest : List (Path D)) → Apart B' rest →
+  regions-apart : (B' rest : List (Path D)) → Apart Adjacent-paths B' rest →
                   regions (B' ++ rest) ↭↭ (regions B' ++ regions rest)
   regions-apart []       rest ap = ↭↭-refl
   regions-apart (b ∷ B') rest (hb ∷ hB) =
@@ -1094,7 +1093,7 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : FullGraph m D) where
 
   private
     apart-concat : {C : List (Path D)} {Cs : List (List (Path D))} →
-                   All (Apart C) Cs → Apart C (concat Cs)
+                   All (Apart Adjacent-paths C) Cs → Apart Adjacent-paths C (concat Cs)
     apart-concat aps = All-tabulate (λ m → AllP.concat⁺ (All-map (λ ap → All-lookup ap m) aps))
 
     regions-nonempty : (ws : List (Path D)) →
@@ -1103,7 +1102,7 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : FullGraph m D) where
     regions-nonempty (w ∷ ws) = s≤s z≤n ∷ proj₂ (partition-All (adjacent-in? w) (regions-nonempty ws))
 
   regions-apart-concat : {Cs : List (List (Path D))} →
-                         AllPairs Apart Cs →
+                         AllPairs (Apart Adjacent-paths) Cs →
                          regions (concat Cs) ↭↭ concat (map regions Cs)
   regions-apart-concat []                    = ↭↭-refl
   regions-apart-concat {C ∷ Cs} (aps ∷ pairs) =
@@ -1176,7 +1175,7 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : FullGraph m D) where
       (↭-trans (reveal-set summarise p (K .summaries) distinct-hs (hidden-∈ K hp))
                (↭.↭-sym (filter-out-↭ (_≟_ {D}) distinct-hs hp)))
 
-    apart-filtered : AllPairs Apart (map (filter notp) Cs)
+    apart-filtered : AllPairs (Apart Adjacent-paths) (map (filter notp) Cs)
     apart-filtered =
       AllPairsP.map⁺
         (AllPairs-map (λ {C} {C'} ap →

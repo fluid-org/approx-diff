@@ -27,7 +27,7 @@ open import Relation.Nullary using (¬_)
 open import Relation.Nullary.Decidable using (Dec; yes; no; _×-dec_)
 open import Relation.Binary.PropositionalEquality using (_≡_; _≢_; subst)
   renaming (refl to ≡-refl; sym to ≡-sym; trans to ≡-trans; cong to ≡-cong)
-open import list using (Across; AllPairs-∈; dec-case; module Partitions)
+open import list using (Apart; AllPairs-∈; dec-case; module Partitions)
 
 private
   half : ℕ → ℕ
@@ -281,7 +281,7 @@ module Walks {a r} {A : Set a} {Adj : A → A → Set r} (Adj-sym : ∀ {x y} �
   walk-∈ ne (step mx _ _ _) = mx
 
   module Blocks (bss : List (List A)) (covers : concat bss ↭ ws)
-                (disjoint : AllPairs (Across _≡_) bss) (separated : AllPairs (Across Adj) bss) where
+                (disjoint : AllPairs (Apart _≡_) bss) (separated : AllPairs (Apart Adj) bss) where
 
     private
       block-of : {x : A} → x ∈ ws → Σ (List A) (λ bs → x ∈ bs × bs ∈ bss)
@@ -302,11 +302,11 @@ module Walks {a r} {A : Set a} {Adj : A → A → Set r} (Adj-sym : ∀ {x y} �
     walk-in-block n mx (step _ my a w) = walk-in-block n (edge-in-block n mx my a) w
 
     -- Sharing no vertex with the block it cannot leave, a walk never reaches another block.
-    apart : AllPairs (Across Walk) bss
+    apart : AllPairs (Apart Walk) bss
     apart = over (λ m → m) disjoint
       where
       over : {bss' : List (List A)} → (∀ {bs} → bs ∈ bss' → bs ∈ bss) →
-             AllPairs (Across _≡_) bss' → AllPairs (Across Walk) bss'
+             AllPairs (Apart _≡_) bss' → AllPairs (Apart Walk) bss'
       over lift []        = []
       over lift (dz ∷ ds) =
         All.map (λ d → All.tabulate (λ my → All.tabulate (λ mz w →
@@ -315,7 +315,7 @@ module Walks {a r} {A : Set a} {Adj : A → A → Set r} (Adj-sym : ∀ {x y} �
         ∷ over (λ m → lift (there m)) ds
 
     -- Blocks whose members are joined to each other: sharing a block then decides being joined.
-    module Joined (_≟_ : DecidableEquality A) (joined : All (AllPairs Walk) bss) where
+    module Connected (_≟_ : DecidableEquality A) (joined : All (AllPairs Walk) bss) where
 
       private
         shared : A → A → List A → Set a
