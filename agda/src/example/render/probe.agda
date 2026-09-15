@@ -26,8 +26,6 @@ open import interaction.graph three.semiring (λ x → three.∨-idem {x})
 open import interaction.evaluated Sig three.semiring interpretation three.C (λ x → three.∨-idem {x})
 open import interaction.moves three.semiring (λ x → three.∨-idem {x}) three.≡-of-≈ three.ε?
   using (module Interaction; first-order-graph)
-open import interaction.components
-  using (by-pairs; components; components-on; induced; symmetric; thin)
 open import example.runs (nonzero three.semiring) three.semiring three.C
   using (Run; filter-sum-run; map-run; filter-run; merge-run; merge-small-run; env; term)
 
@@ -148,25 +146,6 @@ private
     sizes k = show (length blocks) ++ " regions over " ++ show (sum (map length blocks)) ++ " hidden"
       where blocks = I.regions (take k (FO dependence))
 
-    traversed : ℕ → String
-    traversed k =
-      show (length cc) ++ " components over " ++ show (sum (map length cc)) ++ " visible, "
-      ++ show (sum (map length ss)) ++ " endpoints"
-      where
-      ss = induced k (symmetric (graph-sources dependence first-order))
-      cc = proj₁ (components ss)
-
-    split : ℕ → String
-    split n =
-      show (length (proj₁ cc)) ++ " components in " ++ show (proj₂ cc) ++ " visits, "
-      ++ show (length (proj₁ bb)) ++ " blocks in " ++ show (proj₂ bb) ++ " pairs, over "
-      ++ show (sum (map length (proj₁ cc))) ++ " and " ++ show (sum (map length (proj₁ bb)))
-      ++ " of " ++ show (length ws) ++ " kept"
-      where
-      ss = symmetric (graph-sources dependence first-order)
-      ws = thin n (length ss)
-      cc = components-on ws ss
-      bb = by-pairs ss ws
 
   survey : String
   survey = scale.line "filter-sum" filter-sum-run ++ "\n" ++ scale.line "map" map-run ++ "\n"
@@ -183,7 +162,6 @@ private
 
   module benchM = bench merge-run
   module region-foldF = region-fold filter-run
-  module region-foldS = region-fold merge-small-run
 
   prefixes : List ℕ
   prefixes = 800 ∷ 3936 ∷ []
@@ -192,7 +170,4 @@ private
   point name v r = trace ("begin " ++ name) (trace (name ++ " -> " ++ v) r)
 
 main : Main
-main =
-  run (putStrLn (trace survey
-        (show (curve "small" region-foldS.split (2 ∷ 4 ∷ 10 ∷ [])
-                (curve "filter" region-foldF.split (2 ∷ 4 ∷ 10 ∷ []) 0)))))
+main = run (putStrLn (trace survey (show (curve "filter" region-foldF.sizes prefixes 0))))

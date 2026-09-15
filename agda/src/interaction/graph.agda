@@ -21,7 +21,6 @@ open import Data.Nat using (ℕ; zero; suc; _≡ᵇ_; _<ᵇ_; _+_; _*_; _∸_; _
 open import Data.Nat.Properties using (+-suc; +-identityʳ; <⇒≢)
 open import Data.Product using (Σ; _×_; _,_)
 open import Data.Maybe using (Maybe; just; nothing)
-open import interaction.components using (Index; index; index-at)
 open import Data.Sum using (_⊎_; inj₁; inj₂; [_,_])
 open import Data.Vec using (toList; tabulate)
 import Data.List.Relation.Binary.Permutation.Propositional as ↭
@@ -70,6 +69,55 @@ private
 
   ≈-of-≡ : ∀ {x y : Semiring.Carrier} → x ≡ y → x Semiring.≈ y
   ≈-of-≡ ≡-refl = Semiring.refl
+
+-- A list of numbers read by position, out of range reading zero. The complete binary tree over the
+-- positions makes a read cost the depth rather than the length of the list.
+private
+  half : ℕ → ℕ
+  half zero          = zero
+  half (suc zero)    = zero
+  half (suc (suc n)) = suc (half n)
+
+  -- Least depth whose complete tree has a leaf for every number below n.
+  depth-for : ℕ → ℕ → ℕ
+  depth-for zero       n = zero
+  depth-for (suc fuel) n = if n <ᵇ 2 then zero else suc (depth-for fuel (half (n + 1)))
+
+  leaves : ℕ → ℕ
+  leaves zero    = 1
+  leaves (suc d) = leaves d + leaves d
+
+  -- Indexed by depth, so a position always reaches a leaf and no case is left over.
+  data Tree (B : Set) : ℕ → Set where
+    tip  : B → Tree B zero
+    fork : ∀ {d} → Tree B d → Tree B d → Tree B (suc d)
+
+  fill : {B : Set} (z : B) (d : ℕ) → List B → Tree B d × List B
+  fill z zero    []       = tip z , []
+  fill z zero    (x ∷ xs) = tip x , xs
+  fill z (suc d) xs with fill z d xs
+  ... | l , xs' with fill z d xs'
+  ...   | r , xs'' = fork l r , xs''
+
+  build : {B : Set} (z : B) (d : ℕ) → List B → Tree B d
+  build z d xs with fill z d xs
+  ... | t , _ = t
+
+  look : {B : Set} {d : ℕ} → ℕ → Tree B d → B
+  look             p (tip x)    = x
+  look {d = suc d} p (fork l r) = if p <ᵇ leaves d then look p l else look (p ∸ leaves d) r
+
+  Index : Set
+  Index = Σ ℕ (Tree ℕ)
+
+  index : List ℕ → Index
+  index ns = d , build 0 d ns
+    where
+    d : ℕ
+    d = depth-for (length ns) (length ns)
+
+  index-at : Index → ℕ → ℕ
+  index-at (d , t) p = look p t
 
 infixl 21 _+ₘ_
 _+ₘ_ : ∀ {X Y : Semimodule} → X ⇒ Y → X ⇒ Y → X ⇒ Y
@@ -1475,10 +1523,6 @@ hide-graph-position-summaries 𝒢 ε-dec tick hid regions =
   where
   with-sources : List (ℕ × List (List (ℕ × Semiring.Carrier))) → Graph 𝒢
   with-sources cs = columns (visible-positions 𝒢 hid) (source-lists ε-dec cs) cs
-
-graph-sources : {m : ℕ} {D : Derivation} (𝒢 : FullGraph m D) → Graph 𝒢 → List (List ℕ)
-graph-sources 𝒢 (tabulated _)     = []
-graph-sources 𝒢 (columns _ ss _) = ss
 
 edge-at : {m : ℕ} {D : Derivation} (𝒢 : FullGraph m D) →
           ((x : Semiring.Carrier) → Dec (x ≡ Semiring.ε)) → ({A : Set} → String → A → A) →

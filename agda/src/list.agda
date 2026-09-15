@@ -8,31 +8,27 @@ open import Data.Bool using (Bool; true; false; not)
 open import Data.Empty using (⊥; ⊥-elim)
 open import Data.List using (List; []; _∷_; _++_; length; map; concat; filter; filterᵇ; partition)
 open import Data.Nat.ListAction using (sum)
-open import Data.List.Properties using (++-assoc; ++-conicalˡ; ++-identityʳ; length-++; filter-all;
-                                        filter-accept; filter-none; filter-reject; partition-defn)
+open import Data.List.Properties using (++-assoc; length-++; filter-all; filter-accept; filter-reject;
+                                        partition-defn)
 import Data.List.Properties as ListP
 import Data.List.Relation.Binary.Permutation.Homogeneous as H
 import Data.List.Relation.Binary.Permutation.Propositional as ↭
 open ↭ using (_↭_; ↭-refl; ↭-sym; ↭-trans; ↭-reflexive)
-open import Data.List.Relation.Binary.Equality.Propositional using (≋⇒≡)
 open import Data.List.Relation.Binary.Pointwise using (Pointwise; []; _∷_; Pointwise-length)
-  renaming (refl to Pointwise-refl)
 open import Data.List.Relation.Unary.All as All using (All; []; _∷_; universal)
   renaming (map to All-map)
 import Data.List.Relation.Unary.All.Properties as AllP
-open import Data.List.Relation.Unary.AllPairs as Pairs using (AllPairs; []; _∷_)
+open import Data.List.Relation.Unary.AllPairs using (AllPairs; []; _∷_)
 open import Data.List.Relation.Unary.Any using (Any; any?; here; there; tail)
 import Data.List.Relation.Unary.Any.Properties as AnyP
 open import Data.List.Membership.Propositional using (_∈_)
-open import Data.List.Membership.Propositional.Properties using (∈-∃++; ∈-concat⁻′)
 open import Data.List.Relation.Binary.Permutation.Propositional.Properties
-  using (++⁺; ++-comm; drop-∷; shift; All-resp-↭; ↭-empty-inv; ∈-resp-↭)
+  using (++⁺; ++-comm; shift; All-resp-↭)
 open import Data.Nat using (ℕ; zero; suc; _+_; _≤_; z≤n; s≤s)
 open import Data.Nat.Properties using (suc-injective; n≤0⇒n≡0; +-cancelʳ-≤; +-mono-≤; ≤-reflexive; ≤-trans)
 open import Data.Product using (Σ; _×_; _,_; proj₁; proj₂)
 open import Data.Sum using (_⊎_; inj₁; inj₂)
-open import Level using (_⊔_)
-open import Relation.Binary.Definitions using (Decidable; DecidableEquality; Reflexive; Symmetric)
+open import Relation.Binary.Definitions using (DecidableEquality)
 open import Relation.Nullary using (¬_)
 open import Relation.Nullary.Decidable using (Dec; does; ¬?; yes; no; dec-false)
 open import Relation.Unary.Properties using (∁?)
@@ -43,10 +39,6 @@ open import Relation.Binary.PropositionalEquality using (_≡_; _≢_; subst; su
 ++-swap xs ys zs =
   ↭-trans (↭-reflexive (≡-sym (++-assoc xs ys zs)))
           (↭-trans (++⁺ (++-comm xs ys) ↭-refl) (↭-reflexive (++-assoc ys xs zs)))
-
-++-cancelˡ : ∀ {a} {A : Set a} (xs : List A) {ys zs : List A} → (xs ++ ys) ↭ (xs ++ zs) → ys ↭ zs
-++-cancelˡ []       p = p
-++-cancelˡ (x ∷ xs) p = ++-cancelˡ xs (drop-∷ p)
 
 Any-All : ∀ {a p q} {A : Set a} {P : A → Set p} {Q : A → Set q} {xs : List A} →
           Any P xs → All Q xs → Any (λ x → P x × Q x) xs
@@ -253,18 +245,6 @@ dec-case : ∀ {a p} {A : Set a} {P : Set p} → Dec P → (P → A) → (¬ P �
 dec-case (yes k)  t f = t k
 dec-case (no  ¬k) t f = f ¬k
 
-permᴿ-of-↭ : ∀ {a} {A : Set a} {xs ys : List A} → xs ↭ ys → H.Permutation _≡_ xs ys
-permᴿ-of-↭ ↭.refl         = H.refl (Pointwise-refl ≡-refl)
-permᴿ-of-↭ (↭.prep x p)   = H.prep ≡-refl (permᴿ-of-↭ p)
-permᴿ-of-↭ (↭.swap x y p) = H.swap ≡-refl ≡-refl (permᴿ-of-↭ p)
-permᴿ-of-↭ (↭.trans p q)  = H.trans (permᴿ-of-↭ p) (permᴿ-of-↭ q)
-
-↭-of-permᴿ : ∀ {a} {A : Set a} {xs ys : List A} → H.Permutation _≡_ xs ys → xs ↭ ys
-↭-of-permᴿ (H.refl pw)              = ↭-reflexive (≋⇒≡ pw)
-↭-of-permᴿ (H.prep ≡-refl p)        = ↭.prep _ (↭-of-permᴿ p)
-↭-of-permᴿ (H.swap ≡-refl ≡-refl p) = ↭.swap _ _ (↭-of-permᴿ p)
-↭-of-permᴿ (H.trans p q)            = ↭-trans (↭-of-permᴿ p) (↭-of-permᴿ q)
-
 filter-permᴿ : ∀ {a p r} {A : Set a} {P : A → Set p} {R : A → A → Set r} →
                (P? : (x : A) → Dec (P x)) →
                (∀ {x y} → R x y → P x → P y) → (∀ {x y} → R x y → P y → P x) →
@@ -321,11 +301,6 @@ filter-permᴿ {R = R} P? to from (H.swap {xs} {ys} {x} {y} {x′} {y′} r₁ r
                                  (filter-reject P? {x′} {ys} (λ q → ¬px (from r₁ q)))))
                  (filter-permᴿ P? to from p)))
 filter-permᴿ P? to from (H.trans p q) = H.trans (filter-permᴿ P? to from p) (filter-permᴿ P? to from q)
-
-filter-↭ : ∀ {a p} {A : Set a} {P : A → Set p} (P? : (x : A) → Dec (P x)) {xs ys : List A} →
-           xs ↭ ys → filter P? xs ↭ filter P? ys
-filter-↭ P? p =
-  ↭-of-permᴿ (filter-permᴿ P? (λ { ≡-refl px → px }) (λ { ≡-refl px → px }) (permᴿ-of-↭ p))
 
 partition-permᴿ : ∀ {a p r} {A : Set a} {P : A → Set p} {R : A → A → Set r} →
                   (P? : (x : A) → Dec (P x)) →
@@ -456,122 +431,3 @@ map-partition₂ h P? []       = ≡-refl
 map-partition₂ h P? (x ∷ xs) with P? (h x)
 ... | yes _ = map-partition₂ h P? xs
 ... | no  _ = ≡-cong (h x ∷_) (map-partition₂ h P? xs)
-
--- No element of one list is related to any element of the other.
-Apart : ∀ {a r} {A : Set a} → (A → A → Set r) → List A → List A → Set (a ⊔ r)
-Apart R bs cs = All (λ y → All (λ z → ¬ R y z) cs) bs
-
-Apart-sym : ∀ {a r} {A : Set a} {R : A → A → Set r} → (∀ {x y} → R x y → R y x) →
-            {bs cs : List A} → Apart R bs cs → Apart R cs bs
-Apart-sym sym []        = universal (λ _ → []) _
-Apart-sym sym (nz ∷ ap) =
-  All.zipWith (λ (n , as) → n ∷ as) (All-map (λ n k → n (sym k)) nz , Apart-sym sym ap)
-
-AllPairs-∈ : ∀ {a r} {A : Set a} {S : A → A → Set r} {x y : A} {xs : List A} →
-             AllPairs S xs → x ∈ xs → y ∈ xs → x ≡ y ⊎ S x y ⊎ S y x
-AllPairs-∈ ps        (here ≡-refl) (here ≡-refl) = inj₁ ≡-refl
-AllPairs-∈ (px ∷ ps) (here ≡-refl) (there n)     = inj₂ (inj₁ (All.lookup px n))
-AllPairs-∈ (px ∷ ps) (there m)     (here ≡-refl) = inj₂ (inj₂ (All.lookup px m))
-AllPairs-∈ (px ∷ ps) (there m)     (there n)     = AllPairs-∈ ps m n
-
--- Splitting a list into the classes of a decidable relation that is reflexive and symmetric. The
--- blocks are not required to be the classes: relating every two elements of a block and no two
--- elements of different blocks already pins each block down to a class.
-module Partitions {a r} {A : Set a} {_~_ : A → A → Set r} (_~?_ : Decidable _~_)
-                  (~-refl : Reflexive _~_) (~-sym : Symmetric _~_) where
-
-  record Partition (xs : List A) (bss : List (List A)) : Set (a ⊔ r) where
-    constructor partitioned
-    field
-      covers   : concat bss ↭ xs
-      nonempty : All (_≢ []) bss
-      joined   : All (AllPairs _~_) bss
-      apart    : AllPairs (Apart _~_) bss
-
-  open Partition
-
-  private
-    joined-∈ : {bs : List A} → AllPairs _~_ bs → {x : A} → x ∈ bs → All (x ~_) bs
-    joined-∈ (px ∷ ps) (here ≡-refl) = ~-refl ∷ px
-    joined-∈ (px ∷ ps) (there m)     = ~-sym (All.lookup px m) ∷ joined-∈ ps m
-
-    apart-none : {x : A} {bss : List (List A)} → All (All (λ z → ¬ (x ~ z))) bss →
-                 concat (map (filter (x ~?_)) bss) ≡ []
-    apart-none []             = ≡-refl
-    apart-none {x} (nd ∷ nds) = ≡-cong₂ _++_ (filter-none (x ~?_) nd) (apart-none nds)
-
-    -- Keeping what is related to a member of one block keeps that block and drops every other.
-    concat-class : {bss : List (List A)} → All (AllPairs _~_) bss → AllPairs (Apart _~_) bss →
-                   {bs : List A} → bs ∈ bss → {x : A} → x ∈ bs →
-                   concat (map (filter (x ~?_)) bss) ≡ bs
-    concat-class (j ∷ js) (ap ∷ aps) (here ≡-refl) {x = x} m =
-      ≡-trans (≡-cong₂ _++_ (filter-all (x ~?_) (joined-∈ j m))
-                            (apart-none (All-map (λ q → All.lookup q m) ap)))
-              (++-identityʳ _)
-    concat-class (j ∷ js) (ap ∷ aps) (there n)     {x = x} m =
-      ≡-trans (≡-cong (_++ _)
-                      (filter-none (x ~?_)
-                                   (All-map (λ q k → All.lookup q m (~-sym k)) (All.lookup ap n))))
-              (concat-class js aps n m)
-
-    all-empty : {bss : List (List A)} → All (_≢ []) bss → concat bss ≡ [] → bss ≡ []
-    all-empty []                e = ≡-refl
-    all-empty {bs ∷ _} (ne ∷ _) e = ⊥-elim (ne (++-conicalˡ bs _ e))
-
-  -- Each block is the class of any of its members.
-  block-class : {xs : List A} {bss : List (List A)} → Partition xs bss →
-                {bs : List A} → bs ∈ bss → {x : A} → x ∈ bs → bs ↭ filter (x ~?_) xs
-  block-class {bss = bss} P n {x = x} m =
-    ↭-sym (↭-trans (filter-↭ (x ~?_) (↭-sym (P .covers)))
-                   (↭-reflexive (≡-trans (filter-concat (x ~?_) bss)
-                                         (concat-class (P .joined) (P .apart) n m))))
-
-  -- Two partitions of one list have the same blocks, up to the order of the blocks and the order
-  -- within each block.
-  unique : {xs : List A} {bss css : List (List A)} →
-           Partition xs bss → Partition xs css → bss ↭↭ css
-  unique {bss = []} {css} P Q = ↭↭-of-≡ (≡-sym (all-empty (Q .nonempty) (↭-empty-inv gone)))
-    where
-    gone : concat css ↭ []
-    gone = subst (concat css ↭_) (↭-empty-inv (↭-sym (P .covers))) (Q .covers)
-  unique {bss = [] ∷ bss} P Q = ⊥-elim (All.head (P .nonempty) ≡-refl)
-  unique {bss = (x ∷ bs) ∷ bss} {css} P Q =
-    H.trans (H.prep same (unique left right)) (↭↭-of-↭ (↭-sym shifted))
-    where
-    found : Σ (List A) (λ cs → x ∈ cs × cs ∈ css)
-    found = ∈-concat⁻′ css (∈-resp-↭ (↭-sym (Q .covers)) (∈-resp-↭ (P .covers) (here ≡-refl)))
-
-    cs : List A
-    cs = proj₁ found
-
-    split : Σ (List (List A)) (λ ys → Σ (List (List A)) (λ zs → css ≡ ys ++ cs ∷ zs))
-    split = ∈-∃++ (proj₂ (proj₂ found))
-
-    rest : List (List A)
-    rest = proj₁ split ++ proj₁ (proj₂ split)
-
-    shifted : css ↭ cs ∷ rest
-    shifted = subst (_↭ cs ∷ rest) (≡-sym (proj₂ (proj₂ split)))
-                    (shift cs (proj₁ split) (proj₁ (proj₂ split)))
-
-    same : (x ∷ bs) ↭ cs
-    same = ↭-trans (block-class P (here ≡-refl) (here ≡-refl))
-                   (↭-sym (block-class Q (proj₂ (proj₂ found)) (proj₁ (proj₂ found))))
-
-    left : Partition (concat bss) bss
-    left .covers   = ↭-refl
-    left .nonempty = All.tail (P .nonempty)
-    left .joined   = All.tail (P .joined)
-    left .apart    = Pairs.tail (P .apart)
-
-    right : Partition (concat bss) rest
-    right .covers   = ↭-sym (++-cancelˡ (x ∷ bs) chained)
-      where
-      chained : ((x ∷ bs) ++ concat bss) ↭ ((x ∷ bs) ++ concat rest)
-      chained = ↭-trans (P .covers)
-                        (↭-trans (↭-sym (Q .covers))
-                                 (↭-trans (concat-resp (↭↭-of-↭ shifted))
-                                          (++⁺ (↭-sym same) ↭-refl)))
-    right .nonempty = All.tail (All-resp-↭ shifted (Q .nonempty))
-    right .joined   = All.tail (All-resp-↭ shifted (Q .joined))
-    right .apart    = Pairs.tail (AllPairs-perm (Apart-sym ~-sym) shifted (Q .apart))
