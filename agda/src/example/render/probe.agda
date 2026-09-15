@@ -12,9 +12,8 @@ open import Data.List using (List; []; _∷_; map; length; concat; take; upTo)
 open import Data.Nat using (ℕ; zero; suc; _+_; _*_; _⊔_)
 open import Data.Product using (_×_; _,_; proj₁; proj₂)
 import Data.Nat.Show as ℕ-Show
-open import Data.String using (String; _++_; toList)
-open import Data.Char using (Char)
-import Data.Char.Properties as Charₚ
+open import Data.String using (String; _++_; words)
+import Data.String.Properties as Stringₚ
 open import Relation.Nullary.Decidable using (⌊_⌋)
 open import Data.Sum using (inj₁; inj₂)
 import matrix
@@ -134,12 +133,11 @@ private
 
     private
       columns-only : {A : Set} → String → A → A
-      columns-only s x = if starts (toList s) (toList "column") then trace s x else x
+      columns-only s x = pick (words s)
         where
-        starts : List Char → List Char → Bool
-        starts _        []       = true
-        starts []       (_ ∷ _)  = false
-        starts (a ∷ as) (b ∷ bs) = if ⌊ a Charₚ.≟ b ⌋ then starts as bs else false
+        pick : List String → _
+        pick []      = x
+        pick (w ∷ _) = if ⌊ w Stringₚ.≟ "column" ⌋ then trace s x else x
 
       first-order = first-order-graph dependence columns-only
       rels = dep-rels-of dependence three.ε? trace
@@ -183,7 +181,7 @@ private
           (trace (name ++ " k=" ++ show k ++ " -> " ++ f k) (curve name f ks r))
 
   module benchM = bench merge-run
-  module region-foldM = region-fold merge-run
+  module region-foldM = region-fold filter-run
 
   prefixes : List ℕ
   prefixes = 800 ∷ 3936 ∷ []
@@ -194,4 +192,4 @@ private
 main : Main
 main =
   run (putStrLn (trace survey
-        (show (point "traversal" (region-foldM.traversed 4000) 0))))
+        (show (curve "split" region-foldM.split (2 ∷ 3 ∷ 4 ∷ 6 ∷ 10 ∷ []) 0))))
