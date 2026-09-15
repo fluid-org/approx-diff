@@ -58,10 +58,11 @@ total-run   = run (total "a") γ-total
 sum-mul-run = run sum-mul γ-sum-mul
 rose-run    = run rose-query γ-rose
 
-map-run filter-run cond-run eq-run adjacent-sums-run merge-run : Run
+map-run filter-run cond-run eq-run adjacent-sums-run merge-run merge-small-run : Run
 map-run    = run map-term γ-nums
 adjacent-sums-run = run adjacent-sums-term γ-adjacent-sums
 merge-run  = run merge-term γ-merge
+merge-small-run = run merge-term γ-merge-small
 filter-run = run filter-term γ-filter
 cond-run   = run cond-term γ-cond
 eq-run     = run eq-term γ-eq

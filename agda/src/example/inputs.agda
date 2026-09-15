@@ -57,6 +57,13 @@ private
   num : ℕ → ℚ
   num k = (+ k) / 1
 
+γ-merge-small : Env (emp , list (base number) [×] list (base number))
+γ-merge-small = emp · pair (const (num 1) ∷ᵥ const (num 4) ∷ᵥ nilᵥ)
+                           (const (num 2) ∷ᵥ const (num 3) ∷ᵥ nilᵥ)
+  where
+  num : ℕ → ℚ
+  num k = (+ k) / 1
+
 γ-cond : Env (emp , base number , base number)
 γ-cond = emp · const 0ℚ · const 1ℚ
 

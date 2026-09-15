@@ -29,7 +29,7 @@ open import interaction.moves three.semiring (λ x → three.∨-idem {x}) three
 open import interaction.components
   using (by-pairs; components; components-on; induced; symmetric; thin)
 open import example.runs (nonzero three.semiring) three.semiring three.C
-  using (Run; filter-sum-run; map-run; filter-run; merge-run; env; term)
+  using (Run; filter-sum-run; map-run; filter-run; merge-run; merge-small-run; env; term)
 
 {-# FOREIGN GHC import qualified Debug.Trace #-}
 {-# FOREIGN GHC import qualified Data.Text #-}
@@ -170,7 +170,8 @@ private
 
   survey : String
   survey = scale.line "filter-sum" filter-sum-run ++ "\n" ++ scale.line "map" map-run ++ "\n"
-           ++ scale.line "filter" filter-run ++ "\n" ++ scale.line "merge" merge-run
+           ++ scale.line "filter" filter-run ++ "\n" ++ scale.line "merge-small" merge-small-run
+           ++ "\n" ++ scale.line "merge" merge-run
 
   -- The result threads through the continuation, so unused-argument erasure cannot drop the
   -- chain ahead of it.
@@ -181,7 +182,8 @@ private
           (trace (name ++ " k=" ++ show k ++ " -> " ++ f k) (curve name f ks r))
 
   module benchM = bench merge-run
-  module region-foldM = region-fold filter-run
+  module region-foldF = region-fold filter-run
+  module region-foldS = region-fold merge-small-run
 
   prefixes : List ℕ
   prefixes = 800 ∷ 3936 ∷ []
@@ -192,4 +194,5 @@ private
 main : Main
 main =
   run (putStrLn (trace survey
-        (show (curve "split" region-foldM.split (2 ∷ 3 ∷ 4 ∷ 6 ∷ 10 ∷ []) 0))))
+        (show (curve "small" region-foldS.split (2 ∷ 4 ∷ 10 ∷ [])
+                (curve "filter" region-foldF.split (2 ∷ 4 ∷ 10 ∷ []) 0)))))
