@@ -457,6 +457,23 @@ map-partition₂ h P? (x ∷ xs) with P? (h x)
 ... | yes _ = map-partition₂ h P? xs
 ... | no  _ = ≡-cong (h x ∷_) (map-partition₂ h P? xs)
 
+-- No element of one list is related to any element of the other.
+Across : ∀ {a r} {A : Set a} → (A → A → Set r) → List A → List A → Set (a ⊔ r)
+Across R bs cs = All (λ y → All (λ z → ¬ R y z) cs) bs
+
+Across-sym : ∀ {a r} {A : Set a} {R : A → A → Set r} → (∀ {x y} → R x y → R y x) →
+             {bs cs : List A} → Across R bs cs → Across R cs bs
+Across-sym sym []        = universal (λ _ → []) _
+Across-sym sym (nz ∷ ap) =
+  All.zipWith (λ (n , as) → n ∷ as) (All-map (λ n k → n (sym k)) nz , Across-sym sym ap)
+
+AllPairs-∈ : ∀ {a r} {A : Set a} {S : A → A → Set r} {x y : A} {xs : List A} →
+             AllPairs S xs → x ∈ xs → y ∈ xs → x ≡ y ⊎ S x y ⊎ S y x
+AllPairs-∈ ps        (here ≡-refl) (here ≡-refl) = inj₁ ≡-refl
+AllPairs-∈ (px ∷ ps) (here ≡-refl) (there n)     = inj₂ (inj₁ (All.lookup px n))
+AllPairs-∈ (px ∷ ps) (there m)     (here ≡-refl) = inj₂ (inj₂ (All.lookup px m))
+AllPairs-∈ (px ∷ ps) (there m)     (there n)     = AllPairs-∈ ps m n
+
 -- Splitting a list into the classes of a decidable relation that is reflexive and symmetric. The
 -- blocks are not required to be the classes: relating every two elements of a block and no two
 -- elements of different blocks already pins each block down to a class.
@@ -464,9 +481,10 @@ module Partitions {a r} {A : Set a} {_~_ : A → A → Set r} (_~?_ : Decidable 
                   (~-refl : Reflexive _~_) (~-sym : Symmetric _~_) where
 
   Apart : List A → List A → Set (a ⊔ r)
-  Apart bs cs = All (λ y → All (λ z → ¬ (y ~ z)) cs) bs
+  Apart = Across _~_
 
   record Partition (xs : List A) (bss : List (List A)) : Set (a ⊔ r) where
+    constructor partitioned
     field
       covers   : concat bss ↭ xs
       nonempty : All (_≢ []) bss
@@ -479,11 +497,6 @@ module Partitions {a r} {A : Set a} {_~_ : A → A → Set r} (_~?_ : Decidable 
     joined-∈ : {bs : List A} → AllPairs _~_ bs → {x : A} → x ∈ bs → All (x ~_) bs
     joined-∈ (px ∷ ps) (here ≡-refl) = ~-refl ∷ px
     joined-∈ (px ∷ ps) (there m)     = ~-sym (All.lookup px m) ∷ joined-∈ ps m
-
-    apart-sym : {bs cs : List A} → Apart bs cs → Apart cs bs
-    apart-sym []        = universal (λ _ → []) _
-    apart-sym (nz ∷ ap) =
-      All.zipWith (λ (n , as) → n ∷ as) (All-map (λ n k → n (~-sym k)) nz , apart-sym ap)
 
     apart-none : {x : A} {bss : List (List A)} → All (All (λ z → ¬ (x ~ z))) bss →
                  concat (map (filter (x ~?_)) bss) ≡ []
@@ -564,4 +577,4 @@ module Partitions {a r} {A : Set a} {_~_ : A → A → Set r} (_~?_ : Decidable 
                                           (++⁺ (↭-sym same) ↭-refl)))
     right .nonempty = All.tail (All-resp-↭ shifted (Q .nonempty))
     right .joined   = All.tail (All-resp-↭ shifted (Q .joined))
-    right .apart    = Pairs.tail (AllPairs-perm apart-sym shifted (Q .apart))
+    right .apart    = Pairs.tail (AllPairs-perm (Across-sym ~-sym) shifted (Q .apart))

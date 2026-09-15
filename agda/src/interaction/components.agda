@@ -3,7 +3,8 @@
 -- Connected components of a graph whose vertices are numbered from zero and whose edges are given
 -- as neighbour lists. A vertex leaves the unvisited set when it is queued rather than when it is
 -- expanded, so nothing is queued twice. The sets are complete binary trees over the numbers, so a
--- read or a write costs the depth rather than the number of vertices.
+-- read or a write costs the depth rather than the number of vertices. Walks and the properties
+-- asked of a list of components come after the traversal, over any edge relation.
 module interaction.components where
 
 open import Data.Bool using (Bool; true; false; not; if_then_else_)
@@ -12,8 +13,21 @@ open import Data.List using (List; []; _∷_; _++_; concat; filterᵇ; length; m
 open import Data.Nat using (ℕ; zero; suc; pred; _+_; _∸_; _≤_; _<ᵇ_; _≡ᵇ_)
 open import Data.Nat.Properties using (+-suc; ≤-pred; ≤-refl)
 open import Data.Product using (Σ; _×_; _,_; proj₁; proj₂; map₁; map₂)
-open import Relation.Binary.PropositionalEquality using (_≡_; subst)
+open import Data.List.Membership.Propositional using (_∈_)
+open import Data.List.Membership.Propositional.Properties using (∈-concat⁻′)
+open import Data.List.Relation.Binary.Permutation.Propositional using (_↭_; ↭-sym)
+open import Data.List.Relation.Binary.Permutation.Propositional.Properties using (∈-resp-↭)
+open import Data.List.Relation.Unary.All as All using (All; []; _∷_)
+open import Data.List.Relation.Unary.AllPairs using (AllPairs; []; _∷_)
+open import Data.List.Relation.Unary.Any as Any using (Any; any?; here; there)
+open import Data.Sum using (inj₁; inj₂)
+open import Level using (_⊔_)
+open import Relation.Binary.Definitions using (Decidable; DecidableEquality)
+open import Relation.Nullary using (¬_)
+open import Relation.Nullary.Decidable using (Dec; yes; no; _×-dec_)
+open import Relation.Binary.PropositionalEquality using (_≡_; _≢_; subst)
   renaming (refl to ≡-refl; sym to ≡-sym; trans to ≡-trans; cong to ≡-cong)
+open import list using (Across; AllPairs-∈; dec-case; module Partitions)
 
 private
   half : ℕ → ℕ
@@ -244,3 +258,97 @@ thin n v = go 0 0 v
   go : ℕ → ℕ → ℕ → List ℕ
   go i c zero    = []
   go i c (suc v) = if c ≡ᵇ 0 then go (suc i) (next c) v else i ∷ go (suc i) (next c) v
+
+module Walks {a r} {A : Set a} {Adj : A → A → Set r} (Adj-sym : ∀ {x y} → Adj x y → Adj y x)
+             (ws : List A) where
+
+  -- Both ends of every edge taken are listed, so a walk read backwards is a walk.
+  data Walk : A → A → Set (a ⊔ r) where
+    stop : ∀ {x} → Walk x x
+    step : ∀ {x y z} → x ∈ ws → y ∈ ws → Adj x y → Walk y z → Walk x z
+
+  walk-trans : ∀ {x y z} → Walk x y → Walk y z → Walk x z
+  walk-trans stop             w = w
+  walk-trans (step mx my a v) w = step mx my a (walk-trans v w)
+
+  walk-sym : ∀ {x y} → Walk x y → Walk y x
+  walk-sym stop             = stop
+  walk-sym (step mx my a w) = walk-trans (walk-sym w) (step my mx (Adj-sym a) stop)
+
+  -- A walk that arrives anywhere else starts at a listed vertex.
+  walk-∈ : ∀ {x y} → x ≢ y → Walk x y → x ∈ ws
+  walk-∈ ne stop            = ⊥-elim (ne ≡-refl)
+  walk-∈ ne (step mx _ _ _) = mx
+
+  module Blocks (bss : List (List A)) (covers : concat bss ↭ ws)
+                (disjoint : AllPairs (Across _≡_) bss) (separated : AllPairs (Across Adj) bss) where
+
+    private
+      block-of : {x : A} → x ∈ ws → Σ (List A) (λ bs → x ∈ bs × bs ∈ bss)
+      block-of m = ∈-concat⁻′ bss (∈-resp-↭ (↭-sym covers) m)
+
+    -- An edge leaving a block would join two blocks, so it stays inside.
+    edge-in-block : {bs : List A} → bs ∈ bss → ∀ {x y} → x ∈ bs → y ∈ ws → Adj x y → y ∈ bs
+    edge-in-block {bs} n {x} {y} mx my a = placed (block-of my)
+      where
+      placed : Σ (List A) (λ cs → y ∈ cs × cs ∈ bss) → y ∈ bs
+      placed (cs , mz , n') with AllPairs-∈ separated n n'
+      ... | inj₁ ≡-refl   = mz
+      ... | inj₂ (inj₁ k) = ⊥-elim (All.lookup (All.lookup k mx) mz a)
+      ... | inj₂ (inj₂ k) = ⊥-elim (All.lookup (All.lookup k mz) mx (Adj-sym a))
+
+    walk-in-block : {bs : List A} → bs ∈ bss → ∀ {x y} → x ∈ bs → Walk x y → y ∈ bs
+    walk-in-block n mx stop            = mx
+    walk-in-block n mx (step _ my a w) = walk-in-block n (edge-in-block n mx my a) w
+
+    -- Sharing no vertex with the block it cannot leave, a walk never reaches another block.
+    apart : AllPairs (Across Walk) bss
+    apart = over (λ m → m) disjoint
+      where
+      over : {bss' : List (List A)} → (∀ {bs} → bs ∈ bss' → bs ∈ bss) →
+             AllPairs (Across _≡_) bss' → AllPairs (Across Walk) bss'
+      over lift []        = []
+      over lift (dz ∷ ds) =
+        All.map (λ d → All.tabulate (λ my → All.tabulate (λ mz w →
+                  All.lookup (All.lookup d (walk-in-block (lift (here ≡-refl)) my w)) mz ≡-refl)))
+                dz
+        ∷ over (λ m → lift (there m)) ds
+
+    -- Blocks whose members are joined to each other: sharing a block then decides being joined.
+    module Joined (_≟_ : DecidableEquality A) (joined : All (AllPairs Walk) bss) where
+
+      private
+        shared : A → A → List A → Set a
+        shared x y bs = x ∈ bs × y ∈ bs
+
+        shared? : (x y : A) (bs : List A) → Dec (shared x y bs)
+        shared? x y bs = any? (x ≟_) bs ×-dec any? (y ≟_) bs
+
+        found : {x y : A} → Any (shared x y) bss → Walk x y
+        found {x} {y} m = pick (All.lookupAny joined m)
+          where
+          pick : {bs : List A} → AllPairs Walk bs × shared x y bs → Walk x y
+          pick (ps , mx , my) with AllPairs-∈ ps mx my
+          ... | inj₁ ≡-refl   = stop
+          ... | inj₂ (inj₁ w) = w
+          ... | inj₂ (inj₂ w) = walk-sym w
+
+        absent : {x y : A} → x ≢ y → ¬ Any (shared x y) bss → ¬ Walk x y
+        absent {x} {y} ne k w = k (placed (block-of (walk-∈ ne w)))
+          where
+          placed : Σ (List A) (λ bs → x ∈ bs × bs ∈ bss) → Any (shared x y) bss
+          placed (bs , mx , n) = Any.map (λ { ≡-refl → mx , walk-in-block n mx w }) n
+
+      walk? : Decidable Walk
+      walk? x y =
+        dec-case (x ≟ y) (λ { ≡-refl → yes stop })
+                 (λ ne → dec-case (any? (shared? x y) bss)
+                                  (λ m → yes (found m)) (λ k → no (absent ne k)))
+
+      private
+        module P = Partitions walk? stop walk-sym
+
+      open P public using (Partition; partitioned; unique)
+
+      partition : All (_≢ []) bss → Partition ws bss
+      partition ne = partitioned covers ne joined apart
