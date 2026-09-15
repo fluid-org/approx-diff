@@ -460,8 +460,8 @@ map-partition₂ h P? (x ∷ xs) with P? (h x)
 -- Splitting a list into the classes of a decidable relation that is reflexive and symmetric. The
 -- blocks are not required to be the classes: relating every two elements of a block and no two
 -- elements of different blocks already pins each block down to a class.
-module Classes {a r} {A : Set a} {_~_ : A → A → Set r} (_~?_ : Decidable _~_)
-               (~-refl : Reflexive _~_) (~-sym : Symmetric _~_) where
+module Partitions {a r} {A : Set a} {_~_ : A → A → Set r} (_~?_ : Decidable _~_)
+                  (~-refl : Reflexive _~_) (~-sym : Symmetric _~_) where
 
   Apart : List A → List A → Set (a ⊔ r)
   Apart bs cs = All (λ y → All (λ z → ¬ (y ~ z)) cs) bs
@@ -518,15 +518,15 @@ module Classes {a r} {A : Set a} {_~_ : A → A → Set r} (_~?_ : Decidable _~_
 
   -- Two partitions of one list have the same blocks, up to the order of the blocks and the order
   -- within each block.
-  partition-unique : {xs : List A} {bss css : List (List A)} →
-                     Partition xs bss → Partition xs css → bss ↭↭ css
-  partition-unique {bss = []} {css} P Q = ↭↭-of-≡ (≡-sym (all-empty (Q .nonempty) (↭-empty-inv gone)))
+  unique : {xs : List A} {bss css : List (List A)} →
+           Partition xs bss → Partition xs css → bss ↭↭ css
+  unique {bss = []} {css} P Q = ↭↭-of-≡ (≡-sym (all-empty (Q .nonempty) (↭-empty-inv gone)))
     where
     gone : concat css ↭ []
     gone = subst (concat css ↭_) (↭-empty-inv (↭-sym (P .covers))) (Q .covers)
-  partition-unique {bss = [] ∷ bss} P Q = ⊥-elim (All.head (P .nonempty) ≡-refl)
-  partition-unique {bss = (x ∷ bs) ∷ bss} {css} P Q =
-    H.trans (H.prep same (partition-unique left right)) (↭↭-of-↭ (↭-sym shifted))
+  unique {bss = [] ∷ bss} P Q = ⊥-elim (All.head (P .nonempty) ≡-refl)
+  unique {bss = (x ∷ bs) ∷ bss} {css} P Q =
+    H.trans (H.prep same (unique left right)) (↭↭-of-↭ (↭-sym shifted))
     where
     found : Σ (List A) (λ cs → x ∈ cs × cs ∈ css)
     found = ∈-concat⁻′ css (∈-resp-↭ (↭-sym (Q .covers)) (∈-resp-↭ (P .covers) (here ≡-refl)))
