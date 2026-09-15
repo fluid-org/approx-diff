@@ -7,11 +7,15 @@
 -- asked of a list of components come after the traversal, over any edge relation.
 module interaction.components where
 
-open import Data.Bool using (Bool; true; false; not; if_then_else_)
+open import Data.Bool using (Bool; true; false; not; if_then_else_; T)
 open import Data.Empty using (⊥; ⊥-elim)
-open import Data.List using (List; []; _∷_; _++_; concat; filterᵇ; length; map; replicate; take; upTo)
-open import Data.Nat using (ℕ; zero; suc; pred; _+_; _∸_; _≤_; _<ᵇ_; _≡ᵇ_)
-open import Data.Nat.Properties using (+-suc; ≤-pred; ≤-refl)
+open import Data.List using (List; []; _∷_; _++_; concat; drop; filterᵇ; length; map; replicate;
+                             take; upTo)
+open import Data.List.Properties using (drop-drop)
+open import Data.Nat using (ℕ; zero; suc; pred; _+_; _∸_; _≤_; _<_; _<ᵇ_; _≡ᵇ_; s≤s; z≤n)
+open import Data.Nat.Properties using (+-suc; ≤-pred; ≤-refl; <ᵇ⇒<; <⇒<ᵇ; ≮⇒≥; ∸-cancelʳ-≡;
+                                       ∸-monoˡ-<; m+n∸n≡m; n≤0⇒n≡0)
+open import Data.Unit using (tt)
 open import Data.Product using (Σ; _×_; _,_; proj₁; proj₂; map₁; map₂)
 open import Data.List.Membership.Propositional using (_∈_)
 open import Data.List.Membership.Propositional.Properties using (∈-concat⁻′)
@@ -72,6 +76,106 @@ private
   flatten : {A : Set} {d : ℕ} → Tree A d → List A → List A
   flatten (tip x)    acc = x ∷ acc
   flatten (fork l r) acc = flatten l (flatten r acc)
+
+-- The list a tree of depth d stands for: positions below pow d, out of range reading the padding.
+nth : {A : Set} → A → ℕ → List A → A
+nth z _       []       = z
+nth z zero    (x ∷ _)  = x
+nth z (suc i) (_ ∷ xs) = nth z i xs
+
+private
+  bool-case : {A : Set} (b : Bool) → (b ≡ true → A) → (b ≡ false → A) → A
+  bool-case true  t f = t ≡-refl
+  bool-case false t f = f ≡-refl
+
+  if-true : {A : Set} {b : Bool} {x y : A} → b ≡ true → (if b then x else y) ≡ x
+  if-true ≡-refl = ≡-refl
+
+  if-false : {A : Set} {b : Bool} {x y : A} → b ≡ false → (if b then x else y) ≡ y
+  if-false ≡-refl = ≡-refl
+
+  -- A position past the left subtree lands inside the right one.
+  right-bound : (d p : ℕ) → p < pow d + pow d → pow d ≤ p → p ∸ pow d < pow d
+  right-bound d p lt ge = subst (p ∸ pow d <_) (m+n∸n≡m (pow d) (pow d)) (∸-monoˡ-< lt ge)
+
+  in-left : (d p : ℕ) → (p <ᵇ pow d) ≡ true → p < pow d
+  in-left d p e = <ᵇ⇒< p (pow d) (subst T (≡-sym e) tt)
+
+  past-left : (d p : ℕ) → (p <ᵇ pow d) ≡ false → pow d ≤ p
+  past-left d p e = ≮⇒≥ (λ lt → subst T e (<⇒<ᵇ lt))
+
+  nth-drop : {A : Set} (z : A) (k p : ℕ) (xs : List A) → k ≤ p →
+             nth z (p ∸ k) (drop k xs) ≡ nth z p xs
+  nth-drop z zero    p       xs       le       = ≡-refl
+  nth-drop z (suc k) p       []       le       = ≡-refl
+  nth-drop z (suc k) (suc p) (x ∷ xs) (s≤s le) = nth-drop z k p xs le
+
+  look-set : {A : Set} {d : ℕ} (p : ℕ) (y : A) (t : Tree A d) → look p (set p y t) ≡ y
+  look-set p y (tip _)        = ≡-refl
+  look-set p y (fork {d} l r) = bool-case (p <ᵇ pow d) left right
+    where
+    left : (p <ᵇ pow d) ≡ true → look p (set p y (fork l r)) ≡ y
+    left e = ≡-trans (≡-cong (look p) (if-true e)) (≡-trans (if-true e) (look-set p y l))
+
+    right : (p <ᵇ pow d) ≡ false → look p (set p y (fork l r)) ≡ y
+    right e =
+      ≡-trans (≡-cong (look p) (if-false e)) (≡-trans (if-false e) (look-set (p ∸ pow d) y r))
+
+  look-set-≢ : {A : Set} {d : ℕ} (p q : ℕ) (y : A) (t : Tree A d) →
+               p < pow d → q < pow d → p ≢ q → look p (set q y t) ≡ look p t
+  look-set-≢ p q y (tip _) (s≤s lp) (s≤s lq) ne =
+    ⊥-elim (ne (≡-trans (n≤0⇒n≡0 lp) (≡-sym (n≤0⇒n≡0 lq))))
+  look-set-≢ p q y (fork {d} l r) lp lq ne = bool-case (q <ᵇ pow d) qleft qright
+    where
+    qleft : (q <ᵇ pow d) ≡ true → look p (set q y (fork l r)) ≡ look p (fork l r)
+    qleft eq = ≡-trans (≡-cong (look p) (if-true eq)) (bool-case (p <ᵇ pow d) same other)
+      where
+      same : (p <ᵇ pow d) ≡ true → look p (fork (set q y l) r) ≡ look p (fork l r)
+      same ep =
+        ≡-trans (if-true ep)
+                (≡-trans (look-set-≢ p q y l (in-left d p ep) (in-left d q eq) ne) (≡-sym (if-true ep)))
+
+      other : (p <ᵇ pow d) ≡ false → look p (fork (set q y l) r) ≡ look p (fork l r)
+      other ep = ≡-trans (if-false ep) (≡-sym (if-false ep))
+
+    qright : (q <ᵇ pow d) ≡ false → look p (set q y (fork l r)) ≡ look p (fork l r)
+    qright eq = ≡-trans (≡-cong (look p) (if-false eq)) (bool-case (p <ᵇ pow d) other same)
+      where
+      other : (p <ᵇ pow d) ≡ true → look p (fork l (set (q ∸ pow d) y r)) ≡ look p (fork l r)
+      other ep = ≡-trans (if-true ep) (≡-sym (if-true ep))
+
+      same : (p <ᵇ pow d) ≡ false → look p (fork l (set (q ∸ pow d) y r)) ≡ look p (fork l r)
+      same ep =
+        ≡-trans (if-false ep)
+                (≡-trans (look-set-≢ (p ∸ pow d) (q ∸ pow d) y r
+                                     (right-bound d p lp (past-left d p ep))
+                                     (right-bound d q lq (past-left d q eq))
+                                     (λ e → ne (∸-cancelʳ-≡ (past-left d p ep) (past-left d q eq) e)))
+                         (≡-sym (if-false ep)))
+
+  fill-rest : {A : Set} (z : A) (d : ℕ) (xs : List A) → proj₂ (fill z d xs) ≡ drop (pow d) xs
+  fill-rest z zero    []       = ≡-refl
+  fill-rest z zero    (x ∷ xs) = ≡-refl
+  fill-rest z (suc d) xs =
+    ≡-trans (fill-rest z d (proj₂ (fill z d xs)))
+            (≡-trans (≡-cong (drop (pow d)) (fill-rest z d xs)) (drop-drop (pow d) (pow d) xs))
+
+  look-build : {A : Set} (z : A) (d p : ℕ) (xs : List A) → p < pow d →
+               look p (build z d xs) ≡ nth z p xs
+  look-build z zero p       []       lt          = ≡-refl
+  look-build z zero .0      (x ∷ xs) (s≤s z≤n)   = ≡-refl
+  look-build z (suc d) p    xs       lt          = bool-case (p <ᵇ pow d) left right
+    where
+    left : (p <ᵇ pow d) ≡ true → look p (build z (suc d) xs) ≡ nth z p xs
+    left e = ≡-trans (if-true e) (look-build z d p xs (in-left d p e))
+
+    right : (p <ᵇ pow d) ≡ false → look p (build z (suc d) xs) ≡ nth z p xs
+    right e =
+      ≡-trans (if-false e)
+      (≡-trans (≡-cong (λ ys → look (p ∸ pow d) (build z d ys)) (fill-rest z d xs))
+      (≡-trans (look-build z d (p ∸ pow d) (drop (pow d) xs)
+                           (right-bound d p lt (past-left d p e)))
+               (nth-drop z (pow d) p xs (past-left d p e))))
 
 -- A list of numbers read by position, out of range reading zero.
 Index : Set
