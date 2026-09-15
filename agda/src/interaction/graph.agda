@@ -32,7 +32,7 @@ open import Data.Unit using (tt) renaming (⊤ to Unit)
 open import Relation.Binary
   using (DecidableEquality; StrictTotalOrder; IsStrictTotalOrder; IsStrictPartialOrder;
          Trichotomous; Tri; tri<; tri≈; tri>)
-open import Relation.Binary.PropositionalEquality using (_≡_; _≢_; subst; subst₂; isEquivalence)
+open import Relation.Binary.PropositionalEquality using (_≡_; _≢_; subst; isEquivalence)
   renaming (refl to ≡-refl; sym to ≡-sym; trans to ≡-trans; cong to ≡-cong; cong₂ to ≡-cong₂)
 open import Relation.Nullary using (¬_)
 open import Relation.Nullary.Decidable using (Dec; yes; no; ⌊_⌋; ¬?; _⊎-dec_)
@@ -60,7 +60,7 @@ module SemiMod = semimodule S
 open SemiMod using (Semimodule)
 open import categories using (Category)
 open Category SemiMod.cat
-  using (_⇒_; _∘_; _≈_; ∘-cong; ∘-cong₁; ∘-cong₂; assoc; id-left; id-right; ≈-refl; ≈-sym; ≈-trans; ≡-to-≈)
+  using (_⇒_; _∘_; _≈_; ∘-cong; ∘-cong₁; ∘-cong₂; assoc; id-right; ≈-refl; ≈-sym; ≈-trans; ≡-to-≈)
 open import cmon-enriched using (CMonEnriched; Biproduct)
 open import matrix-embedding S using (𝔽; 𝔽F-full; 𝔽F-faithful; mat; mat-cong; mat-comp; mat-+; mat-ε)
 private
@@ -161,9 +161,6 @@ input-≟ input input = yes ≡-refl
 data Derivation : Set where
   node : ℕ → ℕ → Bool → List Derivation → Derivation
 
-in-width : Derivation → ℕ
-in-width (node m _ _ _) = m
-
 out-width : Derivation → ℕ
 out-width (node _ n _ _) = n
 
@@ -186,9 +183,6 @@ data Path : Derivation → Set where
 deriv-at : (D : Derivation) → Path D → Derivation
 deriv-at D ε = D
 deriv-at (node _ _ _ _) (into {D = D} i p) = deriv-at D p
-
-in-width-at : (D : Derivation) → Path D → ℕ
-in-width-at D q = in-width (deriv-at D q)
 
 width-at : (D : Derivation) → Path D → ℕ
 width-at D q = out-width (deriv-at D q)
@@ -597,9 +591,6 @@ module Hide (V : Set) (w : V → Semimodule) where
     absorb-mono (foldl h (h G r) rs x y) (h G r x y) (G x y)
                 (increasing {h G r} rs x y)
                 (absorbˡ (G x y) (G r y ∘ G x r))
-
-  h-cong : ∀ {G G'} r → G ≐ G' → h G r ≐ h G' r
-  h-cong = hide-cong w
 
   fold-cong : ∀ {G G'} rs → G ≐ G' → foldl h G rs ≐ foldl h G' rs
   fold-cong = hide-all-cong w
@@ -1029,11 +1020,6 @@ add-table r c t u =
   map (λ i → map (λ j → M.nth Semiring.ε j (M.nth [] i t) Semiring.+ M.nth Semiring.ε j (M.nth [] i u))
              (upTo c))
       (upTo r)
-
-read-table : DepTables → ℕ → ℕ → M.Table
-read-table T i j with table-at T i j
-... | just t  = t
-... | nothing = zero-table (M.nth 0 j (T .widths)) (M.nth 0 i (T .widths))
 
 restrict-slots : (ℕ → Bool) → Bool → List ℕ → List (Maybe M.Table) → List (Maybe M.Table)
 restrict-slots member keep-row _        []       = []
@@ -1857,14 +1843,6 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : FullGraph m D) where
                  nth-All {P = λ e → e ≡ Semiring.ε} Semiring.ε (toℕ j) ≡-refl
                          (AllP.map⁺ (universal (λ _ → ≡-refl) (upTo c))))
                  (upTo r)))
-
-  read-table-rep : (T : DepTables) (x y : V 𝒢) (p q : ℕ) →
-                   mat (M.look {vertex-width 𝒢 y} {vertex-width 𝒢 x} (read-table T p q))
-                   ≈ table-morphism 𝒢 x y (table-at T p q)
-  read-table-rep T x y p q with table-at T p q
-  ... | just t  = ≈-refl
-  ... | nothing =
-    zero-table-morphism x y (M.nth 0 q (DepTables.widths T)) (M.nth 0 p (DepTables.widths T))
 
   record Represents (T : DepTables) (vs : List (V 𝒢)) (G : DepRels (vertex-object 𝒢)) : Set where
     field

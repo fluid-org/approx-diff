@@ -26,7 +26,7 @@ open Interpretation ℐ
 open _⇒ₛ_ using (func)
 open import language-syntax Sig renaming (_,_ to _▸_)
 open import language-operational.type-substitution Sig using (unfold₁; unfold₁-inst)
-open import language-operational.evaluation Sig S ℐ ctrl-weight hiding (Derivation; _⇒_; ⟨_,_⟩; I; εₘ)
+open import language-operational.evaluation Sig S ℐ ctrl-weight hiding (Derivation; ⟨_,_⟩; I; εₘ)
 open import interaction.graph S +-idem
 open import matrix-embedding S using (𝔽; 𝔽-biproduct)
 

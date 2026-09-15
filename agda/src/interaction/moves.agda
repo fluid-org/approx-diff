@@ -3,7 +3,7 @@
 open import Data.Bool.Properties using (T?)
 open import Data.Empty using (⊥; ⊥-elim)
 open import Data.Fin using (Fin)
-open import Data.List using (List; []; _∷_; _++_; allFin; length; map; mapMaybe; filter; filterᵇ; concat; foldr)
+open import Data.List using (List; []; _∷_; _++_; length; map; mapMaybe; filter; filterᵇ; concat; foldr)
 import Data.List as L
 open import Data.List.Properties
   using (++-identityʳ; concat-++; concat-map; foldl-++; length-map; map-++; map-∘;
@@ -69,8 +69,8 @@ module interaction.moves {A : Setoid 0ℓ 0ℓ} (S : CommutativeSemiring A)
   (ε? : (x : S.Carrier) → Dec (x ≡ S.ε)) where
 
 open import interaction.graph S +-idem renaming (restrict to restrict-tables)
-open import matrix-embedding S using (𝔽; mat; mat-cong; mat-ε; mat-+; 𝔽F-full)
-open import prop using (Prf; ⟪_⟫; ∃ₛ) renaming (_∧_ to _∧ₚ_; _,_ to _,ₚ_; proj₁ to proj₁ₚ; proj₂ to proj₂ₚ)
+open import matrix-embedding S using (mat; mat-cong; mat-+)
+open import prop using (Prf; ⟪_⟫) renaming (_∧_ to _∧ₚ_; _,_ to _,ₚ_; proj₁ to proj₁ₚ; proj₂ to proj₂ₚ)
 open import categories using (Category)
 open Category SemiMod.cat using (_⇒_; _∘_; _≈_; ≈-refl; ≈-sym; ≈-trans; ≡-to-≈)
 
@@ -199,9 +199,6 @@ module Interaction {m : ℕ} {D : Derivation} (𝒢 : FullGraph m D)
   hidden-∈ : ∀ {p} (K : Config 𝒢) → p ∈ hidden-set K → Any (λ CH → p ∈ proj₁ CH) (K .summaries)
   hidden-∈ K h = AnyPr.map⁻ (∈-concat⁻ (map proj₁ (K .summaries)) h)
 
-  hidden-∉ : ∀ {p} (K : Config 𝒢) → p ∉ hidden-set K → All (λ CH → p ∉ proj₁ CH) (K .summaries)
-  hidden-∉ K h = All-tabulate (λ m k → h (∈-concat⁺′ k (∈-map⁺ proj₁ m)))
-
   visible-graph : Config 𝒢 → DepRels (vertex-object 𝒢)
   visible-graph K x y =
     foldr _+ₘ_
@@ -234,50 +231,6 @@ module Interaction {m : ℕ} {D : Derivation} (𝒢 : FullGraph m D)
     ... | t with NonZero? ε? (M.look {vertex-width 𝒢 (proj₂ v)} {vertex-width 𝒢 (proj₂ u)} t)
     ...   | yes _ = just (u , v , t)
     ...   | no  _ = nothing
-
-  edge-table-rep : (E : Graph 𝒢) (x y : V 𝒢) →
-                   mat (M.look {vertex-width 𝒢 y} {vertex-width 𝒢 x} (edge-table E x y))
-                   ≈ table-morphism 𝒢 x y (edge-at 𝒢 ε? idt E x y)
-  edge-table-rep E x y with edge-at 𝒢 ε? idt E x y
-  ... | just t  = ≈-refl
-  ... | nothing = zero-table-morphism 𝒢 x y (vertex-width 𝒢 y) (vertex-width 𝒢 x)
-
-  -- The rendered table computes the matrix of the visible graph, provided F stores the graph
-  -- fo-labels reads.
-  visible-table-rep : (F : Graph 𝒢) →
-                      ((x' y' : V 𝒢) → table-morphism 𝒢 x' y' (edge-at 𝒢 ε? idt F x' y') ≈ fo-labels x' y') →
-                      (K : Config 𝒢) (x y : V 𝒢) →
-                      mat (M.look {vertex-width 𝒢 y} {vertex-width 𝒢 x} (visible-table F K x y))
-                      ≈ visible-graph K x y
-  visible-table-rep F F-reads K x y = fold-rep (K .summaries)
-    where
-    both? = ¬? (x ∈ᵥ? hidden-set K) ×-dec ¬? (y ∈ᵥ? hidden-set K)
-    base' = if ⌊ both? ⌋ then edge-table F x y
-            else zero-table (vertex-width 𝒢 y) (vertex-width 𝒢 x)
-
-    base-rep : mat (M.look {vertex-width 𝒢 y} {vertex-width 𝒢 x} base')
-               ≈ when both? (fo-labels x y)
-    base-rep with ¬? (x ∈ᵥ? hidden-set K) ×-dec ¬? (y ∈ᵥ? hidden-set K)
-    ... | yes _ = ≈-trans (edge-table-rep F x y) (F-reads x y)
-    ... | no  _ = zero-table-morphism 𝒢 x y (vertex-width 𝒢 y) (vertex-width 𝒢 x)
-
-    fold-rep : (CHs : List (List (Path D) × Graph 𝒢)) →
-               mat (M.look {vertex-width 𝒢 y} {vertex-width 𝒢 x}
-                    (foldr (add-table (vertex-width 𝒢 y) (vertex-width 𝒢 x)) base'
-                           (map (λ CH → edge-table (proj₂ CH) x y) CHs)))
-               ≈ foldr _+ₘ_ (when both? (fo-labels x y))
-                            (map (λ CH → table-morphism 𝒢 x y (edge-at 𝒢 ε? idt (proj₂ CH) x y)) CHs)
-    fold-rep []         = base-rep
-    fold-rep (CH ∷ CHs) =
-      ≈-trans (mat-cong (λ i j → ≈-of-≡
-                (look-add (edge-table (proj₂ CH) x y)
-                          (foldr (add-table (vertex-width 𝒢 y) (vertex-width 𝒢 x)) base'
-                                 (map (λ CH' → edge-table (proj₂ CH') x y) CHs))
-                          i j)))
-      (≈-trans (mat-+ (M.look (edge-table (proj₂ CH) x y))
-                      (M.look (foldr (add-table (vertex-width 𝒢 y) (vertex-width 𝒢 x)) base'
-                                     (map (λ CH' → edge-table (proj₂ CH') x y) CHs))))
-               (+ₘ-cong (edge-table-rep (proj₂ CH) x y) (fold-rep CHs)))
 
   hide-at : Summary 𝒢 → Path D → Config 𝒢 → Config 𝒢
   hide-at summarise p K .visible = filter (p ≢?_) (K .visible)
@@ -328,7 +281,7 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : FullGraph m D) where
     module Vertex≤ = StrictTotalOrderP (vertex-order D)
     module MS = MergeSort Vertex≤.decTotalOrder
     open SortBase.SortingAlgorithm MS.mergeSort using (sort; sort-↭; sort-↗)
-    open IsStrictOrder (lt-order D) using (asym; irrefl)
+    open IsStrictOrder (lt-order D) using (asym)
 
   private
     fo-hid : List (V 𝒢)
@@ -337,9 +290,6 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : FullGraph m D) where
   fo-tabulation : (tick : {A : Set} → String → A → A) → DepTables
   fo-tabulation tick =
     Tabulated.hide-graph (dep-tables 𝒢 ε? tick) tick ε? (map (index-of 𝒢) fo-hid)
-
-  fo-edges : (tick : {A : Set} → String → A → A) → DepRels (vertex-object 𝒢)
-  fo-edges tick = dep-rels-of 𝒢 ε? tick (tabulated (fo-tabulation tick))
 
   positions : List (Path D) → List ℕ
   positions = map (λ p → suc (path-position D p))
@@ -545,9 +495,6 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : FullGraph m D) where
 
   Distinct : List (Path D) → List (Path D) → Set
   Distinct C C' = All (_∉ C) C'
-
-  distinct-sym : {C C' : List (Path D)} → Distinct C C' → Distinct C' C
-  distinct-sym d = All-tabulate (λ m k → All-lookup d k m)
 
   assemble : {E : List (Path D)} (Cs : List (List (Path D))) →
              All (_⊆ E) Cs →
