@@ -7,11 +7,12 @@
 module interaction.components where
 
 open import Data.Bool using (Bool; true; false; not; if_then_else_)
+open import Data.Empty using (⊥; ⊥-elim)
 open import Data.List using (List; []; _∷_; _++_; concat; filterᵇ; length; map; replicate; take; upTo)
-open import Data.Nat using (ℕ; zero; suc; pred; _+_; _∸_; _<ᵇ_; _≡ᵇ_)
-open import Data.Nat.Properties using (+-suc)
-open import Data.Product using (Σ; _×_; _,_; proj₁; proj₂)
-open import Relation.Binary.PropositionalEquality using (_≡_)
+open import Data.Nat using (ℕ; zero; suc; pred; _+_; _∸_; _≤_; _<ᵇ_; _≡ᵇ_)
+open import Data.Nat.Properties using (+-suc; ≤-pred; ≤-refl)
+open import Data.Product using (Σ; _×_; _,_; proj₁; proj₂; map₁; map₂)
+open import Relation.Binary.PropositionalEquality using (_≡_; subst)
   renaming (refl to ≡-refl; sym to ≡-sym; trans to ≡-trans; cong to ≡-cong)
 
 private
@@ -81,12 +82,12 @@ size-clear : {d : ℕ} (t : Tree Bool d) (p : ℕ) → look p t ≡ true →
 size-clear (tip true)  p h = ≡-refl
 size-clear {d = suc d} t p h = at t p h
   where
-  at : (t' : Tree Bool (suc d)) (p' : ℕ) → look p' t' ≡ true →
-       suc (size (set p' false t')) ≡ size t'
-  at (fork l r) p' h' with p' <ᵇ pow d
-  ... | true  = ≡-cong (_+ size r) (size-clear l p' h')
+  at : (u : Tree Bool (suc d)) (q : ℕ) → look q u ≡ true →
+       suc (size (set q false u)) ≡ size u
+  at (fork l r) q e with q <ᵇ pow d
+  ... | true  = ≡-cong (_+ size r) (size-clear l q e)
   ... | false = ≡-trans (≡-sym (+-suc (size l) _))
-                        (≡-cong (size l +_) (size-clear r (p' ∸ pow d) h'))
+                        (≡-cong (size l +_) (size-clear r (q ∸ pow d) e))
 
 -- What is left to do: a number is either still in the set or already on the frontier, and one
 -- leaves the set exactly when it joins the frontier.
@@ -111,25 +112,38 @@ private
                                  (≡-cong (_+ length fr) (size-clear vs q eq)))
   ... | false = push-measure ns qs fr vs (suc c)
 
-  -- Fuel bounds the pops, of which there is at most one per number ever queued.
-  expand : {d : ℕ} → ℕ → Tree (List ℕ) d → List ℕ → Tree Bool d → List ℕ → ℕ →
-           List ℕ × Tree Bool d × ℕ
-  expand zero    ns fr       vs acc c = acc , vs , c
-  expand (suc f) ns []       vs acc c = acc , vs , c
-  expand (suc f) ns (p ∷ fr) vs acc c with push ns (look p ns) fr vs c
-  ... | fr' , vs' , c' = expand f ns fr' vs' (p ∷ acc) c'
+  -- Each pop takes one off the frontier and pushes only numbers it takes out of the set, so the
+  -- measure falls by one and the bound the caller gives is enough.
+  expand : {d : ℕ} (f : ℕ) (ns : Tree (List ℕ) d) (fr : List ℕ) (vs : Tree Bool d) →
+           measure fr vs ≤ f → List ℕ → ℕ → List ℕ × Tree Bool d × ℕ
+  expand f       ns []       vs le acc c = acc , vs , c
+  expand zero    ns (p ∷ fr) vs le acc c =
+    ⊥-elim (none (subst (_≤ zero) (+-suc (size vs) (length fr)) le))
+    where
+    none : ∀ {n} → suc n ≤ zero → ⊥
+    none ()
+  expand (suc f) ns (p ∷ fr) vs le acc c =
+    popped (push ns (look p ns) fr vs c) (push-measure ns (look p ns) fr vs c)
+    where
+    dropped : measure fr vs ≤ f
+    dropped = ≤-pred (subst (_≤ suc f) (+-suc (size vs) (length fr)) le)
 
-  from : {d : ℕ} → ℕ → Tree (List ℕ) d → List ℕ → Tree Bool d → ℕ → List (List ℕ) × ℕ
-  from f ns []       vs c = [] , c
-  from f ns (p ∷ ps) vs c =
-    if look p vs then opened (expand f ns (p ∷ []) (set p false vs) [] c)
-    else from f ns ps vs c
+    popped : (r : List ℕ × Tree Bool _ × ℕ) →
+             measure (proj₁ r) (proj₁ (proj₂ r)) ≡ measure fr vs →
+             List ℕ × Tree Bool _ × ℕ
+    popped (queued , left , seen) e =
+      expand f ns queued left (subst (_≤ f) (≡-sym e) dropped) (p ∷ acc) seen
+
+  from : {d : ℕ} → Tree (List ℕ) d → List ℕ → Tree Bool d → ℕ → List (List ℕ) × ℕ
+  from ns []       vs c = [] , c
+  from ns (p ∷ ps) vs c =
+    if look p vs
+    then opened (expand (measure (p ∷ []) (set p false vs)) ns (p ∷ []) (set p false vs)
+                        ≤-refl [] c)
+    else from ns ps vs c
     where
     opened : List ℕ × Tree Bool _ × ℕ → List (List ℕ) × ℕ
-    opened (b , vs' , c') = consed b (from f ns ps vs' c')
-      where
-      consed : List ℕ → List (List ℕ) × ℕ → List (List ℕ) × ℕ
-      consed b' (bs , c'') = b' ∷ bs , c''
+    opened (block , left , seen) = map₁ (block ∷_) (from ns ps left seen)
 
   zip-append : List (List ℕ) → List (List ℕ) → List (List ℕ)
   zip-append []         _          = []
@@ -174,7 +188,7 @@ private
 -- Blocks with the number of neighbours examined.
 components-on : List ℕ → List (List ℕ) → List (List ℕ) × ℕ
 components-on ws nss =
-  from n (build [] d nss) ws (drop-rest 0 n ws (build false d (replicate n true))) 0
+  from (build [] d nss) ws (drop-rest 0 n ws (build false d (replicate n true))) 0
   where
   n : ℕ
   n = length nss
@@ -211,20 +225,15 @@ by-pairs nss (w ∷ ws) = step (by-pairs nss ws)
   part []       c = [] , [] , c
   part (b ∷ bs) c = place (hits b c)
     where
-    add-hit add-miss : List (List ℕ) × List (List ℕ) × ℕ →
-                       List (List ℕ) × List (List ℕ) × ℕ
-    add-hit  (hit , miss , c') = b ∷ hit , miss , c'
-    add-miss (hit , miss , c') = hit , b ∷ miss , c'
-
     place : Bool × ℕ → List (List ℕ) × List (List ℕ) × ℕ
-    place (true  , c') = add-hit (part bs c')
-    place (false , c') = add-miss (part bs c')
+    place (true  , seen) = map₁ (b ∷_) (part bs seen)
+    place (false , seen) = map₂ (map₁ (b ∷_)) (part bs seen)
 
   step : List (List ℕ) × ℕ → List (List ℕ) × ℕ
   step (bs , c) = joined (part bs c)
     where
     joined : List (List ℕ) × List (List ℕ) × ℕ → List (List ℕ) × ℕ
-    joined (hit , miss , c') = (w ∷ concat hit) ∷ miss , c'
+    joined (hit , miss , seen) = (w ∷ concat hit) ∷ miss , seen
 
 thin : ℕ → ℕ → List ℕ
 thin n v = go 0 0 v
