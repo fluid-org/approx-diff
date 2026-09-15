@@ -886,23 +886,6 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : FullGraph m D) where
   fo-forward : Fwd fo-graph
   fo-forward = O.fwd-hide-all (map inj₂ fo-hidden) dep-rels-forward
 
-  -- Hiding the remaining vertices of the first-order graph collapses the graph: the two stages
-  -- together hide every interior vertex exactly once, and reordering into result-first order is
-  -- sound because every nonzero edge of the raw graph runs forward.
-  fo-collapse : hide-all vertex-object fo-graph (map inj₂ FO) (inj₁ input) (inj₂ ε) ≈ collapse
-  fo-collapse =
-    ≈-trans (≡-to-≈ (≡-cong (λ G → G (inj₁ input) (inj₂ ε)) two-stage))
-            (hide-all-perm dep-rels-forward (map⁺ inj₂ interior-perm) (inj₁ input) (inj₂ ε))
-    where
-    two-stage : hide-all vertex-object fo-graph (map inj₂ FO)
-                ≡ hide-all vertex-object dep-rels (map inj₂ (fo-hidden ++ FO))
-    two-stage =
-      ≡-trans (≡-sym (foldl-++ (hide vertex-object) dep-rels (map inj₂ fo-hidden) (map inj₂ FO)))
-              (≡-cong (hide-all vertex-object dep-rels) (≡-sym (map-++ inj₂ fo-hidden FO)))
-
-    interior-perm : (fo-hidden ++ FO) ↭ vertices-result-first D
-    interior-perm = ↭-trans (filterᵇ-split (fo-at D) (vertices D)) (vertices-perm D)
-
 -- A graph tabulated once: the vertices named by their numbers in the underlying derivation graph,
 -- and the relations stored as tables, one row per source vertex with one slot per target, both in
 -- evaluation order (the inputs vertex first, the conclusion last). An empty slot is the zero
@@ -1829,20 +1812,6 @@ look-add t u i j =
 -- Stored tables represent a graph at a vertex list when their numbers and widths read off that list
 -- and every slot's morphism is the graph's dependence relation.
 module _ {m : ℕ} {D : Derivation} (𝒢 : FullGraph m D) where
-
-  zero-table-morphism : (x y : V 𝒢) (r c : ℕ) →
-                        mat (M.look {vertex-width 𝒢 y} {vertex-width 𝒢 x} (zero-table r c)) ≈ εₘ
-  zero-table-morphism x y r c =
-    ≈-trans (mat-cong (λ i j → ≈-of-≡ (zero-at i j))) mat-ε
-    where
-    zero-at : (i : Fin (vertex-width 𝒢 y)) (j : Fin (vertex-width 𝒢 x)) →
-              M.look (zero-table r c) i j ≡ Semiring.ε
-    zero-at i j =
-      nth-All {P = λ row → M.nth Semiring.ε (toℕ j) row ≡ Semiring.ε} [] (toℕ i) ≡-refl
-              (AllP.map⁺ (universal (λ _ →
-                 nth-All {P = λ e → e ≡ Semiring.ε} Semiring.ε (toℕ j) ≡-refl
-                         (AllP.map⁺ (universal (λ _ → ≡-refl) (upTo c))))
-                 (upTo r)))
 
   record Represents (T : DepTables) (vs : List (V 𝒢)) (G : DepRels (vertex-object 𝒢)) : Set where
     field

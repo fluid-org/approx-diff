@@ -961,23 +961,6 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : FullGraph m D) where
            (regions-⊆ (FO 𝒢))
            (regions-distinct (FO 𝒢) FO-distinct)
 
-  -- From the inputs to the root, the visible graph of the initial state is the collapse of
-  -- the underlying graph: reading the stored region summaries computes the same dependence as
-  -- hiding every interior vertex.
-  root-not-hidden : (K : Config 𝒢) → Summarised K → ¬ VertexIn (inj₂ ε) (hidden-set K)
-  root-not-hidden K S mem =
-    All-lookup (vertices-no-ε D)
-               (∈-resp-↭ (filterᵇ-split (fo-at D) (vertices D))
-                         (∈-++⁺ʳ (fo-hidden 𝒢)
-                                 (∈-resp-↭ (S .partition) (∈-++⁺ʳ (K .visible) mem))))
-    ≡-refl
-
-  root-not-fo-hidden : ¬ VertexIn (inj₂ ε) (fo-hidden 𝒢)
-  root-not-fo-hidden mem =
-    All-lookup (vertices-no-ε D)
-               (∈-resp-↭ (filterᵇ-split (fo-at D) (vertices D)) (∈-++⁺ˡ mem))
-    ≡-refl
-
   hide-at-summarised : (summarise : Summary 𝒢) → Agrees summarise →
                        (p : Path D) (K : Config 𝒢) (S : Summarised K) →
                        p ∈ K .visible →
