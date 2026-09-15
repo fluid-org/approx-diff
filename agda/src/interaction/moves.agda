@@ -978,17 +978,6 @@ module _ {m : ℕ} {D : Derivation} (𝒢 : FullGraph m D) where
                (∈-resp-↭ (filterᵇ-split (fo-at D) (vertices D)) (∈-++⁺ˡ mem))
     ≡-refl
 
-  initial-collapse : (summarise : Summary 𝒢) → Agrees summarise →
-                     visible-graph (initial summarise) (inj₁ input) (inj₂ ε) ≈ collapse 𝒢
-  initial-collapse summarise agrees =
-    ≈-trans (summaries-assemble (initial summarise) (initial-summarised summarise agrees)
-              (inj₁ input) (inj₂ ε) (λ ()) root-not-fo-hidden (λ ())
-              (root-not-hidden (initial summarise) (initial-summarised summarise agrees)))
-            (≈-trans (hide-all-perm 𝒢 (fo-forward 𝒢)
-                       (map⁺ at (initial-summarised summarise agrees .partition))
-                       (inj₁ input) (inj₂ ε))
-                     (fo-collapse 𝒢))
-
   hide-at-summarised : (summarise : Summary 𝒢) → Agrees summarise →
                        (p : Path D) (K : Config 𝒢) (S : Summarised K) →
                        p ∈ K .visible →
