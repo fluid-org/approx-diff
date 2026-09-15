@@ -2,14 +2,17 @@
 
 -- Connected components of a graph whose vertices are numbered from zero and whose edges are given
 -- as neighbour lists. A vertex leaves the unvisited set when it is queued rather than when it is
--- expanded, so nothing is queued twice. The set is a complete binary tree over the numbers, so a
--- lookup costs the depth rather than the number of vertices.
+-- expanded, so nothing is queued twice. The sets are complete binary trees over the numbers, so a
+-- read or a write costs the depth rather than the number of vertices.
 module interaction.components where
 
 open import Data.Bool using (Bool; true; false; not; if_then_else_)
-open import Data.List using (List; []; _∷_; _++_; concat; filterᵇ; length; map; take; upTo)
-open import Data.Nat using (ℕ; zero; suc; _+_; _∸_; _<ᵇ_; _≡ᵇ_)
-open import Data.Product using (_×_; _,_; proj₁)
+open import Data.List using (List; []; _∷_; _++_; concat; filterᵇ; length; map; replicate; take; upTo)
+open import Data.Nat using (ℕ; zero; suc; pred; _+_; _∸_; _<ᵇ_; _≡ᵇ_)
+open import Data.Nat.Properties using (+-suc)
+open import Data.Product using (Σ; _×_; _,_; proj₁)
+open import Relation.Binary.PropositionalEquality using (_≡_)
+  renaming (refl to ≡-refl; sym to ≡-sym; trans to ≡-trans; cong to ≡-cong)
 
 private
   half : ℕ → ℕ
@@ -26,121 +29,116 @@ private
   depth-for zero       n = zero
   depth-for (suc fuel) n = if n <ᵇ 2 then zero else suc (depth-for fuel (half (n + 1)))
 
-  data Numbers : Set where
-    num-tip  : ℕ → Numbers
-    num-fork : Numbers → Numbers → Numbers
+-- Indexed by depth, so a position always reaches a leaf and no case is left over.
+data Tree (A : Set) : ℕ → Set where
+  tip  : A → Tree A zero
+  fork : ∀ {d} → Tree A d → Tree A d → Tree A (suc d)
 
-  fill-numbers : ℕ → List ℕ → Numbers × List ℕ
-  fill-numbers zero    []       = num-tip 0 , []
-  fill-numbers zero    (n ∷ ns) = num-tip n , ns
-  fill-numbers (suc d) ns with fill-numbers d ns
-  ... | l , ns' with fill-numbers d ns'
-  ...   | r , ns'' = num-fork l r , ns''
+private
+  fill : {A : Set} (z : A) (d : ℕ) → List A → Tree A d × List A
+  fill z zero    []       = tip z , []
+  fill z zero    (x ∷ xs) = tip x , xs
+  fill z (suc d) xs with fill z d xs
+  ... | l , xs' with fill z d xs'
+  ...   | r , xs'' = fork l r , xs''
 
--- A list read by position, out of range reading zero.
+  build : {A : Set} (z : A) (d : ℕ) → List A → Tree A d
+  build z d xs = proj₁ (fill z d xs)
+
+  look : {A : Set} {d : ℕ} → ℕ → Tree A d → A
+  look         p (tip x)    = x
+  look {d = suc d} p (fork l r) = if p <ᵇ pow d then look p l else look (p ∸ pow d) r
+
+  set : {A : Set} {d : ℕ} → ℕ → A → Tree A d → Tree A d
+  set         p y (tip _)    = tip y
+  set {d = suc d} p y (fork l r) =
+    if p <ᵇ pow d then fork (set p y l) r else fork l (set (p ∸ pow d) y r)
+
+  flatten : {A : Set} {d : ℕ} → Tree A d → List A → List A
+  flatten (tip x)    acc = x ∷ acc
+  flatten (fork l r) acc = flatten l (flatten r acc)
+
+-- A list of numbers read by position, out of range reading zero.
 Index : Set
-Index = ℕ × Numbers
+Index = Σ ℕ (Tree ℕ)
 
 index : List ℕ → Index
-index ns = d , proj₁ (fill-numbers d ns)
+index ns = d , build 0 d ns
   where
   d : ℕ
   d = depth-for (length ns) (length ns)
 
 index-at : Index → ℕ → ℕ
-index-at (d , t) p = look-num d p t
+index-at (d , t) p = look p t
+
+size : {d : ℕ} → Tree Bool d → ℕ
+size (tip true)  = 1
+size (tip false) = 0
+size (fork l r)  = size l + size r
+
+size-clear : {d : ℕ} (t : Tree Bool d) (p : ℕ) → look p t ≡ true →
+             suc (size (set p false t)) ≡ size t
+size-clear (tip true)  p h = ≡-refl
+size-clear {d = suc d} t p h = at t p h
   where
-  look-num : ℕ → ℕ → Numbers → ℕ
-  look-num d       p (num-tip n)    = n
-  look-num zero    p (num-fork l r) = 0
-  look-num (suc d) p (num-fork l r) =
-    if p <ᵇ pow d then look-num d p l else look-num d (p ∸ pow d) r
+  at : (t' : Tree Bool (suc d)) (p' : ℕ) → look p' t' ≡ true →
+       suc (size (set p' false t')) ≡ size t'
+  at (fork l r) p' h' with p' <ᵇ pow d
+  ... | true  = ≡-cong (_+ size r) (size-clear l p' h')
+  ... | false = ≡-trans (≡-sym (+-suc (size l) _))
+                        (≡-cong (size l +_) (size-clear r (p' ∸ pow d) h'))
 
 private
-  data Tree : Set where
-    tip  : Bool → List ℕ → Tree
-    fork : Tree → Tree → Tree
+  push : {d : ℕ} → Tree (List ℕ) d → List ℕ → List ℕ → Tree Bool d → ℕ →
+         List ℕ × Tree Bool d × ℕ
+  push ns []       fr vs c = fr , vs , c
+  push ns (q ∷ qs) fr vs c =
+    if look q vs then push ns qs (q ∷ fr) (set q false vs) (suc c)
+    else push ns qs fr vs (suc c)
 
-  -- Leaves past the end of the lists are absent, so a number beyond them is never visited.
-  fill : ℕ → List (List ℕ) → Tree × List (List ℕ)
-  fill zero    []         = tip false [] , []
-  fill zero    (ns ∷ nss) = tip true ns , nss
-  fill (suc d) nss with fill d nss
-  ... | l , nss' with fill d nss'
-  ...   | r , nss'' = fork l r , nss''
+  -- Fuel bounds the pops, of which there is at most one per number ever queued.
+  expand : {d : ℕ} → ℕ → Tree (List ℕ) d → List ℕ → Tree Bool d → List ℕ → ℕ →
+           List ℕ × Tree Bool d × ℕ
+  expand zero    ns fr       vs acc c = acc , vs , c
+  expand (suc f) ns []       vs acc c = acc , vs , c
+  expand (suc f) ns (p ∷ fr) vs acc c with push ns (look p ns) fr vs c
+  ... | fr' , vs' , c' = expand f ns fr' vs' (p ∷ acc) c'
 
-  look : ℕ → ℕ → Tree → Bool × List ℕ
-  look d       p (tip b ns) = b , ns
-  look zero    p (fork l r) = false , []
-  look (suc d) p (fork l r) = if p <ᵇ pow d then look d p l else look d (p ∸ pow d) r
-
-  clear : ℕ → ℕ → Tree → Tree
-  clear d       p (tip _ ns) = tip false ns
-  clear zero    p (fork l r) = fork l r
-  clear (suc d) p (fork l r) =
-    if p <ᵇ pow d then fork (clear d p l) r else fork l (clear d (p ∸ pow d) r)
-
-  push : ℕ → List ℕ → List ℕ → Tree → ℕ → List ℕ × Tree × ℕ
-  push d []       fr t c = fr , t , c
-  push d (q ∷ qs) fr t c with look d q t
-  ... | true  , _ = push d qs (q ∷ fr) (clear d q t) (suc c)
-  ... | false , _ = push d qs fr t (suc c)
-
-  -- Fuel bounds the pushes, of which there is at most one per vertex.
-  expand : ℕ → ℕ → List ℕ → Tree → List ℕ → ℕ → List ℕ × Tree × ℕ
-  expand zero    d fr       t acc c = acc , t , c
-  expand (suc f) d []       t acc c = acc , t , c
-  expand (suc f) d (p ∷ fr) t acc c with look d p t
-  ... | _ , ns with push d ns fr t c
-  ...   | fr' , t' , c' = expand f d fr' t' (p ∷ acc) c'
-
-  from : ℕ → ℕ → List ℕ → Tree → ℕ → List (List ℕ) × ℕ
-  from f d []       t c = [] , c
-  from f d (p ∷ ps) t c with look d p t
-  ... | false , _ = from f d ps t c
-  ... | true  , _ = opened (expand f d (p ∷ []) (clear d p t) [] c)
+  from : {d : ℕ} → ℕ → Tree (List ℕ) d → List ℕ → Tree Bool d → ℕ → List (List ℕ) × ℕ
+  from f ns []       vs c = [] , c
+  from f ns (p ∷ ps) vs c =
+    if look p vs then opened (expand f ns (p ∷ []) (set p false vs) [] c)
+    else from f ns ps vs c
     where
-    opened : List ℕ × Tree × ℕ → List (List ℕ) × ℕ
-    opened (b , t' , c') = consed b (from f d ps t' c')
+    opened : List ℕ × Tree Bool _ × ℕ → List (List ℕ) × ℕ
+    opened (b , vs' , c') = consed b (from f ns ps vs' c')
       where
       consed : List ℕ → List (List ℕ) × ℕ → List (List ℕ) × ℕ
       consed b' (bs , c'') = b' ∷ bs , c''
-
-  data Bins : Set where
-    bin  : List ℕ → Bins
-    node : Bins → Bins → Bins
-
-  empty-bins : ℕ → Bins
-  empty-bins zero    = bin []
-  empty-bins (suc d) = node (empty-bins d) (empty-bins d)
-
-  put : ℕ → ℕ → ℕ → Bins → Bins
-  put d       p v (bin xs)   = bin (v ∷ xs)
-  put zero    p v (node l r) = node l r
-  put (suc d) p v (node l r) =
-    if p <ᵇ pow d then node (put d p v l) r else node l (put d (p ∸ pow d) v r)
-
-  put-each : ℕ → ℕ → List ℕ → Bins → Bins
-  put-each d i []       bs = bs
-  put-each d i (j ∷ js) bs = put-each d i js (put d j i bs)
-
-  fill-bins : ℕ → ℕ → List (List ℕ) → Bins → Bins
-  fill-bins d i []         bs = bs
-  fill-bins d i (ns ∷ nss) bs = fill-bins d (suc i) nss (put-each d i ns bs)
-
-  drain : Bins → List (List ℕ) → List (List ℕ)
-  drain (bin xs)   acc = xs ∷ acc
-  drain (node l r) acc = drain l (drain r acc)
 
   zip-append : List (List ℕ) → List (List ℕ) → List (List ℕ)
   zip-append []         _          = []
   zip-append nss        []         = nss
   zip-append (ns ∷ nss) (ms ∷ mss) = (ns ++ ms) ∷ zip-append nss mss
 
+  reversed : (d : ℕ) → List (List ℕ) → Tree (List ℕ) d → Tree (List ℕ) d
+  reversed d nss t = go 0 nss t
+    where
+    put : ℕ → ℕ → Tree (List ℕ) d → Tree (List ℕ) d
+    put p v u = set p (v ∷ look p u) u
+
+    put-each : ℕ → List ℕ → Tree (List ℕ) d → Tree (List ℕ) d
+    put-each i []       u = u
+    put-each i (j ∷ js) u = put-each i js (put j i u)
+
+    go : ℕ → List (List ℕ) → Tree (List ℕ) d → Tree (List ℕ) d
+    go i []         u = u
+    go i (ms ∷ mss) u = go (suc i) mss (put-each i ms u)
+
 -- Both endpoints of every listed edge, so a traversal can run in either direction. Repeats are
--- harmless: a vertex already queued is no longer in the set.
+-- harmless: a number already queued is no longer in the set.
 symmetric : List (List ℕ) → List (List ℕ)
-symmetric nss = zip-append nss (drain (fill-bins d 0 nss (empty-bins d)) [])
+symmetric nss = zip-append nss (flatten (reversed d nss (build [] d [])) [])
   where
   d : ℕ
   d = depth-for (length nss) (length nss)
@@ -151,16 +149,17 @@ induced k nss = map (filterᵇ (λ j → j <ᵇ k)) (take k nss)
 private
   -- Numbers outside the list are cleared before the traversal starts, so they are neither visited
   -- nor followed.
-  drop-rest : ℕ → ℕ → ℕ → List ℕ → Tree → Tree
-  drop-rest d i zero    ws       t = t
-  drop-rest d i (suc c) []       t = drop-rest d (suc i) c [] (clear d i t)
-  drop-rest d i (suc c) (w ∷ ws) t =
-    if i ≡ᵇ w then drop-rest d (suc i) c ws t
-    else drop-rest d (suc i) c (w ∷ ws) (clear d i t)
+  drop-rest : {d : ℕ} → ℕ → ℕ → List ℕ → Tree Bool d → Tree Bool d
+  drop-rest i zero    ws       vs = vs
+  drop-rest i (suc c) []       vs = drop-rest (suc i) c [] (set i false vs)
+  drop-rest i (suc c) (w ∷ ws) vs =
+    if i ≡ᵇ w then drop-rest (suc i) c ws vs
+    else drop-rest (suc i) c (w ∷ ws) (set i false vs)
 
 -- Blocks with the number of neighbours examined.
 components-on : List ℕ → List (List ℕ) → List (List ℕ) × ℕ
-components-on ws nss = from n d ws (drop-rest d 0 n ws (proj₁ (fill d nss))) 0
+components-on ws nss =
+  from n (build [] d nss) ws (drop-rest 0 n ws (build false d (replicate n true))) 0
   where
   n : ℕ
   n = length nss
