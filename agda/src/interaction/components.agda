@@ -9,11 +9,10 @@ module interaction.components where
 
 open import Data.Bool using (Bool; true; false; not; if_then_else_; T)
 open import Data.Empty using (⊥; ⊥-elim)
-open import Data.List using (List; []; _∷_; _++_; concat; drop; filterᵇ; length; map; replicate;
-                             take; upTo)
+open import Data.List using (List; []; _∷_; _++_; concat; drop; filterᵇ; length; map; take; upTo)
 open import Data.List.Properties using (drop-drop)
 open import Data.Nat using (ℕ; zero; suc; pred; _+_; _∸_; _≤_; _<_; _<ᵇ_; _≡ᵇ_; s≤s; z≤n)
-open import Data.Nat.Properties using (+-suc; ≤-pred; ≤-refl; <ᵇ⇒<; <⇒<ᵇ; ≮⇒≥; ∸-cancelʳ-≡;
+open import Data.Nat.Properties using (_≟_; +-suc; ≤-pred; ≤-refl; <ᵇ⇒<; <⇒<ᵇ; ≮⇒≥; ∸-cancelʳ-≡;
                                        ∸-monoˡ-<; m+n∸n≡m; n≤0⇒n≡0)
 open import Data.Unit using (tt)
 open import Data.Product using (Σ; _×_; _,_; proj₁; proj₂; map₁; map₂)
@@ -33,15 +32,16 @@ open import Relation.Binary.PropositionalEquality using (_≡_; _≢_; subst)
   renaming (refl to ≡-refl; sym to ≡-sym; trans to ≡-trans; cong to ≡-cong)
 open import list using (Apart; AllPairs-∈; dec-case; module Partitions)
 
+-- Leaves of a tree of depth d, so the positions it reads are those below pow d.
+pow : ℕ → ℕ
+pow zero    = 1
+pow (suc d) = pow d + pow d
+
 private
   half : ℕ → ℕ
   half zero          = zero
   half (suc zero)    = zero
   half (suc (suc n)) = suc (half n)
-
-  pow : ℕ → ℕ
-  pow zero    = 1
-  pow (suc d) = pow d + pow d
 
   -- Least depth whose complete tree has a leaf for every number below n.
   depth-for : ℕ → ℕ → ℕ
@@ -294,25 +294,43 @@ induced : ℕ → List (List ℕ) → List (List ℕ)
 induced k nss = map (filterᵇ (λ j → j <ᵇ k)) (take k nss)
 
 private
-  -- Numbers outside the list are cleared before the traversal starts, so they are neither visited
-  -- nor followed.
-  drop-rest : {d : ℕ} → ℕ → ℕ → List ℕ → Tree Bool d → Tree Bool d
-  drop-rest i zero    ws       vs = vs
-  drop-rest i (suc c) []       vs = drop-rest (suc i) c [] (set i false vs)
-  drop-rest i (suc c) (w ∷ ws) vs =
-    if i ≡ᵇ w then drop-rest (suc i) c ws vs
-    else drop-rest (suc i) c (w ∷ ws) (set i false vs)
+  -- Only the listed numbers start unvisited, so the traversal neither visits nor follows others.
+  set-each : {d : ℕ} → List ℕ → Tree Bool d → Tree Bool d
+  set-each []       vs = vs
+  set-each (w ∷ ws) vs = set-each ws (set w true vs)
 
--- Blocks with the number of neighbours examined.
+  keeps-true : (d : ℕ) (ws : List ℕ) (p : ℕ) (vs : Tree Bool d) →
+               p < pow d → All (_< pow d) ws → look p vs ≡ true → look p (set-each ws vs) ≡ true
+  keeps-true d []       p vs lp rs        e = e
+  keeps-true d (w ∷ ws) p vs lp (lw ∷ rs) e = keeps-true d ws p (set w true vs) lp rs kept
+    where
+    kept : look p (set w true vs) ≡ true
+    kept = dec-case (p ≟ w) (λ { ≡-refl → look-set p true vs })
+                            (λ ne → ≡-trans (look-set-≢ p w true vs lp lw ne) e)
+
+  in-set-each : (d : ℕ) (ws : List ℕ) (p : ℕ) (vs : Tree Bool d) →
+                p < pow d → All (_< pow d) ws → p ∈ ws → look p (set-each ws vs) ≡ true
+  in-set-each d (w ∷ ws) p vs lp (lw ∷ rs) (here ≡-refl) =
+    keeps-true d ws p (set p true vs) lp rs (look-set p true vs)
+  in-set-each d (w ∷ ws) p vs lp (lw ∷ rs) (there m) = in-set-each d ws p (set w true vs) lp rs m
+
+  out-set-each : (d : ℕ) (ws : List ℕ) (p : ℕ) (vs : Tree Bool d) →
+                 p < pow d → All (_< pow d) ws → ¬ (p ∈ ws) →
+                 look p (set-each ws vs) ≡ look p vs
+  out-set-each d []       p vs lp rs        k = ≡-refl
+  out-set-each d (w ∷ ws) p vs lp (lw ∷ rs) k =
+    ≡-trans (out-set-each d ws p (set w true vs) lp rs (λ m → k (there m)))
+            (look-set-≢ p w true vs lp lw (λ e → k (here e)))
+
+-- Blocks with the number of neighbours examined. The depth must reach every vertex.
+components-at : (d : ℕ) → List ℕ → List (List ℕ) → List (List ℕ) × ℕ
+components-at d ws nss = from (build [] d nss) ws (set-each ws (build false d [])) 0
+
 components-on : List ℕ → List (List ℕ) → List (List ℕ) × ℕ
-components-on ws nss =
-  from (build [] d nss) ws (drop-rest 0 n ws (build false d (replicate n true))) 0
+components-on ws nss = components-at (depth-for n n) ws nss
   where
   n : ℕ
   n = length nss
-
-  d : ℕ
-  d = depth-for n n
 
 components : List (List ℕ) → List (List ℕ) × ℕ
 components nss = components-on (upTo (length nss)) nss
@@ -322,18 +340,13 @@ private
   mem i []       = false
   mem i (j ∷ js) = if i ≡ᵇ j then true else mem i js
 
-  nth-list : ℕ → List (List ℕ) → List ℕ
-  nth-list _       []        = []
-  nth-list zero    (ns ∷ _)  = ns
-  nth-list (suc i) (_ ∷ nss) = nth-list i nss
-
 -- The same blocks by the fold the proofs are stated against, with the number of pairs tested.
 by-pairs : List (List ℕ) → List ℕ → List (List ℕ) × ℕ
 by-pairs nss []       = [] , 0
 by-pairs nss (w ∷ ws) = step (by-pairs nss ws)
   where
   ns : List ℕ
-  ns = nth-list w nss
+  ns = nth [] w nss
 
   hits : List ℕ → ℕ → Bool × ℕ
   hits []       c = false , c
