@@ -21,7 +21,12 @@ trap 'rm -f "$pidfile"' EXIT
     --ghc-flag=-j10 ${DUMP_FAST:+--ghc-flag=-O0} \
     src/example/render/probe.agda > "$log" 2>&1 )
 t1=$SECONDS
-GHCRTS="${DUMP_GHCRTS:--M2G}" agda/_build/probe
+GHCRTS="${DUMP_GHCRTS:--M2G}" agda/_build/probe 2> >(python3 -u -c '
+import sys, time
+t = time.time()
+for line in sys.stdin:
+    sys.stderr.write("%7.1fs %s" % (time.time() - t, line))
+')
 t2=$SECONDS
 if [ -z "${DUMP_FAST:-}" ]; then
   line="$(date '+%Y-%m-%d %H:%M') probe run $((t2-t1))s"
