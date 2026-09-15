@@ -10,7 +10,7 @@ open import Data.Bool using (Bool; true; false; not; if_then_else_)
 open import Data.List using (List; []; _∷_; _++_; concat; filterᵇ; length; map; replicate; take; upTo)
 open import Data.Nat using (ℕ; zero; suc; pred; _+_; _∸_; _<ᵇ_; _≡ᵇ_)
 open import Data.Nat.Properties using (+-suc)
-open import Data.Product using (Σ; _×_; _,_; proj₁)
+open import Data.Product using (Σ; _×_; _,_; proj₁; proj₂)
 open import Relation.Binary.PropositionalEquality using (_≡_)
   renaming (refl to ≡-refl; sym to ≡-sym; trans to ≡-trans; cong to ≡-cong)
 
@@ -88,6 +88,11 @@ size-clear {d = suc d} t p h = at t p h
   ... | false = ≡-trans (≡-sym (+-suc (size l) _))
                         (≡-cong (size l +_) (size-clear r (p' ∸ pow d) h'))
 
+-- What is left to do: a number is either still in the set or already on the frontier, and one
+-- leaves the set exactly when it joins the frontier.
+measure : {d : ℕ} → List ℕ → Tree Bool d → ℕ
+measure fr vs = size vs + length fr
+
 private
   push : {d : ℕ} → Tree (List ℕ) d → List ℕ → List ℕ → Tree Bool d → ℕ →
          List ℕ × Tree Bool d × ℕ
@@ -95,6 +100,16 @@ private
   push ns (q ∷ qs) fr vs c =
     if look q vs then push ns qs (q ∷ fr) (set q false vs) (suc c)
     else push ns qs fr vs (suc c)
+
+  push-measure : {d : ℕ} (ns : Tree (List ℕ) d) (qs fr : List ℕ) (vs : Tree Bool d) (c : ℕ) →
+                 measure (proj₁ (push ns qs fr vs c)) (proj₁ (proj₂ (push ns qs fr vs c)))
+                 ≡ measure fr vs
+  push-measure ns []       fr vs c = ≡-refl
+  push-measure ns (q ∷ qs) fr vs c with look q vs in eq
+  ... | true  = ≡-trans (push-measure ns qs (q ∷ fr) (set q false vs) (suc c))
+                        (≡-trans (+-suc (size (set q false vs)) (length fr))
+                                 (≡-cong (_+ length fr) (size-clear vs q eq)))
+  ... | false = push-measure ns qs fr vs (suc c)
 
   -- Fuel bounds the pops, of which there is at most one per number ever queued.
   expand : {d : ℕ} → ℕ → Tree (List ℕ) d → List ℕ → Tree Bool d → List ℕ → ℕ →
